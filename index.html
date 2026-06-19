@@ -196,6 +196,7 @@
   .chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--txt)}
   .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
   .chip b{font-weight:800;margin-left:2px}
+  .cmgr-tbl tfoot td{background:#1e3a5f;color:#fff;font-weight:800;border-top:2px solid #0f1f33;position:sticky;bottom:0;z-index:3}
   .tablewrap{overflow:auto;max-height:1120px;border-radius:12px;border:1px solid var(--line);background:var(--card)}
   table{width:100%;border-collapse:collapse}
   thead th{background:#eef2f8;color:var(--navy);font-size:12px;font-weight:700;text-align:right;padding:11px 12px;border-bottom:2px solid #d4ddea;white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;z-index:5}
@@ -821,6 +822,10 @@ function custManagers(){
   const head=`<tr><th>#</th><th class="l cmgr-sort" data-sk="cust" style="cursor:pointer">거래처${arrow('cust')}</th><th class="num cmgr-sort" data-sk="p" style="cursor:pointer">점유율${arrow('p')}</th><th class="num cmgr-sort" data-sk="a" style="cursor:pointer">${YR===CY?('합계(1~'+lastActM+'월)'):('합계('+YR+'년)')}${arrow('a')}</th>${showSum?`<th class="num cmgr-sort" data-sk="prev" style="cursor:pointer">전년매출(${PY})${arrow('prev')}</th><th class="num cmgr-sort" data-sk="proj" style="cursor:pointer">올해목표(${CY})${arrow('proj')}</th><th class="num cmgr-sort" data-sk="diff" style="cursor:pointer">증감액${arrow('diff')}</th><th class="num cmgr-sort" data-sk="pct" style="cursor:pointer">증감%${arrow('pct')}</th><th class="num cmgr-sort" data-sk="rate" style="cursor:pointer">달성률${arrow('rate')}</th>`:''}${monHead}${lmonHead}<th class="num cmgr-sort" data-sk="lz" style="cursor:pointer">레이저${arrow('lz')}</th><th class="num cmgr-sort" data-sk="lr" style="cursor:pointer">레이저%${arrow('lr')}</th><th>영업관리</th><th>기술영업</th></tr>`;
   const body=view.map((r,i)=>{ let mc=showM?MN.map((_,k)=>{const v=r.mon[k+1]||0;return `<td class="num" style="color:${v>0?'#334155':'#e2e8f0'}">${mil(v)}</td>`;}).join(''):''; let lm=showL?MN.map((_,k)=>{const v=r.lmon[k+1]||0;return `<td class="num" style="color:${v>0?'#9333ea':'#e2e8f0'};font-weight:${v>0?600:400}">${mil(v)}</td>`;}).join(''):''; const c=lrCol(r.lr); const sumCells=showSum?`<td class="num">${r.prev>0?won(Math.round(r.prev)):'–'}</td><td class="num" style="font-weight:700;color:#1e3a5f">${r.proj>0?won(Math.round(r.proj)):'–'}</td><td class="num">${diffSpan(r.diff)}</td><td class="num">${pctSpan(r.pct)}</td><td class="num">${r.rate==null?'–':`<b style="color:${r.rate>=(lastActM/12*100)?'#16a34a':'#dc2626'}">${r.rate.toFixed(0)}%</b><div class="sub2">잔여 ${won(Math.round(Math.max(0,r.proj-r.a)))}</div>`}</td>`:''; return `<tr class="cmgr-rowclick" data-cust="${esc(r.cust)}"><td style="text-align:center;color:#94a3b8">${i+1}</td><td class="l cmgr-cust" data-c="${esc(r.cust)}" style="font-weight:600;cursor:pointer;color:#1e3a5f" title="클릭: 품목·규격별 매출">${esc(r.cust)} <span class="sub2" style="color:#94a3b8">▸</span></td><td class="num" style="color:${r.p>5?'#dc2626':r.p>1?'#0f172a':'#94a3b8'};font-weight:${r.p>1?700:400}">${r.p>0?r.p.toFixed(2)+'%':'–'}</td><td class="num" style="font-weight:600">${r.a>0?won(Math.round(r.a)):'–'}</td>${sumCells}${mc}${lm}<td class="num" style="color:${r.lz>0?'#9333ea':'#cbd5e1'};font-weight:${r.lz>0?600:400}">${r.lz>0?won(Math.round(r.lz)):'–'}</td><td class="num"><span style="display:inline-block;width:36px;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;vertical-align:middle;margin-right:4px"><span style="display:block;height:6px;background:${c};width:${Math.min(r.lr,100)}%"></span></span><b style="color:${c};font-size:11px">${r.lr>0?r.lr.toFixed(1)+'%':'–'}</b></td><td class="cmgr-mgrcell" style="text-align:center">${mgrCell('s',r.cust,r.effS,sOpts)}</td><td class="cmgr-mgrcell" style="text-align:center">${mgrCell('t',r.cust,r.effT,tOpts)}</td></tr>`; }).join('');
   const fa=view.reduce((s,r)=>s+r.a,0), fl=view.reduce((s,r)=>s+r.lz,0);
+  const monT=showM?MN.map((_,k)=>view.reduce((s,r)=>s+(r.mon[k+1]||0),0)):[];
+  const lmonT=showL?MN.map((_,k)=>view.reduce((s,r)=>s+(r.lmon[k+1]||0),0)):[];
+  const tPrev=view.reduce((s,r)=>s+(r.prev||0),0), tProj=view.reduce((s,r)=>s+(r.proj||0),0), tDiff=tProj-tPrev;
+  const totRow=`<tr class="cmgr-total"><td style="text-align:center">Σ</td><td class="l">합계 <span style="font-weight:600;opacity:.85">(${view.length}개)</span></td><td class="num">100%</td><td class="num">${fa>0?won(Math.round(fa)):'–'}</td>${showSum?`<td class="num">${tPrev>0?won(Math.round(tPrev)):'–'}</td><td class="num">${tProj>0?won(Math.round(tProj)):'–'}</td><td class="num">${(tDiff>=0?'+':'')+won(Math.round(tDiff))}</td><td class="num">${tPrev>0?(tDiff/tPrev*100).toFixed(1)+'%':'–'}</td><td class="num">–</td>`:''}${showM?monT.map(v=>`<td class="num">${mil(v)}</td>`).join(''):''}${showL?lmonT.map(v=>`<td class="num">${mil(v)}</td>`).join(''):''}<td class="num">${fl>0?won(Math.round(fl)):'–'}</td><td class="num">${fa>0?(fl/fa*100).toFixed(1)+'%':'–'}</td><td></td><td></td></tr>`;
   const yrBtn=(v,lab)=>`<button class="cmgr-yr" data-v="${v}" style="font-family:inherit;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;border:1px solid ${CF.year===v?'#1e3a5f':'var(--line)'};background:${CF.year===v?'#1e3a5f':'#fff'};color:${CF.year===v?'#fff':'#475569'}">${lab}</button>`;
   const html=`<div class="rhead" style="display:block"><div class="title">👥 거래처 담당자 현황 <span class="sub2" style="font-weight:600">(${YR}년 1~12월 · 매출 분석 도구 연동)</span></div>
   <div class="meta">거래처 ${won(rows.length)}개 · 합계 ${won(Math.round(grand))}원 · 레이저 ${fmtK(grandLz)} · <b>담당자 칩 옆 ✏️</b>을 누르면 영업관리·기술영업을 바로 수정(전체 분석·백업 반영).</div></div>
@@ -837,7 +842,7 @@ function custManagers(){
     <button id="cmgrReset" style="font-family:inherit;font-size:13px;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;color:#fff;background:#dc2626;border:1px solid #dc2626">초기화</button>
   </div>
   <div class="sub2" id="cmgrStat" style="margin:4px 0 8px">검색결과 <b>${won(view.length)}</b>개사 · 매출합계 <b>${fmtK(fa)}</b> · 레이저 <b>${fmtK(fl)}</b>${fa>0?` (${(fl/fa*100).toFixed(1)}%)`:''}</div>
-  <div style="overflow-x:auto;border:1px solid var(--line);border-radius:10px"><table class="cmgr-tbl${(showM||showL)?' tight':''}" style="border-collapse:collapse;font-size:14px;table-layout:fixed;width:100%"><colgroup>${cg}</colgroup><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  <div style="overflow-x:auto;border:1px solid var(--line);border-radius:10px"><table class="cmgr-tbl${(showM||showL)?' tight':''}" style="border-collapse:collapse;font-size:14px;table-layout:fixed;width:100%"><colgroup>${cg}</colgroup><thead>${head}</thead><tbody>${body}</tbody><tfoot>${totRow}</tfoot></table></div>`;
   $('#result').innerHTML=html;
   const applySearch=()=>{ const q=($('#cmgrSearch').value||'').toLowerCase().trim(); let n=0; $('#result').querySelectorAll('.cmgr-tbl tbody tr').forEach(tr=>{ const cu=(tr.dataset.cust||'').toLowerCase(); const show=!q||cu.includes(q); tr.style.display=show?'':'none'; if(show)n++; }); const st=$('#cmgrStat'); if(st)st.innerHTML=q?`검색 "<b>${esc(q)}</b>" · <b>${won(n)}</b>개사 표시`:`검색결과 <b>${won(n)}</b>개사 · 매출합계 <b>${fmtK(fa)}</b> · 레이저 <b>${fmtK(fl)}</b>${fa>0?` (${(fl/fa*100).toFixed(1)}%)`:''}`; };
   $('#result').querySelectorAll('.cmgr-card').forEach(b=>b.addEventListener('click',()=>{ const role=b.dataset.role,n=b.dataset.n; if(role==='s')state.cmgr.fs=(state.cmgr.fs===n?'전체':n); else state.cmgr.ft=(state.cmgr.ft===n?'전체':n); custManagers(); }));
@@ -988,10 +993,9 @@ function custProdDrill(cust, src, backFn){
 }
 function clsFullCsv(){
   const custs=CUR.length?[...new Set(CUR.map(r=>r.cust))].sort((a,b)=>a.localeCompare(b,'ko')):[];
-  const L=['거래처코드,거래처명,업체분류'];
-  custs.forEach(c=>{ const cells=[gradeRec(c).code?`="${gradeRec(c).code}"`:'', c, clsOf(c)].map(v=>{ v=String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }); L.push(cells.join(',')); });
-  const blob=new Blob(['\ufeff'+L.join('\r\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='customer_classification_full.csv'; a.click(); URL.revokeObjectURL(a.href);
+  const aoa=[['거래처코드','거래처명','업체분류']];
+  custs.forEach(c=>aoa.push([gradeRec(c).code||'', c, clsOf(c)]));
+  dlXLSX('customer_classification_full.xlsx','업체분류',aoa);
 }
 function clsSales(){
   const sel=state.clsCat;
@@ -1002,8 +1006,8 @@ function clsSales(){
     custDrillView(`업체분류 · ${sel}`, src, ()=>{state.clsCat=null;clsSales();}, 'cls', {controlsHtml:chips,onMount:bind});
   } else {
     _grpRender('cls','업체분류별 매출', r=>catsOf(r.cust).join(' · '), '업체분류(조합)',
-      '거래처는 <b>최대 3개</b> 분류를 가질 수 있습니다. <b>전체</b>에서는 거래처가 가진 <b>분류 조합</b>별로 묶어 보여줍니다. <b>분류 아이콘</b>을 누르면 그 분류를 포함한 거래처만, 상단 <b>검색</b>창에 거래처명을 쓰면 해당 거래처가 필터됩니다. 분류행 클릭 → 거래처(분류 <b>최대 3개 직접 수정</b>) → 제품. <b>CSV</b>=현재 표, <b>전체 거래처 CSV</b>=거래처별 매핑.',
-      {controlsHtml:chips,onMount:bind,gradeDist:true,fullCsv:{label:'📥 전체 거래처 CSV',fn:clsFullCsv},labelCell:o=>{ const parts=String(o.label||'').split(' · ').filter(Boolean); return parts.length?parts.map(catBadge).join(''):'<span class="sub2">미분류</span>'; }});
+      '거래처는 <b>최대 3개</b> 분류를 가질 수 있습니다. <b>전체</b>에서는 거래처가 가진 <b>분류 조합</b>별로 묶어 보여줍니다. <b>분류 아이콘</b>을 누르면 그 분류를 포함한 거래처만, 상단 <b>검색</b>창에 거래처명을 쓰면 해당 거래처가 필터됩니다. 분류행 클릭 → 거래처(분류 <b>최대 3개 직접 수정</b>) → 제품. <b>엑셀</b>=현재 표, <b>전체 거래처 엑셀</b>=거래처별 매핑.',
+      {controlsHtml:chips,onMount:bind,gradeDist:true,fullCsv:{label:'📥 전체 거래처 엑셀',fn:clsFullCsv},labelCell:o=>{ const parts=String(o.label||'').split(' · ').filter(Boolean); return parts.length?parts.map(catBadge).join(''):'<span class="sub2">미분류</span>'; }});
   }
 }
 function regionSales(){
@@ -1700,7 +1704,7 @@ function monthlyTrend(){
   const open=state.trend.editorOpen;
   const editor=`<div class="mtarget"><div class="mthead"><b id="mtToggle" style="cursor:pointer;user-select:none;background:#0d9488;color:#fff;padding:4px 11px;border-radius:7px;font-size:13px;display:inline-block">월별 목표 % ${open?'▾':'▸'}</b> ${bulkBadge} <span class="sub2">제목을 클릭하면 1~12월 입력칸이 펼쳐집니다. 전년 동월 대비 목표 %를 입력 → 그래프·표·<b>매출 목표</b>에 즉시 반영·저장. (맨 끝 칸: 미래월 일괄 적용 / 초기화)</span></div>
     <div class="mgrid" id="mtGrid" style="display:${open?'grid':'none'}">${cells?cells+bulkCell:'<span class="sub2">표시할 월이 없습니다.</span>'}</div></div>`;
-  const html=`<div class="rhead"><span class="title">월별 실적 목표 (${PY} vs ${CY})</span><span class="meta">예상연매출 ${won(annualMix)} · 목표 ${won(tgtT)} · 실적 ${won(cyActT)} · 단위: 백만원</span><span class="spacer"></span><button class="btn ghost" id="trCsv">CSV 내보내기</button></div>
+  const html=`<div class="rhead"><span class="title">월별 실적 목표 (${PY} vs ${CY})</span><span class="meta">예상연매출 ${won(annualMix)} · 목표 ${won(tgtT)} · 실적 ${won(cyActT)} · 단위: 백만원</span><span class="spacer"></span><button class="btn ghost" id="trCsv">엑셀 내보내기</button></div>
     <div class="fckpi" style="margin:8px 0 4px">
       <div class="kpi" style="border-left:4px solid #94a3b8"><div class="lab">전년 연매출(${PY})</div><div class="val" style="color:#475569">${won(pyT)}<small> 원</small></div><div class="sub2" style="margin-top:2px">${PY}년 전체 실적</div></div>
       <div class="kpi" style="border-left:4px solid var(--navy)"><div class="lab">올해 연매출 목표 = 실적+잔여목표</div><div class="val" style="color:var(--navy)">${won(annualMix)}<small> 원</small></div><div class="sub2" style="margin-top:2px">1~${lastAct}월 실적 <b>${won(cyActT)}</b> + ${lastAct+1}~12월 목표 <b>${won(remTgt)}</b></div></div>
@@ -1745,7 +1749,7 @@ function trendMonthDrill(m){
   const tot=arr.reduce((a,o)=>a+o.amt,0); const mx=Math.max(1,...arr.map(o=>o.amt));
   const body=arr.map((o,i)=>`<tr class="tmcrow" data-c="${esc(o.cust)}" style="cursor:pointer"><td class="rank">${i+1}</td><td class="l">${esc(o.cust)}</td><td class="mgr">${mgrBadge(mgrS(o.cust))}</td><td class="mgr">${mgrBadge(mgrT(o.cust))}</td><td>${disp(o.amt)}</td><td>${tot?(o.amt/tot*100).toFixed(1):'0'}%</td><td>${bar(o.amt,mx)}</td><td>${o.days}</td><td>${won(Math.round(o.qty))}</td></tr>`).join('');
   const totRow=`<tr class="total-row"><td></td><td class="l">합 계</td><td></td><td></td><td>${disp(tot)}</td><td>100%</td><td></td><td></td><td></td></tr>`;
-  const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← 월별 실적·목표</button><span class="title">${CY}년 ${m}월 · 거래처 매출순위</span><span class="meta">거래처 ${arr.length}개 · 합계 ${won(tot)}원${mgrActive()?' · 담당자필터 적용중':''}</span><span class="spacer"></span><button class="btn ghost" id="tmCsv">CSV 내보내기</button><input type="text" id="tmSearch" placeholder="검색 (거래처)" style="margin-left:8px"></div>
+  const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← 월별 실적·목표</button><span class="title">${CY}년 ${m}월 · 거래처 매출순위</span><span class="meta">거래처 ${arr.length}개 · 합계 ${won(tot)}원${mgrActive()?' · 담당자필터 적용중':''}</span><span class="spacer"></span><button class="btn ghost" id="tmCsv">엑셀 내보내기</button><input type="text" id="tmSearch" placeholder="검색 (거래처)" style="margin-left:8px"></div>
     <div class="tablewrap"><table id="tbl"><thead><tr><th>순위</th><th class="l">거래처</th><th class="mgr">영업관리</th><th class="mgr">기술영업</th><th>매출액</th><th>비중</th><th>그래프</th><th>거래일수</th><th>수량</th></tr></thead><tbody>${body}${totRow}</tbody></table></div>
     <div class="note">${CY}년 ${m}월 한 달의 거래처별 매출입니다. <b>거래처를 클릭</b>하면 그 거래처의 ${m}월 제품 리스트가 나옵니다.</div>`;
   renderCustom(html,()=>{
@@ -1763,7 +1767,7 @@ function trendMonthCustDrill(m,cust){
   const tot=arr.reduce((a,o)=>a+o.amt,0); const mx=Math.max(1,...arr.map(o=>o.amt));
   const body=arr.map((o,i)=>`<tr><td class="rank">${i+1}</td><td class="l">${esc(o.code||'')}</td><td class="l">${esc(o.name||'')}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>${disp(o.amt)}</td><td>${tot?(o.amt/tot*100).toFixed(1):'0'}%</td><td>${bar(o.amt,mx)}</td><td>${won(Math.round(o.qty))}</td></tr>`).join('');
   const totRow=`<tr class="total-row"><td></td><td class="l" colspan="3">합 계</td><td>${disp(tot)}</td><td>100%</td><td></td><td></td></tr>`;
-  const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← ${m}월 거래처</button><span class="title">${esc(cust)} ▸ ${CY}년 ${m}월 제품</span><span class="meta">품목 ${arr.length}개 · 합계 ${won(tot)}원</span><span class="spacer"></span><button class="btn ghost" id="tmcCsv">CSV 내보내기</button></div>
+  const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← ${m}월 거래처</button><span class="title">${esc(cust)} ▸ ${CY}년 ${m}월 제품</span><span class="meta">품목 ${arr.length}개 · 합계 ${won(tot)}원</span><span class="spacer"></span><button class="btn ghost" id="tmcCsv">엑셀 내보내기</button></div>
     <div class="tablewrap"><table id="tbl"><thead><tr><th>순위</th><th class="l">품번</th><th class="l">품명</th><th class="l">규격</th><th>매출액</th><th>비중</th><th>그래프</th><th>수량</th></tr></thead><tbody>${body}${totRow}</tbody></table></div>
     <div class="note">${esc(cust)}의 ${CY}년 ${m}월 제품·규격별 매출입니다.</div>`;
   renderCustom(html,()=>{ $('#backBtn').addEventListener('click',()=>trendMonthDrill(m)); const c2=$('#tmcCsv'); c2&&c2.addEventListener('click',()=>dlCSV('month_customer_products.csv',['순위','품번','품명','규격','매출액','비중%','수량'],arr.map((o,i)=>[i+1,o.code,o.name,o.spec,Math.round(o.amt),tot?(o.amt/tot*100).toFixed(1):'0',Math.round(o.qty)]))); });
@@ -1912,7 +1916,7 @@ function forecast(){
       <div class="seg" id="fcDim"><button data-v="cust" class="${state.fc.dim==='cust'?'on':''}" style="${state.fc.dim==='cust'?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':'color:#1e3a5f'}">거래처</button><button data-v="prod" class="${state.fc.dim==='prod'?'on':''}" style="${state.fc.dim==='prod'?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488'}">제품(규격)</button></div>
       <b style="font-size:12px">기간(전년 대비)</b> ${perBtns} ${rangeSel} <span class="sub2">그래프·KPI는 연간 기준</span></div>
     ${state.fc.dim==='cust'?`
-    <h4 class="fch">📋 업체별 매출 목표 · ${rLab} <input type="text" id="fcCustSearch" placeholder="거래처 검색" value="${esc(state.fc._csearch||'')}" style="font-family:inherit;font-size:13px;padding:6px 11px;border:1px solid var(--line);border-radius:7px;width:240px;margin-left:8px"> <span style="float:right"><button class="btn" id="fcAddCust" style="font-size:11px;padding:3px 10px">＋ 업체추가</button> <button class="btn ghost" id="fcIssueCust" style="font-size:11px;padding:3px 10px;${state.fc.issC?'background:#b45309;color:#fff;border-color:#b45309':''}">📌 이슈내용</button> <button class="btn ghost fcexcltoggle" style="font-size:11px;padding:3px 8px;${state.fc.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.fc.showExcl?'숨기기':'보이기'}</button> <button class="btn ghost" id="fcOvReset" style="font-size:11px;padding:3px 8px">조정% 초기화</button> <button class="btn ghost" id="fcAddReset" style="font-size:11px;padding:3px 8px;color:var(--red);border-color:#f3c0c0">추가% 초기화</button> <button class="btn ghost" id="fcCustCsv" style="font-size:11px;padding:3px 8px">CSV</button></span></h4>
+    <h4 class="fch">📋 업체별 매출 목표 · ${rLab} <input type="text" id="fcCustSearch" placeholder="거래처 검색" value="${esc(state.fc._csearch||'')}" style="font-family:inherit;font-size:13px;padding:6px 11px;border:1px solid var(--line);border-radius:7px;width:240px;margin-left:8px"> <span style="float:right"><button class="btn" id="fcAddCust" style="font-size:11px;padding:3px 10px">＋ 업체추가</button> <button class="btn ghost" id="fcIssueCust" style="font-size:11px;padding:3px 10px;${state.fc.issC?'background:#b45309;color:#fff;border-color:#b45309':''}">📌 이슈내용</button> <button class="btn ghost fcexcltoggle" style="font-size:11px;padding:3px 8px;${state.fc.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.fc.showExcl?'숨기기':'보이기'}</button> <button class="btn ghost" id="fcOvReset" style="font-size:11px;padding:3px 8px">조정% 초기화</button> <button class="btn ghost" id="fcAddReset" style="font-size:11px;padding:3px 8px;color:var(--red);border-color:#f3c0c0">추가% 초기화</button> <button class="btn ghost" id="fcCustCsv" style="font-size:11px;padding:3px 8px">엑셀</button></span></h4>
     <div id="fcNewForm" style="display:none;margin:0 0 8px;padding:10px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px">
       <b style="font-size:12px">신규 거래처 목표 추가 — 제품·수량·단가 → 연목표</b>
       <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
@@ -1929,7 +1933,7 @@ function forecast(){
     </div>
     <div class="note" style="margin:0 0 8px"><b>조정%</b>: 입력 시 그 거래처가 전년 동월 比 해당%로 고정되고 나머지는 월 목표총액에 맞춰 <b>재배분</b>(전체 합계 유지). <b>추가%</b>: 그 거래처 목표에 <b>추가로 가산</b>되어 전체 목표금액과 그래프·<b>월별 실적·목표</b>가 함께 늘어납니다(예: 추가 10% → 그만큼 합계 증가). <b>거래처 행 클릭</b> 시 품목군→품번·품명·규격으로 이어집니다.</div>
     <div class="tablewrap ${state.fc.showExcl?'fcshowexcl':''} ${state.fc.issC?'fcissue-c':''}" style="max-height:1120px"><table><thead><tr><th>순위</th><th class="l fcsort" data-sk="c">거래처${fcArrow('c')}</th><th class="mgr fcsort" data-sk="sales">영업관리${fcArrow('sales')}</th><th class="mgr fcsort" data-sk="tech">기술영업${fcArrow('tech')}</th><th class="fcsort" data-sk="prev">전년(${PY})${fcArrow('prev')}</th><th class="fcsort" data-sk="ytd">실적(~${lastAct}월)${fcArrow('ytd')}</th><th class="fcsort" data-sk="proj">올해목표${fcArrow('proj')}</th><th class="fcsort" data-sk="diff">증감액${fcArrow('diff')}</th><th class="fcsort" data-sk="pct">증감%${fcArrow('pct')}</th><th title="해당 월 목표 내에서 재분배(전체 합계 유지)">조정%</th><th title="전체 금액에 추가로 가산(합계·그래프 증가)">추가%</th><th class="l">메모(조정·추가% 이슈)</th></tr></thead><tbody>${custRows}<tr class="total-row"><td></td><td class="l">합 계</td><td></td><td></td><td>${disp(cTotPrev)}</td><td>${disp(custArr.reduce((a,o)=>a+(o.ytd||0),0))}</td><td>${disp(cTotProjAll)}</td><td>${diffSpan(cTotProjAll-cTotPrev)}</td><td></td><td></td><td></td><td></td></tr></tbody></table></div>`:`
-    <h4 class="fch">📦 제품(규격)별 매출 목표 · ${rLab} <input type="text" id="fcProdSearch" placeholder="품번·품명·규격 검색" value="${esc(state.fc._psearch||'')}" style="font-family:inherit;font-size:13px;padding:6px 11px;border:1px solid var(--line);border-radius:7px;width:250px;margin-left:8px"> <span style="float:right"><button class="btn" id="fcAddProd" style="font-size:11px;padding:3px 10px">＋ 제품추가</button> <button class="btn ghost" id="fcIssueProd" style="font-size:11px;padding:3px 10px;${state.fc.issP?'background:#b45309;color:#fff;border-color:#b45309':''}">📌 이슈내용</button> <button class="btn ghost fcexcltoggle" style="font-size:11px;padding:3px 8px;${state.fc.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.fc.showExcl?'숨기기':'보이기'}</button> <button class="btn ghost" id="fcProdOvReset" style="font-size:11px;padding:3px 8px">조정% 초기화</button> <button class="btn ghost" id="fcProdAddReset" style="font-size:11px;padding:3px 8px;color:var(--red);border-color:#f3c0c0">추가% 초기화</button> <button class="btn ghost" id="fcProdCsv" style="font-size:11px;padding:3px 8px">CSV</button></span></h4>
+    <h4 class="fch">📦 제품(규격)별 매출 목표 · ${rLab} <input type="text" id="fcProdSearch" placeholder="품번·품명·규격 검색" value="${esc(state.fc._psearch||'')}" style="font-family:inherit;font-size:13px;padding:6px 11px;border:1px solid var(--line);border-radius:7px;width:250px;margin-left:8px"> <span style="float:right"><button class="btn" id="fcAddProd" style="font-size:11px;padding:3px 10px">＋ 제품추가</button> <button class="btn ghost" id="fcIssueProd" style="font-size:11px;padding:3px 10px;${state.fc.issP?'background:#b45309;color:#fff;border-color:#b45309':''}">📌 이슈내용</button> <button class="btn ghost fcexcltoggle" style="font-size:11px;padding:3px 8px;${state.fc.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.fc.showExcl?'숨기기':'보이기'}</button> <button class="btn ghost" id="fcProdOvReset" style="font-size:11px;padding:3px 8px">조정% 초기화</button> <button class="btn ghost" id="fcProdAddReset" style="font-size:11px;padding:3px 8px;color:var(--red);border-color:#f3c0c0">추가% 초기화</button> <button class="btn ghost" id="fcProdCsv" style="font-size:11px;padding:3px 8px">엑셀</button></span></h4>
     <div id="fcNewProdForm" style="display:none;margin:0 0 8px;padding:10px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px">
       <b style="font-size:12px">제품 목표 추가 — 기존/신규 제품 → 업체·수량·단가</b>
       <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
@@ -2034,7 +2038,7 @@ function fcDrillCust(c){ const f=state._fc; if(!f)return; const [m1,m2]=fcRange(
   let arr=[...keys].map(pk=>{ let prev=0,pq=0,proj=0,cq=0; for(let m=m1;m<=m2;m++){ const pm=f.pyMonCustProd[m].get(c); const pe=pm&&pm.get(pk); if(pe){prev+=pe.amt;pq+=pe.qty;} const sm=(m<=f.lastAct?f.cyMonCustProd[m]:f.fcCustProdMon[m]).get(c); const ce=sm&&sm.get(pk); if(ce){proj+=ce.amt;cq+=ce.qty;} } const meta=f.prodMeta.get(pk)||{code:pk,name:'',spec:''}; const diff=proj-prev,pct=prev?diff/prev*100:(proj>0?null:0); return {pk,...meta,prev,proj,diff,pct,pq,cq}; }).filter(o=>o.prev>0||o.proj>0);
   const ds=state.fc._dsC||(state.fc._dsC={k:'proj',d:-1}); const _sv=(o,k)=>['code','name','spec'].includes(k)?(o[k]||''):(o[k]==null?-Infinity:o[k]); arr.sort((a,b)=>{ const av=_sv(a,ds.k),bv=_sv(b,ds.k); if(typeof av==='string')return ds.d>0?av.localeCompare(bv,'ko'):bv.localeCompare(av,'ko'); return ds.d>0?av-bv:bv-av; }); const _ar=k=>ds.k===k?(ds.d>0?' ▲':' ▼'):''; const tp=arr.reduce((a,o)=>a+o.prev,0), tj=arr.reduce((a,o)=>a+o.proj,0);
   const rows=arr.map((o,i)=>`<tr><td class="rank">${i+1}</td><td class="l">${esc(o.code)}</td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>${disp(o.prev)}</td><td>${disp(o.proj)}</td><td>${diffSpan(o.diff)}</td><td>${pctSpan(o.pct)}</td><td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.cq))}</td></tr>`).join('');
-  const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← 목록으로</button><span class="title">${esc(c)} ▸ 제품·규격별 목표</span><span class="meta">${fcRangeLabel()} · 전년 ${won(tp)} → 목표 ${won(tj)}</span><span class="spacer"></span><button class="btn ghost" id="fcdCsv">CSV 내보내기</button></div>
+  const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← 목록으로</button><span class="title">${esc(c)} ▸ 제품·규격별 목표</span><span class="meta">${fcRangeLabel()} · 전년 ${won(tp)} → 목표 ${won(tj)}</span><span class="spacer"></span><button class="btn ghost" id="fcdCsv">엑셀 내보내기</button></div>
     <div class="tablewrap" style="max-height:1120px"><table><thead><tr><th>순위</th><th class="l fcds" data-sk="code">품번${_ar('code')}</th><th class="l fcds" data-sk="name">품명${_ar('name')}</th><th class="l fcds" data-sk="spec">규격${_ar('spec')}</th><th class="fcds" data-sk="prev">전년매출(${f.PY})${_ar('prev')}</th><th class="fcds" data-sk="proj">올해목표${_ar('proj')}</th><th class="fcds" data-sk="diff">증감액${_ar('diff')}</th><th class="fcds" data-sk="pct">증감%${_ar('pct')}</th><th class="fcds" data-sk="pq">전년수량${_ar('pq')}</th><th class="fcds" data-sk="cq">목표수량${_ar('cq')}</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="note">${fcRangeLabel()} 기준, ${esc(c)}의 제품·규격별 전년 대비 목표 증감입니다.</div>`;
   renderCustom(html,()=>{ $('#backBtn').addEventListener('click',forecast); $('#result').querySelectorAll('.fcds').forEach(th=>{th.style.cursor='pointer';th.addEventListener('click',()=>{const k=th.dataset.sk; if(ds.k===k)ds.d*=-1; else{ds.k=k;ds.d=(['code','name','spec'].includes(k)?1:-1);} fcDrillCust(c);});}); const cc=$('#fcdCsv'); cc&&cc.addEventListener('click',()=>dlCSV('forecast_customer_products.csv',['순위','품번','품명','규격','전년','올해목표','증감액','증감%','전년수량','목표수량'],arr.map((o,i)=>[i+1,o.code,o.name,o.spec,Math.round(o.prev),Math.round(o.proj),Math.round(o.diff),o.pct==null?'신규':o.pct.toFixed(1),Math.round(o.pq),Math.round(o.cq)]))); });
@@ -2044,20 +2048,22 @@ function fcDrillProd(pk){ const f=state._fc; if(!f)return; const [m1,m2]=fcRange
   let arr=[...custs].map(c=>{ let prev=0,proj=0,pq=0,cq=0; for(let m=m1;m<=m2;m++){ const pm=f.pyMonCustProd[m].get(c); const pe=pm&&pm.get(pk); if(pe){prev+=pe.amt;pq+=pe.qty;} const sm=(m<=f.lastAct?f.cyMonCustProd[m]:f.fcCustProdMon[m]).get(c); const ce=sm&&sm.get(pk); if(ce){proj+=ce.amt;cq+=ce.qty;} } const diff=proj-prev,pct=prev?diff/prev*100:(proj>0?null:0); return {c,prev,proj,diff,pct,pq,cq}; }).filter(o=>o.prev>0||o.proj>0);
   const ds=state.fc._dsP||(state.fc._dsP={k:'proj',d:-1}); const _sv=(o,k)=>k==='c'?(o.c||''):(o[k]==null?-Infinity:o[k]); arr.sort((a,b)=>{ const av=_sv(a,ds.k),bv=_sv(b,ds.k); if(typeof av==='string')return ds.d>0?av.localeCompare(bv,'ko'):bv.localeCompare(av,'ko'); return ds.d>0?av-bv:bv-av; }); const _ar=k=>ds.k===k?(ds.d>0?' ▲':' ▼'):''; const tp=arr.reduce((a,o)=>a+o.prev,0), tj=arr.reduce((a,o)=>a+o.proj,0);
   const rows=arr.map((o,i)=>`<tr><td class="rank">${i+1}</td><td class="l">${esc(o.c)}</td><td class="mgr">${mgrBadge(mgrS(o.c))}</td><td class="mgr">${mgrBadge(mgrT(o.c))}</td><td>${disp(o.prev)}</td><td>${disp(o.proj)}</td><td>${diffSpan(o.diff)}</td><td>${pctSpan(o.pct)}</td><td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.cq))}</td></tr>`).join('');
-  const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← 목록으로</button><span class="title">${esc(meta.code)} ${esc(meta.name)}${meta.spec?' / '+esc(meta.spec):''} ▸ 거래처별 목표</span><span class="meta">${fcRangeLabel()} · 전년 ${won(tp)} → 목표 ${won(tj)}</span><span class="spacer"></span><button class="btn ghost" id="fcdpCsv">CSV 내보내기</button></div>
+  const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← 목록으로</button><span class="title">${esc(meta.code)} ${esc(meta.name)}${meta.spec?' / '+esc(meta.spec):''} ▸ 거래처별 목표</span><span class="meta">${fcRangeLabel()} · 전년 ${won(tp)} → 목표 ${won(tj)}</span><span class="spacer"></span><button class="btn ghost" id="fcdpCsv">엑셀 내보내기</button></div>
     <div class="tablewrap" style="max-height:1120px"><table><thead><tr><th>순위</th><th class="l fcds" data-sk="c">거래처${_ar('c')}</th><th class="mgr">영업관리</th><th class="mgr">기술영업</th><th class="fcds" data-sk="prev">전년매출(${f.PY})${_ar('prev')}</th><th class="fcds" data-sk="proj">올해목표${_ar('proj')}</th><th class="fcds" data-sk="diff">증감액${_ar('diff')}</th><th class="fcds" data-sk="pct">증감%${_ar('pct')}</th><th class="fcds" data-sk="pq">전년수량${_ar('pq')}</th><th class="fcds" data-sk="cq">목표수량${_ar('cq')}</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="note">${fcRangeLabel()} 기준, 이 제품·규격의 거래처별 전년 대비 목표 증감입니다.</div>`;
   renderCustom(html,()=>{ $('#backBtn').addEventListener('click',forecast); $('#result').querySelectorAll('.fcds').forEach(th=>{th.style.cursor='pointer';th.addEventListener('click',()=>{const k=th.dataset.sk; if(ds.k===k)ds.d*=-1; else{ds.k=k;ds.d=(k==='c'?1:-1);} fcDrillProd(pk);});}); const cp=$('#fcdpCsv'); cp&&cp.addEventListener('click',()=>dlCSV('forecast_product_customers.csv',['순위','거래처','영업관리','기술영업','전년','올해목표','증감액','증감%','전년수량','목표수량'],arr.map((o,i)=>[i+1,o.c,mgrS(o.c),mgrT(o.c),Math.round(o.prev),Math.round(o.proj),Math.round(o.diff),o.pct==null?'신규':o.pct.toFixed(1),Math.round(o.pq),Math.round(o.cq)]))); });
 }
 
-function fcCSV(which){ const {custArr,prodArr,PY,CY}=state._fcExport||{}; if(!custArr)return; let lines,fn;
-  if(which==='cust'){ lines=[['거래처',`전년${PY}`,`올해목표${CY}`,'증감액','증감%','조정%'].join(',')];
-    custArr.forEach(o=>lines.push([csv(o.c),Math.round(o.prev),Math.round(o.proj),Math.round(o.diff),o.pct==null?'신규':o.pct.toFixed(1),o.ov].map(csv).join(','))); fn='forecast_customer.csv'; }
-  else { lines=[['품번','품명','규격',`전년매출${PY}`,`올해목표${CY}`,'증감액','증감%','전년수량','올해목표수량'].join(',')];
-    prodArr.forEach(o=>lines.push([o.code,o.name,o.spec,Math.round(o.prev),Math.round(o.proj),Math.round(o.diff),o.pct==null?'신규':o.pct.toFixed(1),Math.round(o.pq),Math.round(o.cq)].map(csv).join(','))); fn='forecast_product.csv'; }
-  const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fn; a.click(); URL.revokeObjectURL(a.href); }
-function csv(v){ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
-function dlCSV(fn,header,rows){ const lines=[header.map(csv).join(',')]; rows.forEach(r=>lines.push(r.map(csv).join(','))); const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fn; a.click(); URL.revokeObjectURL(a.href); }
+function fcCSV(which){ const {custArr,prodArr,PY,CY}=state._fcExport||{}; if(!custArr)return;
+  if(which==='cust'){ const aoa=[['거래처','전년('+PY+')','올해목표('+CY+')','증감액','증감%','조정%','추가%','메모']];
+    custArr.forEach(o=>aoa.push([o.c,Math.round(o.prev),Math.round(o.proj),Math.round(o.diff),o.pct==null?'신규':+o.pct.toFixed(1),(o.ov===''||o.ov==null)?'':+o.ov,(state.fc.addPct[o.c]==null||state.fc.addPct[o.c]==='')?'':+state.fc.addPct[o.c],state.fc.custMemo[o.c]||'']));
+    dlXLSX('forecast_customer.xlsx','거래처목표',aoa); }
+  else { const aoa=[['품번','품명','규격','전년','올해목표','증감액','증감%','전년수량','목표수량','메모']];
+    prodArr.forEach(o=>aoa.push([o.code,o.name,o.spec,Math.round(o.prev),Math.round(o.proj),Math.round(o.diff),o.pct==null?'신규':+o.pct.toFixed(1),Math.round(o.pq),Math.round(o.cq),state.fc.prodMemo[o.pk]||'']));
+    dlXLSX('forecast_product.xlsx','제품목표',aoa); } }
+
+function dlCSV(fn,header,rows){ dlXLSX(fn.replace(/\.csv$/i,'.xlsx'),'Sheet1',[header,...rows]); }
+
 function dlXLSX(fn,sheet,aoa){ const ws=XLSX.utils.aoa_to_sheet(aoa); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,sheet); XLSX.writeFile(wb,fn); }
 function importXLSX(cb){ const inp=document.createElement('input'); inp.type='file'; inp.accept='.xlsx,.xls'; inp.onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ const wb=XLSX.read(new Uint8Array(r.result),{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]]; cb(XLSX.utils.sheet_to_json(ws,{header:1,defval:''})); }catch(err){ console.error(err); uiConfirm('파일을 읽지 못했습니다: '+(err.message||err)); } }; r.readAsArrayBuffer(f); }; inp.click(); }
 function fullBackupExport(){ const data={headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,mgrOverride:state.mgrOverride,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,workdays:state.workdays,bep:state.bep,fcNewCusts:state.fc.newCusts,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcExclCust:state.fc.exclCust,fcExclProd:state.fc.exclProd,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,pd:state.pd,gsync:state.gsync,_exportedAt:new Date().toISOString()}; const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='settings_backup.json'; a.click(); URL.revokeObjectURL(a.href); }
@@ -2171,7 +2177,7 @@ function render(title,meta,data,cols,defSortKey,note,opts={}){
   $('#result').innerHTML=`
     <div class="rhead">${opts.back?`<button class="btn ghost" id="backBtn">${esc(opts.back.label)}</button>`:''}<span class="title">${esc(title)}</span><span class="meta">${meta}</span><span class="spacer"></span>
       <input type="text" id="searchBox" placeholder="검색 (거래처/품명/규격)" value="${esc(state._search||'')}">
-      <button class="btn ghost" id="exportBtn">CSV 내보내기</button>${opts.fullCsv?`<button class="btn ghost" id="fullCsvBtn" style="background:#ecfeff;border-color:#67e8f9;color:#0e7490">${esc(opts.fullCsv.label)}</button>`:''}</div>
+      <button class="btn ghost" id="exportBtn">엑셀 내보내기</button>${opts.fullCsv?`<button class="btn ghost" id="fullCsvBtn" style="background:#ecfeff;border-color:#67e8f9;color:#0e7490">${esc(opts.fullCsv.label)}</button>`:''}</div>
     ${opts.controlsHtml||''}
     ${chipsHtml}
     <div class="tablewrap"><table id="tbl"></table></div>
@@ -2218,13 +2224,13 @@ function exportCSV(){
     const rowsAll=periodRows(); const m=new Map();
     rowsAll.forEach(r=>{ let o=m.get(r.cust); if(!o){o={cust:r.cust,amt:0};m.set(r.cust,o);} o.amt+=amtOf(r); });
     const arr=[...m.values()].sort((a,b)=>b.amt-a.amt);
-    const L=['거래처코드,거래처명,신용등급,상태,결제일,매출액'];
-    arr.forEach(o=>{ const g=gradeRec(o.cust); const cells=[g.code?`="${g.code}"`:'', o.cust, g.grade||'', (GRADE_CAT[g.grade]||''), (g.pay===''||g.pay==null)?'':g.pay, Math.round(o.amt)].map(v=>{ v=String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }); L.push(cells.join(',')); });
-    const blob=new Blob(['\ufeff'+L.join('\r\n')],{type:'text/csv;charset=utf-8'});
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='sales_by_credit_customers.csv'; a.click(); URL.revokeObjectURL(a.href); return;
+    const aoa=[['거래처코드','거래처명','신용등급','상태','결제일','매출액']];
+    arr.forEach(o=>{ const g=gradeRec(o.cust); aoa.push([g.code||'', o.cust, g.grade||'', (GRADE_CAT[g.grade]||''), (g.pay===''||g.pay==null)?'':g.pay, Math.round(o.amt)]); });
+    dlXLSX('sales_by_credit_customers.xlsx','신용등급',aoa); return;
   }
   const ec=cols.filter(c=>c.k!=='_bar');
-  const lines=[ec.map(c=>c.t.replace(/\(.*?\)/g,'').trim()||c.t).join(',')];
+  const header=ec.map(c=>c.t.replace(/\(.*?\)/g,'').trim()||c.t);
+  const aoa=[header];
   data.forEach((o,i)=>{ const nm=(o.label!=null?o.label:o.key); const cells=ec.map(c=>{ let v=o[c.k];
     if(c.k==='rank')v=i+1;
     else if(c.k==='_s')v=mgrS(nm)||'미배정';
@@ -2238,22 +2244,22 @@ function exportCSV(){
     else if(c.k==='label')v=nm;
     else if(c.k==='custN')v=o.custN!=null?o.custN:'';
     else if(v instanceof Date)v=fmtD(v);
-    else if(c.k==='share'||c.k==='ratio')v=(o[c.k]||0).toFixed(c.k==='share'?1:0);
-    else if(c.k==='cv')v=o.cv==null?'':o.cv.toFixed(2);
+    else if(c.k==='share'||c.k==='ratio')v=+(o[c.k]||0).toFixed(c.k==='share'?1:0);
+    else if(c.k==='cv')v=o.cv==null?'':+o.cv.toFixed(2);
     else if(c.k==='avg')v=o.avg==null?'':Math.round(o.avg);
     else if(typeof v==='number')v=Math.round(v);
     else if(v==null)v=(o.label!=null?o.label:'');
-    v=String(v); if(/[",\n]/.test(v))v='"'+v.replace(/"/g,'""')+'"'; return v; });
-    lines.push(cells.join(',')); });
+    return v; });
+    aoa.push(cells); });
   const fnmap={'거래처 매출순위':'rank_customer','제품(품번·규격) 매출순위':'rank_product','품목군(품명) 매출순위':'rank_productgroup',
     '레이저 품목군 (L) 매출순위':'laser_productgroup','레이저 규격별 (L) 매출순위':'laser_spec','품목규격화 대상 (비규격 레이저/임가공)':'laser_standardize_target',
     '거래처별 마지막 출고일':'last_shipment_customer','제품별 마지막 출고일':'last_shipment_product','거래유지 점검':'retention_check'};
   let fnbase=fnmap[title];
   if(!fnbase){ if(/업체분류별/.test(title))fnbase='sales_by_classification'; else if(/지역별 매출/.test(title))fnbase='sales_by_region'; else if(/신용등급별/.test(title))fnbase='sales_by_credit'; else if(/거래처별 매출/.test(title))fnbase='customers'; else if(/품목·규격별/.test(title))fnbase='products'; }
-  const fn=(fnbase||'export')+'.csv';
-  const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fn; a.click(); URL.revokeObjectURL(a.href);
+  dlXLSX((fnbase||'export')+'.xlsx','Sheet1',aoa);
 }
+
+/* ---------------- restore on load
 
 /* ---------------- restore on load ---------------- */
 (async function(){
