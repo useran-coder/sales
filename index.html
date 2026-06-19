@@ -299,6 +299,7 @@
           <input type="text" id="gsKey" placeholder="비밀키(passcode)" style="font-family:inherit;font-size:12px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;width:150px">
           <button class="btn" id="gsLoad" type="button" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd">⬇ 불러오기</button>
           <button class="btn" id="gsSave" type="button" style="background:#ccfbf1;color:#0f766e;border-color:#5eead4">⬆ 저장(병합)</button>
+          <button class="btn" id="gsTest" type="button" style="background:#fef9c3;color:#854d0e;border-color:#fde047">🔌 연결 테스트</button>
           <span class="sub2" id="gsStatus" style="font-weight:600"></span><label class="sub2" style="font-weight:600;display:inline-flex;align-items:center;gap:4px;margin-left:10px;cursor:pointer"><input type="checkbox" id="gsAuto" style="cursor:pointer"> 자동 동기화</label>
         </div>
         <div class="sub2" style="margin-top:6px">URL·비밀키 입력 시 자동 저장됩니다. <b>불러오기</b>=시트의 전체 설정 가져오기, <b>저장</b>=현재 전체 설정을 시트에 병합. 비밀키를 아는 사람만 접근됩니다.</div>
@@ -624,7 +625,7 @@ $('#fileToggle').addEventListener('click',()=>{ setCmgrMode(false); const p=$('#
 if($('#hdrAllExp'))$('#hdrAllExp').addEventListener('click',fullBackupExport);
 if($('#hdrAllImp'))$('#hdrAllImp').addEventListener('click',fullBackupImport);
 if($('#hdrMerge'))$('#hdrMerge').addEventListener('click',mergeBackups);
-{ const u=$('#gsUrl'),k=$('#gsKey'); if(u){u.value=(state.gsync&&state.gsync.url)||'';u.addEventListener('input',()=>{state.gsync.url=u.value.trim();saveSettings();gsUpdateBtn();});} if(k){k.value=(state.gsync&&state.gsync.key)||'';k.addEventListener('input',()=>{state.gsync.key=k.value.trim();saveSettings();});} const lb=$('#gsLoad');lb&&lb.addEventListener('click',()=>gsLoad(false)); const sb=$('#gsSave');sb&&sb.addEventListener('click',()=>gsSave(false)); const ga=$('#gsAuto');if(ga){ga.checked=!!(state.gsync&&state.gsync.auto);ga.addEventListener('change',()=>{state.gsync.auto=ga.checked;saveSettings();gsUpdateBtn();});} const sy=$('#gsSyncBtn');sy&&sy.addEventListener('click',()=>gsSave(false)); gsUpdateBtn(); }
+{ const u=$('#gsUrl'),k=$('#gsKey'); if(u){u.value=(state.gsync&&state.gsync.url)||'';u.addEventListener('input',()=>{state.gsync.url=u.value.trim();saveSettings();gsUpdateBtn();});} if(k){k.value=(state.gsync&&state.gsync.key)||'';k.addEventListener('input',()=>{state.gsync.key=k.value.trim();saveSettings();});} const lb=$('#gsLoad');lb&&lb.addEventListener('click',()=>gsLoad(false)); const sb=$('#gsSave');sb&&sb.addEventListener('click',()=>gsSave(false)); const ga=$('#gsAuto');if(ga){ga.checked=!!(state.gsync&&state.gsync.auto);ga.addEventListener('change',()=>{state.gsync.auto=ga.checked;saveSettings();gsUpdateBtn();});} const sy=$('#gsSyncBtn');sy&&sy.addEventListener('click',()=>gsSave(false)); const gt=$('#gsTest');gt&&gt.addEventListener('click',gsTest); gsUpdateBtn(); gsStartPoll(); }
 function rerun(){ state._drill=false; state._parent=null; if(state.act) runAct(); }
 
 /* drill-down: click a row to see sub-breakdown sorted by sales */
@@ -2118,10 +2119,10 @@ function gsMerge(d){ if(!d)return;
   saveSettings(); state._mgrCountsCache=null; if(typeof buildSummary==='function')buildSummary(); _gsApplying=true; if(state.act&&CUR.length)runAct(); const _ned=document.getElementById('fcNotesEd'); if(_ned){ const _nf={main:'notesHtml',sales:'notesSales',tech:'notesTech'}[state.fc.notesTab||'main']; _ned.innerHTML=state.fc[_nf]||''; } _gsApplying=false; }
 function gsCommitNotes(){ const ed=document.getElementById('fcNotesEd'); if(ed){ const f={main:'notesHtml',sales:'notesSales',tech:'notesTech'}[state.fc.notesTab||'main']; state.fc[f]=ed.innerHTML; } }
 function gsCollectFull(){ return {headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,mgrOverride:state.mgrOverride,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,workdays:state.workdays,bep:state.bep,fcNewCusts:state.fc.newCusts,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcExclCust:state.fc.exclCust,fcExclProd:state.fc.exclProd,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,inv:state.inv,pd:state.pd}; }
-let _gsBusy=false,_gsAutoT=null,_gsApplying=false;
+var _gsBusy=false,_gsAutoT=null,_gsApplying=false,_gsPendingPush=false,_gsPollT=null;
 function gsFmtTime(iso){ if(!iso)return ''; const d=new Date(iso); if(isNaN(d))return ''; const p=n=>String(n).padStart(2,'0'); return `${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
 function gsUpdateBtn(){ const b=$('#gsSyncBtn'); if(!b)return; const on=!!(state.gsync&&state.gsync.url); b.style.display=on?'':'none'; const t=state.gsync&&state.gsync.lastSync?gsFmtTime(state.gsync.lastSync):''; b.textContent='🔄 동기화'+(t?(' · '+t):''); b.title='구글시트 동기화'+(t?(' (마지막 '+t+')'):' (아직 없음)')+(state.gsync&&state.gsync.auto?' · 자동 ON':' · 자동 OFF'); }
-function gsAutoPush(){ if(!state.gsync||!state.gsync.auto||!state.gsync.url||_gsBusy)return; clearTimeout(_gsAutoT); _gsAutoT=setTimeout(()=>gsSave(true),4000); }
+function gsAutoPush(){ if(!state.gsync||!state.gsync.auto||!state.gsync.url||_gsBusy)return; _gsPendingPush=true; clearTimeout(_gsAutoT); _gsAutoT=setTimeout(()=>gsSave(true),4000); }
 async function gsLoad(silent){ const u=(state.gsync&&state.gsync.url)||'', k=(state.gsync&&state.gsync.key)||''; const st=$('#gsStatus');
   if(!u){ if(!silent&&st){st.style.color='#dc2626';st.textContent='URL을 입력하세요.'} return; }
   if(!silent&&st){st.style.color='#64748b';st.textContent='불러오는 중…';}
@@ -2135,7 +2136,20 @@ async function gsSave(silent){ gsCommitNotes(); const u=(state.gsync&&state.gsyn
   _gsBusy=true;
   try{ const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save',key:k,data:gsCollectFull()})}); const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요.';} return; } if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패')+' (비밀키 확인)';} return; } gsMerge(d.data||d); state.gsync.lastSync=new Date().toISOString(); gsUpdateBtn(); if(st){st.style.color='#0f766e';st.textContent='✓ 동기화 완료 ('+gsFmtTime(state.gsync.lastSync)+')';} }
   catch(e){ if(st){st.style.color='#dc2626';st.textContent='연결 실패: '+(e.message||e);} }
-  finally{ _gsBusy=false; saveSettings(); } }
+  finally{ _gsBusy=false; _gsPendingPush=false; saveSettings(); } }
+async function gsTest(){ const u=(state.gsync&&state.gsync.url)||'', k=(state.gsync&&state.gsync.key)||''; const st=$('#gsStatus');
+  if(!u){ if(st){st.style.color='#dc2626';st.textContent='URL을 입력하세요.'} return; }
+  if(st){st.style.color='#64748b';st.textContent='연결 테스트 중…';}
+  let r,tx; try{ r=await fetch(u+(u.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(k)); }catch(e){ if(st){st.style.color='#dc2626';st.textContent='① 연결 실패: '+(e.message||e)+' — 인터넷/URL(.../exec) 확인';} return; }
+  try{ tx=await r.text(); }catch(_){ tx=''; }
+  let d=null; try{ d=JSON.parse(tx); }catch(_){ }
+  if(d===null){ if(st){st.style.color='#dc2626';st.textContent='② 응답이 JSON이 아님(로그인/권한 페이지). 배포 → 액세스 권한을 \'모든 사용자\'로 바꾼 뒤 재배포하세요.';} return; }
+  if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='③ 서버 오류: '+(d.error||'실패')+'. 비밀키가 .gs의 SECRET_KEY와 동일한지 확인하세요.';} return; }
+  const hasData=('data' in d); const data=d.data||d; const ck=o=>(o&&typeof o==='object'&&!Array.isArray(o))?Object.keys(o).length:0;
+  if(!hasData){ if(st){st.style.color='#b45309';st.textContent='④ 연결은 되지만 구버전 .gs 입니다. 새 .gs로 교체 후 \'새 버전\'으로 재배포해야 메모·전체설정이 동기화됩니다.';} return; }
+  const notes=(data.fcNotesHtml||data.fcNotesSales||data.fcNotesTech)?'있음':'없음'; const empty=(ck(data.mgrOverride)===0&&ck(data.clsOverride)===0&&ck(data.fcCustMemo)===0&&notes==='없음');
+  if(st){ st.style.color=empty?'#b45309':'#0f766e'; st.textContent=(empty?'✓ 연결 성공 — 다만 시트가 비어 있음(보내는 쪽에서 ⬆ 저장 필요)':'✓ 연결 성공! 시트 데이터 — 담당자 '+ck(data.mgrOverride)+'·분류 '+ck(data.clsOverride)+'·메모 '+(ck(data.fcCustMemo)+ck(data.fcProdMemo))+'·주요사항 '+notes); } }
+function gsStartPoll(){ if(_gsPollT)clearInterval(_gsPollT); _gsPollT=setInterval(()=>{ if(!state.gsync||!state.gsync.auto||!state.gsync.url)return; if(_gsBusy||_gsPendingPush)return; if(document.hidden)return; const a=document.activeElement; if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable))return; gsLoad(true); }, 60000); }
 
 function mergeBackups(){
   const inp=document.createElement('input'); inp.type='file'; inp.accept='.json'; inp.multiple=true;
