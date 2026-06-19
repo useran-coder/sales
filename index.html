@@ -837,7 +837,7 @@ function custManagers(){
     <button id="cmgrReset" style="font-family:inherit;font-size:13px;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;color:#fff;background:#dc2626;border:1px solid #dc2626">초기화</button>
   </div>
   <div class="sub2" id="cmgrStat" style="margin:4px 0 8px">검색결과 <b>${won(view.length)}</b>개사 · 매출합계 <b>${fmtK(fa)}</b> · 레이저 <b>${fmtK(fl)}</b>${fa>0?` (${(fl/fa*100).toFixed(1)}%)`:''}</div>
-  <div style="overflow:auto;max-height:calc(100vh - 380px);border:1px solid var(--line);border-radius:10px"><table class="cmgr-tbl${(showM||showL)?' tight':''}" style="border-collapse:collapse;font-size:14px;table-layout:fixed;width:100%"><colgroup>${cg}</colgroup><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  <div style="overflow-x:auto;border:1px solid var(--line);border-radius:10px"><table class="cmgr-tbl${(showM||showL)?' tight':''}" style="border-collapse:collapse;font-size:14px;table-layout:fixed;width:100%"><colgroup>${cg}</colgroup><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
   $('#result').innerHTML=html;
   const applySearch=()=>{ const q=($('#cmgrSearch').value||'').toLowerCase().trim(); let n=0; $('#result').querySelectorAll('.cmgr-tbl tbody tr').forEach(tr=>{ const cu=(tr.dataset.cust||'').toLowerCase(); const show=!q||cu.includes(q); tr.style.display=show?'':'none'; if(show)n++; }); const st=$('#cmgrStat'); if(st)st.innerHTML=q?`검색 "<b>${esc(q)}</b>" · <b>${won(n)}</b>개사 표시`:`검색결과 <b>${won(n)}</b>개사 · 매출합계 <b>${fmtK(fa)}</b> · 레이저 <b>${fmtK(fl)}</b>${fa>0?` (${(fl/fa*100).toFixed(1)}%)`:''}`; };
   $('#result').querySelectorAll('.cmgr-card').forEach(b=>b.addEventListener('click',()=>{ const role=b.dataset.role,n=b.dataset.n; if(role==='s')state.cmgr.fs=(state.cmgr.fs===n?'전체':n); else state.cmgr.ft=(state.cmgr.ft===n?'전체':n); custManagers(); }));
@@ -2096,12 +2096,12 @@ function gsCollectFull(){ return {headcount:state.headcount,headMonthly:state.he
 async function gsLoad(){ const u=(state.gsync&&state.gsync.url)||'', k=(state.gsync&&state.gsync.key)||''; const st=$('#gsStatus');
   if(!u){ if(st){st.style.color='#dc2626';st.textContent='URL을 입력하세요.'} return; }
   if(st){st.style.color='#64748b';st.textContent='불러오는 중…';}
-  try{ const r=await fetch(u+(u.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(k)); const d=await r.json(); if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패');} return; } gsMerge(d.data); if(st){st.style.color='#0f766e';st.textContent='✓ 불러오기 완료 ('+new Date().toLocaleTimeString()+')';} }
+  try{ const r=await fetch(u+(u.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(k)); const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요.';} return; } if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패')+' (비밀키 확인)';} return; } gsMerge(d.data||d); if(st){st.style.color='#0f766e';st.textContent='✓ 불러오기 완료 ('+new Date().toLocaleTimeString()+')';} }
   catch(e){ if(st){st.style.color='#dc2626';st.textContent='연결 실패: '+(e.message||e);} } }
 async function gsSave(){ const u=(state.gsync&&state.gsync.url)||'', k=(state.gsync&&state.gsync.key)||''; const st=$('#gsStatus');
   if(!u){ if(st){st.style.color='#dc2626';st.textContent='URL을 입력하세요.'} return; }
   if(st){st.style.color='#64748b';st.textContent='저장 중…';}
-  try{ const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save',key:k,data:gsCollectFull()})}); const d=await r.json(); if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패');} return; } gsMerge(d.data); if(st){st.style.color='#0f766e';st.textContent='✓ 저장·병합 완료 ('+new Date().toLocaleTimeString()+')';} }
+  try{ const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save',key:k,data:gsCollectFull()})}); const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요.';} return; } if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패')+' (비밀키 확인)';} return; } gsMerge(d.data||d); if(st){st.style.color='#0f766e';st.textContent='✓ 저장·병합 완료 ('+new Date().toLocaleTimeString()+')';} }
   catch(e){ if(st){st.style.color='#dc2626';st.textContent='연결 실패: '+(e.message||e);} } }
 function mergeBackups(){
   const inp=document.createElement('input'); inp.type='file'; inp.accept='.json'; inp.multiple=true;
