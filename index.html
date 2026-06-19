@@ -2003,7 +2003,7 @@ function forecast(){
       const TABF={main:'notesHtml',sales:'notesSales',tech:'notesTech'};
       let curTab=state.fc.notesTab||'main';
       const loadTab=t=>{ ed.innerHTML=state.fc[TABF[t]]||''; };
-      const commit=()=>{ state.fc[TABF[curTab]]=ed.innerHTML; };
+      const commit=()=>{ if(typeof _gsBusy!=='undefined'&&_gsBusy)return; state.fc[TABF[curTab]]=ed.innerHTML; };
       const setBtn=(b,on)=>{ if(!b)return; b.style.background=on?'#fde047':'#ffffff'; b.style.color=on?'#713f12':'#b45309'; b.style.borderColor=on?'#eab308':'#fde68a'; };
       const markTabs=()=>{ setBtn(tog,curTab==='main'); document.querySelectorAll('#result .fcntab').forEach(b=>setBtn(b,b.dataset.t===curTab)); };
       loadTab(curTab); markTabs();
@@ -2098,7 +2098,7 @@ function gsMerge(d){ if(!d)return;
   if(d.inv)state.inv={...state.inv,...d.inv};
   if(d.pd)state.pd={...state.pd,...d.pd};
   if(typeof buildHeadMonthly==='function')buildHeadMonthly();
-  saveSettings(); state._mgrCountsCache=null; if(typeof buildSummary==='function')buildSummary(); if(state.act&&CUR.length)runAct(); }
+  saveSettings(); state._mgrCountsCache=null; if(typeof buildSummary==='function')buildSummary(); if(state.act&&CUR.length)runAct(); const _ned=document.getElementById('fcNotesEd'); if(_ned){ const _nf={main:'notesHtml',sales:'notesSales',tech:'notesTech'}[state.fc.notesTab||'main']; _ned.innerHTML=state.fc[_nf]||''; } }
 function gsCollectFull(){ return {headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,mgrOverride:state.mgrOverride,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,workdays:state.workdays,bep:state.bep,fcNewCusts:state.fc.newCusts,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcExclCust:state.fc.exclCust,fcExclProd:state.fc.exclProd,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,inv:state.inv,pd:state.pd}; }
 let _gsBusy=false,_gsAutoT=null;
 function gsFmtTime(iso){ if(!iso)return ''; const d=new Date(iso); if(isNaN(d))return ''; const p=n=>String(n).padStart(2,'0'); return `${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
@@ -2108,7 +2108,7 @@ async function gsLoad(silent){ const u=(state.gsync&&state.gsync.url)||'', k=(st
   if(!u){ if(!silent&&st){st.style.color='#dc2626';st.textContent='URL을 입력하세요.'} return; }
   if(!silent&&st){st.style.color='#64748b';st.textContent='불러오는 중…';}
   _gsBusy=true;
-  try{ const r=await fetch(u+(u.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(k)); const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요.';} return; } if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패')+' (비밀키 확인)';} return; } gsMerge(d.data||d); state.gsync.lastSync=new Date().toISOString(); gsUpdateBtn(); if(st){st.style.color='#0f766e';st.textContent='✓ 불러오기 완료 ('+gsFmtTime(state.gsync.lastSync)+')';} }
+  try{ const r=await fetch(u+(u.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(k)); const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요.';} return; } if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패')+' (비밀키 확인)';} return; } gsMerge(d.data||d); state.gsync.lastSync=new Date().toISOString(); gsUpdateBtn(); if(st){ const ck=o=>o?Object.keys(o).length:0; const nf=(state.fc.notesHtml||state.fc.notesSales||state.fc.notesTech)?'✓':'–'; st.style.color='#0f766e'; st.textContent='✓ 불러오기 완료 — 담당자 '+ck(state.mgrOverride)+'·분류 '+ck(state.clsOverride)+'·등급 '+ck(state.gradeOverride)+'·메모 '+(ck(state.fc.custMemo)+ck(state.fc.prodMemo))+'·주요사항 '+nf+' ('+gsFmtTime(state.gsync.lastSync)+')'; } }
   catch(e){ if(st){st.style.color='#dc2626';st.textContent='연결 실패: '+(e.message||e);} }
   finally{ _gsBusy=false; saveSettings(); } }
 async function gsSave(silent){ const u=(state.gsync&&state.gsync.url)||'', k=(state.gsync&&state.gsync.key)||''; const st=$('#gsStatus');
