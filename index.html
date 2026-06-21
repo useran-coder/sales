@@ -693,7 +693,7 @@ document.querySelectorAll('.tile,.tm-item').forEach(b=>b.addEventListener('click
 document.querySelectorAll('.tm-top').forEach(t=>t.addEventListener('click',e=>{ e.stopPropagation(); const wasOpen=t.classList.contains('open'); document.querySelectorAll('.tm-top.open').forEach(x=>{x.classList.remove('open');x.nextElementSibling.classList.remove('open');}); if(!wasOpen){t.classList.add('open');t.nextElementSibling.classList.add('open');} }));
 document.addEventListener('click',()=>{ document.querySelectorAll('.tm-top.open').forEach(x=>{x.classList.remove('open');x.nextElementSibling.classList.remove('open');}); });
 function closeFilePanel(){ const p=$('#dataPanel'); if(p&&p.classList.contains('open')){ p.classList.remove('open'); const ft=$('#fileToggle'); if(ft){ ft.classList.remove('open'); ft.textContent='📁 파일·관리 ▾'; } } const r=$('#result'),s=$('#summary'); if(r)r.style.display=''; if(s)s.style.display=''; }
-{ const hb=$('#homeBtn'); hb&&hb.addEventListener('click',()=>{ setCmgrMode(false); closeFilePanel(); document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.tm-top.open').forEach(t=>{t.classList.remove('open');t.nextElementSibling.classList.remove('open');}); state.sortKey=null; if(CUR.length){ state.act='home'; homeDashboard(); } else { state.act=null; const r=$('#result'); if(r)r.innerHTML=''; } window.scrollTo({top:0,behavior:'smooth'}); }); }
+{ const hb=$('#homeBtn'); hb&&hb.addEventListener('click',()=>{ setCmgrMode(false); closeFilePanel(); document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.tm-top.open').forEach(t=>{t.classList.remove('open');t.nextElementSibling.classList.remove('open');}); state.sortKey=null; if(CUR.length){ state.act='home'; try{foldFilters();}catch(_){} state._lastAct='home'; homeDashboard(); } else { state.act=null; const r=$('#result'); if(r)r.innerHTML=''; } window.scrollTo({top:0,behavior:'smooth'}); }); }
 { const cb=$('#cmgrBtn'); cb&&cb.addEventListener('click',()=>{ if(!CUR.length){ alert('먼저 매출 파일을 불러오세요.'); return; } closeFilePanel(); state._prevAct=(state.act&&state.act!=='cmgr')?state.act:'rank-cust'; document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); state.act='cmgr'; state.sortKey=null; state._drill=false; runAct(); }); }
 $('#fileToggle').addEventListener('click',()=>{ setCmgrMode(false); const p=$('#dataPanel'); const open=p.classList.toggle('open'); $('#fileToggle').classList.toggle('open',open); $('#fileToggle').textContent=open?'📁 파일·관리 ▴':'📁 파일·관리 ▾'; const r=$('#result'),s=$('#summary'); if(r)r.style.display=open?'none':''; if(s)s.style.display=open?'none':''; if(open){ document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); window.scrollTo({top:0,behavior:'smooth'}); } });
 { const dc=$('#dataPanelCollapse'); dc&&dc.addEventListener('click',()=>{ $('#dataPanel').classList.remove('open'); const ft=$('#fileToggle'); ft.classList.remove('open'); ft.textContent='📁 파일 추가·관리 ▾'; }); }
@@ -1628,7 +1628,7 @@ function mixCatKey(o){ return mixCatOf({code:o.code,spec:o.spec,name:o.name}); }
 function mixOverrideCust(key){ const ov=(state.gbunOverride||{})[key]; return ov&&ov.cust?ov.cust:''; }
 function mixBadge(cat,clickKey){ const c=MIX_TXT[cat]||'#475569',bg=MIX_BG[cat]||'#f1f5f9'; const ic=MIX_ICON[cat]?MIX_ICON[cat]+' ':''; const cl=clickKey?` class="mixedit" data-k="${esc(clickKey)}" title="클릭하면 구분(전용/공용/레이저/기타) 변경" style="cursor:pointer;`:' style="'; return `<span${cl}display:inline-block;padding:1px 8px;border-radius:8px;font-size:10.5px;font-weight:700;background:${bg};color:${c}">${ic}${cat}${clickKey?' ✎':''}</span>`; }
 function mixBarHtml(mq){ const seg=[['전용품',MIX_COL.전용품],['공용품',MIX_COL.공용품],['레이저',MIX_COL.레이저],['기타',MIX_COL.기타]]; const tot=seg.reduce((a,[k])=>a+(mq[k]||0),0)||1; const bar=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span title="${k} ${p.toFixed(1)}%" style="display:inline-block;height:12px;width:${p.toFixed(1)}%;background:${c}"></span>`:'';}).join(''); const leg=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span style="font-size:9px;color:${c};white-space:nowrap;font-weight:700">${MIX_ICON[k]} ${k} ${p.toFixed(0)}%</span>`:'';}).join(' '); return `<div style="min-width:170px"><div style="display:flex;width:100%;border-radius:4px;overflow:hidden;background:#f1f5f9;height:12px;border:1px solid #e2e8f0">${bar}</div><div style="display:flex;flex-wrap:wrap;gap:1px 8px;margin-top:2px">${leg}</div></div>`; }
-function mixChipsHtml(cur,id){ const opt=[['all','전체'],['전용품','전용품'],['공용품','공용품'],['레이저','레이저'],['기타','기타']]; return `<div class="seg" id="${id}">${opt.map(([v,l])=>{const on=cur===v; const c=v==='all'?'#1e3a5f':MIX_COL[v]; return `<button data-v="${v}" class="${on?'on':''}" style="${on?('background:'+c+';color:#fff;border-color:'+c):('color:'+c)}">${l}</button>`;}).join('')}</div>`; }
+function mixChipsHtml(cur,id){ const opt=[['all','전체'],['전용품','전용품'],['공용품','공용품'],['레이저','레이저'],['기타','기타']]; return `<div class="seg" id="${id}">${opt.map(([v,l])=>{const on=cur===v; const c=v==='all'?'#1e3a5f':(MIX_TXT[v]||MIX_COL[v]); const bg=v==='all'?'#eef2f7':(MIX_BG&&MIX_BG[v]?MIX_BG[v]:'#fff'); return `<button data-v="${v}" class="${on?'on':''}" style="${on?('background:'+c+';color:#fff;border-color:'+c):('color:'+c+';background:'+bg+';border-color:'+c)}">${l}</button>`;}).join('')}</div>`; }
 function mixSummary(arr){ const cnt={전용품:0,공용품:0,레이저:0,기타:0},qty={전용품:0,공용품:0,레이저:0,기타:0}; let totQ=0; arr.forEach(o=>{ const c=o.mixCat||mixCatKey(o); cnt[c]=(cnt[c]||0)+1; qty[c]=(qty[c]||0)+(o.qty||0); totQ+=(o.qty||0); }); const seg=['전용품','공용품','레이저','기타']; return `<div style="display:flex;flex-wrap:wrap;gap:7px 18px;align-items:center;padding:9px 14px;background:#faf9ff;border:1px solid #ece9fb;border-radius:10px;margin:6px 0 2px;font-size:12px"><span><b>전체</b> ${won(arr.length)}종</span>${seg.map(k=>`<span style="color:${MIX_TXT[k]}"><b>${MIX_ICON[k]} ${k}</b> ${won(cnt[k])}종 · 수량 <b>${totQ?(qty[k]/totQ*100).toFixed(1):0}%</b></span>`).join('')}<span class="sub2">레이저=품명에 레이저·(L) · 기타=운반비/실커버/스텐실/도어가공/PD커버/금형/후레임바/고철/EGI 등 · 전용=1개 거래처 · 공용=2개사↑</span></div>`; }
 function openMixOverride(key,name,spec){
   const cur=mixCatOf({code:key.split('│')[0],spec:key.split('│')[1]||'',name:name}); const ov=(state.gbunOverride||{})[key]||{};
@@ -1724,7 +1724,7 @@ function priceTable(){
   if(mode==='set'){ setPricingView(prSeg); return; }
   const rows=periodRows();
   if(mode==='cust'){
-    const ctrl=`<div class="ctrlbar"><b style="font-size:12px">단가표 기준</b> ${prSeg} <span class="sub2">업체 선택 → 출고 제품·규격별 <b>마지막 출고단가</b>(타사 최고/최저) · 행 클릭 시 변경이력. <b>구성 비중</b>=거래처별 출고수량 기준 <span style="color:#7c3aed;font-weight:700">전용품</span>·<span style="color:#4f46e5;font-weight:700">공용품</span>·<span style="color:#0d9488;font-weight:700">레이저</span>·<span style="color:#94a3b8;font-weight:700">기타</span> 비중(전체 거래기간 기준 자동판정)</span></div>`;
+    const ctrl=`<div class="ctrlbar"><b style="font-size:12px">단가표 기준</b> ${prSeg} <span class="sub2">업체 선택 → 출고 제품·규격별 <b>마지막 출고단가</b>(타사 최고/최저) · 행 클릭 시 변경이력. <b>구성 비중</b>=거래처별 출고수량 기준 <span style="color:#7c3aed;font-weight:700">전용품</span>·<span style="color:#15803d;font-weight:700">공용품</span>·<span style="color:#0d9488;font-weight:700">레이저</span>·<span style="color:#94a3b8;font-weight:700">기타</span> 비중(전체 거래기간 기준 자동판정)</span></div>`;
     const bind=()=>{ $('#result').querySelectorAll('#prSeg button').forEach(b=>b.addEventListener('click',()=>{state.price.mode=b.dataset.v;priceTable();})); };
     const {arr,tot}=aggBy(rows,'cust');
     const pkByCust={}; rows.forEach(r=>{ const k=(r.code||'(미상)')+'│'+(r.spec||''); (pkByCust[r.cust]||(pkByCust[r.cust]=new Set())).add(k); });
@@ -2244,7 +2244,7 @@ function competeView(){
   let arr=rows.map((d,i)=>({...d,_i:i, _sales:_salesMap[d.cust]||0, multi:(d.base||[]).length>=2, ours:((d.base||[]).includes(OURCO)||d.pivot===OURCO||d.hinge2===OURCO)}));
   if(state.compSel){ arr=arr.filter(d=>(d.base||[]).includes(state.compSel)||d.pivot===state.compSel||d.hinge2===state.compSel); }
   const chip=(s)=>{ const on=state.compSel===s; const our=s===OURCO; return `<button class="cmpchip" data-s="${esc(s)}" style="cursor:pointer;border:1px solid ${on?(our?'#16a34a':'#1e3a5f'):'#cbd5e1'};background:${on?(our?'#16a34a':'#1e3a5f'):'#fff'};color:${on?'#fff':(our?'#16a34a':'#475569')};border-radius:13px;padding:3px 10px;font-size:11px;font-weight:700;font-family:inherit;margin:2px">${esc(s)}</button>`; };
-  const chips=`<div class="ctrlbar" style="flex-wrap:wrap;gap:3px"><b style="font-size:12px">동종업체</b><button class="cmpchip" data-s="" style="cursor:pointer;border:1px solid ${!state.compSel?'#1e3a5f':'#cbd5e1'};background:${!state.compSel?'#1e3a5f':'#fff'};color:${!state.compSel?'#fff':'#475569'};border-radius:13px;padding:3px 10px;font-size:11px;font-weight:700;font-family:inherit;margin:2px">전체</button>${sups.map(chip).join('')}</div>`;
+  const chips=`<div class="ctrlbar" style="flex-wrap:wrap;gap:3px"><b style="font-size:12px">동종업체</b><button class="cmpchip" data-s="" style="cursor:pointer;border:1px solid ${!state.compSel?'#1e3a5f':'#dc2626'};background:${!state.compSel?'#1e3a5f':'#fef2f2'};color:${!state.compSel?'#fff':'#dc2626'};border-radius:13px;padding:3px 10px;font-size:11px;font-weight:700;font-family:inherit;margin:2px">전체</button>${sups.map(chip).join('')}</div>`;
   const shareRow=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:8px 0">${_compShareHtml('base','부자재')}${_compShareHtml('pivot','피봇힌지')}${_compShareHtml('hinge2','2단경첩')}</div>`;
   const tools=`<div class="ctrlbar" style="gap:8px"><button id="cmpAdd" class="btn" style="background:#dcfce7;color:#15803d;border-color:#86efac">＋ 거래처 추가</button><button id="cmpRename" class="btn ghost">✎ 동종업체명 일괄수정</button><button id="cmpXlsx" class="btn ghost" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe">📥 엑셀</button></div>`;
   const cols=[
@@ -2291,47 +2291,82 @@ function compCustDrill(cust){
 
 function productDelta(){
   state.sortKey=null; state._search='';
-  const src=(state.pdelta&&state.pdelta._cust)?MF().filter(r=>r.cust===state.pdelta._cust):MF();
-  const ds=src.map(r=>r.d).sort((a,b)=>a-b); const minD=ds[0], maxD=ds[ds.length-1];
-  state.pdelta=state.pdelta||{date:'',by:'cust',metric:'qty',_cust:null};
+  state.pdelta=state.pdelta||{};
   const pd=state.pdelta;
-  if(pd._cust){ /* drill scope */ }
-  if(!pd.date && minD && maxD){ const mid=new Date((minD.getTime()+maxD.getTime())/2); pd.date=mid.getFullYear()+'-'+String(mid.getMonth()+1).padStart(2,'0')+'-'+String(mid.getDate()).padStart(2,'0'); }
-  const splitT=pd.date?new Date(pd.date+'T00:00:00').getTime():0;
+  if(![3,6,12].includes(pd.win)) pd.win=3;
+  if(!['name','codespec','cust'].includes(pd.by)) pd.by='name';
+  if(!['amt','qty'].includes(pd.metric)) pd.metric='amt';
+  if(pd.scopeCust===undefined) pd.scopeCust=null;
+  if(pd.scopeProd===undefined) pd.scopeProd=null;
+  // 기간: 현재일 기준 win개월 전을 기준일로, 동일 길이 이전/이후 비교
+  const pad=n=>String(n).padStart(2,'0');
+  const today=new Date();
+  const splitDate=new Date(today.getFullYear(), today.getMonth()-pd.win, today.getDate());
+  const beforeStart=new Date(today.getFullYear(), today.getMonth()-2*pd.win, today.getDate());
+  const splitT=splitDate.getTime(), beforeT=beforeStart.getTime(), afterEndT=today.getTime();
+  const splitLabel=`${splitDate.getFullYear()}.${pad(splitDate.getMonth()+1)}.${pad(splitDate.getDate())}`;
+  const beforeLabel=`${beforeStart.getFullYear()}.${pad(beforeStart.getMonth()+1)}.${pad(beforeStart.getDate())}`;
+  const afterLabel=`${today.getFullYear()}.${pad(today.getMonth()+1)}.${pad(today.getDate())}`;
+  const winLabel=pd.win===12?'1년':pd.win+'개월';
+  // 유효 차원 결정 (드릴 상태 반영)
+  let eff, scopeLabel='';
+  if(pd.scopeCust){ eff='codespec'; scopeLabel='거래처: '+pd.scopeCust; }
+  else if(pd.scopeProd){ eff='cust'; scopeLabel=(pd.scopeProd.dim==='name'?'품목군: ':'제품: ')+pd.scopeProd.label; }
+  else eff=pd.by;
+  // 데이터
+  let src=MF().filter(r=>{ const t=+r.d; return t>=beforeT && t<=afterEndT; });
+  if(pd.scopeCust) src=src.filter(r=>r.cust===pd.scopeCust);
+  if(pd.scopeProd){ if(pd.scopeProd.dim==='name') src=src.filter(r=>(r.name||'(미상)')===pd.scopeProd.key); else src=src.filter(r=>((r.code||'(미상)')+'│'+(r.spec||''))===pd.scopeProd.key); }
   const val=r=> pd.metric==='qty' ? (r.qty>0?r.qty:0) : amtOf(r);
-  const keyOf= pd.by==='cust'?(r=>r.cust): pd.by==='name'?(r=>r.name||'(미상)'): (r=>(r.code||'(미상)')+'│'+(r.spec||''));
-  const labelOf= pd.by==='cust'?(r=>r.cust): pd.by==='name'?(r=>r.name||'(미상)'): (r=>(r.code||'(미상)')+' '+(r.name||'')+(r.spec?' / '+r.spec:''));
+  const keyOf= eff==='cust'?(r=>r.cust): eff==='name'?(r=>r.name||'(미상)'): (r=>(r.code||'(미상)')+'│'+(r.spec||''));
+  const labelOf= eff==='cust'?(r=>r.cust): eff==='name'?(r=>r.name||'(미상)'): (r=>(r.code||'(미상)')+' '+(r.name||'')+(r.spec?' / '+r.spec:''));
   const m=new Map();
   src.forEach(r=>{ const k=keyOf(r); let o=m.get(k); if(!o){o={key:k,label:labelOf(r),code:r.code||'',name:r.name||'',spec:r.spec||'',before:0,after:0,_r:r};m.set(k,o);} const v=val(r); if(+r.d<splitT)o.before+=v; else o.after+=v; });
   let arr=[...m.values()].map(o=>{ const delta=o.after-o.before; const pct=o.before>0?(delta/o.before*100):(o.after>0?100:0); return {...o,delta,pct,mixcat:mixCatKey(o)}; });
   arr=arr.filter(o=>o.before>0||o.after>0);
   const maxV=Math.max(1,...arr.map(o=>Math.max(o.before,o.after)));
   arr.sort((a,b)=>b.delta-a.delta);
-  const unit=pd.metric==='qty'?'개':'원'; const fmt=v=>pd.metric==='qty'?won(Math.round(v)):won(Math.round(v));
-  const barCell=o=>{ const w=112; const lw=Math.round(o.before/maxV*w), rw=Math.round(o.after/maxV*w);
+  const unit=pd.metric==='qty'?'개':'원'; const fmt=v=>won(Math.round(v));
+  const barCell=o=>{ const w=130; const lw=Math.round(o.before/maxV*w), rw=Math.round(o.after/maxV*w);
     return `<div style="display:flex;align-items:center;justify-content:center;width:${w*2+4}px;margin:0 auto"><div style="width:${w}px;display:flex;justify-content:flex-end"><div title="이전 ${fmt(o.before)}" style="height:14px;width:${lw}px;background:#ef4444;border-radius:3px 0 0 3px"></div></div><div style="width:2px;height:18px;background:#94a3b8"></div><div style="width:${w}px"><div title="이후 ${fmt(o.after)}" style="height:14px;width:${rw}px;background:#2563eb;border-radius:0 3px 3px 0"></div></div></div>`; };
+  const labHead= eff==='cust'?'거래처': eff==='name'?'품목군':'제품 · 규격';
+  const labelCols= eff==='codespec'
+    ? [ {k:'code',t:'품번',cls:'l',cell:o=>esc(o.code||''),sortVal:o=>o.code||''},
+        {k:'pname',t:'품명',cls:'l',cell:o=>esc(o.name||''),sortVal:o=>o.name||''},
+        {k:'spec',t:'규격',cls:'l',cell:o=>esc(o.spec||'(규격없음)'),sortVal:o=>o.spec||''} ]
+    : [ {k:'label',t:labHead,cls:'l',cell:o=>esc(o.label),sortVal:o=>o.label} ];
   const cols=[
     {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
-    {k:'gbun',t:'구분',cell:o=>mixBadge(o.mixcat,pd.by==='codespec'?o.key:''),sortVal:o=>['전용품','공용품','레이저','기타'].indexOf(o.mixcat)},
-    {k:'label',t:pd.by==='cust'?'거래처':pd.by==='name'?'품목군':'제품 · 규격',cls:'l',cell:o=>pd.by==='cust'?esc(o.label)+' '+catChip(o.label):esc(o.label),sortVal:o=>o.label},
-    {k:'before',t:`이전출고(${unit})`,cell:o=>`<span style="color:#dc2626;font-weight:600">${fmt(o.before)}</span>`,sortVal:o=>o.before},
-    {k:'bar',t:'이전 ◄ 　 ► 이후',cls:'pdbar',nosort:true,cell:barCell},
-    {k:'after',t:`이후출고(${unit})`,cell:o=>`<span style="color:#2563eb;font-weight:600">${fmt(o.after)}</span>`,sortVal:o=>o.after},
+    {k:'gbun',t:'구분',cell:o=> eff==='cust'? catChip(o.label) : mixBadge(o.mixcat, eff==='codespec'?o.key:''), sortVal:o=> eff==='cust'? 0 : ['전용품','공용품','레이저','기타'].indexOf(o.mixcat)},
+    ...labelCols,
+    {k:'before',t:`이전(${unit})`,cell:o=>`<span style="color:#dc2626;font-weight:600">${fmt(o.before)}</span>`,sortVal:o=>o.before},
+    {k:'bar',t:`${beforeLabel}까지 이전 ◄ ${splitLabel} ► 이후 ${afterLabel}까지`,cls:'pdbar',nosort:true,cell:barCell},
+    {k:'after',t:`이후(${unit})`,cell:o=>`<span style="color:#2563eb;font-weight:600">${fmt(o.after)}</span>`,sortVal:o=>o.after},
     {k:'delta',t:'증감',cell:o=>{const c=o.delta>0?'#16a34a':o.delta<0?'#dc2626':'#64748b';return `<b style="color:${c}">${o.delta>0?'+':''}${fmt(o.delta)}</b>`;},sortVal:o=>o.delta},
     {k:'pct',t:'증감%',cell:o=>{const c=o.pct>0?'#16a34a':o.pct<0?'#dc2626':'#64748b';return `<span style="color:${c};font-weight:600">${o.pct>0?'+':''}${o.pct.toFixed(1)}%</span>`;},sortVal:o=>o.pct} ];
-  const bySeg=`<div class="seg" id="pdBy">${[['codespec','제품/규격'],['name','품목군'],['cust','거래처']].map(([v,l])=>`<button data-v="${v}" class="${pd.by===v?'on':''}" style="${pd.by===v?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488'}">${l}</button>`).join('')}</div>`;
+  const winSeg=`<div class="seg" id="pdWin">${[[3,'최근 3개월'],[6,'최근 6개월'],[12,'최근 1년']].map(([v,l])=>`<button data-v="${v}" class="${pd.win===v?'on':''}" style="${pd.win===v?'background:#b45309;color:#fff;border-color:#b45309':'color:#b45309'}">${l}</button>`).join('')}</div>`;
+  const bySeg=`<div class="seg" id="pdBy">${[['name','품목군'],['codespec','제품/규격'],['cust','거래처']].map(([v,l])=>`<button data-v="${v}" class="${pd.by===v?'on':''}" style="${pd.by===v?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488'}">${l}</button>`).join('')}</div>`;
   const mSeg=`<div class="seg" id="pdM">${[['amt','매출액'],['qty','수량']].map(([v,l])=>`<button data-v="${v}" class="${pd.metric===v?'on':''}" style="${pd.metric===v?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':'color:#1e3a5f'}">${l}</button>`).join('')}</div>`;
-  const controls=`<div class="ctrlbar" style="flex-wrap:wrap;gap:8px"><b style="font-size:12px">기준일</b><input type="date" id="pdDate" value="${pd.date}" min="${minD?minD.toISOString().slice(0,10):''}" max="${maxD?maxD.toISOString().slice(0,10):''}" style="font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px"> <b style="font-size:12px;margin-left:4px">기준</b> ${bySeg} <b style="font-size:12px;margin-left:4px">보기</b> ${mSeg}<span class="sub2">기준일 <b>이전(빨강)</b> vs <b>이후(파랑)</b> 출고를 0 중심 막대로 비교 · 증감순 정렬</span></div>`;
+  const inScope=!!(pd.scopeCust||pd.scopeProd);
+  const controls=`<div class="ctrlbar" style="flex-wrap:wrap;gap:8px"><b style="font-size:12px">기간</b> ${winSeg}${inScope?'':` <b style="font-size:12px;margin-left:4px">기준</b> ${bySeg}`} <b style="font-size:12px;margin-left:4px">보기</b> ${mSeg}<span class="sub2">기준일 <b style="color:#b45309">${splitLabel}</b> · 이전 ${winLabel}(<span style="color:#dc2626">빨강</span>) vs 이후 ${winLabel}(<span style="color:#2563eb">파랑</span>)</span></div>`;
   const totB=arr.reduce((a,o)=>a+o.before,0), totA=arr.reduce((a,o)=>a+o.after,0);
-  render('📊 제품 증감분석'+(pd._cust?` · ${esc(pd._cust)}`:''), `${periodLabel()} · 기준일 ${pd.date} · ${arr.length}건 · 이전합 ${fmt(totB)}${unit} → 이후합 ${fmt(totA)}${unit} (증감 ${totA-totB>=0?'+':''}${fmt(totA-totB)})`, arr, cols, 'delta',
-    `기준일을 기준으로 <b>이전 출고</b>와 <b>이후 출고</b>를 비교합니다. 가운데 세로선이 0(기준)이며, <span style="color:#dc2626">왼쪽=이전</span>·<span style="color:#2563eb">오른쪽=이후</span>. 담당자/업체분류/신용 필터가 적용됩니다.`,
+  const hint = inScope
+    ? `<b>${esc(scopeLabel)}</b> 의 ${eff==='cust'?'거래처별':'제품/규격별'} 증감입니다. 행 클릭으로 목록 복귀하려면 좌측 상단 ← 버튼을 누르세요.`
+    : (eff==='cust'
+        ? `거래처를 클릭하면 그 거래처에서 어떤 <b>제품/규격</b>이 늘고 줄었는지 볼 수 있습니다.`
+        : `품목군·제품/규격을 클릭하면 어떤 <b>거래처</b>에서 늘고 줄었는지 볼 수 있습니다.`);
+  render('📊 제품 증감분석'+(scopeLabel?` · ${esc(scopeLabel)}`:''),
+    `최근 ${winLabel} 비교 · 기준일 ${splitLabel} · ${arr.length}건 · 이전합 ${fmt(totB)}${unit} → 이후합 ${fmt(totA)}${unit} (증감 ${totA-totB>=0?'+':''}${fmt(totA-totB)})`,
+    arr, cols, 'delta',
+    `${hint} 막대 가운데 세로선이 기준일이며 <span style="color:#dc2626">왼쪽=이전</span>·<span style="color:#2563eb">오른쪽=이후</span>. 담당자/업체분류/신용 필터가 적용됩니다.`,
     (()=>{ const _o={controlsHtml:controls,onMount:()=>{
-      const dt=$('#pdDate'); dt&&dt.addEventListener('change',()=>{ pd.date=dt.value; productDelta(); });
-      $('#result').querySelectorAll('#pdBy button').forEach(b=>b.addEventListener('click',()=>{ pd.by=b.dataset.v; productDelta(); }));
+      $('#result').querySelectorAll('#pdWin button').forEach(b=>b.addEventListener('click',()=>{ pd.win=+b.dataset.v; productDelta(); }));
+      $('#result').querySelectorAll('#pdBy button').forEach(b=>b.addEventListener('click',()=>{ pd.by=b.dataset.v; pd.scopeCust=null; pd.scopeProd=null; productDelta(); }));
       $('#result').querySelectorAll('#pdM button').forEach(b=>b.addEventListener('click',()=>{ pd.metric=b.dataset.v; productDelta(); }));
     }};
-      if(pd.by==='cust' && !pd._cust){ _o.drill={custom:row=>{ pd._cust=row.key; pd._drillBy=pd.by; pd.by='codespec'; productDelta(); }}; }
-      if(pd._cust){ _o.back={label:'← 거래처 목록', fn:()=>{ pd._cust=null; pd.by=pd._drillBy||'cust'; productDelta(); }}; }
+      if(!inScope){ if(eff==='cust'){ _o.drill={custom:row=>{ pd.scopeCust=row.key; productDelta(); }}; } else { _o.drill={custom:row=>{ pd.scopeProd={dim:eff, key:row.key, label:row.label}; productDelta(); }}; } }
+      if(pd.scopeCust){ _o.back={label:'← 목록', fn:()=>{ pd.scopeCust=null; productDelta(); }}; }
+      if(pd.scopeProd){ _o.back={label:'← 목록', fn:()=>{ pd.scopeProd=null; productDelta(); }}; }
       return _o; })());
 }
 function pareto(){
