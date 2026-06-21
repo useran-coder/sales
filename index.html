@@ -724,7 +724,7 @@ function aggBy(src, by){
 }
 function drillCols(byLabel,arr,by){ const max=Math.max(...arr.map(o=>o.amt),1);
   const labelCols = by==='codespec'
-    ? [ {k:'gbun',t:'구분',cell:o=>mixBadge(mixCatKey(o),o.key),sortVal:o=>['전용품','공용품','레이저','기타'].indexOf(mixCatKey(o))},
+    ? [ {k:'gbun',t:'구분',cell:o=>mixBadge(mixCatKey(o),o.key),sortVal:o=>['전용품','공용품','레이저','내부보강','기타'].indexOf(mixCatKey(o))},
         {k:'code',t:'품번',cls:'l',cell:o=>esc(o.code)},
         {k:'name',t:'품명',cls:'l',cell:o=>esc(o.name)},
         {k:'spec',t:'규격',cls:'l',cell:o=>esc(o.spec||'(규격없음)')} ]
@@ -848,7 +848,7 @@ function laserSpec(){
   const rows=periodRows().filter(r=>isL(r.name));
   const tot=rows.reduce((a,r)=>a+amtOf(r),0);
   const m=new Map();
-  rows.forEach(r=>{ const key=r.name+'│'+(r.spec||''); let o=m.get(key); if(!o){o={key,name:r.name,spec:r.spec||'',amt:0,qty:0,custs:new Set()};m.set(key,o);} o.amt+=amtOf(r); o.qty+=r.qty; o.custs.add(r.cust); o.mixQ=o.mixQ||{전용품:0,공용품:0,레이저:0,기타:0}; o.mixQ[mixCatOf(r)]+=amtOf(r); });
+  rows.forEach(r=>{ const key=r.name+'│'+(r.spec||''); let o=m.get(key); if(!o){o={key,name:r.name,spec:r.spec||'',amt:0,qty:0,custs:new Set()};m.set(key,o);} o.amt+=amtOf(r); o.qty+=r.qty; o.custs.add(r.cust); o.mixQ=o.mixQ||{전용품:0,공용품:0,레이저:0,내부보강:0,기타:0}; o.mixQ[mixCatOf(r)]+=amtOf(r); });
   const arr=[...m.values()].map(o=>({key:o.key,name:o.name,spec:o.spec,label:o.name,amt:o.amt,qty:o.qty,custN:o.custs.size,share:tot?o.amt/tot*100:0,_search:o.name+' '+o.spec})).sort((a,b)=>b.amt-a.amt);
   const cols=[
     {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
@@ -1151,7 +1151,7 @@ function _grpRender(act, title, groupOf, groupLabel, note, extra){
     {k:'amt',t:`매출액(${unitLabel()})`,cell:o=>disp(o.amt),sortVal:o=>o.amt},
     {k:'share',t:'비중',cell:o=>o.share.toFixed(1)+'%',sortVal:o=>o.share},
     ...(extra.yoy?[{k:'yoy',t:'전년대비',cell:o=>pctSpan(o.yoy),sortVal:o=>o.yoy==null?-1e9:o.yoy}]:[]),
-    ...(extra.mix?[{k:'mix',t:'제품구분 비중',nosort:true,cell:o=>{ const t=['전용품','공용품','레이저','기타'].reduce((a,c)=>a+((o.mixQ&&o.mixQ[c])||0),0)||1; return '<div style=\"display:flex;flex-wrap:wrap;gap:1px 7px\">'+['전용품','공용품','레이저','기타'].map(c=>`<span style=\"font-size:10.5px;font-weight:700;color:${MIX_TXT[c]}\">${c} ${(((o.mixQ&&o.mixQ[c])||0)/t*100).toFixed(0)}%</span>`).join('')+'</div>'; }}]:[]),
+    ...(extra.mix?[{k:'mix',t:'제품구분 비중',nosort:true,cell:o=>{ const t=['전용품','공용품','레이저','내부보강','기타'].reduce((a,c)=>a+((o.mixQ&&o.mixQ[c])||0),0)||1; return '<div style=\"display:flex;flex-wrap:wrap;gap:1px 7px\">'+['전용품','공용품','레이저','내부보강','기타'].map(c=>`<span style=\"font-size:10.5px;font-weight:700;color:${MIX_TXT[c]}\">${c} ${(((o.mixQ&&o.mixQ[c])||0)/t*100).toFixed(0)}%</span>`).join('')+'</div>'; }}]:[]),
     {k:'_bar',t:'',nosort:true,cell:o=>bar(o.amt,max)} ];
   state.sortKey=null; state._search='';
   render(title, `${periodLabel()} · ${arr.length}종 · 거래처 ${won(totCustN)}개 · 합계 ${won(tot)}원${mgrActive()?' · 담당자필터 적용중':''}`, arr, cols, 'amt', note,
@@ -1433,7 +1433,7 @@ function custCatalog(){ return [...new Set(CUR.map(r=>r.cust))].sort((a,b)=>a.lo
 function lastPriceByProdCust(rows){ const m=new Map(); rows.forEach(r=>{ const pk=(r.code||'(미상)')+'│'+(r.spec||''); let pm=m.get(pk); if(!pm){pm=new Map();m.set(pk,pm);} const up=unitPrice(r); let o=pm.get(r.cust); if(!o||r.d>=o.last){pm.set(r.cust,{last:r.d,lastPrice:up});} }); return m; }
 function shortAmt(v){ v=Math.round(v||0); if(v>=1e8)return (v/1e8).toFixed(v>=1e9?0:1)+'억'; if(v>=1e4)return Math.round(v/1e4).toLocaleString()+'만'; return v.toLocaleString(); }
 function donutSVG(mq){
-  const size=200,cats=['전용품','공용품','레이저','기타']; const tot=cats.reduce((a,c)=>a+(mq[c]||0),0)||0;
+  const size=200,cats=['전용품','공용품','레이저','내부보강','기타']; const tot=cats.reduce((a,c)=>a+(mq[c]||0),0)||0;
   const cx=size/2,cy=size/2,r=size*0.36,sw=size*0.18,C=2*Math.PI*r; let off=0,segs='',labs='';
   cats.forEach(c=>{ const v=mq[c]||0,len=tot?(v/tot)*C:0,p=tot?v/tot*100:0; if(v>0){ segs+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${MIX_COL[c]}" stroke-width="${sw}" stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`;
     if(p>=4){ const ang=(-90+((off+len/2)/C)*360)*Math.PI/180; const lx=cx+r*Math.cos(ang), ly=cy+r*Math.sin(ang); labs+=`<text x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="#fff" style="paint-order:stroke" stroke="${MIX_COL[c]}" stroke-width="0.6">${p.toFixed(0)}%</text>`; }
@@ -1477,7 +1477,7 @@ function homeDashboard(){
   const {arr:cArr}=aggBy(pr,'cust'); const cTop=cArr.slice(0,10);
   const {arr:gArr}=aggBy(pr,'name'); const gTop=gArr.slice(0,10);
   const {arr:pArr}=aggBy(pr,'codespec'); const pTop=pArr.slice(0,10);
-  const mqAmt={전용품:0,공용품:0,레이저:0,기타:0}; pr.forEach(r=>{ mqAmt[mixCatOf(r)]+=amtOf(r); });
+  const mqAmt={전용품:0,공용품:0,레이저:0,내부보강:0,기타:0}; pr.forEach(r=>{ mqAmt[mixCatOf(r)]+=amtOf(r); });
   const dn=donutSVG(mqAmt); const trend=homeTrendSVG();
   const panel=(icon,title,arr,act,rowFn)=>`<div style="border:1px solid var(--line);border-radius:12px;padding:0 0 6px">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px 6px"><b style="font-size:13px;color:#1e3a5f">${icon} ${title}</b><button class="homemore" data-act="${act}" style="border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:7px;cursor:pointer;font-size:11px;padding:3px 9px;font-weight:700">더보기 ▸</button></div>
@@ -1515,7 +1515,7 @@ function trendChart(){
   const m=new Map(); let GT=0; const fullAgg=new Map();
   CUR.forEach(r=>{ const k0=keyOf(r); let ag=fullAgg.get(k0); if(!ag){ag={ym:{},y:{}};fullAgg.set(k0,ag);} const a0=amtOf(r); ag.ym[r.ym]=(ag.ym[r.ym]||0)+a0; ag.y[r.y]=(ag.y[r.y]||0)+a0;
     const bi=bIdx[bucketOf(r)]; if(bi==null)return; const k=keyOf(r); let o=m.get(k);
-    if(!o){o={key:k,label:labelOf(r),code:r.code||'',name:r.name||'',spec:r.spec||'',series:new Array(buckets.length).fill(0),amt:0,qty:0,contrib:new Map(),mixQ:{전용품:0,공용품:0,레이저:0,기타:0}};m.set(k,o);}
+    if(!o){o={key:k,label:labelOf(r),code:r.code||'',name:r.name||'',spec:r.spec||'',series:new Array(buckets.length).fill(0),amt:0,qty:0,contrib:new Map(),mixQ:{전용품:0,공용품:0,레이저:0,내부보강:0,기타:0}};m.set(k,o);}
     const a=amtOf(r); o.series[bi]+=a; o.amt+=a; o.qty+=r.qty; GT+=a;
     const cl = t.dim==='cust'?((r.name||'(미상)')+(r.spec?' / '+r.spec:'')) : t.dim==='group'?(r.spec||'(규격없음)') : r.cust;
     o.contrib.set(cl,(o.contrib.get(cl)||0)+a);
@@ -1527,7 +1527,7 @@ function trendChart(){
   const catDrill=(t.dim==='cust' && grp!=='none' && t.catSel);
   const catsForCust=c=> grp==='region'?[gradeRec(c).do||'(미지정)'] : grp==='credit'?[catOf(c)||'(미지정)'] : ((catsOf(c)&&catsOf(c).length)?catsOf(c):['(미분류)']);
   let arr;
-  if(catView){ const cm=new Map(); arr0.forEach(o=>{ catsForCust(o.key).forEach(cat=>{ let g=cm.get(cat); if(!g){g={key:cat,label:cat,series:new Array(buckets.length).fill(0),amt:0,qty:0,custN:0,isCat:true,custAmt:new Map(),mixQ:{전용품:0,공용품:0,레이저:0,기타:0}};cm.set(cat,g);} o.series.forEach((v,i)=>g.series[i]+=v); g.amt+=o.amt; g.qty+=o.qty; g.custN++; g.custAmt.set(o.key,(g.custAmt.get(o.key)||0)+o.amt); for(const kk in o.mixQ)g.mixQ[kk]=(g.mixQ[kk]||0)+o.mixQ[kk]; g._ym=g._ym||{}; g._y=g._y||{}; const ma=fullAgg.get(o.key); if(ma){ for(const k2 in ma.ym)g._ym[k2]=(g._ym[k2]||0)+ma.ym[k2]; for(const k2 in ma.y)g._y[k2]=(g._y[k2]||0)+ma.y[k2]; } }); }); arr=[...cm.values()]; }
+  if(catView){ const cm=new Map(); arr0.forEach(o=>{ catsForCust(o.key).forEach(cat=>{ let g=cm.get(cat); if(!g){g={key:cat,label:cat,series:new Array(buckets.length).fill(0),amt:0,qty:0,custN:0,isCat:true,custAmt:new Map(),mixQ:{전용품:0,공용품:0,레이저:0,내부보강:0,기타:0}};cm.set(cat,g);} o.series.forEach((v,i)=>g.series[i]+=v); g.amt+=o.amt; g.qty+=o.qty; g.custN++; g.custAmt.set(o.key,(g.custAmt.get(o.key)||0)+o.amt); for(const kk in o.mixQ)g.mixQ[kk]=(g.mixQ[kk]||0)+o.mixQ[kk]; g._ym=g._ym||{}; g._y=g._y||{}; const ma=fullAgg.get(o.key); if(ma){ for(const k2 in ma.ym)g._ym[k2]=(g._ym[k2]||0)+ma.ym[k2]; for(const k2 in ma.y)g._y[k2]=(g._y[k2]||0)+ma.y[k2]; } }); }); arr=[...cm.values()]; }
   else if(catDrill){ arr=arr0.filter(o=>catsForCust(o.key).includes(t.catSel)); }
   else { arr=arr0; }
   const yoyOf=(ymMap,yMap)=>{ if(t.win==='year'){ const yy=+buckets[buckets.length-1]; const c=yMap[yy]||0,pp=yMap[yy-1]||0; return pp>0?(c-pp)/pp*100:null; } const lastYM=buckets[buckets.length-1]; const [yy,mm]=lastYM.split('-').map(Number); const pYM=(yy-1)+'-'+String(mm).padStart(2,'0'); const c=ymMap[lastYM]||0,pp=ymMap[pYM]||0; return pp>0?(c-pp)/pp*100:null; };
@@ -1616,20 +1616,21 @@ function gbunBadge(ex){ return ex?'<span style="display:inline-block;padding:1px
 function gbunChipsHtml(cur,id){ const opt=[['all','전체'],['ex','🟣 전용품'],['sh','🔵 공용품']]; return `<div class="seg" id="${id}">${opt.map(([v,l])=>`<button data-v="${v}" class="${cur===v?'on':''}" style="${cur===v?(v==='ex'?'background:#7c3aed;color:#fff;border-color:#7c3aed':v==='sh'?'background:#4f46e5;color:#fff;border-color:#4f46e5':'background:#1e3a5f;color:#fff;border-color:#1e3a5f'):(v==='ex'?'color:#7c3aed':v==='sh'?'color:#4f46e5':'color:#1e3a5f')}">${l}</button>`).join('')}</div>`; }
 function gbunSummary(arr){ let exN=0,shN=0,exQ=0,shQ=0,totQ=0; arr.forEach(o=>{ const ex=isExclusivePk(o.key); const q=o.qty||0; if(ex){exN++;exQ+=q;}else{shN++;shQ+=q;} totQ+=q; }); const exP=totQ?exQ/totQ*100:0, shP=totQ?shQ/totQ*100:0; return `<div style="display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;padding:9px 14px;background:#faf9ff;border:1px solid #ece9fb;border-radius:10px;margin:6px 0 2px;font-size:12.5px"><span><b>전체</b> ${won(arr.length)}종</span><span style="color:#7c3aed"><b>🟣 전용품</b> ${won(exN)}종 · 수량 <b>${exP.toFixed(1)}%</b></span><span style="color:#4f46e5"><b>🔵 공용품</b> ${won(shN)}종 · 수량 <b>${shP.toFixed(1)}%</b></span><span class="sub2">전용=전체 거래기간 1개 거래처 전용 · 공용=2개 이상 거래처 판매</span></div>`; }
 
-const MIX_COL={전용품:'#1d4ed8',공용품:'#22c55e',레이저:'#ea580c',기타:'#94a3b8'};
-const MIX_TXT={전용품:'#1d4ed8',공용품:'#15803d',레이저:'#c2410c',기타:'#475569'};
-const MIX_BG={전용품:'#dbeafe',공용품:'#dcfce7',레이저:'#ffedd5',기타:'#f1f5f9'};
+const MIX_COL={전용품:'#1d4ed8',공용품:'#22c55e',레이저:'#ea580c',내부보강:'#8b5cf6',기타:'#94a3b8'};
+const MIX_TXT={전용품:'#1d4ed8',공용품:'#15803d',레이저:'#c2410c',내부보강:'#6d28d9',기타:'#475569'};
+const MIX_BG={전용품:'#dbeafe',공용품:'#dcfce7',레이저:'#ffedd5',내부보강:'#ede9fe',기타:'#f1f5f9'};
 const MIX_ICON={전용품:'',공용품:'',레이저:'',기타:''};
 const _ETC_KW=['운반비','실커버','스텐실','도어가공','PD커버','금형','후레임바','고철','EGI'];
 const isLaserName=n=>{n=n||'';return /\(L\)/.test(n);};
 const isEtcName=n=>{n=n||'';return _ETC_KW.some(k=>n.includes(k));};
-function mixCatOf(r){ const key=(r.code||'(미상)')+'│'+(r.spec||''); const ov=(state.gbunOverride||{})[key]; if(ov&&ov.cat)return ov.cat; const nm=r.name||''; if(isLaserName(nm))return '레이저'; if(isEtcName(nm)||!r.code||r.code==='(미상)')return '기타'; return isExclusivePk(key)?'전용품':'공용품'; }
+const isInnerName=n=>{n=n||'';return /상하보강|이너프레임/.test(n);};
+function mixCatOf(r){ const key=(r.code||'(미상)')+'│'+(r.spec||''); const ov=(state.gbunOverride||{})[key]; if(ov&&ov.cat)return ov.cat; const nm=r.name||''; if(isLaserName(nm))return '레이저'; if(isInnerName(nm))return '내부보강'; if(isEtcName(nm)||!r.code||r.code==='(미상)')return '기타'; return isExclusivePk(key)?'전용품':'공용품'; }
 function mixCatKey(o){ return mixCatOf({code:o.code,spec:o.spec,name:o.name}); }
 function mixOverrideCust(key){ const ov=(state.gbunOverride||{})[key]; return ov&&ov.cust?ov.cust:''; }
 function mixBadge(cat,clickKey){ const c=MIX_TXT[cat]||'#475569',bg=MIX_BG[cat]||'#f1f5f9'; const ic=MIX_ICON[cat]?MIX_ICON[cat]+' ':''; const cl=clickKey?` class="mixedit" data-k="${esc(clickKey)}" title="클릭하면 구분(전용/공용/레이저/기타) 변경" style="cursor:pointer;`:' style="'; return `<span${cl}display:inline-block;padding:1px 8px;border-radius:8px;font-size:10.5px;font-weight:700;background:${bg};color:${c}">${ic}${cat}${clickKey?' ✎':''}</span>`; }
-function mixBarHtml(mq){ const seg=[['전용품',MIX_COL.전용품],['공용품',MIX_COL.공용품],['레이저',MIX_COL.레이저],['기타',MIX_COL.기타]]; const tot=seg.reduce((a,[k])=>a+(mq[k]||0),0)||1; const bar=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span title="${k} ${p.toFixed(1)}%" style="display:inline-block;height:12px;width:${p.toFixed(1)}%;background:${c}"></span>`:'';}).join(''); const leg=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span style="font-size:9px;color:${c};white-space:nowrap;font-weight:700">${MIX_ICON[k]} ${k} ${p.toFixed(0)}%</span>`:'';}).join(' '); return `<div style="min-width:170px"><div style="display:flex;width:100%;border-radius:4px;overflow:hidden;background:#f1f5f9;height:12px;border:1px solid #e2e8f0">${bar}</div><div style="display:flex;flex-wrap:wrap;gap:1px 8px;margin-top:2px">${leg}</div></div>`; }
-function mixChipsHtml(cur,id){ const opt=[['all','전체'],['전용품','전용품'],['공용품','공용품'],['레이저','레이저'],['기타','기타']]; return `<div class="seg" id="${id}">${opt.map(([v,l])=>{const on=cur===v; const c=v==='all'?'#1e3a5f':(MIX_TXT[v]||MIX_COL[v]); const bg=v==='all'?'#eef2f7':(MIX_BG&&MIX_BG[v]?MIX_BG[v]:'#fff'); return `<button data-v="${v}" class="${on?'on':''}" style="${on?('background:'+c+';color:#fff;border-color:'+c):('color:'+c+';background:'+bg+';border-color:'+c)}">${l}</button>`;}).join('')}</div>`; }
-function mixSummary(arr){ const cnt={전용품:0,공용품:0,레이저:0,기타:0},qty={전용품:0,공용품:0,레이저:0,기타:0}; let totQ=0; arr.forEach(o=>{ const c=o.mixCat||mixCatKey(o); cnt[c]=(cnt[c]||0)+1; qty[c]=(qty[c]||0)+(o.qty||0); totQ+=(o.qty||0); }); const seg=['전용품','공용품','레이저','기타']; return `<div style="display:flex;flex-wrap:wrap;gap:7px 18px;align-items:center;padding:9px 14px;background:#faf9ff;border:1px solid #ece9fb;border-radius:10px;margin:6px 0 2px;font-size:12px"><span><b>전체</b> ${won(arr.length)}종</span>${seg.map(k=>`<span style="color:${MIX_TXT[k]}"><b>${MIX_ICON[k]} ${k}</b> ${won(cnt[k])}종 · 수량 <b>${totQ?(qty[k]/totQ*100).toFixed(1):0}%</b></span>`).join('')}<span class="sub2">레이저=품명에 레이저·(L) · 기타=운반비/실커버/스텐실/도어가공/PD커버/금형/후레임바/고철/EGI 등 · 전용=1개 거래처 · 공용=2개사↑</span></div>`; }
+function mixBarHtml(mq){ const seg=[['전용품',MIX_COL.전용품],['공용품',MIX_COL.공용품],['레이저',MIX_COL.레이저],['내부보강',MIX_COL.내부보강],['기타',MIX_COL.기타]]; const tot=seg.reduce((a,[k])=>a+(mq[k]||0),0)||1; const bar=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span title="${k} ${p.toFixed(1)}%" style="display:inline-block;height:12px;width:${p.toFixed(1)}%;background:${c}"></span>`:'';}).join(''); const leg=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span style="font-size:9px;color:${c};white-space:nowrap;font-weight:700">${MIX_ICON[k]} ${k} ${p.toFixed(0)}%</span>`:'';}).join(' '); return `<div style="min-width:170px"><div style="display:flex;width:100%;border-radius:4px;overflow:hidden;background:#f1f5f9;height:12px;border:1px solid #e2e8f0">${bar}</div><div style="display:flex;flex-wrap:wrap;gap:1px 8px;margin-top:2px">${leg}</div></div>`; }
+function mixChipsHtml(cur,id){ const opt=[['all','전체'],['전용품','전용품'],['공용품','공용품'],['레이저','레이저'],['내부보강','내부보강'],['기타','기타']]; return `<div class="seg" id="${id}">${opt.map(([v,l])=>{const on=cur===v; const c=v==='all'?'#1e3a5f':(MIX_TXT[v]||MIX_COL[v]); const bg=v==='all'?'#eef2f7':(MIX_BG&&MIX_BG[v]?MIX_BG[v]:'#fff'); return `<button data-v="${v}" class="${on?'on':''}" style="${on?('background:'+c+';color:#fff;border-color:'+c):('color:'+c+';background:'+bg+';border-color:'+c)}">${l}</button>`;}).join('')}</div>`; }
+function mixSummary(arr){ const cnt={전용품:0,공용품:0,레이저:0,내부보강:0,기타:0},qty={전용품:0,공용품:0,레이저:0,내부보강:0,기타:0}; let totQ=0; arr.forEach(o=>{ const c=o.mixCat||mixCatKey(o); cnt[c]=(cnt[c]||0)+1; qty[c]=(qty[c]||0)+(o.qty||0); totQ+=(o.qty||0); }); const seg=['전용품','공용품','레이저','내부보강','기타']; return `<div style="display:flex;flex-wrap:wrap;gap:7px 18px;align-items:center;padding:9px 14px;background:#faf9ff;border:1px solid #ece9fb;border-radius:10px;margin:6px 0 2px;font-size:12px"><span><b>전체</b> ${won(arr.length)}종</span>${seg.map(k=>`<span style="color:${MIX_TXT[k]}"><b>${MIX_ICON[k]} ${k}</b> ${won(cnt[k])}종 · 수량 <b>${totQ?(qty[k]/totQ*100).toFixed(1):0}%</b></span>`).join('')}<span class="sub2">레이저=품명에 레이저·(L) · 기타=운반비/실커버/스텐실/도어가공/PD커버/금형/후레임바/고철/EGI 등 · 전용=1개 거래처 · 공용=2개사↑</span></div>`; }
 function openMixOverride(key,name,spec){
   const cur=mixCatOf({code:key.split('│')[0],spec:key.split('│')[1]||'',name:name}); const ov=(state.gbunOverride||{})[key]||{};
   const buyers=[...new Set(CUR.filter(r=>((r.code||'(미상)')+'│'+(r.spec||''))===key).map(r=>r.cust))].sort((a,b)=>a.localeCompare(b,'ko'));
@@ -1638,7 +1639,7 @@ function openMixOverride(key,name,spec){
   ov0.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:420px;width:92%;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="font-weight:800;font-size:15px;margin-bottom:4px">제품 구분 변경</div>
     <div class="sub2" style="margin-bottom:10px">${esc(name||'')} <b>${esc(key.split('│')[0])}</b>${spec?' / '+esc(spec):''}</div>
-    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px">${['전용품','공용품','레이저','기타'].map(c=>`<button class="mxc" data-c="${c}" style="cursor:pointer;border:2px solid ${MIX_COL[c]};background:${cur===c?MIX_COL[c]:MIX_BG[c]};color:${cur===c?'#fff':MIX_COL[c]};padding:6px 12px;border-radius:9px;font-weight:700;font-size:12.5px">${MIX_ICON[c]} ${c}</button>`).join('')}</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px">${['전용품','공용품','레이저','내부보강','기타'].map(c=>`<button class="mxc" data-c="${c}" style="cursor:pointer;border:2px solid ${MIX_COL[c]};background:${cur===c?MIX_COL[c]:MIX_BG[c]};color:${cur===c?'#fff':MIX_COL[c]};padding:6px 12px;border-radius:9px;font-weight:700;font-size:12.5px">${MIX_ICON[c]} ${c}</button>`).join('')}</div>
     <div id="mxCustWrap" style="display:${(ov.cat||cur)==='전용품'?'block':'none'};margin-bottom:10px">
       <div class="sub2" style="margin-bottom:3px">전용 거래처 선택(선택사항)</div>
       <select id="mxCust" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:7px;font-size:12.5px"><option value="">(지정 안 함)</option>${buyers.map(b=>`<option value="${esc(b)}" ${ov.cust===b?'selected':''}>${esc(b)}</option>`).join('')}</select>
@@ -1729,8 +1730,8 @@ function priceTable(){
     const {arr,tot}=aggBy(rows,'cust');
     const pkByCust={}; rows.forEach(r=>{ const k=(r.code||'(미상)')+'│'+(r.spec||''); (pkByCust[r.cust]||(pkByCust[r.cust]=new Set())).add(k); });
     arr.forEach(o=>o.pkN=(pkByCust[o.key]||{size:0}).size);
-    const mixByCust={}; rows.forEach(r=>{ let mm=mixByCust[r.cust]; if(!mm){mm={전용품:0,공용품:0,레이저:0,기타:0};mixByCust[r.cust]=mm;} mm[mixCatOf(r)]+=(r.qty>0?r.qty:0); });
-    arr.forEach(o=>{ o.mixQ=mixByCust[o.key]||{전용품:0,공용품:0,레이저:0,기타:0}; const mq=o.mixQ; const tq=(mq.전용품+mq.공용품+mq.레이저+mq.기타)||0; o.exQp=tq?mq.전용품/tq*100:0; o.shQp=tq?mq.공용품/tq*100:0; });
+    const mixByCust={}; rows.forEach(r=>{ let mm=mixByCust[r.cust]; if(!mm){mm={전용품:0,공용품:0,레이저:0,내부보강:0,기타:0};mixByCust[r.cust]=mm;} mm[mixCatOf(r)]+=(r.qty>0?r.qty:0); });
+    arr.forEach(o=>{ o.mixQ=mixByCust[o.key]||{전용품:0,공용품:0,레이저:0,내부보강:0,기타:0}; const mq=o.mixQ; const tq=(mq.전용품+mq.공용품+mq.레이저+mq.내부보강+mq.기타)||0; o.exQp=tq?mq.전용품/tq*100:0; o.shQp=tq?mq.공용품/tq*100:0; });
     const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
       {k:'label',t:'거래처',cls:'l',cell:o=>esc(o.label)+' '+catChip(o.key)},
       {k:'grade',t:'신용등급',cell:o=>gradeBadge(gradeRec(o.key).grade),sortVal:o=>gradeRec(o.key).grade||''},
@@ -1778,7 +1779,7 @@ function custPriceList(cust, rows, back){
   function v_(c,pm){const e=pm.get(c);return e?e.lastPrice:0;}
   arr.sort((a,b)=>String(a.code).localeCompare(String(b.code),'ko'));
   const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
-    {k:'gbun',t:'제품구분',cell:o=>mixBadge(mixCatKey(o),o.key),sortVal:o=>['전용품','공용품','레이저','기타'].indexOf(mixCatKey(o))},
+    {k:'gbun',t:'제품구분',cell:o=>mixBadge(mixCatKey(o),o.key),sortVal:o=>['전용품','공용품','레이저','내부보강','기타'].indexOf(mixCatKey(o))},
     {k:'code',t:'품번',cls:'l',cell:o=>esc(o.code),sortVal:o=>o.code},
     {k:'name',t:'품명',cls:'l',cell:o=>esc(o.name||''),sortVal:o=>o.name},
     {k:'spec',t:'규격',cls:'l',cell:o=>esc(o.spec||'(규격없음)'),sortVal:o=>o.spec},
@@ -1860,7 +1861,7 @@ function rankProduct(){
   const bind=()=>{ $('#result').querySelectorAll('#rpGb button').forEach(b=>b.addEventListener('click',()=>{state.prodGbun=b.dataset.v;rankProduct();})); $('#result').querySelectorAll('.mixedit').forEach(b=>{ if(b._mb)return; b._mb=1; b.addEventListener('click',e=>{ e.stopPropagation(); const k=b.dataset.k; const o=fArr.find(x=>x.key===k); openMixOverride(k,o?o.name:'',o?o.spec:''); }); }); };
   const cols=[
     {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
-    {k:'gbun',t:'구분',cell:o=>mixBadge(o.mixCat,o.key)+(mixOverrideCust(o.key)?` <span class="sub2" title="전용 거래처">(${esc(mixOverrideCust(o.key))})</span>`:''),sortVal:o=>['전용품','공용품','레이저','기타'].indexOf(o.mixCat)},
+    {k:'gbun',t:'구분',cell:o=>mixBadge(o.mixCat,o.key)+(mixOverrideCust(o.key)?` <span class="sub2" title="전용 거래처">(${esc(mixOverrideCust(o.key))})</span>`:''),sortVal:o=>['전용품','공용품','레이저','내부보강','기타'].indexOf(o.mixCat)},
     {k:'code',t:'품번',cls:'l',cell:o=>esc(o.code)},
     {k:'name',t:'품명',cls:'l',cell:o=>esc(o.name)},
     {k:'specDisp',t:'규격',cls:'l',cell:o=>esc(o.specDisp)},
@@ -1957,7 +1958,7 @@ function lastShip(key,label,isProd){
   let arr=[...m.values()].map(o=>({key:o.k,code:o.code,name:o.name,spec:o.spec,label:isProd?o.code:o.k,last:o.last,first:o.first,gap:Math.round((TODAY-o.last)/86400000),amt:o.amt,cnt:o.dates.size}));
   arr.sort((a,b)=>b.gap-a.gap);
   const labelCols = isProd
-    ? [ {k:'gbun',t:'제품구분',cell:o=>mixBadge(mixCatKey(o)),sortVal:o=>['전용품','공용품','레이저','기타'].indexOf(mixCatKey(o))},
+    ? [ {k:'gbun',t:'제품구분',cell:o=>mixBadge(mixCatKey(o)),sortVal:o=>['전용품','공용품','레이저','내부보강','기타'].indexOf(mixCatKey(o))},
         {k:'code',t:'품번',cls:'l',cell:o=>esc(o.code)},
         {k:'name',t:'품명',cls:'l',cell:o=>esc(o.name)},
         {k:'spec',t:'규격',cls:'l',cell:o=>esc(o.spec||'(규격없음)')} ]
@@ -2278,7 +2279,7 @@ function compCustDrill(cust){
   rows.forEach(r=>{ const k=(r.code||'(미상)')+'│'+(r.spec||''); let o=m.get(k); if(!o){o={key:k,code:r.code||'',name:r.name||'',spec:r.spec||'',amt:0,qty:0};m.set(k,o);} const a=amtOf(r); o.amt+=a; o.qty+=(r.qty||0); tot+=a; });
   let arr=[...m.values()]; arr.forEach(o=>o.share=tot?o.amt/tot*100:0); arr.sort((a,b)=>b.amt-a.amt);
   const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
-    {k:'gbun',t:'제품구분',cell:o=>mixBadge(mixCatKey(o),o.key),sortVal:o=>['전용품','공용품','레이저','기타'].indexOf(mixCatKey(o))},
+    {k:'gbun',t:'제품구분',cell:o=>mixBadge(mixCatKey(o),o.key),sortVal:o=>['전용품','공용품','레이저','내부보강','기타'].indexOf(mixCatKey(o))},
     {k:'code',t:'품번',cls:'l',cell:o=>esc(o.code||''),sortVal:o=>o.code||''},
     {k:'name',t:'품명',cls:'l',cell:o=>esc(o.name||''),sortVal:o=>o.name||''},
     {k:'spec',t:'규격',cls:'l',cell:o=>esc(o.spec||'(규격없음)'),sortVal:o=>o.spec||''},
@@ -2337,7 +2338,7 @@ function productDelta(){
     : [ {k:'label',t:labHead,cls:'l',cell:o=>esc(o.label),sortVal:o=>o.label} ];
   const cols=[
     {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
-    {k:'gbun',t:'구분',cell:o=> eff==='cust'? catChip(o.label) : mixBadge(o.mixcat, eff==='codespec'?o.key:''), sortVal:o=> eff==='cust'? 0 : ['전용품','공용품','레이저','기타'].indexOf(o.mixcat)},
+    {k:'gbun',t:'구분',cell:o=> eff==='cust'? catChip(o.label) : mixBadge(o.mixcat, eff==='codespec'?o.key:''), sortVal:o=> eff==='cust'? 0 : ['전용품','공용품','레이저','내부보강','기타'].indexOf(o.mixcat)},
     ...labelCols,
     {k:'before',t:`이전(${unit})`,cell:o=>`<span style="color:#dc2626;font-weight:600">${fmt(o.before)}</span>`,sortVal:o=>o.before},
     {k:'bar',t:`${beforeLabel}까지 이전 ◄ ${splitLabel} ► 이후 ${afterLabel}까지`,cls:'pdbar',nosort:true,cell:barCell},
@@ -2397,7 +2398,7 @@ function pareto(){
     {k:'cnt',t:'거래일수',cell:o=>o.cnt.toLocaleString()},
     {k:'qty',t:'출고수량',cell:o=>won(o.qty)} ]:[
     {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>off+i+1},
-    {k:'gbun',t:'구분',cell:o=>mixBadge(mixCatKey(o),o.key),sortVal:o=>['전용품','공용품','레이저','기타'].indexOf(mixCatKey(o))},
+    {k:'gbun',t:'구분',cell:o=>mixBadge(mixCatKey(o),o.key),sortVal:o=>['전용품','공용품','레이저','내부보강','기타'].indexOf(mixCatKey(o))},
     {k:'code',t:'품번',cls:'l',cell:o=>esc(o.code)},
     {k:'name',t:'품명',cls:'l',cell:o=>esc(o.name)},
     {k:'specd',t:'규격',cls:'l',cell:o=>esc(o.spec||'(규격없음)')},
@@ -2416,7 +2417,7 @@ function pareto(){
   const controls2=`<div class="ctrlbar" style="margin-top:6px"><b style="font-size:12px">연도</b> ${yrBtns} <b style="font-size:12px">기간</b>
     <div class="seg" id="pPer">${pRanges.map(k=>`<button data-v="${k}" class="${state.pareto.period===k?'on':''}">${k}</button>`).join('')}<button data-v="range" class="${state.pareto.period==='range'?'on':''}">기간설정</button></div>
     <span id="pRangeSel" style="display:${state.pareto.period==='range'?'inline-flex':'none'};align-items:center;gap:4px"><select id="pM1">${monOpts(pm1)}</select> ~ <select id="pM2">${monOpts(pm2)}</select></span></div>`;
-    const coreMixHtml = dim==='prod' ? (()=>{ const cm={전용품:0,공용품:0,레이저:0,기타:0}; arr.slice(0,coreCount).forEach(o=>{ cm[mixCatKey(o)]+=o.amt; }); const ct=Object.values(cm).reduce((a,b)=>a+b,0)||1; return `<div class="ctrlbar" style="margin-top:6px;background:#f8fafc;border-radius:8px;padding:6px 10px"><b style="font-size:12px">핵심 ${coreCount}개(누적 ${th}%) 내 제품구분 비중:</b> `+['전용품','공용품','레이저','기타'].map(c=>`<span style="font-size:12px;font-weight:800;color:${MIX_TXT[c]}">${c} ${(cm[c]/ct*100).toFixed(1)}%</span>`).join('<span class="sub2">·</span> ')+`</div>`; })() : '';
+    const coreMixHtml = dim==='prod' ? (()=>{ const cm={전용품:0,공용품:0,레이저:0,내부보강:0,기타:0}; arr.slice(0,coreCount).forEach(o=>{ cm[mixCatKey(o)]+=o.amt; }); const ct=Object.values(cm).reduce((a,b)=>a+b,0)||1; return `<div class="ctrlbar" style="margin-top:6px;background:#f8fafc;border-radius:8px;padding:6px 10px"><b style="font-size:12px">핵심 ${coreCount}개(누적 ${th}%) 내 제품구분 비중:</b> `+['전용품','공용품','레이저','내부보강','기타'].map(c=>`<span style="font-size:12px;font-weight:800;color:${MIX_TXT[c]}">${c} ${(cm[c]/ct*100).toFixed(1)}%</span>`).join('<span class="sub2">·</span> ')+`</div>`; })() : '';
   const yLab = yr==='all'?'전체연도':yr+'년';
   const scopeLab = `${yLab} · ${pLab==='전체'?'전체기간':pLab+' '+pm1+'~'+pm2+'월'}`;
   const inScope=r=>(yr==='all'||+r.y===+yr)&&(state.pareto.period==='all'||(monthOf(r)>=pm1&&monthOf(r)<=pm2));
