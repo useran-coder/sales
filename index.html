@@ -180,7 +180,7 @@
   .fcov,.fcm{font-variant-numeric:tabular-nums}
   .fcrow,.fcprow{cursor:pointer}
   .fcov.edited,.fcadd.edited,.fcpov.edited,.fcpadd.edited{background:#fff7e6;border-color:#f59e0b;font-weight:700}
-  .fcmemo.editedm,.fcpmemo.editedm{background:#eff6ff;border-color:#60a5fa}
+  .fcmemo.editedm,.fcpmemo.editedm,.rtmemo.editedm{background:#eff6ff;border-color:#60a5fa}
   .fcissue-c th:nth-child(5),.fcissue-c th:nth-child(6),.fcissue-c td:nth-child(5),.fcissue-c td:nth-child(6){display:none}
   .fcissue-c .fcmemo{width:100%!important}
   .fcissue-p th:nth-child(5),.fcissue-p th:nth-child(6),.fcissue-p th:nth-child(12),.fcissue-p th:nth-child(13),.fcissue-p td:nth-child(5),.fcissue-p td:nth-child(6),.fcissue-p td:nth-child(12),.fcissue-p td:nth-child(13){display:none}
@@ -1158,7 +1158,7 @@ function _grpRender(act, title, groupOf, groupLabel, note, extra){
     {k:'amt',t:`매출액(${unitLabel()})`,cell:o=>disp(o.amt),sortVal:o=>o.amt},
     {k:'share',t:'비중',cell:o=>o.share.toFixed(1)+'%',sortVal:o=>o.share},
     ...(extra.yoy?[{k:'yoy',t:'전년대비',cell:o=>pctSpan(o.yoy),sortVal:o=>o.yoy==null?-1e9:o.yoy}]:[]),
-    ...(extra.mixCols?['전용품','공용품','레이저','내부보강','기타'].map(_c=>({k:'mc_'+_c,t:`<span style="color:${MIX_TXT[_c]}">${_c}</span>`,cell:o=>{const v=(o.mixA&&o.mixA[_c])||0; return v>0?`<span style="color:${MIX_TXT[_c]};font-weight:600">${disp(v)}</span>`:'<span class="sub2">-</span>';},sortVal:o=>(o.mixA&&o.mixA[_c])||0})):[]),
+    ...(extra.mixCols?['전용품','공용품','레이저','내부보강','기타'].map(_c=>({k:'mc_'+_c,t:`<span style="color:${MIX_TXT[_c]}">${_c}</span>`,cell:o=>{const _t=['전용품','공용품','레이저','내부보강','기타'].reduce((a,k)=>a+((o.mixA&&o.mixA[k])||0),0)||1; const v=(o.mixA&&o.mixA[_c])||0; const pct=v/_t*100; return pct>0?`<span style="color:${MIX_TXT[_c]};font-weight:600">${pct.toFixed(1)}%</span>`:'<span class="sub2">-</span>';},sortVal:o=>{const _t=['전용품','공용품','레이저','내부보강','기타'].reduce((a,k)=>a+((o.mixA&&o.mixA[k])||0),0)||1; return ((o.mixA&&o.mixA[_c])||0)/_t;}})):[]),
     ...(extra.mix?[{k:'mix',t:'제품구분 비중',nosort:true,cell:o=>{ const t=['전용품','공용품','레이저','내부보강','기타'].reduce((a,c)=>a+((o.mixQ&&o.mixQ[c])||0),0)||1; return '<div style=\"display:flex;flex-wrap:wrap;gap:1px 7px\">'+['전용품','공용품','레이저','내부보강','기타'].map(c=>`<span style=\"font-size:10.5px;font-weight:700;color:${MIX_TXT[c]}\">${c} ${(((o.mixQ&&o.mixQ[c])||0)/t*100).toFixed(0)}%</span>`).join('')+'</div>'; }}]:[]),
     {k:'_bar',t:'',nosort:true,cell:o=>bar(o.amt,max)} ];
   state.sortKey=null; state._search='';
@@ -1233,7 +1233,7 @@ function clsSales(){
   } else {
     _grpRender('cls','업체분류별 매출', r=>catsOf(r.cust).join(' · '), '업체분류(조합)',
       '거래처는 <b>최대 4개</b> 분류를 가질 수 있습니다. <b>전체</b>에서는 거래처가 가진 <b>분류 조합</b>별로 묶어 보여줍니다. <b>분류 아이콘</b>을 누르면 그 분류를 포함한 거래처만, 상단 <b>검색</b>창에 거래처명을 쓰면 해당 거래처가 필터됩니다. 분류행 클릭 → 거래처(분류 <b>최대 4개 직접 수정</b>) → 제품. <b>엑셀</b>=현재 표, <b>전체 거래처 엑셀</b>=거래처별 매핑.',
-      {controlsHtml:chips,onMount:bind,gradeDist:true,mix:true,fullCsv:{label:'📥 전체 거래처 엑셀',fn:clsFullCsv},labelCell:o=>{ const parts=String(o.label||'').split(' · ').filter(Boolean); return parts.length?parts.map(catBadge).join(''):'<span class="sub2">미분류</span>'; }});
+      {controlsHtml:chips,onMount:bind,gradeDist:true,mixCols:true,fullCsv:{label:'📥 전체 거래처 엑셀',fn:clsFullCsv},labelCell:o=>{ const parts=String(o.label||'').split(' · ').filter(Boolean); return parts.length?parts.map(catBadge).join(''):'<span class="sub2">미분류</span>'; }});
   }
 }
 function regionSales(){
@@ -2027,10 +2027,10 @@ function retain(){
     {k:'last',t:'마지막출고',cell:o=>fmtD(o.last)},
     {k:'amt',t:`누적매출(${unitLabel()})`,cell:o=>disp(o.amt)},
     {k:'share',t:'매출비중',cell:o=>`<b>${o.share.toFixed(1)}%</b>`},
-    {k:'_memo',t:'📌 이슈내용',cls:'l rt-memo',nosort:true,cell:o=>{ const v=state.retainMemo[o.key]||''; const at=state.retainMemoAt[o.key]; return `<div onclick="event.stopPropagation()"><input type="text" class="rtmemo" data-c="${esc(o.key)}" value="${esc(v)}" placeholder="이슈 메모"><div class="rtmemoat" data-c="${esc(o.key)}" style="font-size:9.5px;color:#94a3b8;margin-top:2px">${(state.showElog&&at)?('✎ '+editStamp(at)):''}</div></div>`; }} ];
+    {k:'_memo',t:'📌 이슈내용',cls:'l rt-memo',nosort:true,cell:o=>{ const v=state.retainMemo[o.key]||''; const at=state.retainMemoAt[o.key]; return `<div onclick="event.stopPropagation()"><input type="text" class="rtmemo${v?' editedm':''}" data-c="${esc(o.key)}" value="${esc(v)}" placeholder="이슈 메모"><div class="rtmemoat" data-c="${esc(o.key)}" style="font-size:9.5px;color:#94a3b8;margin-top:2px">${(state.showElog&&at)?('✎ '+editStamp(at)):''}</div></div>`; }} ];
   const rtHead=`<button class="btn ghost" id="rtIssueBtn" style="font-size:11px;padding:5px 10px;${state.retain.issue?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용${state.retain.issue?' (해제)':''}</button> <button class="btn ghost" id="rtExclBtn" style="font-size:11px;padding:5px 8px;${state.retain.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.retain.showExcl?'숨기기':'보이기'}</button>`;
   const rtBind=()=>{ const t=$('#tbl'); if(t){ t.classList.remove('rtissue'); t.classList.toggle('rtshowexcl',!!state.retain.showExcl); }
-    $('#result').querySelectorAll('.rtmemo').forEach(inp=>{ inp.addEventListener('mousedown',e=>e.stopPropagation()); inp.addEventListener('click',e=>e.stopPropagation()); inp.addEventListener('change',e=>{ const c=e.target.dataset.c; const v=e.target.value.trim(); if(v){ state.retainMemo[c]=v; state.retainMemoAt[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'}; } else { state.retainMemo[c]=''; delete state.retainMemoAt[c]; } saveSettings(); const k=(window.CSS&&CSS.escape)?CSS.escape(c):c; const at=$('#result').querySelector('.rtmemoat[data-c="'+k+'"]'); if(at)at.textContent=state.retainMemoAt[c]?('✎ '+editStamp(state.retainMemoAt[c])):''; }); });
+    $('#result').querySelectorAll('.rtmemo').forEach(inp=>{ inp.addEventListener('mousedown',e=>e.stopPropagation()); inp.addEventListener('click',e=>e.stopPropagation()); inp.addEventListener('change',e=>{ const c=e.target.dataset.c; const v=e.target.value.trim(); if(v){ state.retainMemo[c]=v; state.retainMemoAt[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'}; } else { state.retainMemo[c]=''; delete state.retainMemoAt[c]; } e.target.classList.toggle('editedm',!!v); saveSettings(); const k=(window.CSS&&CSS.escape)?CSS.escape(c):c; const at=$('#result').querySelector('.rtmemoat[data-c="'+k+'"]'); if(at)at.textContent=state.retainMemoAt[c]?('✎ '+editStamp(state.retainMemoAt[c])):''; }); });
     $('#result').querySelectorAll('.rtexclcb').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ const c=e.target.dataset.c; if(e.target.checked)state.retainExcl[c]=true; else delete state.retainExcl[c]; const tr=e.target.closest('tr'); if(tr)tr.classList.toggle('rtexcluded',e.target.checked); saveSettings(); }); });
     $('#tbl').querySelectorAll('tbody tr').forEach(tr=>{ const cb=tr.querySelector('.rtexclcb'); if(cb)tr.classList.toggle('rtexcluded',cb.checked); }); };
   const rtMount=()=>{ const ib=$('#rtIssueBtn'); ib&&ib.addEventListener('click',()=>{ state.retain.issue=!state.retain.issue; retain(); }); const eb=$('#rtExclBtn'); eb&&eb.addEventListener('click',()=>{ state.retain.showExcl=!state.retain.showExcl; retain(); }); };
