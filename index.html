@@ -448,6 +448,18 @@ async function idbSet(k,v){ try{ const db=await idb(); return new Promise((res,r
 async function idbGet(k){ try{ const db=await idb(); return new Promise((res)=>{ const tx=db.transaction(STORE,'readonly'); const rq=tx.objectStore(STORE).get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>res(null); }); }catch(e){ return null; } }
 async function idbClear(){ try{ const db=await idb(); return new Promise((res)=>{ const tx=db.transaction(STORE,'readwrite'); tx.objectStore(STORE).clear(); tx.oncomplete=()=>res(); }); }catch(e){} }
 async function persist(){ const slim=datasets.map(d=>({uid:d.uid,fileName:d.fileName,sheetName:d.sheetName,sheetNames:d.sheetNames,recs:d.recs})); await idbSet('datasets',slim); }
+function mergeComp(localArr, remoteArr){
+  const map=new Map();
+  const tsOf=s=>(s&&typeof s._ts==='number')?s._ts:0;
+  const add=s=>{ if(!s||!s.cust)return; const k=s.cust; const ex=map.get(k); if(!ex || tsOf(s)>=tsOf(ex)) map.set(k,s); };
+  (localArr||[]).forEach(add); (remoteArr||[]).forEach(add);
+  return [...map.values()];
+}
+function mergeEditLog(localArr, remoteArr){
+  const map=new Map();
+  (localArr||[]).concat(remoteArr||[]).forEach(e=>{ if(!e)return; const k=(e.t||'')+'|'+(e.u||'')+'|'+(e.c||'')+'|'+(e.d||''); if(!map.has(k))map.set(k,e); });
+  return [...map.values()].sort((a,b)=>new Date(b.t||0)-new Date(a.t||0)).slice(0,1000);
+}
 function mergePriceSets(localArr, remoteArr){
   const map=new Map();
   const tsOf=s=>{ if(s&&typeof s.ts==='number')return s.ts; const d=new Date(s&&s.savedAt); return isNaN(d)?0:d.getTime(); };
@@ -945,7 +957,7 @@ function custManagers(){
   const tCards=[...tOpts,'미배정'].map(n=>card(n,'effT')).join('');
   const mgrCell=(role,cust,cur,opts)=>{ if(state.cmgr.editKey===cust+'|'+role){ return `<select class="cmgr-mgr" data-role="${role}" data-c="${esc(cust)}" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 4px;border:1px solid var(--line);border-radius:6px;font-family:inherit;max-width:110px">`+opts.map(o=>`<option value="${esc(o)}" ${cur===o?'selected':''}>${esc(o)}</option>`).join('')+`<option value="미배정" ${cur==='미배정'?'selected':''}>미배정</option></select>`; } return `<span style="position:relative;display:inline-flex;align-items:center;gap:3px;justify-content:center">${(cur&&cur!=='미배정')?`<button class="cmgr-primary" data-c="${esc(cust)}" data-role="${role}" title="실무담당 지정" onclick="event.stopPropagation()" style="position:absolute;left:-4px;top:-8px;z-index:2;border:none;background:none;cursor:pointer;font-size:18px;line-height:1;padding:0;color:${(state.cmgrPrimary&&state.cmgrPrimary[cust]===role)?'#f59e0b':'#cbd5e1'}">${(state.cmgrPrimary&&state.cmgrPrimary[cust]===role)?'★':'☆'}</button>`:''}${mgrBadge(cur)}<button class="cmgr-edit" data-c="${esc(cust)}" data-role="${role}" title="담당자 수정" style="border:none;background:none;cursor:pointer;font-size:11px;opacity:.55;padding:0 1px">✏️</button></span>`; };
   const showM=CF.mode==='m', showL=CF.mode==='l'; const showSum=!(showM||showL);
-  let cg='<col style="width:28px"><col style="width:30px"><col style="width:'+(showSum?'185':'160')+'px"><col style="width:44px"><col style="width:74px">'+(showSum?'<col style="width:76px"><col style="width:80px"><col style="width:80px"><col style="width:70px"><col style="width:52px"><col style="width:74px">':'');
+  let cg='<col style="width:26px"><col style="width:24px"><col style="width:'+(showSum?'185':'160')+'px"><col style="width:44px"><col style="width:74px">'+(showSum?'<col style="width:76px"><col style="width:80px"><col style="width:80px"><col style="width:70px"><col style="width:52px"><col style="width:74px">':'');
   if(showM)for(let i=0;i<12;i++)cg+='<col style="width:37px">';
   if(showL)for(let i=0;i<12;i++)cg+='<col style="width:37px">';
   cg+='<col style="width:72px"><col style="width:64px"><col style="width:92px"><col style="width:78px"><col style="width:44px">';
@@ -2234,7 +2246,7 @@ function openCompEdit(idx){
   const close=()=>ov.remove();
   ov.addEventListener('click',e=>{ if(e.target===ov)close(); });
   ov.querySelector('#cmpCancel').onclick=close;
-  ov.querySelector('#cmpSave').onclick=()=>{ const g=id=>ov.querySelector(id).value.trim(); const cust=g('#cmpCust'); if(!cust){ return; } const rec={code:g('#cmpCode'),cust,base:[g('#cmpB0'),g('#cmpB1'),g('#cmpB2')].filter(Boolean),pivot:g('#cmpP'),hinge2:g('#cmpH')}; if(isNew)rows.push(rec); else rows[idx]=rec; logEdit('동종업체',`${isNew?'추가':'수정'}: ${cust}`); saveSettings(); close(); competeView(); };
+  ov.querySelector('#cmpSave').onclick=()=>{ const g=id=>ov.querySelector(id).value.trim(); const cust=g('#cmpCust'); if(!cust){ return; } const rec={code:g('#cmpCode'),cust,base:[g('#cmpB0'),g('#cmpB1'),g('#cmpB2')].filter(Boolean),pivot:g('#cmpP'),hinge2:g('#cmpH'),_ts:Date.now()}; if(isNew)rows.push(rec); else rows[idx]=rec; logEdit('동종업체',`${isNew?'추가':'수정'}: ${cust}`); saveSettings(); close(); competeView(); };
   const del=ov.querySelector('#cmpDel'); if(del)del.onclick=async()=>{ if(!await uiConfirm('이 거래처를 동종업체 목록에서 삭제할까요?'))return; const _dc=rows[idx]&&rows[idx].cust; rows.splice(idx,1); logEdit('동종업체',`삭제: ${_dc||''}`); saveSettings(); close(); competeView(); };
 }
 function openCompRename(){
@@ -3096,10 +3108,15 @@ function gsMerge(d,skipRender){ if(!d)return;
   if(d.syncLog)state.syncLog={...state.syncLog,...d.syncLog};
   if(d.pd)state.pd={...state.pd,...d.pd};
   if(d.retainMemo)state.retainMemo=d.retainMemo; if(d.retainMemoAt)state.retainMemoAt=d.retainMemoAt; if(d.retainExcl)state.retainExcl=d.retainExcl; if(d.custInfo)state.custInfo=d.custInfo;
+  if(d.comp)state.comp=mergeComp(state.comp||[], d.comp);
+  if(d.gbunOverride)state.gbunOverride={...state.gbunOverride,...d.gbunOverride};
+  if(d.priceSets)state.priceSets=mergePriceSets(state.priceSets||[], d.priceSets);
+  if(d.editLog)state.editLog=mergeEditLog(state.editLog||[], d.editLog);
+  if(d.custProdOverride)state.fc.custProdOverride={...state.fc.custProdOverride,...d.custProdOverride};
   if(typeof buildHeadMonthly==='function')buildHeadMonthly();
   saveSettings(); state._mgrCountsCache=null; if(typeof buildSummary==='function')buildSummary(); _gsApplying=true; if(!skipRender&&state.act&&CUR.length)runAct(); const _ned=document.getElementById('fcNotesEd'); if(_ned){ const _nf={main:'notesHtml',sales:'notesSales',tech:'notesTech'}[state.fc.notesTab||'main']; _ned.innerHTML=state.fc[_nf]||''; } setTimeout(()=>{_gsApplying=false;},700); }
 function gsCommitNotes(){ const ed=document.getElementById('fcNotesEd'); if(ed){ const f={main:'notesHtml',sales:'notesSales',tech:'notesTech'}[state.fc.notesTab||'main']; state.fc[f]=ed.innerHTML; } }
-function gsFields(){ return [['headcount',state,'headcount'],['headMonthly',state,'headMonthly'],['headYearDefault',state,'headYearDefault'],['mgrOverride',state,'mgrOverride'],['fcPct',state.fc,'pct'],['fcOverride',state.fc,'override'],['fcAddPct',state.fc,'addPct'],['workdays',state,'workdays'],['bep',state,'bep'],['fcNewCusts',state.fc,'newCusts'],['clsOverride',state,'clsOverride'],['gradeOverride',state,'gradeOverride'],['gbunOverride',state,'gbunOverride'],['priceSets',state,'priceSets'],['comp',state,'comp'],['editLog',state,'editLog'],['custProdOverride',state.fc,'custProdOverride'],['fcProdOverride',state.fc,'prodOverride'],['fcProdAddPct',state.fc,'prodAddPct'],['fcNewProds',state.fc,'newProds'],['fcNewLines',state.fc,'newLines'],['fcCustMemo',state.fc,'custMemo'],['fcProdMemo',state.fc,'prodMemo'],['fcNotesHtml',state.fc,'notesHtml'],['fcNotesSales',state.fc,'notesSales'],['fcNotesTech',state.fc,'notesTech'],['fcNotesMeta',state.fc,'notesMeta'],['fcExclCust',state.fc,'exclCust'],['fcExclProd',state.fc,'exclProd'],['fcAnnualHist',state.fc,'annualHist'],['monthIssue',state,'monthIssue'],['syncLog',state,'syncLog'],['inv',state,'inv'],['pd',state,'pd'],['retainMemo',state,'retainMemo'],['retainMemoAt',state,'retainMemoAt'],['retainExcl',state,'retainExcl'],['custInfo',state,'custInfo'] ]; }
+function gsFields(){ return [['headcount',state,'headcount'],['headMonthly',state,'headMonthly'],['headYearDefault',state,'headYearDefault'],['mgrOverride',state,'mgrOverride'],['fcPct',state.fc,'pct'],['fcOverride',state.fc,'override'],['fcAddPct',state.fc,'addPct'],['workdays',state,'workdays'],['bep',state,'bep'],['fcNewCusts',state.fc,'newCusts'],['clsOverride',state,'clsOverride'],['gradeOverride',state,'gradeOverride'],['gbunOverride',state,'gbunOverride'],['priceSets',state,'priceSets'],['comp',state,'comp'],['editLog',state,'editLog'],['custProdOverride',state.fc,'custProdOverride'],['fcProdOverride',state.fc,'prodOverride'],['fcProdAddPct',state.fc,'prodAddPct'],['fcNewProds',state.fc,'newProds'],['fcNewLines',state.fc,'newLines'],['fcCustMemo',state.fc,'custMemo'],['fcProdMemo',state.fc,'prodMemo'],['fcNotesHtml',state.fc,'notesHtml'],['fcNotesSales',state.fc,'notesSales'],['fcNotesTech',state.fc,'notesTech'],['fcNotesMeta',state.fc,'notesMeta'],['fcExclCust',state.fc,'exclCust'],['fcExclProd',state.fc,'exclProd'],['fcAnnualHist',state.fc,'annualHist'],['monthIssue',state,'monthIssue'],['syncLog',state,'syncLog'],['inv',state,'inv'],['pd',state,'pd'],['retainMemo',state,'retainMemo'],['retainMemoAt',state,'retainMemoAt'],['retainExcl',state,'retainExcl'],['custInfo',state,'custInfo'],['cmgrPrimary',state,'cmgrPrimary'],['cmgrKey',state,'cmgrKey'],['monthIssueAt',state,'monthIssueAt'],['fcPctAt',state.fc,'pctAt'],['fcOverrideAt',state.fc,'overrideAt'],['fcAddPctAt',state.fc,'addPctAt'] ]; }
 function _isO(x){ return x&&typeof x==='object'&&!Array.isArray(x); }
 function gsFullObj(){ const o={}; gsFields().forEach(([n,p,k])=>{ o[n]=p[k]; }); return o; }
 function gsCollectFull(){ return gsFullObj(); }
