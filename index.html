@@ -1142,10 +1142,10 @@ function creditVendorSearch(rows){
 function _grpRender(act, title, groupOf, groupLabel, note, extra){
   extra=extra||{};
   const rows=periodRows(); const m=new Map(); const allC=new Set();
-  for(const r of rows){ allC.add(r.cust); const key=groupOf(r); let o=m.get(key); if(!o){o={key,label:key,amt:0,qty:0,custs:new Set()};m.set(key,o);} o.amt+=amtOf(r); o.qty+=r.qty; o.custs.add(r.cust); }
+  for(const r of rows){ allC.add(r.cust); const key=groupOf(r); let o=m.get(key); if(!o){o={key,label:key,amt:0,qty:0,custs:new Set()};m.set(key,o);} o.amt+=amtOf(r); o.qty+=r.qty; o.custs.add(r.cust); if(!o.mixQ){o.mixQ={전용품:0,공용품:0,레이저:0,내부보강:0,기타:0}; o.mixA={전용품:0,공용품:0,레이저:0,내부보강:0,기타:0};} const _mc=mixCatOf(r); o.mixQ[_mc]=(o.mixQ[_mc]||0)+(r.qty>0?r.qty:0); o.mixA[_mc]=(o.mixA[_mc]||0)+amtOf(r); }
   let yoyMap=null;
   if(extra.yoy){ const prs=rows; const monthsSel=new Set(prs.map(r=>monthOf(r))); const yrs=[...new Set(prs.map(r=>+r.y))]; const CYy=yrs.length?Math.max(...yrs):0, PYy=CYy-1; const cyM={},pyM={}; MF().forEach(r=>{ if(!monthsSel.has(monthOf(r)))return; const k=groupOf(r); if(+r.y===CYy)cyM[k]=(cyM[k]||0)+amtOf(r); else if(+r.y===PYy)pyM[k]=(pyM[k]||0)+amtOf(r); }); yoyMap={cy:cyM,py:pyM}; }
-  let arr=[...m.values()].map(o=>{ const b={key:o.key,label:o.label,amt:o.amt,qty:o.qty,custN:o.custs.size,mixQ:o.mixQ,_search:[...o.custs].join(' ')}; if(yoyMap){ const cy=yoyMap.cy[o.key]||0, py=yoyMap.py[o.key]||0; b.yoy=py>0?(cy-py)/py*100:(cy>0?null:null); } if(extra.gradeDist){ const cat={}; o.custs.forEach(c=>{ const k=catOf(c); cat[k]=(cat[k]||0)+1; }); b.gdist=cat; b.gdistText=gdistText(cat); } if(extra.gradeBreak){ const gb={}; o.custs.forEach(c=>{ const g=gradeDisp(gradeRec(c).grade)||'(미지정)'; gb[g]=(gb[g]||0)+1; }); b.gbreak=gb; } return b; });
+  let arr=[...m.values()].map(o=>{ const b={key:o.key,label:o.label,amt:o.amt,qty:o.qty,custN:o.custs.size,mixQ:o.mixQ,mixA:o.mixA,_search:[...o.custs].join(' ')}; if(yoyMap){ const cy=yoyMap.cy[o.key]||0, py=yoyMap.py[o.key]||0; b.yoy=py>0?(cy-py)/py*100:(cy>0?null:null); } if(extra.gradeDist){ const cat={}; o.custs.forEach(c=>{ const k=catOf(c); cat[k]=(cat[k]||0)+1; }); b.gdist=cat; b.gdistText=gdistText(cat); } if(extra.gradeBreak){ const gb={}; o.custs.forEach(c=>{ const g=gradeDisp(gradeRec(c).grade)||'(미지정)'; gb[g]=(gb[g]||0)+1; }); b.gbreak=gb; } return b; });
   if(extra.rowFilter) arr=arr.filter(extra.rowFilter);
   const tot=arr.reduce((a,o)=>a+o.amt,0); arr.forEach(o=>o.share=tot?o.amt/tot*100:0); arr.sort((a,b)=>b.amt-a.amt);
   const totCustN=arr.reduce((a,o)=>a+o.custN,0);
@@ -1158,6 +1158,7 @@ function _grpRender(act, title, groupOf, groupLabel, note, extra){
     {k:'amt',t:`매출액(${unitLabel()})`,cell:o=>disp(o.amt),sortVal:o=>o.amt},
     {k:'share',t:'비중',cell:o=>o.share.toFixed(1)+'%',sortVal:o=>o.share},
     ...(extra.yoy?[{k:'yoy',t:'전년대비',cell:o=>pctSpan(o.yoy),sortVal:o=>o.yoy==null?-1e9:o.yoy}]:[]),
+    ...(extra.mixCols?['전용품','공용품','레이저','내부보강','기타'].map(_c=>({k:'mc_'+_c,t:`<span style="color:${MIX_TXT[_c]}">${_c}</span>`,cell:o=>{const v=(o.mixA&&o.mixA[_c])||0; return v>0?`<span style="color:${MIX_TXT[_c]};font-weight:600">${disp(v)}</span>`:'<span class="sub2">-</span>';},sortVal:o=>(o.mixA&&o.mixA[_c])||0})):[]),
     ...(extra.mix?[{k:'mix',t:'제품구분 비중',nosort:true,cell:o=>{ const t=['전용품','공용품','레이저','내부보강','기타'].reduce((a,c)=>a+((o.mixQ&&o.mixQ[c])||0),0)||1; return '<div style=\"display:flex;flex-wrap:wrap;gap:1px 7px\">'+['전용품','공용품','레이저','내부보강','기타'].map(c=>`<span style=\"font-size:10.5px;font-weight:700;color:${MIX_TXT[c]}\">${c} ${(((o.mixQ&&o.mixQ[c])||0)/t*100).toFixed(0)}%</span>`).join('')+'</div>'; }}]:[]),
     {k:'_bar',t:'',nosort:true,cell:o=>bar(o.amt,max)} ];
   state.sortKey=null; state._search='';
@@ -1244,7 +1245,7 @@ function regionSales(){
   const glabel = lvl==='course'?'코스':lvl==='si'?'지역(시)':'지역(도)';
   const note = lvl==='course'? '거래처를 <b>배송 코스</b>(1~8 및 E=기타·원거리)별로 묶은 매출입니다. 코스는 거래처 <b>지역(시/군/구)</b> 기준으로 매핑됩니다. 코스행 클릭 → 거래처 → 제품.' : '거래처 <b>지역</b> 기준 매출입니다(업체등급기준). 상단 버튼으로 도/시/코스 전환. 제목 클릭 시 정렬.';
   _grpRender('region', title, groupOf, glabel, note,
-    {controlsHtml:ctrl+(lvl==='course'?courseTimeLegend():''), gradeDist:true, mix:true, yoy:true, labelCell:(lvl==='course'?(o=>`${courseBadge(o.key)} ${courseTimeBadge(o.key)}`):undefined), onMount:()=>{ $('#result').querySelectorAll('#rgnSeg button').forEach(b=>b.addEventListener('click',()=>{ state.region.level=b.dataset.v; regionSales(); })); }});
+    {controlsHtml:ctrl+(lvl==='course'?courseTimeLegend():''), gradeDist:true, mixCols:true, yoy:true, labelCell:(lvl==='course'?(o=>`${courseBadge(o.key)} ${courseTimeBadge(o.key)}`):undefined), onMount:()=>{ $('#result').querySelectorAll('#rgnSeg button').forEach(b=>b.addEventListener('click',()=>{ state.region.level=b.dataset.v; regionSales(); })); }});
 }
 function creditSales(){
   const cat=state.credit.cat;
@@ -2013,6 +2014,7 @@ function retain(){
   const _rtClsCnt={}; arr.forEach(o=>{ (catsOf(o.key)||['(미분류)']).forEach(c=>_rtClsCnt[c]=(_rtClsCnt[c]||0)+1); });
   const _rtClsChips=`<div class="ctrlbar" style="flex-wrap:wrap;gap:5px"><b style="font-size:12px">업체분류</b><button class="rtclschip" data-k="" style="cursor:pointer;border:1px solid ${!state.retain.cls?'#1e3a5f':'#cbd5e1'};background:${!state.retain.cls?'#1e3a5f':'#fff'};color:${!state.retain.cls?'#fff':'#475569'};border-radius:14px;padding:3px 11px;font-size:11px;font-weight:700;font-family:inherit">전체 ${arr.length}</button>${Object.entries(_rtClsCnt).sort((a,b)=>b[1]-a[1]).map(([c,n])=>{const on=state.retain.cls===c;return `<button class="rtclschip" data-k="${esc(c)}" style="cursor:pointer;border:1px solid ${on?'#1e3a5f':'#cbd5e1'};background:${on?'#1e3a5f':'#fff'};color:${on?'#fff':'#475569'};border-radius:14px;padding:3px 11px;font-size:11px;font-weight:700;font-family:inherit">${esc(c)} ${n}</button>`;}).join('')}</div>`;
   if(state.retain.cls) arr=arr.filter(o=>(catsOf(o.key)||['(미분류)']).includes(state.retain.cls));
+  if(state.retain.issue) arr=arr.filter(o=>{ const _m=state.retainMemo[o.key]; return _m && String(_m).trim(); });
   const cols=[
     {k:'verdict',t:'판정',cls:'l',cell:o=>`<span class="badge ${o.vc}">${o.verdict}</span>`,sortVal:o=>o.prio},
     {k:'label',t:'거래처',cls:'l',cell:o=>esc(o.label)+' '+catChip(o.label)+` <label class="rtexcl exclbox" onclick="event.stopPropagation()" title="점검 제외"><input type="checkbox" class="rtexclcb" data-c="${esc(o.key)}" ${state.retainExcl[o.key]?'checked':''}>제외</label>`},
@@ -2025,10 +2027,10 @@ function retain(){
     {k:'last',t:'마지막출고',cell:o=>fmtD(o.last)},
     {k:'amt',t:`누적매출(${unitLabel()})`,cell:o=>disp(o.amt)},
     {k:'share',t:'매출비중',cell:o=>`<b>${o.share.toFixed(1)}%</b>`},
-    {k:'_memo',t:'📌 이슈내용',cls:'l rt-memo',nosort:true,cell:o=>{ const v=state.retainMemo[o.key]||''; const at=state.retainMemoAt[o.key]; return `<div onclick="event.stopPropagation()"><input type="text" class="rtmemo" data-c="${esc(o.key)}" value="${esc(v)}" placeholder="이슈 메모"><div class="rtmemoat" data-c="${esc(o.key)}" style="font-size:9.5px;color:#94a3b8;margin-top:2px">${(state.showElog&&at)?('✎ '+gsFmtTime(at)):''}</div></div>`; }} ];
-  const rtHead=`<button class="btn ghost" id="rtIssueBtn" style="font-size:11px;padding:5px 10px;${state.retain.issue?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용제외</button> <button class="btn ghost" id="rtExclBtn" style="font-size:11px;padding:5px 8px;${state.retain.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.retain.showExcl?'숨기기':'보이기'}</button>`;
-  const rtBind=()=>{ const t=$('#tbl'); if(t){ t.classList.toggle('rtissue',!!state.retain.issue); t.classList.toggle('rtshowexcl',!!state.retain.showExcl); }
-    $('#result').querySelectorAll('.rtmemo').forEach(inp=>{ inp.addEventListener('mousedown',e=>e.stopPropagation()); inp.addEventListener('click',e=>e.stopPropagation()); inp.addEventListener('change',e=>{ const c=e.target.dataset.c; const v=e.target.value.trim(); if(v){ state.retainMemo[c]=v; state.retainMemoAt[c]=new Date().toISOString(); } else { state.retainMemo[c]=''; delete state.retainMemoAt[c]; } saveSettings(); const k=(window.CSS&&CSS.escape)?CSS.escape(c):c; const at=$('#result').querySelector('.rtmemoat[data-c="'+k+'"]'); if(at)at.textContent=state.retainMemoAt[c]?('✎ '+gsFmtTime(state.retainMemoAt[c])):''; }); });
+    {k:'_memo',t:'📌 이슈내용',cls:'l rt-memo',nosort:true,cell:o=>{ const v=state.retainMemo[o.key]||''; const at=state.retainMemoAt[o.key]; return `<div onclick="event.stopPropagation()"><input type="text" class="rtmemo" data-c="${esc(o.key)}" value="${esc(v)}" placeholder="이슈 메모"><div class="rtmemoat" data-c="${esc(o.key)}" style="font-size:9.5px;color:#94a3b8;margin-top:2px">${(state.showElog&&at)?('✎ '+editStamp(at)):''}</div></div>`; }} ];
+  const rtHead=`<button class="btn ghost" id="rtIssueBtn" style="font-size:11px;padding:5px 10px;${state.retain.issue?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용${state.retain.issue?' (해제)':''}</button> <button class="btn ghost" id="rtExclBtn" style="font-size:11px;padding:5px 8px;${state.retain.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.retain.showExcl?'숨기기':'보이기'}</button>`;
+  const rtBind=()=>{ const t=$('#tbl'); if(t){ t.classList.remove('rtissue'); t.classList.toggle('rtshowexcl',!!state.retain.showExcl); }
+    $('#result').querySelectorAll('.rtmemo').forEach(inp=>{ inp.addEventListener('mousedown',e=>e.stopPropagation()); inp.addEventListener('click',e=>e.stopPropagation()); inp.addEventListener('change',e=>{ const c=e.target.dataset.c; const v=e.target.value.trim(); if(v){ state.retainMemo[c]=v; state.retainMemoAt[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'}; } else { state.retainMemo[c]=''; delete state.retainMemoAt[c]; } saveSettings(); const k=(window.CSS&&CSS.escape)?CSS.escape(c):c; const at=$('#result').querySelector('.rtmemoat[data-c="'+k+'"]'); if(at)at.textContent=state.retainMemoAt[c]?('✎ '+editStamp(state.retainMemoAt[c])):''; }); });
     $('#result').querySelectorAll('.rtexclcb').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ const c=e.target.dataset.c; if(e.target.checked)state.retainExcl[c]=true; else delete state.retainExcl[c]; const tr=e.target.closest('tr'); if(tr)tr.classList.toggle('rtexcluded',e.target.checked); saveSettings(); }); });
     $('#tbl').querySelectorAll('tbody tr').forEach(tr=>{ const cb=tr.querySelector('.rtexclcb'); if(cb)tr.classList.toggle('rtexcluded',cb.checked); }); };
   const rtMount=()=>{ const ib=$('#rtIssueBtn'); ib&&ib.addEventListener('click',()=>{ state.retain.issue=!state.retain.issue; retain(); }); const eb=$('#rtExclBtn'); eb&&eb.addEventListener('click',()=>{ state.retain.showExcl=!state.retain.showExcl; retain(); }); };
@@ -2256,21 +2258,21 @@ function competeView(){
   const shareRow=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:8px 0">${_compShareHtml('base','부자재')}${_compShareHtml('pivot','피봇힌지')}${_compShareHtml('hinge2','2단경첩')}</div>`;
   const tools=`<div class="ctrlbar" style="gap:8px"><button id="cmpAdd" class="btn" style="background:#dcfce7;color:#15803d;border-color:#86efac">＋ 거래처 추가</button><button id="cmpRename" class="btn ghost">✎ 동종업체명 일괄수정</button><button id="cmpXlsx" class="btn ghost" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe">📥 엑셀</button></div>`;
   const cols=[
-    {k:'rank',t:'#',cls:'rank',cell:(o,i)=>i+1},
-    {k:'cust',t:'거래처',cls:'l',cell:o=>`<b>${esc(o.cust)}</b>${o.code?` <span class="sub2">${esc(o.code)}</span>`:''}`,sortVal:o=>o.cust},
-    {k:'sales',t:'매출액',cell:o=>o._sales>0?won(o._sales):'<span class="sub2">-</span>',sortVal:o=>o._sales||0},
-    {k:'base',t:'부자재 공급',cls:'l',cell:o=>(o.base||[]).map(s=>_supBadge(s)).join('')||'<span class="sub2">-</span>',sortVal:o=>(o.base||[]).join(',')},
-    {k:'pivot',t:'피봇힌지',cell:o=>_supBadge(o.pivot),sortVal:o=>o.pivot||''},
-    {k:'hinge2',t:'2단경첩',cell:o=>_supBadge(o.hinge2),sortVal:o=>o.hinge2||''},
-    {k:'multi',t:'복수거래',cell:o=>o.multi?`<span style="color:#d97706;font-weight:700">복수 ${(o.base||[]).length}</span>`:'<span class="sub2">-</span>',sortVal:o=>o.multi?1:0},
-    {k:'ours',t:'동방파스텍 납품',cell:o=>{ const cats=[]; if((o.base||[]).includes(OURCO))cats.push('부자재'); if(o.pivot===OURCO)cats.push('피봇'); if(o.hinge2===OURCO)cats.push('경첩'); return cats.length?`<span style="color:#16a34a;font-weight:700">O</span> <span class="sub2">${cats.join('·')}</span>`:'<span style="color:#dc2626;font-weight:700">X</span>'; },sortVal:o=>o.ours?1:0},
-    {k:'edit',t:'',nosort:true,cell:o=>`<button class="cmpedit" data-i="${o._i}" style="border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer;font-size:11px;padding:2px 8px">편집</button>`} ];
+    {k:'rank',t:'#',cls:'l',w:'4%',cell:(o,i)=>i+1},
+    {k:'cust',t:'거래처',cls:'l',w:'17%',cell:o=>`<b>${esc(o.cust)}</b>${o.code?` <span class="sub2">${esc(o.code)}</span>`:''}`,sortVal:o=>o.cust},
+    {k:'sales',t:'매출액',w:'10%',cell:o=>o._sales>0?won(o._sales):'<span class="sub2">-</span>',sortVal:o=>o._sales||0},
+    {k:'base',t:'부자재 공급',cls:'l',w:'24%',cell:o=>(o.base||[]).map(s=>_supBadge(s)).join('')||'<span class="sub2">-</span>',sortVal:o=>(o.base||[]).join(',')},
+    {k:'pivot',t:'피봇힌지',w:'11%',cell:o=>_supBadge(o.pivot),sortVal:o=>o.pivot||''},
+    {k:'hinge2',t:'2단경첩',w:'11%',cell:o=>_supBadge(o.hinge2),sortVal:o=>o.hinge2||''},
+    {k:'multi',t:'복수거래',w:'7%',cell:o=>o.multi?`<span style="color:#d97706;font-weight:700">복수 ${(o.base||[]).length}</span>`:'<span class="sub2">-</span>',sortVal:o=>o.multi?1:0},
+    {k:'ours',t:'동방파스텍 납품',w:'11%',cell:o=>{ const cats=[]; if((o.base||[]).includes(OURCO))cats.push('부자재'); if(o.pivot===OURCO)cats.push('피봇'); if(o.hinge2===OURCO)cats.push('경첩'); return cats.length?`<span style="color:#16a34a;font-weight:700">O</span> <span class="sub2">${cats.join('·')}</span>`:'<span style="color:#dc2626;font-weight:700">X</span>'; },sortVal:o=>o.ours?1:0},
+    {k:'edit',t:'',nosort:true,w:'5%',cell:o=>`<button class="cmpedit" data-i="${o._i}" style="border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer;font-size:11px;padding:2px 8px">편집</button>`} ];
   const ourBase=rows.filter(d=>(d.base||[]).includes(OURCO)).length, ourPivot=rows.filter(d=>d.pivot===OURCO).length, ourH=rows.filter(d=>d.hinge2===OURCO).length, multiN=rows.filter(d=>(d.base||[]).length>=2).length;
   arr.sort((a,b)=>(b._sales||0)-(a._sales||0));
   render('🏢 동종업체분석', `총 ${rows.length}개 거래처 · 동방 납품(부자재 ${ourBase}·피봇 ${ourPivot}·경첩 ${ourH}) · 복수거래 ${multiN}곳${state.compSel?` · 필터: ${esc(state.compSel)} (${arr.length}곳)`:''}`, arr, cols, 'sales',
     `거래처별 <b>부자재·피봇힌지·2단경첩</b>을 어느 동종업체가 납품하는지 분석합니다(<b>${OURCO}</b>=자사). 위 <b>동종업체 칩</b>으로 필터, <b>＋거래처 추가</b>로 미거래 거래처도 등록, <b>편집</b>으로 수정. 데이터는 자동 저장·동기화됩니다.`,
     {drill:{custom:row=>compCustDrill(row.cust)}, controlsHtml:chips+shareRow+tools, onMount:()=>{
-      const _tb=$('#tbl'); if(_tb){ _tb.style.tableLayout='fixed'; _tb.style.width='100%'; const _ths=[..._tb.querySelectorAll('thead th')]; const _ws=['3.5%','17%','10%','25%','11%','11%','7%','10.5%','5%']; _ths.forEach((t,i)=>{ if(_ws[i])t.style.width=_ws[i]; t.style.whiteSpace='nowrap'; }); _tb.querySelectorAll('tr').forEach(tr=>{ const c0=tr.children[0]; if(c0)c0.style.textAlign='left'; }); }
+      const _tb=$('#tbl'); if(_tb){ _tb.style.tableLayout='fixed'; _tb.style.width='100%'; }
       $('#result').querySelectorAll('.cmpchip').forEach(b=>b.addEventListener('click',()=>{ state.compSel=b.dataset.s||null; competeView(); }));
       const ab=$('#cmpAdd'); ab&&ab.addEventListener('click',()=>openCompEdit(null));
       const rb=$('#cmpRename'); rb&&rb.addEventListener('click',openCompRename);
@@ -3226,7 +3228,7 @@ function drawTable(){
   if(q){ const toks=q.split(/\s+/).filter(Boolean); rows=rows.filter(o=>{ const s=(String(o.label||'')+' '+String(o.key||'')+' '+String(o._search||'')).toLowerCase(); return toks.every(t=>s.includes(t)); }); }
   if(state.sortKey){ const col=cols.find(c=>c.k===state.sortKey); const val=col&&col.sortVal?col.sortVal:(o=>o[state.sortKey]);
     rows=[...rows].sort((a,b)=>{ let x=val(a),y=val(b); if(x instanceof Date)x=+x; if(y instanceof Date)y=+y; if(typeof x==='string')return state.sortDir*x.localeCompare(y,'ko'); return state.sortDir*((x||0)-(y||0)); }); }
-  const thead=`<thead><tr>${cols.map(c=>{const a=state.sortKey===c.k?(state.sortDir<0?' ▼':' ▲'):''; return `<th class="${c.cls||''}" data-k="${c.k}" ${c.nosort?'style="cursor:default"':''}>${c.t}<span class="arr">${a}</span></th>`;}).join('')}</tr></thead>`;
+  const thead=`<thead><tr>${cols.map(c=>{const a=state.sortKey===c.k?(state.sortDir<0?' ▼':' ▲'):''; return `<th class="${c.cls||''}" data-k="${c.k}" style="${c.w?'width:'+c.w+';':''}${c.nosort?'cursor:default':''}">${c.t}<span class="arr">${a}</span></th>`;}).join('')}</tr></thead>`;
   let totalRow='';
   if(useTotal){ const tc=useTotal.col||'amt'; const tcells=useTotal.cells||{};
     const FMT={amt:disp,mavg:disp,supply:disp,total:disp,prev:disp,proj:disp,diff:disp,qty:won,cnt:won,custN:won,pq:won,cq:won};
@@ -3238,7 +3240,7 @@ function drawTable(){
       if(c.k in FMT){ const sv=data.reduce((a,o)=>{ const v=c.sortVal?c.sortVal(o):o[c.k]; return a+(typeof v==='number'?v:0); },0); return `<td>${FMT[c.k](sv)}</td>`; }
       if(c.k.indexOf('mcol:')===0){ const sv=data.reduce((a,o)=>{ const v=c.sortVal?c.sortVal(o):0; return a+(typeof v==='number'?v:0); },0); return `<td>${disp(sv)}</td>`; }
       return '<td></td>'; }).join('')+`</tr>`; }
-  const body=`<tbody>${rows.map((o,i)=>`<tr>${cols.map(c=>`<td class="${c.cls||''}">${c.cell(o,i)}</td>`).join('')}</tr>`).join('')}${totalRow}</tbody>`;
+  const body=`<tbody>${rows.map((o,i)=>`<tr>${cols.map(c=>`<td class="${c.cls||''}"${c.w?' style="width:'+c.w+'"':''}>${c.cell(o,i)}</td>`).join('')}</tr>`).join('')}${totalRow}</tbody>`;
   $('#tbl').innerHTML=thead+body;
   $('#tbl').querySelectorAll('.mixedit').forEach(b=>{ if(b._mb)return; b._mb=1; b.addEventListener('click',e=>{ e.stopPropagation(); const k=b.dataset.k; if(!k||typeof openMixOverride!=='function')return; const parts=String(k).split('│'); const code=parts[0],spec=parts[1]||''; const rec=CUR.find(r=>((r.code||'(미상)')===code)&&((r.spec||'')===spec)); openMixOverride(k, rec?rec.name:'', rec?rec.spec:spec); }); });
   $('#tbl').querySelectorAll('th').forEach(th=>{ const k=th.dataset.k; const col=cols.find(c=>c.k===k); if(col&&!col.nosort) th.addEventListener('click',()=>{ if(state.sortKey===k)state.sortDir*=-1; else{state.sortKey=k;state.sortDir=(k==='label'?1:-1);} drawTable(); }); });
@@ -3297,7 +3299,7 @@ function exportCSV(){
 (async function(){
   const st=await idbGet('settings');
   if(st){ if(st.headcount){state.headcount=st.headcount;} if(st.headMonthly)state.headMonthly=st.headMonthly; if(st.headYearDefault)state.headYearDefault=st.headYearDefault; if(st.fcPctAt)state.fc.pctAt=st.fcPctAt; if(st.fcOverrideAt)state.fc.overrideAt=st.fcOverrideAt; if(st.fcAddPctAt)state.fc.addPctAt=st.fcAddPctAt; if(st.monthIssueAt)state.monthIssueAt=st.monthIssueAt; if(st.fcPct)state.fc.pct=st.fcPct; if(st.fcOverride)state.fc.override=st.fcOverride; if(st.fcAddPct)state.fc.addPct=st.fcAddPct; if(st.mgrOverride)state.mgrOverride=st.mgrOverride; if(st.workdays)state.workdays=st.workdays; if(st.bep!=null)state.bep=st.bep; if(st.fcNewCusts)state.fc.newCusts=st.fcNewCusts; if(st.clsOverride)state.clsOverride=st.clsOverride; if(st.gradeOverride)state.gradeOverride=st.gradeOverride; if(st.gbunOverride)state.gbunOverride=st.gbunOverride; if(st.priceSets)state.priceSets=st.priceSets; if(st.comp)state.comp=st.comp; if(st.editLog)state.editLog=st.editLog; if(st.custProdOverride)state.fc.custProdOverride=st.custProdOverride; if(st.fcProdOverride)state.fc.prodOverride=st.fcProdOverride; if(st.fcProdAddPct)state.fc.prodAddPct=st.fcProdAddPct; if(st.fcNewProds)state.fc.newProds=st.fcNewProds; if(st.fcNewLines)state.fc.newLines=st.fcNewLines; if(st.fcCustMemo)state.fc.custMemo=st.fcCustMemo; if(st.fcProdMemo)state.fc.prodMemo=st.fcProdMemo; if(st.fcNotesHtml!=null)state.fc.notesHtml=st.fcNotesHtml; if(st.fcNotesSales!=null)state.fc.notesSales=st.fcNotesSales; if(st.fcNotesTech!=null)state.fc.notesTech=st.fcNotesTech; if(st.fcNotesMeta)state.fc.notesMeta=st.fcNotesMeta; if(st.fcExclCust)state.fc.exclCust=st.fcExclCust; if(st.fcExclProd)state.fc.exclProd=st.fcExclProd; if(st.fcAnnualHist)state.fc.annualHist={...state.fc.annualHist,...st.fcAnnualHist}; if(st.inv)state.inv={...state.inv,...st.inv}; if(st.syncLog)state.syncLog=st.syncLog; if(st.monthIssue)state.monthIssue=st.monthIssue; if(st.pd)state.pd={...state.pd,...st.pd}; if(st.retainMemo)state.retainMemo=st.retainMemo; if(st.retainMemoAt)state.retainMemoAt=st.retainMemoAt; if(st.retainExcl)state.retainExcl=st.retainExcl; if(st.cross)state.cross={...state.cross,...st.cross}; if(st.custInfo)state.custInfo=st.custInfo; if(st.gsync)state.gsync=st.gsync; }
-  { const gu=document.getElementById('gsUrl'); if(gu)gu.value=(state.gsync&&state.gsync.url)||''; const gk=document.getElementById('gsKey'); if(gk)gk.value=(state.gsync&&state.gsync.key)||''; }
+  { const gu=document.getElementById('gsUrl'); if(gu)gu.value=(state.gsync&&state.gsync.url)||''; const gk=document.getElementById('gsKey'); if(gk)gk.value=(state.gsync&&state.gsync.key)||''; const gus=document.getElementById('gsUser'); if(gus)gus.value=(state.gsync&&state.gsync.user)||''; }
   const saved=await idbGet('datasets');
   if(saved&&saved.length){ datasets=saved.map(d=>({...d,uid:uidSeq++})); afterDataChanged(); }
   if(typeof gsUpdateBtn==='function')gsUpdateBtn();
