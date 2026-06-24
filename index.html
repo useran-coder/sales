@@ -192,7 +192,7 @@
   .fcissue-p th:nth-child(5),.fcissue-p th:nth-child(6),.fcissue-p th:nth-child(12),.fcissue-p th:nth-child(13),.fcissue-p td:nth-child(5),.fcissue-p td:nth-child(6),.fcissue-p td:nth-child(12),.fcissue-p td:nth-child(13){display:none}
   .fcissue-p .fcpmemo{width:100%!important}
   #tbl#tbl.rtissue th.rt-cv,#tbl.rtissue td.rt-cv,#tbl#tbl.rtissue th.rt-avg,#tbl.rtissue td.rt-avg,#tbl#tbl.rtissue th.rt-n,#tbl.rtissue td.rt-n,#tbl#tbl.rtissue th.rt-span,#tbl.rtissue td.rt-span{display:none}
-  #tbl td.rt-memo input.rtmemo{width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;min-height:34px}
+  #tbl td.rt-memo input.rtmemo{width:205px;font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;min-height:34px}
   #tbl.rtissue td.rt-memo input.rtmemo{width:100%;min-width:240px}
   #tbl .rtexcl{display:none;margin-left:5px}
   #tbl.rtshowexcl .rtexcl{display:inline-flex}
@@ -2219,7 +2219,7 @@ function retain(){
     {k:'last',t:'마지막출고',w:'80px',cell:o=>fmtD(o.last)},
     {k:'amt',t:`누적매출(${unitLabel()})`,w:'96px',cell:o=>disp(o.amt)},
     {k:'share',t:'매출비중',w:'68px',cell:o=>`<b>${o.share.toFixed(1)}%</b>`},
-    {k:'_memo',t:'📌 이슈내용',cls:'l rt-memo',nosort:true,cell:o=>{ const v=state.retainMemo[o.key]||''; const at=state.retainMemoAt[o.key]; return `<div onclick="event.stopPropagation()"><input type="text" class="rtmemo${v?' editedm':''}" data-c="${esc(o.key)}" value="${esc(v)}" maxlength="15" placeholder="이슈 메모(최대 15자)"><div class="rtmemoat" data-c="${esc(o.key)}" style="font-size:9.5px;color:#94a3b8;margin-top:2px">${(state.showElog&&at)?('✎ '+editStamp(at)):''}</div></div>`; }} ];
+    {k:'_memo',t:'📌 이슈내용',cls:'l rt-memo',nosort:true,cell:o=>{ const v=state.retainMemo[o.key]||''; const at=state.retainMemoAt[o.key]; return `<div onclick="event.stopPropagation()"><input type="text" class="rtmemo${v?' editedm':''}" data-c="${esc(o.key)}" value="${esc(v)}" placeholder="이슈 메모"><div class="rtmemoat" data-c="${esc(o.key)}" style="font-size:9.5px;color:#94a3b8;margin-top:2px">${(state.showElog&&at)?('✎ '+editStamp(at)):''}</div></div>`; }} ];
   const _visitCnt=Object.keys(state.retainVisit||{}).filter(k=>state.retainVisit[k]).length;
   const rtHead=`<button class="btn ghost" id="rtVisitBtn" style="font-size:11px;padding:5px 10px;${state.retain.visitOnly?'background:#eab308;color:#1e293b;border-color:#eab308;font-weight:700':''}">🚩 방문필요${_visitCnt>0?'('+_visitCnt+')':''}${state.retain.visitOnly?' ✓':''}</button> <button class="btn ghost" id="rtExclOnlyBtn" style="font-size:11px;padding:5px 10px;${state.retain.exclOnly?'background:#dc2626;color:#fff;border-color:#dc2626':''}">🚫 제외만 보기${(()=>{const n=Object.values(state.retainExcl||{}).filter(Boolean).length;return n>0?'('+n+')':''})()}${state.retain.exclOnly?' ✓':''}</button> <button class="btn ghost" id="rtIssueBtn" style="font-size:11px;padding:5px 10px;${state.retain.issue?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.retain.issue?' (해제)':''}</button> <button class="btn ghost" id="rtExclBtn" style="font-size:11px;padding:5px 8px;${state.retain.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.retain.showExcl?'숨기기':'보이기'}</button>`;
   const rtBind=()=>{ const t=$('#tbl'); if(t){ t.classList.toggle('rtissue',!!state.retain.issue); t.classList.toggle('rtshowexcl',!!state.retain.showExcl); }
