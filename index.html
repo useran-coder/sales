@@ -1286,24 +1286,41 @@ function saleSizeBadge(amt){ const m=amt/periodMonths(); const g=saleSizeGrade(m
 function saleSizeLegend(){ const rows=[['A','1,000만원 이상'],['B','500만원 이상 ~ 1,000만원 미만'],['C','100만원 이상 ~ 500만원 미만'],['선결제','100만원 미만 또는 불규칙'],['거래제한','승인 후 출고'],['거래중지','거래중지']]; const th='border:1px solid #cbd5e1;padding:4px 12px;background:#0d9488;color:#fff;font-size:11px'; const td='border:1px solid #e2e8f0;padding:3px 12px;font-size:11.5px'; return `<details style="margin:6px 0 2px"><summary style="cursor:pointer;font-weight:700;font-size:12px;color:#0d9488">📐 월 매출규모 기준 (매출규모 참조용 · 신용등급 설정 참고) — 펼치기/접기</summary><div style="overflow:auto;margin-top:6px"><table style="border-collapse:collapse"><thead><tr><th style="${th}">매출규모 등급</th><th style="${th}">월 매출 기준</th></tr></thead><tbody>${rows.map(r=>`<tr><td style="${td};text-align:center;font-weight:800">${r[0]}</td><td style="${td};text-align:right">${r[1]}</td></tr>`).join('')}</tbody></table></div><div style="font-size:10.5px;color:#64748b;margin-top:3px">※ <b>매출규모(참조)</b>=선택 기간의 <b>월평균 매출</b>로 산정한 A/B/C입니다. 100만↓·불규칙은 100만↓로 표시됩니다.</div></details>`; }
 function bigoLen(b){ const m=String(b||'').match(/\[\s*(\d+)\s*\]/); return m?+m[1]:null; }
 function bigoKey(b){ b=String(b||''); const m=b.match(/\[\s*(\d+)\s*\]/); const len=m?m[1]:''; let rest=b.replace(/\[[^\]]*\]/g,'').toLowerCase().replace(/[\s\-_.,/()]+/g,''); rest=[...rest].sort().join(''); return len+'#'+rest; }
+function shipDatesPop(title, dates){
+  const ex=document.getElementById('shipDatesOvl'); if(ex)ex.remove();
+  dates=dates||[];
+  const ov=document.createElement('div'); ov.id='shipDatesOvl'; ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  const items=dates.map(function(d){ return '<div style="padding:5px 8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:12.5px;font-weight:700;color:#1e3a5f;text-align:center">'+esc(d)+'</div>'; }).join('');
+  ov.innerHTML='<div style="background:#fff;border-radius:14px;max-width:460px;width:92%;max-height:80vh;overflow:auto;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-weight:800;font-size:15px">\uD83D\uDCC5 \uCD9C\uACE0\uC77C\uC790</div><button id="shipDatesClose" style="cursor:pointer;border:none;background:#f1f5f9;border-radius:8px;width:28px;height:28px;font-size:15px">\u2715</button></div>'
+    +'<div class="sub2" style="margin-bottom:12px">'+esc(title||'')+' \u00B7 \uCD1D <b>'+dates.length+'</b>\uAC74 (\uCD5C\uADFC\uC21C)</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px">'+(items||'<span class="sub2">\uCD9C\uACE0\uC77C\uC790 \uC5C6\uC74C</span>')+'</div></div>';
+  document.body.appendChild(ov);
+  ov.addEventListener('click',function(e){ if(e.target===ov)ov.remove(); });
+  const cb=document.getElementById('shipDatesClose'); if(cb)cb.onclick=function(){ov.remove();};
+  document.addEventListener('keydown',function _esc(e){ if(e.key==='Escape'){ov.remove();document.removeEventListener('keydown',_esc);} });
+}
 function innerDrill(cust, src, backFn){
   state.sortKey=null; state._search='';
   const m=new Map();
-  src.forEach(r=>{ const bk=bigoKey(r.bigo); const k=(r.code||'')+'│'+(r.spec||'')+'│'+bk; let o=m.get(k); if(!o){o={code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',bk,qty:0,amt:0,cnt:new Set(),variants:new Map()};m.set(k,o);} o.qty+=r.qty; o.amt+=amtOf(r); o.cnt.add((r.cust||'')+'│'+(+r.d)); const bv=(r.bigo||'').trim()||'(비고없음)'; o.variants.set(bv,(o.variants.get(bv)||0)+1); });
-  let arr=[...m.values()].map(o=>{ let rep='',mx=-1; o.variants.forEach((v,kk)=>{ if(v>mx){mx=v;rep=kk;} }); const vlist=[...o.variants.keys()]; return {key:o.code+'│'+o.spec+'│'+o.bk,label:o.name,code:o.code,name:o.name,spec:o.spec,bigo:rep,blen:bigoLen(rep),variants:vlist,qty:o.qty,amt:o.amt,cnt:o.cnt.size}; });
+  src.forEach(r=>{ const bk=bigoKey(r.bigo); const k=(r.code||'')+'│'+(r.spec||'')+'│'+bk; let o=m.get(k); if(!o){o={code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',bk,qty:0,amt:0,cnt:new Set(),dset:new Set(),variants:new Map()};m.set(k,o);} o.qty+=r.qty; o.amt+=amtOf(r); o.cnt.add((r.cust||'')+'│'+(+r.d)); o.dset.add(+new Date(r.d.getFullYear(),r.d.getMonth(),r.d.getDate())); const bv=(r.bigo||'').trim()||'(비고없음)'; o.variants.set(bv,(o.variants.get(bv)||0)+1); });
+  let arr=[...m.values()].map(o=>{ let rep='',mx=-1; o.variants.forEach((v,kk)=>{ if(v>mx){mx=v;rep=kk;} }); const vlist=[...o.variants.keys()]; const _ds=[...o.dset].sort((a,b)=>a-b); const _cyc=_ds.length>=2?Math.round((_ds[_ds.length-1]-_ds[0])/(_ds.length-1)/86400000):null; const _last=_ds.length?new Date(_ds[_ds.length-1]):null; const _dlist=_ds.slice().reverse().map(t=>fmtD(new Date(t))); return {key:o.code+'│'+o.spec+'│'+o.bk,label:o.name,code:o.code,name:o.name,spec:o.spec,bigo:rep,blen:bigoLen(rep),variants:vlist,qty:o.qty,amt:o.amt,cnt:o.cnt.size,cyc:_cyc,lastD:_last,dlist:_dlist}; });
   const tot=arr.reduce((a,o)=>a+o.amt,0); const totQty=arr.reduce((a,o)=>a+o.qty,0);
+  const _dateMap={}; arr.forEach(o=>{ _dateMap[o.key]={title:(o.name||'')+(o.spec?(' '+o.spec):'')+(o.blen!=null?(' '+o.blen):''), dates:o.dlist}; });
   arr.sort((a,b)=>b.qty-a.qty);
   const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
     {k:'code',t:'품번',cls:'l',cell:o=>esc(o.code)},
     {k:'name',t:'품명',cls:'l',cell:o=>esc(o.name)},
     {k:'spec',t:'규격',cls:'l',cell:o=>esc((o.spec||'(규격없음)')+(o.blen!=null?(' '+o.blen):'')),sortVal:o=>o.spec||''},
     {k:'bigo',t:'비고(내역)',cls:'l',cell:o=>{ const more=o.variants.length>1?` <span class="sub2" title="유사 묶음: ${esc(o.variants.join('  /  '))}" style="color:#9333ea;cursor:help">+${o.variants.length-1}유사</span>`:''; let num=o.blen; if(num==null){ const mm=String(o.bigo||'').match(/(\d+)/); num=mm?+mm[1]:null; } if(num==null)return '<span class="sub2">-</span>'+more; return `<span style="display:inline-block;padding:1px 9px;border-radius:6px;background:#ede9fe;color:#6d28d9;font-weight:800;font-size:13px">${num}</span>`+more; },sortVal:o=>(o.blen||0)},
+    {k:'lastd',t:'마지막 출고일',cell:o=>o.lastD?fmtD(o.lastD):'<span class="sub2">-</span>',sortVal:o=>o.lastD?+o.lastD:0},
+    {k:'cyc',t:'평균발주주기',cell:o=>(o.cyc!=null?(o.cyc+'일'):'<span class="sub2">-</span>'),sortVal:o=>(o.cyc!=null?o.cyc:1e9)},
     {k:'qty',t:'출고수량',cell:o=>won(o.qty),sortVal:o=>o.qty},
-    {k:'cnt',t:'출고건수',cell:o=>won(o.cnt),sortVal:o=>o.cnt},
+    {k:'cnt',t:'출고건수',cell:o=>`<span class="cntclick" data-k="${esc(o.key)}" title="클릭: 출고일자 보기" style="cursor:pointer;color:#1e3a5f;font-weight:800;border-bottom:1.5px dotted #94a3b8">${won(o.cnt)} 📅</span>`,sortVal:o=>o.cnt},
     {k:'amt',t:`매출액(${unitLabel()})`,cell:o=>disp(o.amt),sortVal:o=>o.amt} ];
   render(`${cust} ▸ 내부보강 세부내역 (품번·규격·비고)`, `${arr.length}건 · 합계 ${won(tot)}원 · 총수량 ${won(totQty)}`, arr, cols, 'qty',
     `${esc(cust)}의 상하보강·이너프레임 세부 내역입니다. <b>비고(내역)</b>의 길이[ ]·추가항목이 유사한(오타·띄어쓰기·순서 차이) 건은 같은 것으로 묶었습니다(<b>+N유사</b>에 마우스를 올리면 원문 확인). 소량 다품종 파악용.`,
-    {back:{label:'← 내부보강으로',fn:backFn}, total:{label:'합 계',amt:tot,cells:{qty:won(totQty)}}});
+    {back:{label:'← 내부보강으로',fn:backFn}, onMount:()=>{ document.querySelectorAll('#result .cntclick').forEach(function(el){ el.addEventListener('click',function(e){ e.stopPropagation(); const info=_dateMap[el.dataset.k]; if(info)shipDatesPop(info.title,info.dates); }); }); }, total:{label:'합 계',amt:tot,cells:{qty:won(totQty)}}});
 }
 
 function catChip(c){ const cat=catOf(c); const col=GRADE_COL[cat]||{bg:'#eef2f8',tx:'#475569'}; const gb=(gradeRec(c).grade||'').replace(/[+\-]/g,'').trim(); const gl=/^[ABC]$/.test(gb)?gb:''; return `<span style="display:inline-block;padding:1px 8px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col.bg};color:${col.tx}">${cat}${gl}</span>`; }
