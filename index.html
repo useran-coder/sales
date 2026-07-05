@@ -296,7 +296,7 @@
 #globalBack:hover{background:#15304f;transform:translateY(-1px)}
 </style>
 
-<style id="sales-sync-header-v02-style">
+<style id="sales-sync-header-v03-style">
 header .header-history-btn,
 header .header-sync-btn{
   display:inline-flex!important;align-items:center;justify-content:center;gap:3px;height:36px;
@@ -343,7 +343,7 @@ header .appver{margin-left:0!important}
   </form>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)" style="align-self:center;font-size:11px;color:#94a3b8;white-space:nowrap;padding:3px 4px">버전 v02</span>
+  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)" style="align-self:center;font-size:11px;color:#94a3b8;white-space:nowrap;padding:3px 4px">버전 v03</span>
 </header>
 
 <div class="wrap">
@@ -3958,31 +3958,33 @@ function exportCSV(){
 
 
 
-<style id="sales-v02-final-style">
-/* v02: 동기화 결과를 상단에서 명확히 구분 */
-header .header-sync-btn{min-width:278px!important}
+<style id="sales-v03-final-style">
+/* v03: 동기화 안정화 · 재시도 · 서버 응답 기준 완료 판정 */
+header .header-sync-btn{min-width:292px!important}
 header .header-sync-btn.sync-ok .sync-time{color:#047857!important}
 header .header-sync-btn.sync-error .sync-time{color:#be123c!important}
 header .header-sync-btn.sync-working .sync-time{color:#64748b!important}
+header .header-sync-btn.sync-retry{background:#fffbeb!important;border-color:#fcd34d!important;color:#b45309!important}
+header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
 #elogBtn,#cmElog,#fcElogBtn,#ciElog{display:none!important}
-/* 수정이력 팝업 넓게 */
-#elogOvl > div{width:min(1240px,97vw)!important;max-width:1240px!important;max-height:90vh!important}
+#elogOvl > div{width:min(1380px,98vw)!important;max-width:1380px!important;max-height:92vh!important}
 #elogOvl > div > div:last-child{overflow:auto!important}
-#elogOvl table{min-width:980px!important;table-layout:auto!important}
-#elogOvl th:nth-child(1),#elogOvl td:nth-child(1){width:150px!important}
-#elogOvl th:nth-child(2),#elogOvl td:nth-child(2){width:135px!important}
-#elogOvl th:nth-child(3),#elogOvl td:nth-child(3){width:145px!important}
+#elogOvl table{min-width:1080px!important;table-layout:auto!important}
+#elogOvl th:nth-child(1),#elogOvl td:nth-child(1){width:165px!important}
+#elogOvl th:nth-child(2),#elogOvl td:nth-child(2){width:145px!important}
+#elogOvl th:nth-child(3),#elogOvl td:nth-child(3){width:155px!important}
 #elogOvl th:nth-child(4),#elogOvl td:nth-child(4){white-space:normal!important;word-break:break-word!important}
-@media(max-width:980px){header .header-sync-btn{min-width:250px!important}}
+@media(max-width:980px){header .header-sync-btn{min-width:260px!important}}
 </style>
-<script id="sales-sync-v02-final-patch">
+<script id="sales-sync-v03-final-patch">
 (function(){
   'use strict';
-  var APP_VERSION='v02';
-  var BASE_KEY='sales_gsync_base_v02';
-  var AUTO_DELAY=5000, BUSY_RETRY=1400, MAX_AUTO_RETRY=3;
+  var APP_VERSION='v03';
+  var BASE_KEY='sales_gsync_base_stable_v1';
+  var OLD_BASE_KEYS=['sales_gsync_base_v02','sales_gsync_base_v01'];
+  var AUTO_DELAY=5000, BUSY_RETRY=1300, MAX_AUTO_RETRY=5;
   var internalPersist=false, baseReadyPromise=null, autoRetry=0;
-  var uiMode='idle', uiLabel='';
+  var uiMode='idle', uiLabel='', lastTransient='';
 
   function id(x){return document.getElementById(x)}
   function clone(v){if(v===undefined)return undefined;try{return JSON.parse(JSON.stringify(v))}catch(_){return v}}
@@ -3991,11 +3993,18 @@ header .header-sync-btn.sync-working .sync-time{color:#64748b!important}
   function fmtShort(iso){var d=new Date(iso||'');if(isNaN(d.getTime()))return '';return pad(d.getMonth()+1)+'/'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())}
   function fmtFull(iso){var d=new Date(iso||'');if(isNaN(d.getTime()))return '';return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())}
   function nowIso(){return new Date().toISOString()}
+  function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
   function isPlain(x){return !!x&&typeof x==='object'&&!Array.isArray(x)}
   function hasOwn(o,k){return !!o&&Object.prototype.hasOwnProperty.call(o,k)}
   function patchHas(p){return !!(p&&Object.keys(p).length)}
   function status(msg,color){var e=id('gsStatus');if(e){e.textContent=msg;e.style.color=color||'#64748b'}}
+  function fieldNames(){return (typeof gsFields==='function'?gsFields():[]).map(function(x){return x[0]})}
 
+  function cleanTombstones(v){
+    if(Array.isArray(v))return v.map(function(x){return isPlain(x)?cleanTombstones(x):x});
+    if(!isPlain(v))return v;
+    var out={};Object.keys(v).forEach(function(k){if(v[k]===null)return;out[k]=cleanTombstones(v[k])});return out;
+  }
   function currentFull(){return clone(typeof gsFullObj==='function'?gsFullObj():{})||{}}
   function fullDelta(cur,old){
     var out={};
@@ -4006,15 +4015,12 @@ header .header-sync-btn.sync-working .sync-time{color:#64748b!important}
     return out;
   }
   function snapshotFromRemote(base,remote){
-    var out=clone(base||{})||{};
-    if(remote&&typeof remote==='object')Object.keys(remote).forEach(function(k){out[k]=clone(remote[k])});
+    var out=clone(base||{})||{};remote=remote&&typeof remote==='object'?remote:{};
+    fieldNames().forEach(function(n){if(hasOwn(remote,n))out[n]=cleanTombstones(clone(remote[n]))});
     return out;
   }
   function restoreFull(snap){
-    (typeof gsFields==='function'?gsFields():[]).forEach(function(row){
-      var n=row[0],p=row[1],k=row[2];
-      if(hasOwn(snap,n))p[k]=clone(snap[n]);
-    });
+    (typeof gsFields==='function'?gsFields():[]).forEach(function(row){var n=row[0],p=row[1],k=row[2];if(hasOwn(snap,n))p[k]=clone(snap[n])});
   }
   function rerender(){
     try{if(typeof syncExcludedCustMaps==='function')syncExcludedCustMaps()}catch(_){}
@@ -4024,241 +4030,177 @@ header .header-sync-btn.sync-working .sync-time{color:#64748b!important}
     try{var ed=id('fcNotesEd');if(ed){var nf={main:'notesHtml',sales:'notesSales',tech:'notesTech'}[state.fc.notesTab||'main'];ed.innerHTML=state.fc[nf]||''}}catch(_){}
     try{if(typeof refreshElogBtns==='function')refreshElogBtns()}catch(_){}
   }
-  async function persistOnly(){
-    internalPersist=true;_gsApplying=true;
-    try{await saveSettings()}finally{_gsApplying=false;internalPersist=false}
-  }
-  async function saveBase(snap){
-    _gsBase=clone(snap||currentFull());
-    try{await idbSet(BASE_KEY,_gsBase)}catch(_){}
-  }
+  async function persistOnly(){internalPersist=true;_gsApplying=true;try{await saveSettings()}finally{_gsApplying=false;internalPersist=false}}
+  async function saveBase(snap){_gsBase=clone(snap||currentFull());try{await idbSet(BASE_KEY,_gsBase)}catch(_){}}
   function ensureBase(){
     if(baseReadyPromise)return baseReadyPromise;
     baseReadyPromise=(async function(){
       var saved=null;try{saved=await idbGet(BASE_KEY)}catch(_){}
-      if(saved&&typeof saved==='object')_gsBase=clone(saved);
+      if(!saved){for(var i=0;i<OLD_BASE_KEYS.length&&!saved;i++){try{saved=await idbGet(OLD_BASE_KEYS[i])}catch(_){}}}
+      if(saved&&typeof saved==='object'){_gsBase=clone(saved);try{await idbSet(BASE_KEY,_gsBase)}catch(_){}}
       else await saveBase(currentFull());
       return _gsBase;
-    })();
-    return baseReadyPromise;
+    })();return baseReadyPromise;
   }
-  async function applyAndPersist(snap){
-    _gsApplying=true;internalPersist=true;
-    try{restoreFull(snap);rerender();await saveSettings()}finally{internalPersist=false;_gsApplying=false}
-  }
+  async function applyAndPersist(snap){_gsApplying=true;internalPersist=true;try{restoreFull(snap);rerender();await saveSettings()}finally{internalPersist=false;_gsApplying=false}}
 
-  function setResult(kind,error){
-    state.gsync=state.gsync||{};
-    state.gsync.lastAttempt=nowIso();
-    state.gsync.lastResult=kind;
-    if(kind==='ok'){
-      state.gsync.lastSync=state.gsync.lastAttempt;
-      state.gsync.lastError='';
-      state.gsync.syncCount=(state.gsync.syncCount||0)+1;
-    }else state.gsync.lastError=String(error||'알 수 없는 오류');
+  function setSuccess(op,meta){
+    state.gsync=state.gsync||{};var t=nowIso();state.gsync.lastAttempt=t;state.gsync.lastResult='ok';state.gsync.lastSync=t;
+    state.gsync.lastError='';state.gsync.lastOp=op||'sync';state.gsync.lastServerTime=meta&&meta.serverTime||'';
+    state.gsync.lastRevision=meta&&meta.revision!=null?meta.revision:(state.gsync.lastRevision||'');state.gsync.failStreak=0;
+    state.gsync.syncCount=(state.gsync.syncCount||0)+1;lastTransient='';
   }
+  function setFailure(error,op){
+    state.gsync=state.gsync||{};state.gsync.lastAttempt=nowIso();state.gsync.lastResult='error';state.gsync.lastError=String(error||'알 수 없는 오류');
+    state.gsync.lastOp=op||'sync';state.gsync.failStreak=(state.gsync.failStreak||0)+1;
+  }
+  function setTransient(error){state.gsync=state.gsync||{};state.gsync.lastAttempt=nowIso();state.gsync.lastTransient=String(error||'일시적 연결 지연');lastTransient=state.gsync.lastTransient}
   function setMode(mode,label){uiMode=mode||'idle';uiLabel=label||'';gsUpdateBtn()}
 
   window.gsUpdateBtn=gsUpdateBtn=function(){
-    var b=id('gsSyncBtn');if(!b||typeof state==='undefined')return;
-    state.gsync=state.gsync||{};
-    var configured=!!String(state.gsync.url||'').trim();
-    var success=fmtShort(state.gsync.lastSync),attempt=fmtShort(state.gsync.lastAttempt),main='동기화',time='미실행';
+    var b=id('gsSyncBtn');if(!b||typeof state==='undefined')return;state.gsync=state.gsync||{};
+    var configured=!!String(state.gsync.url||'').trim();var success=fmtShort(state.gsync.lastSync),attempt=fmtShort(state.gsync.lastAttempt),main='동기화',time='미실행';
     var countdown=_gsPushAt&&_gsPushAt>Date.now()?Math.max(1,Math.ceil((_gsPushAt-Date.now())/1000)):0;
-    if(uiMode==='working'){
-      main=uiLabel||'동기화 중…';time=success?'마지막 성공 '+success:'성공 기록 없음';
-    }else if(countdown){
-      main='자동저장 '+countdown+'초';time=success?'마지막 성공 '+success:'저장 대기';
-    }else if(_gsPendingPush&&(_gsBusy||_gsApplying)){
-      main='자동저장 대기';time=success?'마지막 성공 '+success:'처리 대기';
-    }else if(state.gsync.lastResult==='error'){
-      main='동기화실패';time=(attempt?'실패 '+attempt:'')+(success?' · 마지막 성공 '+success:' · 성공 기록 없음');
-    }else if(state.gsync.lastResult==='ok'||success){
-      main='동기화완료';time=success||'완료';
-    }else if(!configured){main='동기화 설정';time='URL·비밀키 필요'}
+    if(uiMode==='working'){main=uiLabel||'동기화 중…';time=success?'마지막 성공 '+success:'성공 기록 없음'}
+    else if(uiMode==='retry'){main=uiLabel||'자동저장 재시도';time=success?'마지막 성공 '+success:'연결 재시도 중'}
+    else if(countdown){main='자동저장 '+countdown+'초';time=success?'마지막 성공 '+success:'저장 대기'}
+    else if(_gsPendingPush&&(_gsBusy||_gsApplying)){main='자동저장 대기';time=success?'마지막 성공 '+success:'처리 대기'}
+    else if(state.gsync.lastResult==='error'){main='동기화실패';time=(attempt?'실패 '+attempt:'')+(success?' · 마지막 성공 '+success:' · 성공 기록 없음')}
+    else if(state.gsync.lastResult==='ok'||success){main='동기화완료';time=success||'완료'}
+    else if(!configured){main='동기화 설정';time='URL·비밀키 필요'}
     b.style.display='inline-flex';b.disabled=uiMode==='working';
-    b.classList.toggle('sync-working',uiMode==='working');
-    b.classList.toggle('sync-ok',uiMode!=='working'&&state.gsync.lastResult==='ok');
-    b.classList.toggle('sync-error',uiMode!=='working'&&state.gsync.lastResult==='error');
-    b.classList.toggle('sync-unconfigured',!configured);
+    b.classList.toggle('sync-working',uiMode==='working');b.classList.toggle('sync-retry',uiMode==='retry');
+    b.classList.toggle('sync-ok',uiMode==='idle'&&state.gsync.lastResult==='ok');b.classList.toggle('sync-error',uiMode==='idle'&&state.gsync.lastResult==='error');b.classList.toggle('sync-unconfigured',!configured);
     b.innerHTML='<span class="sync-main">🔄 '+esc(main)+'</span><span class="sync-time"> · '+esc(time)+'</span>';
-    b.title=(configured?'구글시트 저장·불러오기 및 저장 결과 재확인':'동기화 설정이 필요합니다')+(success?' · 마지막 성공 '+fmtFull(state.gsync.lastSync):'')+(state.gsync.lastError?' · 최근 오류 '+state.gsync.lastError:'')+(state.gsync.auto?' · 자동 ON':' · 자동 OFF');
+    b.title=(configured?'구글시트 저장·불러오기':'동기화 설정이 필요합니다')+(success?' · 마지막 성공 '+fmtFull(state.gsync.lastSync):'')+(state.gsync.lastError?' · 최근 오류 '+state.gsync.lastError:'')+(lastTransient?' · 최근 일시 오류 '+lastTransient:'')+(state.gsync.auto?' · 자동 ON':' · 자동 OFF');
     try{if(typeof gsRenderHistory==='function')gsRenderHistory()}catch(_){}
   };
 
   function config(silent){
     var u=String(state.gsync&&state.gsync.url||'').trim(),k=String(state.gsync&&state.gsync.key||'').trim();
-    if(!u){if(!silent)openSettings('Apps Script 웹앱 URL을 입력하세요.');throw new Error('Apps Script URL이 없습니다.')}
-    if(!/^https?:\/\//i.test(u)||!/\/exec(?:\?|$)/i.test(u)){if(!silent)openSettings('Apps Script 배포 주소(.../exec)를 입력하세요.');throw new Error('Apps Script /exec URL 형식이 아닙니다.')}
-    if(!k){if(!silent)openSettings('비밀키를 입력하세요.');throw new Error('비밀키가 없습니다.')}
+    if(!u){if(!silent)openSettings('Apps Script 웹앱 URL을 입력하세요.');var e1=new Error('Apps Script URL이 없습니다.');e1.retryable=false;throw e1}
+    if(!/^https?:\/\//i.test(u)||!/\/exec(?:\?|$)/i.test(u)&&!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(u)){if(!silent)openSettings('Apps Script 배포 주소(.../exec)를 입력하세요.');var e2=new Error('Apps Script /exec URL 형식이 아닙니다.');e2.retryable=false;throw e2}
+    if(!k){if(!silent)openSettings('비밀키를 입력하세요.');var e3=new Error('비밀키가 없습니다.');e3.retryable=false;throw e3}
     return {url:u,key:k};
   }
-  function openSettings(msg){
-    var p=id('dataPanel');if(p){p.classList.add('open');p.style.display=''}
-    var t=id('fileToggle');if(t){t.classList.add('open');t.textContent='📁 파일·관리 ▴'}
-    if(msg)status(msg,'#dc2626');var u=id('gsUrl');if(u)setTimeout(function(){u.scrollIntoView({behavior:'smooth',block:'center'});u.focus()},50);
+  function openSettings(msg){var p=id('dataPanel');if(p){p.classList.add('open');p.style.display=''}var t=id('fileToggle');if(t){t.classList.add('open');t.textContent='📁 파일·관리 ▴'}if(msg)status(msg,'#dc2626');var u=id('gsUrl');if(u)setTimeout(function(){u.scrollIntoView({behavior:'smooth',block:'center'});u.focus()},50)}
+  function classifyError(e){
+    var m=String(e&&e.message||e||'오류');var retry=!!(e&&e.retryable);
+    if(/비밀키|URL이 없습니다|URL 형식|지원하지 않는 action|구버전 응답/i.test(m))retry=false;
+    else if(/시간 초과|network|Failed to fetch|fetch|HTTP 429|HTTP 5\d\d|진행 중|잠시 후|busy|lock|JSON이 아닙니다/i.test(m))retry=true;
+    var x=e instanceof Error?e:new Error(m);x.retryable=retry;return x;
   }
-  async function requestJson(url,opt,timeout){
+  async function requestOnce(url,opt,timeout){
     var ctl=typeof AbortController!=='undefined'?new AbortController():null,timer=ctl?setTimeout(function(){ctl.abort()},timeout||35000):null;
     try{
-      var o=Object.assign({cache:'no-store'},opt||{});if(ctl)o.signal=ctl.signal;
-      var r=await fetch(url,o),tx=await r.text(),d;
-      if(!r.ok)throw new Error('HTTP '+r.status+' '+r.statusText);
-      try{d=JSON.parse(tx)}catch(_){throw new Error('서버 응답이 JSON이 아닙니다. 웹앱 권한을 모든 사용자로 설정하고 /exec URL을 사용하세요.')}
-      if(!d||d.ok!==true)throw new Error((d&&d.error)||'Apps Script 처리 실패');
+      var o=Object.assign({cache:'no-store'},opt||{});if(ctl)o.signal=ctl.signal;var r=await fetch(url,o),tx=await r.text(),d;
+      if(!r.ok){var eh=new Error('HTTP '+r.status+' '+r.statusText);eh.retryable=(r.status===429||r.status>=500);throw eh}
+      try{d=JSON.parse(tx)}catch(_){var ej=new Error('서버 응답이 JSON이 아닙니다. 웹앱 권한을 모든 사용자로 설정하고 /exec URL을 사용하세요.');ej.retryable=true;throw ej}
+      if(!d||d.ok!==true){var es=new Error((d&&d.error)||'Apps Script 처리 실패');es.retryable=!!(d&&d.retryable)||/진행 중|잠시 후|busy|lock/i.test(es.message);throw es}
       return d;
-    }catch(e){
-      if(e&&e.name==='AbortError')throw new Error('응답 시간 초과. 인터넷 연결 또는 Apps Script 실행 상태를 확인하세요.');
-      throw e;
-    }finally{if(timer)clearTimeout(timer)}
+    }catch(e){if(e&&e.name==='AbortError'){var et=new Error('응답 시간 초과. 인터넷 연결 또는 Apps Script 실행 상태를 확인하세요.');et.retryable=true;throw et}throw classifyError(e)}finally{if(timer)clearTimeout(timer)}
+  }
+  async function requestJson(url,opt,timeout,attempts){
+    var last=null,n=Math.max(1,attempts||1),waits=[650,1400,2800,5000];
+    for(var i=0;i<n;i++){
+      try{return await requestOnce(url,opt,timeout)}catch(e){last=classifyError(e);if(!last.retryable||i===n-1)throw last;setMode('retry','연결 재시도 '+(i+1)+'/'+(n-1));await sleep(waits[Math.min(i,waits.length-1)])}
+    }throw last||new Error('동기화 요청 실패');
   }
   function getUrl(c){return c.url+(c.url.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(c.key)+'&_t='+Date.now()}
-  async function getRemote(c){
-    var d=await requestJson(getUrl(c),{method:'GET'},35000);
-    if(!hasOwn(d,'data'))throw new Error('Apps Script가 구버전 응답을 반환했습니다. 최신 동기화 .gs 코드로 다시 배포하세요.');
-    return d.data&&typeof d.data==='object'?d.data:{};
+  function responseData(d){
+    if(hasOwn(d,'data'))return d.data&&typeof d.data==='object'?d.data:{};
+    var out=clone(d)||{};['ok','error','serverTime','jsonChars','revision','schema','retryable','retryAfterMs','requestId','mgrOverride','gradeOverride','clsOverride'].forEach(function(k){if(k!=='mgrOverride'&&k!=='gradeOverride'&&k!=='clsOverride')delete out[k]});return out;
   }
+  async function getRemote(c){var d=await requestJson(getUrl(c),{method:'GET'},35000,4);return {data:responseData(d),meta:d}}
   async function postPatch(c,payload,tag){
-    return requestJson(c.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save',key:c.key,data:payload,clientId:String(state.gsync.user||'사용자'),requestId:(tag||'save')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)})},45000);
+    var body={action:'save',key:c.key,data:payload,clientId:String(state.gsync.user||'사용자'),clientVersion:APP_VERSION,requestId:(tag||'save')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)};
+    var d=await requestJson(c.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)},50000,4);return {data:responseData(d),meta:d};
   }
   function patchSatisfied(full,patch){
-    if(!patch)return true;
-    return Object.keys(patch).every(function(k){
-      var pv=patch[k],fv=full&&full[k];
-      if(pv===null)return !hasOwn(full,k);
-      if(isPlain(pv))return isPlain(fv)&&patchSatisfied(fv,pv);
-      try{return JSON.stringify(fv)===JSON.stringify(pv)}catch(_){return fv===pv}
-    });
+    if(!patch)return true;return Object.keys(patch).every(function(k){var pv=patch[k],has=hasOwn(full,k),fv=has?full[k]:undefined;if(pv===null)return !has||fv===null;if(isPlain(pv))return isPlain(fv)&&patchSatisfied(fv,pv);try{return JSON.stringify(fv)===JSON.stringify(pv)}catch(_){return fv===pv}});
   }
 
   function scheduleAuto(delay){
-    if(!state.gsync||!state.gsync.auto||!String(state.gsync.url||'').trim()||!String(state.gsync.key||'').trim()){
-      _gsPendingPush=false;_gsPushAt=0;clearTimeout(_gsAutoT);_gsAutoT=null;gsUpdateBtn();return;
-    }
-    clearTimeout(_gsAutoT);_gsPendingPush=true;_gsPushAt=Date.now()+(delay||AUTO_DELAY);gsUpdateBtn();
-    _gsAutoT=setTimeout(runAutoSave,delay||AUTO_DELAY);
+    if(!state.gsync||!state.gsync.auto||!String(state.gsync.url||'').trim()||!String(state.gsync.key||'').trim()){_gsPendingPush=false;_gsPushAt=0;clearTimeout(_gsAutoT);_gsAutoT=null;setMode('idle','');return}
+    clearTimeout(_gsAutoT);_gsPendingPush=true;_gsPushAt=Date.now()+(delay||AUTO_DELAY);setMode('idle','');_gsAutoT=setTimeout(runAutoSave,delay||AUTO_DELAY);
   }
   async function runAutoSave(){
-    _gsAutoT=null;_gsPushAt=0;gsUpdateBtn();
-    await ensureBase();
+    _gsAutoT=null;_gsPushAt=0;gsUpdateBtn();await ensureBase();
     if(_gsBusy||_gsApplying||internalPersist){scheduleAuto(BUSY_RETRY);return}
-    var p=gsDelta();if(!patchHas(p)){_gsPendingPush=false;autoRetry=0;gsUpdateBtn();return}
-    var ok=await gsSave(true);
-    if(ok){autoRetry=0;return}
+    var p=gsDelta();if(!patchHas(p)){_gsPendingPush=false;autoRetry=0;setMode('idle','');return}
+    var ok=await gsSave(true);if(ok){autoRetry=0;return}
     if(patchHas(gsDelta())&&state.gsync&&state.gsync.auto){
-      autoRetry++;
-      if(autoRetry<=MAX_AUTO_RETRY){var waits=[3000,8000,15000],w=waits[autoRetry-1];status('자동저장 실패 — '+(w/1000)+'초 후 재시도합니다.','#b45309');scheduleAuto(w)}
-      else{_gsPendingPush=true;_gsPushAt=0;status('자동저장 반복 실패 — 상단의 동기화실패 표시를 눌러 다시 시도하세요.','#dc2626');gsUpdateBtn()}
+      autoRetry++;var err=String(state.gsync.lastError||lastTransient||'');var nonRetry=/비밀키|URL이 없습니다|URL 형식/i.test(err);
+      if(nonRetry){_gsPendingPush=true;_gsPushAt=0;setMode('idle','');return}
+      var waits=[2500,5000,10000,20000,30000],w=waits[Math.min(autoRetry-1,waits.length-1)];
+      if(autoRetry<=MAX_AUTO_RETRY){status('자동저장 연결 지연 — '+(w/1000)+'초 후 자동 재시도합니다.','#b45309');setMode('retry','자동저장 재시도');scheduleAuto(w)}
+      else{autoRetry=MAX_AUTO_RETRY;status('자동저장 연결 지연 — 변경사항은 보존되어 있으며 30초 후 계속 재시도합니다.','#b45309');setMode('retry','자동저장 재시도');scheduleAuto(30000)}
     }
   }
-  window.gsAutoPush=gsAutoPush=function(){
-    if(internalPersist||_gsApplying)return;
-    if(!state.gsync||!state.gsync.auto||!state.gsync.url||!state.gsync.key)return;
-    scheduleAuto(AUTO_DELAY);
-  };
+  window.gsAutoPush=gsAutoPush=function(){if(internalPersist||_gsApplying)return;if(!state.gsync||!state.gsync.auto||!state.gsync.url||!state.gsync.key)return;scheduleAuto(AUTO_DELAY)};
 
   window.gsLoad=gsLoad=async function(silent){
-    await ensureBase();
-    if(_gsBusy){if(!silent)status('다른 동기화 작업이 진행 중입니다.','#b45309');return false}
-    var c;try{c=config(!!silent)}catch(e){setResult('error',e.message);await persistOnly();gsUpdateBtn();return false}
-    var localPatch=gsDelta(),hasLocal=patchHas(localPatch),oldBase=clone(_gsBase||currentFull());
-    _gsBusy=true;setMode('working','불러오는 중…');if(!silent)status('서버 최신 자료를 불러오고 로컬 변경사항을 보존합니다.');
+    await ensureBase();if(_gsBusy){if(silent){setTimeout(function(){gsLoad(true)},BUSY_RETRY)}else status('다른 동기화 작업이 진행 중입니다. 잠시 후 자동으로 다시 시도합니다.','#b45309');return false}
+    var c;try{c=config(!!silent)}catch(e){if(!silent){setFailure(e.message,'load');await persistOnly()}gsUpdateBtn();return false}
+    var localPatch=gsDelta(),hasLocal=patchHas(localPatch),oldBase=clone(_gsBase||currentFull());_gsBusy=true;setMode('working','불러오는 중…');if(!silent)status('서버 최신 자료를 불러오고 로컬 변경사항을 보존합니다.');
     try{
-      var remote=await getRemote(c),remoteFull=snapshotFromRemote(oldBase,remote),merged=clone(remoteFull);
-      if(hasLocal){restoreFull(merged);_gsBase=clone(remoteFull);gsApplyDelta(localPatch);merged=currentFull()}
-      await applyAndPersist(merged);await saveBase(remoteFull);
-      setResult('ok');await persistOnly();
-      status('✓ 동기화완료 · 서버 자료 불러오기'+(hasLocal?' · 미전송 변경 보존':'')+' · '+fmtFull(state.gsync.lastSync),'#0f766e');
-      setMode('idle','');
-      if(hasLocal)scheduleAuto(900);else{_gsPendingPush=false;_gsPushAt=0;gsUpdateBtn()}
-      return true;
-    }catch(e){
-      setResult('error',e.message);await persistOnly();
-      if(!silent)status('동기화 실패: '+e.message,'#dc2626');
-      setMode('idle','');return false;
-    }finally{_gsBusy=false;gsUpdateBtn()}
+      var rr=await getRemote(c),remoteFull=snapshotFromRemote(oldBase,rr.data),merged=clone(remoteFull);
+      restoreFull(merged);_gsBase=clone(remoteFull);if(hasLocal)gsApplyDelta(localPatch);merged=currentFull();
+      await applyAndPersist(merged);await saveBase(remoteFull);setSuccess('load',rr.meta);await persistOnly();
+      status('✓ 동기화완료 · 서버 자료 불러오기'+(hasLocal?' · 미전송 변경 보존':'')+' · '+fmtFull(state.gsync.lastSync),'#0f766e');setMode('idle','');
+      if(hasLocal)scheduleAuto(900);else{_gsPendingPush=false;_gsPushAt=0;autoRetry=0;gsUpdateBtn()}return true;
+    }catch(e){e=classifyError(e);if(silent&&e.retryable){setTransient(e.message);console.warn('background sync retryable:',e.message);setMode('idle','')}else{setFailure(e.message,'load');await persistOnly();if(!silent)status('동기화 실패: '+e.message,'#dc2626');setMode('idle','')}return false}
+    finally{_gsBusy=false;gsUpdateBtn()}
   };
 
   window.gsSave=gsSave=async function(silent){
-    await ensureBase();
-    if(_gsBusy){if(silent)scheduleAuto(BUSY_RETRY);else status('다른 동기화 작업이 진행 중입니다.','#b45309');return false}
-    if(typeof gsCommitNotes==='function')try{gsCommitNotes()}catch(_){}
-    clearTimeout(_gsAutoT);_gsAutoT=null;_gsPushAt=0;
-    var c;try{c=config(!!silent)}catch(e){setResult('error',e.message);await persistOnly();gsUpdateBtn();return false}
-    var originalBase=clone(_gsBase||currentFull()),localPatch=gsDelta(),hasLocal=patchHas(localPatch),histId=null;
-    _gsBusy=true;setMode('working',hasLocal?'최신값 확인 중…':'최신 확인 중…');
-    if(!silent)status('서버 최신 자료 확인 → 변경 병합 → 저장 → 재확인 순서로 진행합니다.');
+    await ensureBase();if(_gsBusy){if(silent)scheduleAuto(BUSY_RETRY);else status('다른 동기화 작업이 진행 중입니다. 잠시 후 다시 눌러주세요.','#b45309');return false}
+    if(typeof gsCommitNotes==='function')try{gsCommitNotes()}catch(_){}clearTimeout(_gsAutoT);_gsAutoT=null;_gsPushAt=0;
+    var c;try{c=config(!!silent)}catch(e){setFailure(e.message,'save');await persistOnly();gsUpdateBtn();return false}
+    var localPatch=gsDelta();if(!patchHas(localPatch))return gsLoad(!!silent);
+    var histId=null;if(typeof gsAddHistory==='function')histId=gsAddHistory('저장 · '+(typeof gsDeltaSummary==='function'?gsDeltaSummary(localPatch):'변경사항'));
+    var payload=gsDelta(),sentSnapshot=currentFull();_gsBusy=true;setMode('working','저장 중…');if(!silent)status('변경사항을 서버에서 원자적으로 병합 저장하고 결과를 확인합니다.');
     try{
-      var remote=await getRemote(c),remoteFull=snapshotFromRemote(originalBase,remote);
-      restoreFull(remoteFull);_gsBase=clone(remoteFull);if(hasLocal)gsApplyDelta(localPatch);
-      if(hasLocal&&typeof gsAddHistory==='function')histId=gsAddHistory('저장 · '+(typeof gsDeltaSummary==='function'?gsDeltaSummary(localPatch):'변경사항'));
-      var payload=gsDelta();
-      if(!patchHas(payload)){
-        await applyAndPersist(remoteFull);await saveBase(remoteFull);setResult('ok');await persistOnly();
-        status('✓ 동기화완료 · 최신 자료 확인 · '+fmtFull(state.gsync.lastSync),'#0f766e');setMode('idle','');_gsPendingPush=false;return true;
+      var pr=await postPatch(c,payload,'save'),serverData=pr.data;
+      if(!patchSatisfied(serverData,payload)){
+        setMode('working','저장 확인 중…');await sleep(700);var vr=await getRemote(c);serverData=vr.data;pr.meta=vr.meta;
+        if(!patchSatisfied(serverData,payload)){
+          var pr2=await postPatch(c,payload,'confirm');serverData=pr2.data;pr.meta=pr2.meta;
+          if(!patchSatisfied(serverData,payload))throw new Error('서버 저장 응답에서 변경값이 확인되지 않았습니다. Apps Script 코드를 v03으로 교체해 주세요.');
+        }
       }
-      setMode('working','저장 중…');
-      var sentSnapshot=currentFull();await postPatch(c,payload,'save');
-      setMode('working','저장 확인 중…');
-      var verify=await getRemote(c),verifiedFull=snapshotFromRemote(remoteFull,verify);
-      if(!patchSatisfied(verifiedFull,payload)){
-        /* 다른 사용자의 동시 저장 직후라면 최신값 기준으로 한 번 재적용 */
-        var duringBeforeRetry=fullDelta(currentFull(),sentSnapshot);
-        restoreFull(verifiedFull);_gsBase=clone(verifiedFull);gsApplyDelta(localPatch);if(patchHas(duringBeforeRetry))gsApplyDelta(duringBeforeRetry);
-        if(histId&&state.syncLog&&state.syncLog[histId]){state.syncLog=state.syncLog||{};state.syncLog[histId]=state.syncLog[histId]}
-        var retryPayload=gsDelta();
-        await postPatch(c,retryPayload,'retry');verify=await getRemote(c);verifiedFull=snapshotFromRemote(verifiedFull,verify);
-        if(!patchSatisfied(verifiedFull,retryPayload))throw new Error('저장 응답은 성공했지만 서버 재확인에서 변경값이 확인되지 않았습니다. Apps Script의 병합 저장 코드를 확인하세요.');
-        payload=retryPayload;sentSnapshot=currentFull();
-      }
-      var duringPatch=fullDelta(currentFull(),sentSnapshot);
-      await applyAndPersist(verifiedFull);await saveBase(verifiedFull);
-      if(patchHas(duringPatch)){gsApplyDelta(duringPatch);await persistOnly()}
-      setResult('ok');await persistOnly();
-      status('✓ 동기화완료 · 저장 및 서버 재확인 · '+fmtFull(state.gsync.lastSync),'#0f766e');setMode('idle','');
-      var remain=patchHas(gsDelta());
-      if(remain)scheduleAuto(1200);else{_gsPendingPush=false;_gsPushAt=0;autoRetry=0;gsUpdateBtn()}
-      return true;
+      var serverFull=snapshotFromRemote(_gsBase||{},serverData),duringPatch=fullDelta(currentFull(),sentSnapshot);
+      await applyAndPersist(serverFull);await saveBase(serverFull);if(patchHas(duringPatch)){gsApplyDelta(duringPatch);await persistOnly()}
+      setSuccess('save',pr.meta);await persistOnly();status('✓ 동기화완료 · 서버 병합 저장 확인 · '+fmtFull(state.gsync.lastSync),'#0f766e');setMode('idle','');
+      var remain=patchHas(gsDelta());if(remain)scheduleAuto(1200);else{_gsPendingPush=false;_gsPushAt=0;autoRetry=0;gsUpdateBtn()}return true;
     }catch(e){
-      if(histId&&state.syncLog)delete state.syncLog[histId];
-      setResult('error',e.message);await persistOnly();
-      status((silent?'자동저장 실패: ':'동기화 실패: ')+e.message,'#dc2626');setMode('idle','');_gsPendingPush=patchHas(gsDelta());return false;
+      e=classifyError(e);if(histId&&state.syncLog)delete state.syncLog[histId];
+      if(silent&&e.retryable){setTransient(e.message);state.gsync.lastError=e.message;await persistOnly();status('자동저장 연결 지연: '+e.message,'#b45309');setMode('retry','자동저장 재시도')}
+      else{setFailure(e.message,'save');await persistOnly();status((silent?'자동저장 실패: ':'동기화 실패: ')+e.message,'#dc2626');setMode('idle','')}
+      _gsPendingPush=patchHas(gsDelta());return false;
     }finally{_gsBusy=false;gsUpdateBtn()}
   };
 
   window.gsTest=gsTest=async function(){
-    await ensureBase();if(_gsBusy){status('다른 동기화 작업이 진행 중입니다.','#b45309');return false}
-    var c;try{c=config(false)}catch(e){setResult('error',e.message);await persistOnly();gsUpdateBtn();return false}
-    _gsBusy=true;setMode('working','연결 확인 중…');status('Apps Script 연결과 데이터 응답 형식을 확인합니다.');
-    try{var remote=await getRemote(c);var keys=Object.keys(remote||{});status('✓ 연결 성공 · 서버 데이터 '+keys.length+'개 영역 확인','#0f766e');setMode('idle','');return true}
-    catch(e){setResult('error',e.message);await persistOnly();status('연결 실패: '+e.message,'#dc2626');setMode('idle','');return false}
+    await ensureBase();if(_gsBusy){status('다른 동기화 작업이 진행 중입니다.','#b45309');return false}var c;try{c=config(false)}catch(e){setFailure(e.message,'test');await persistOnly();gsUpdateBtn();return false}
+    _gsBusy=true;setMode('working','연결 확인 중…');status('Apps Script 연결·비밀키·서버 응답 형식을 확인합니다.');
+    try{var rr=await getRemote(c),keys=fieldNames().filter(function(k){return hasOwn(rr.data,k)});status('✓ 연결 성공 · 동기화 영역 '+keys.length+'개 · 서버 응답 정상'+(rr.meta&&rr.meta.revision!=null?' · revision '+rr.meta.revision:''),'#0f766e');setMode('idle','');return true}
+    catch(e){e=classifyError(e);setFailure(e.message,'test');await persistOnly();status('연결 실패: '+e.message,'#dc2626');setMode('idle','');return false}
     finally{_gsBusy=false;gsUpdateBtn()}
   };
 
-  window.gsStartPoll=gsStartPoll=function(){
-    if(_gsPollT)clearInterval(_gsPollT);
-    _gsPollT=setInterval(function(){
-      if(!state.gsync||!state.gsync.auto||!state.gsync.url||!state.gsync.key||_gsBusy||_gsPendingPush||document.hidden)return;
-      var a=document.activeElement;if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable))return;
-      gsLoad(true);
-    },60000);
-  };
+  window.gsStartPoll=gsStartPoll=function(){if(_gsPollT)clearInterval(_gsPollT);_gsPollT=setInterval(function(){if(!state.gsync||!state.gsync.auto||!state.gsync.url||!state.gsync.key||_gsBusy||_gsPendingPush||document.hidden)return;var a=document.activeElement;if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable))return;gsLoad(true)},60000)};
 
   function removeHistoryDuplicates(){['elogBtn','cmElog','fcElogBtn','ciElog'].forEach(function(x){var e=id(x);if(e)e.remove()})}
   function updateHistoryBtn(){var b=id('headerElogBtn');if(!b)return;var n=typeof elogUnseen==='function'?elogUnseen():0;b.textContent='🕘 수정이력'+(n?' ('+n+'건)':'');b.classList.toggle('has-unseen',n>0)}
   function bindHistory(){var b=id('headerElogBtn');if(!b)return;b.onclick=function(){if(typeof elogMarkSeen==='function')elogMarkSeen();if(typeof openEditLog==='function')openEditLog();updateHistoryBtn()};updateHistoryBtn()}
   function renderVersion(){var v=id('appVer');if(v){var user=state.gsync&&state.gsync.user?' · '+state.gsync.user:'';v.textContent='버전 '+APP_VERSION+user;v.title='현재 파일 버전'}document.title='동방파스텍 매출 분석 도구 '+APP_VERSION}
-
-  async function install(){
-    state.gsync=state.gsync||{};
-    if(!state.gsync.lastResult&&state.gsync.lastSync)state.gsync.lastResult='ok';
-    renderVersion();removeHistoryDuplicates();bindHistory();gsUpdateBtn();gsStartPoll();
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
-  setTimeout(install,350);setTimeout(install,1500);
+  async function install(){state.gsync=state.gsync||{};renderVersion();removeHistoryDuplicates();bindHistory();gsUpdateBtn();gsStartPoll()}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();setTimeout(install,350);setTimeout(install,1500);
   var target=id('app')||document.body;if(typeof MutationObserver!=='undefined'&&target)new MutationObserver(function(){removeHistoryDuplicates();updateHistoryBtn()}).observe(target,{childList:true,subtree:true});
 })();
 </script>
+
 
 </body>
 </html>
