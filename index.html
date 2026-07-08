@@ -918,8 +918,8 @@ function aggBy(src, by){
     else if(by==='code'){k=r.code||'(미상)';label=(r.code||'(미상)')+(r.name?'  '+r.name:'');}
     else if(by==='codespec'){k=(r.code||'(미상)')+'│'+(r.spec||'');label=(r.code||'(미상)')+' '+(r.name||'')+(r.spec?' / '+r.spec:'');}
     else {k=r.name;label=r.name;}
-    let o=m.get(k); if(!o){o={k,label,code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',amt:0,qty:0,dates:new Set(),last:r.d,byMon:{}};m.set(k,o);} o.amt+=amtOf(r); o.qty+=r.qty; o.dates.add(+r.d); o.byMon[r.ym]=(o.byMon[r.ym]||0)+amtOf(r); if(r.d>o.last)o.last=r.d; }
-  let arr=[...m.values()].map(o=>({key:o.k,label:o.label,code:o.code,name:o.name,spec:o.spec,amt:o.amt,qty:o.qty,cnt:o.dates.size,last:o.last,byMon:o.byMon}));
+    let o=m.get(k); if(!o){o={k,label,code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',amt:0,qty:0,dates:new Set(),last:r.d,byMon:{},byMonQty:{}};m.set(k,o);} o.amt+=amtOf(r); o.qty+=(+r.qty||0); o.dates.add(+r.d); o.byMon[r.ym]=(o.byMon[r.ym]||0)+amtOf(r); o.byMonQty[r.ym]=(o.byMonQty[r.ym]||0)+(+r.qty||0); if(r.d>o.last)o.last=r.d; }
+  let arr=[...m.values()].map(o=>({key:o.k,label:o.label,code:o.code,name:o.name,spec:o.spec,amt:o.amt,qty:o.qty,cnt:o.dates.size,last:o.last,byMon:o.byMon,byMonQty:o.byMonQty}));
   const tot=arr.reduce((a,o)=>a+o.amt,0); arr.forEach(o=>o.share=tot?o.amt/tot*100:0); arr.sort((a,b)=>b.amt-a.amt);
   return {arr,tot};
 }
@@ -953,16 +953,19 @@ function renderDrill1(){
   const monthly=!!cfg.monthly, monOn=monthly&&!!state.prodDrillMonthly;
   const years=[...new Set(src.map(r=>+(r.y||(r.d&&r.d.getFullYear()))).filter(Boolean))].sort((a,b)=>a-b);
   let yr=state.prodDrillYear; if(!yr||!years.includes(yr))yr=years.length?years[years.length-1]:new Date().getFullYear();
-  let cols,viewTot=tot;
+  let cols,viewTot=tot,monthlyTotalCells=null;
   if(monOn){
-    arr.forEach(o=>{let sum=0;for(let m=1;m<=12;m++)sum+=(o.byMon[`${yr}-${String(m).padStart(2,'0')}`]||0);o.yrTot=sum;});
-    arr=arr.filter(o=>o.yrTot!==0).sort((a,b)=>b.yrTot-a.yrTot); viewTot=arr.reduce((a,o)=>a+o.yrTot,0);
+    arr.forEach(o=>{let sum=0,qsum=0;for(let m=1;m<=12;m++){const ym=`${yr}-${String(m).padStart(2,'0')}`;sum+=(o.byMon[ym]||0);qsum+=(o.byMonQty[ym]||0);}o.yrTot=sum;o.yrQty=qsum;});
+    arr=arr.filter(o=>o.yrTot!==0||o.yrQty!==0).sort((a,b)=>b.yrTot-a.yrTot); viewTot=arr.reduce((a,o)=>a+o.yrTot,0);
     cols=[
       {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
       {k:'label',t:cfg.byLabel,cls:'l',cell:o=>esc(o.label)+(cfg.by==='cust'?' '+catChip(o.label):'')},
-      {k:'yrTot',t:`${yr} 합계(${unitLabel()})`,cell:o=>`<b>${disp(o.yrTot)}</b>`,sortVal:o=>o.yrTot},
-      ...Array.from({length:12},(_,i)=>i+1).map(m=>{const ym=`${yr}-${String(m).padStart(2,'0')}`;return {k:'mcol:'+ym,t:m+'월',cell:o=>disp(o.byMon[ym]||0),sortVal:o=>o.byMon[ym]||0};})
+      {k:'yrTot',t:`${yr} 합계(${unitLabel()})`,cell:o=>monthlyAmountQtyCell(o.yrTot,o.yrQty,true,true),sortVal:o=>o.yrTot},
+      ...Array.from({length:12},(_,i)=>i+1).map(m=>{const ym=`${yr}-${String(m).padStart(2,'0')}`;return {k:'mcol:'+ym,t:m+'월',cell:o=>monthlyAmountQtyCell(o.byMon[ym]||0,o.byMonQty[ym]||0,false,false),sortVal:o=>o.byMon[ym]||0};})
     ];
+    monthlyTotalCells={};
+    monthlyTotalCells.yrTot=monthlyAmountQtyCell(viewTot,arr.reduce((a,o)=>a+(o.yrQty||0),0),true,true);
+    for(let m=1;m<=12;m++){const ym=`${yr}-${String(m).padStart(2,'0')}`;const a=arr.reduce((s,o)=>s+(o.byMon[ym]||0),0);const q=arr.reduce((s,o)=>s+(o.byMonQty[ym]||0),0);monthlyTotalCells['mcol:'+ym]=monthlyAmountQtyCell(a,q,true,false);}
   }else cols=drillCols(cfg.byLabel,arr,cfg.by);
   const yrBtns=monOn?`<span class="seg" id="prodDrillYrSeg" style="margin-left:6px">${years.map(y=>`<button data-y="${y}" class="${y===yr?'on':''}">${y}</button>`).join('')}</span>`:'';
   const controls=monthly?`<div class="ctrlbar"><button class="btn ghost" id="prodDrillMonBtn" style="font-size:12px;padding:5px 12px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별보기${monOn?' 끄기':''}</button>${yrBtns}<span class="sub2">${monOn?`${yr}년 거래처별 1~12월 매출액입니다.`:'선택 제품의 거래처별 월 매출을 펼쳐봅니다.'}</span></div>`:'';
@@ -972,7 +975,7 @@ function renderDrill1(){
   };
   render(`${parentRow.label} ▸ ${cfg.byLabel}별 매출`,`${monOn?yr+'년 · ':''}${arr.length.toLocaleString()}건 · 합계 ${won(viewTot)}원 · 매출 내림차순`,arr,cols,monOn?'yrTot':'amt',
     `선택 항목의 ${cfg.byLabel}별 매출입니다.${drillable?' <b>품목군 행을 클릭</b>하면 품목·규격이 나옵니다.':''} '← 목록으로'로 돌아갑니다.`,
-    {controlsHtml:controls,onMount,total:{label:'합 계',amt:viewTot,col:monOn?'yrTot':'amt'},back:{label:'← 목록으로',fn:closeDrill}, drill: drillable?{custom:row=>openDrill2(row)}:null});
+    {controlsHtml:controls,onMount,total:{label:'합 계',amt:viewTot,col:monOn?'yrTot':'amt',cells:monthlyTotalCells||{}},back:{label:'← 목록으로',fn:closeDrill}, drill: drillable?{custom:row=>openDrill2(row)}:null});
 }
 function openDrill2(row){
   state._search=''; state.sortKey=null;
@@ -995,6 +998,7 @@ function adjustScrapProductAmount(o,amount){ const v=+amount||0; return isScrapN
 function amtOf(r){ const v=rawAmtOf(r); return isScrapSale(r)?v*SCRAP_FIRE_RATE:v; }
 function won(n){ return Math.round(n).toLocaleString('ko-KR'); }
 function disp(n){ const u=state.unit; return u===1?won(n):(n/u).toLocaleString('ko-KR',{maximumFractionDigits:u>=1000000?1:0}); }
+function monthlyAmountQtyCell(amt,qty,bold,showQtyLabel){ return `${bold?'<b>':''}${disp(amt||0)}${bold?'</b>':''}<div style="margin-top:3px;font-size:10.5px;color:#64748b;line-height:1.15">${showQtyLabel?'수량 ':''}${won(qty||0)}</div>`; }
 function unitLabel(){ return state.unit===1?'원':state.unit===1000?'천원':'백만원'; }
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function fmtD(d){ return d?`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`:'-'; }
@@ -1660,7 +1664,8 @@ function custDrillView(label, src, backFn, act, extra2){
   let {arr,tot}=aggBy(src,'cust'); const monthly=!!extra2.monthly, monOn=monthly&&!!state.prodDrillMonthly;
   const years=[...new Set(src.map(r=>+(r.y||(r.d&&r.d.getFullYear()))).filter(Boolean))].sort((a,b)=>a-b);
   let yr=state.prodDrillYear; if(!yr||!years.includes(yr))yr=years.length?years[years.length-1]:new Date().getFullYear();
-  if(monOn){arr.forEach(o=>{let sum=0;for(let mm=1;mm<=12;mm++)sum+=(o.byMon[`${yr}-${String(mm).padStart(2,'0')}`]||0);o.yrTot=sum;});arr=arr.filter(o=>o.yrTot!==0).sort((a,b)=>b.yrTot-a.yrTot);tot=arr.reduce((a,o)=>a+o.yrTot,0);}
+  let monthlyTotalCells=null;
+  if(monOn){arr.forEach(o=>{let sum=0,qsum=0;for(let mm=1;mm<=12;mm++){const ym=`${yr}-${String(mm).padStart(2,'0')}`;sum+=(o.byMon[ym]||0);qsum+=(o.byMonQty[ym]||0);}o.yrTot=sum;o.yrQty=qsum;});arr=arr.filter(o=>o.yrTot!==0||o.yrQty!==0).sort((a,b)=>b.yrTot-a.yrTot);tot=arr.reduce((a,o)=>a+o.yrTot,0);}
   const custN=arr.length;
   const extra = act==='region'? [
       {k:'rdo',t:'지역(도)',cls:'l',cell:o=>esc(gradeRec(o.key).do||'-'),sortVal:o=>gradeRec(o.key).do||''},
@@ -1688,9 +1693,13 @@ function custDrillView(label, src, backFn, act, extra2){
   if(monOn){ cols=[
     {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
     {k:'label',t:'거래처',cls:'l',cell:o=>esc(o.label)+' '+catChip(o.key)},
-    {k:'yrTot',t:`${yr} 합계(${unitLabel()})`,cell:o=>`<b>${disp(o.yrTot)}</b>`,sortVal:o=>o.yrTot},
-    ...Array.from({length:12},(_,i)=>i+1).map(mm=>{const ym=`${yr}-${String(mm).padStart(2,'0')}`;return {k:'mcol:'+ym,t:mm+'월',cell:o=>disp(o.byMon[ym]||0),sortVal:o=>o.byMon[ym]||0};})
-  ]; }
+    {k:'yrTot',t:`${yr} 합계(${unitLabel()})`,cell:o=>monthlyAmountQtyCell(o.yrTot,o.yrQty,true,true),sortVal:o=>o.yrTot},
+    ...Array.from({length:12},(_,i)=>i+1).map(mm=>{const ym=`${yr}-${String(mm).padStart(2,'0')}`;return {k:'mcol:'+ym,t:mm+'월',cell:o=>monthlyAmountQtyCell(o.byMon[ym]||0,o.byMonQty[ym]||0,false,false),sortVal:o=>o.byMon[ym]||0};})
+  ];
+    monthlyTotalCells={};
+    monthlyTotalCells.yrTot=monthlyAmountQtyCell(tot,arr.reduce((a,o)=>a+(o.yrQty||0),0),true,true);
+    for(let mm=1;mm<=12;mm++){const ym=`${yr}-${String(mm).padStart(2,'0')}`;const a=arr.reduce((s,o)=>s+(o.byMon[ym]||0),0);const q=arr.reduce((s,o)=>s+(o.byMonQty[ym]||0),0);monthlyTotalCells['mcol:'+ym]=monthlyAmountQtyCell(a,q,true,false);}
+  }
   const bindEdits=()=>{
     $('#result').querySelectorAll('.clsedit').forEach(s=>s.addEventListener('change',e=>{ state.clsOverride[e.target.dataset.c]=e.target.value; if(typeof logEdit==='function')logEdit('업체분류',e.target.dataset.c+' 분류 변경'); saveSettings(); drawTable(); }));
     $('#result').querySelectorAll('.clsedit3').forEach(s=>s.addEventListener('change',e=>{ const c=e.target.dataset.c; const sels=[...$('#result').querySelectorAll('.clsedit3')].filter(x=>x.dataset.c===c); const arr=sels.sort((a,b)=>(+a.dataset.i)-(+b.dataset.i)).map(x=>x.value).filter(Boolean); state.clsOverride[c]=[...new Set(arr)].slice(0,4); if(typeof logEdit==='function')logEdit('업체분류',c+' 분류 변경'); saveSettings(); drawTable(); }));
@@ -1704,7 +1713,7 @@ function custDrillView(label, src, backFn, act, extra2){
   const noteEx=(act==='cls')?' <b>업체분류</b> 칸에서 바로 수정·저장됩니다.':(act==='credit'||act==='region')?' <b>신용등급</b> 칸에서 바로 수정·저장됩니다.':'';
   render(`${label} ▸ 거래처별 매출`, `${monOn?yr+'년 · ':''}거래처 ${won(custN)}개 · 합계 ${won(tot)}원`, arr, cols, monOn?'yrTot':'amt',
     `<b>거래처 행을 클릭</b>하면 그 거래처의 제품·규격 매출이 나옵니다.`+noteEx,
-    {back:{label:'← 목록으로',fn:backFn}, total:{label:'합 계',amt:tot,col:monOn?'yrTot':'amt',cells:{cnt:'',qty:''}}, controlsHtml:monthlyCtrl+(extra2.controlsHtml||''), onMount, afterDraw:bindEdits,
+    {back:{label:'← 목록으로',fn:backFn}, total:{label:'합 계',amt:tot,col:monOn?'yrTot':'amt',cells:monOn?(monthlyTotalCells||{}):{cnt:'',qty:''}}, controlsHtml:monthlyCtrl+(extra2.controlsHtml||''), onMount, afterDraw:bindEdits,
      drill:{custom:row=>(extra2&&extra2.rowDrill)?extra2.rowDrill(row, ()=>custDrillView(label,src,backFn,act,extra2)):custProdDrill(row.label, src.filter(r=>r.cust===row.key), ()=>custDrillView(label,src,backFn,act,extra2))}});
 }
 function custProdDrill(cust, src, backFn, markBase){
@@ -2376,18 +2385,17 @@ function rankProduct(){
   if(monOn){
     fArr.forEach(o=>{let sum=0,qsum=0;for(let mm=1;mm<=12;mm++){const ym=`${yr}-${String(mm).padStart(2,'0')}`;sum+=(o.byMon[ym]||0);qsum+=(o.byMonQty[ym]||0);}o.yrTot=sum;o.yrQty=qsum;});
     fArr=fArr.filter(o=>o.yrTot!==0||o.yrQty!==0).sort((a,b)=>b.yrTot-a.yrTot); viewTot=fArr.reduce((a,o)=>a+o.yrTot,0);
-    const amountQtyCell=(amt,qty,bold)=>`${bold?'<b>':''}${disp(amt||0)}${bold?'</b>':''}<div style="margin-top:3px;font-size:10.5px;color:#64748b;line-height:1.15">수량 ${won(qty||0)}</div>`;
     cols=[
       {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
       {k:'name',t:'품명',cls:'l',cell:o=>esc(o.name)},
       {k:'specDisp',t:'규격',cls:'l',cell:o=>esc(o.specDisp)},
-      {k:'yrTot',t:`${yr} 합계(${unitLabel()})`,cell:o=>amountQtyCell(o.yrTot,o.yrQty,true),sortVal:o=>o.yrTot},
-      ...Array.from({length:12},(_,i)=>i+1).map(mm=>{const ym=`${yr}-${String(mm).padStart(2,'0')}`;return {k:'mcol:'+ym,t:mm+'월',cell:o=>amountQtyCell(o.byMon[ym]||0,o.byMonQty[ym]||0,false),sortVal:o=>o.byMon[ym]||0};})
+      {k:'yrTot',t:`${yr} 합계(${unitLabel()})`,cell:o=>monthlyAmountQtyCell(o.yrTot,o.yrQty,true,true),sortVal:o=>o.yrTot},
+      ...Array.from({length:12},(_,i)=>i+1).map(mm=>{const ym=`${yr}-${String(mm).padStart(2,'0')}`;return {k:'mcol:'+ym,t:mm+'월',cell:o=>monthlyAmountQtyCell(o.byMon[ym]||0,o.byMonQty[ym]||0,false,false),sortVal:o=>o.byMon[ym]||0};})
     ];
     monthlyTotalCells={};
     const totalQty=fArr.reduce((a,o)=>a+(o.yrQty||0),0);
-    monthlyTotalCells.yrTot=amountQtyCell(viewTot,totalQty,true);
-    for(let mm=1;mm<=12;mm++){const ym=`${yr}-${String(mm).padStart(2,'0')}`;const a=fArr.reduce((s,o)=>s+(o.byMon[ym]||0),0);const q=fArr.reduce((s,o)=>s+(o.byMonQty[ym]||0),0);monthlyTotalCells['mcol:'+ym]=amountQtyCell(a,q,true);}
+    monthlyTotalCells.yrTot=monthlyAmountQtyCell(viewTot,totalQty,true,true);
+    for(let mm=1;mm<=12;mm++){const ym=`${yr}-${String(mm).padStart(2,'0')}`;const a=fArr.reduce((s,o)=>s+(o.byMon[ym]||0),0);const q=fArr.reduce((s,o)=>s+(o.byMonQty[ym]||0),0);monthlyTotalCells['mcol:'+ym]=monthlyAmountQtyCell(a,q,true,false);}
   }else{
     const tot=periodTot; fArr.forEach(o=>o.share=tot?o.amt/tot*100:0); fArr.sort((a,b)=>b.amt-a.amt); const max=Math.max(...fArr.map(o=>o.amt),1);
     cols=[
