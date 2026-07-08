@@ -1140,7 +1140,9 @@ function cmgrInfoSwap(){
   const agg={}; CUR.forEach(function(r){ if(r.cust)agg[r.cust]=(agg[r.cust]||0)+amtOf(r); });
   let custs=Object.keys(agg); if(typeof gPass==='function')custs=custs.filter(function(c){return gPass(c);});
   syncExcludedCustMaps();
-  if(!state.cmgr.exclMode)custs=custs.filter(function(c){return !fcIsExcludedCust(c);});
+  // 기본 담당정보 표에서는 제외업체를 숨기고, '제외업체' 버튼을 선택한 경우에만 제외업체만 표시한다.
+  if(state.cmgr.exclOnly)custs=custs.filter(function(c){return fcIsExcludedCust(c);});
+  else custs=custs.filter(function(c){return !fcIsExcludedCust(c);});
   if(state.cmgrKeyFilter)custs=custs.filter(function(c){return state.cmgrKey&&state.cmgrKey[c];});
   var _q=(state.cmgr.search||'').trim().toLowerCase();
   if(_q)custs=custs.filter(function(c){ var oo=state.custInfo[c]||{}; var parts=[c,oo.tel||'',oo.fax||'',oo.intake||'']; if(typeof mgrS==='function')parts.push(mgrS(c)); if(typeof mgrT==='function')parts.push(mgrT(c)); var km=oo.keyman||{}; ['n','pos','dept','p','email','m'].forEach(function(f){parts.push(km[f]||'');}); (oo.contacts||[]).forEach(function(ct){ ['n','pos','dept','p','email','m'].forEach(function(f){parts.push((ct&&ct[f])||'');}); }); return parts.join(' ').toLowerCase().indexOf(_q)>=0; });
@@ -1283,6 +1285,9 @@ function custManagers(){
   const tgtProj=cust=>{ if(YR===CY){ if(fcIsExcludedCust(cust))return 0; const cm=cyMM[cust]||{}; let p=0; for(let mm=1;mm<=12;mm++){ p += (mm<=lastActM ? (cm[mm]||0) : tgtMonVal(cust,mm)); } return p+(extraCustTarget[cust]||0); } const pm=pyMM[cust]||{}; const ov=state.fc.override[cust],ad=state.fc.addPct[cust]; const pf=Object.values(pm).reduce((a,b)=>a+b,0); let proj=(ov!=null&&ov!=='')?pf*(1+(+ov)/100):pf; proj*=1+((ad!=null&&ad!=='')?+ad:0)/100; return proj+(extraCustTarget[cust]||0); };
   if(YR===CY){ const targetCusts=new Set([...Object.keys(pyMM),...Object.keys(cyMM),...Object.keys(extraCustTarget)]); if(_fcFutureForMgr&&_fcFutureForMgr.custMon){ for(let mm=1;mm<=12;mm++){ const cm=_fcFutureForMgr.custMon[mm]; if(cm&&cm.forEach)cm.forEach((_,c)=>targetCusts.add(c)); } } targetCusts.forEach(c=>{ if(c&&!m.has(c))m.set(c,{cust:c,a:0,lz:0,mon:{},lmon:{}}); }); }
   let rows=[...m.values()].map(o=>{ const lr=o.a>0?o.lz/o.a*100:0; const s=mgrS(o.cust)||'미배정', t=mgrT(o.cust)||'미배정', e=mgrE(o.cust)||'미배정'; const prev=tgtPrev(o.cust),proj=tgtProj(o.cust); const diff=proj-prev; const pct=prev?diff/prev*100:(proj>0?null:0); const rate=proj>0?o.a/proj*100:null; const remavg=_remM?Math.max(0,proj-o.a)/_remM:0; const tmon={}; for(let mm=1;mm<=12;mm++)tmon[mm]=tgtMonVal(o.cust,mm); return {cust:o.cust,a:o.a,lz:o.lz,lr,mon:o.mon,lmon:o.lmon,tmon,effE:e,effS:s,effT:t,prev,proj,diff,pct,rate,remavg}; }).filter(o=>o.a>0||o.prev>0||o.proj>0||Object.values(o.tmon||{}).some(v=>v>0));
+  // 거래처 담당자 현황은 기본적으로 제외업체를 숨기고, '제외업체' 보기에서만 제외업체만 표시한다.
+  if(CF.exclOnly) rows=rows.filter(o=>fcIsExcludedCust(o.cust));
+  else rows=rows.filter(o=>!fcIsExcludedCust(o.cust));
   const grand=rows.reduce((s,o)=>s+o.a,0); const grandLz=rows.reduce((s,o)=>s+o.lz,0); const TC=rows.length||1;
   rows.forEach(o=>o.p=grand>0?o.a/grand*100:0);
   const sOpts=[...new Set(rows.map(r=>r.effS).filter(x=>x&&x!=='미배정'))]; const eOpts=[...new Set(rows.map(r=>r.effE).filter(x=>x&&x!=='미배정'))];
@@ -1291,8 +1296,7 @@ function custManagers(){
   if(CF.fe&&CF.fe!=='전체')view=view.filter(r=>r.effE===CF.fe);
   if(CF.fs!=='전체')view=view.filter(r=>r.effS===CF.fs);
   if(CF.ft!=='전체')view=view.filter(r=>r.effT===CF.ft);
-  // 목표제외 업체도 일반 목록에 남겨 실제 매출은 항상 확인할 수 있게 한다.
-  if(CF.exclOnly)view=view.filter(r=>fcIsExcludedCust(r.cust));
+  // 제외업체 표시 여부는 위에서 rows 단계에 이미 적용되어 카드·합계·표의 기준을 동일하게 유지한다.
   if(typeof clsFilter!=='undefined'&&clsFilter!=='전체')view=view.filter(r=>(catsOf(r.cust)||[]).includes(clsFilter));
   if(typeof statusFilter!=='undefined'&&statusFilter!=='전체')view=view.filter(r=>catOf(r.cust)===statusFilter);
   if(state.cmgrKeyFilter)view=view.filter(r=>state.cmgrKey&&state.cmgrKey[r.cust]);
@@ -3413,7 +3417,15 @@ function forecast(){
   const outsideAnnualNote=`<div>${outsideItems.length?'거래처외 매출포함항목: '+outsideItems.join(' · '):'거래처외 매출포함항목 없음'}</div><div style="margin-top:2px;color:#dc2626">제외업체 차감 ${fcExcludedAnnualTarget>0?'-'+won(fcExcludedAnnualTarget)+'원':'없음'}</div>`;
   // 올해 연매출 목표 카드 우측에 추가되는 '목표 구성내역' 카드
   const _scrapSet=new Set(scrapVendorList());
-  const fcExclNames=[...fcExSet].filter(function(c){return !_scrapSet.has(c);});
+  // '(폐업)'이 붙은 동일 거래처 별칭은 목표 구성내역에서 한 번만 표시한다.
+  const _fcExclSeen=new Set();
+  const fcExclNames=[];
+  [...fcExSet].filter(function(c){return !_scrapSet.has(c);}).forEach(function(c){
+    const shown=String(c||'').replace(/\s*\(폐업\)\s*$/,'').trim();
+    const key=fcCustKey(shown);
+    if(!key||_fcExclSeen.has(key))return;
+    _fcExclSeen.add(key); fcExclNames.push(shown);
+  });
   let _scrapExclAmt=0; for(let _m=1;_m<=12;_m++){ [...fcExSet].forEach(function(c){ if(_scrapSet.has(c)) _scrapExclAmt += _m<=lastAct?(cyMonCust[_m].get(c)||0):(fcCustMon[_m].get(c)||0); }); }
   const fcExclShownAmt=Math.max(0,fcExcludedAnnualTarget-_scrapExclAmt);
   const fcExclCount=fcExclNames.length;
