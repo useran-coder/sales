@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v05</title>
+<title>동방파스텍 매출 분석 도구 v06</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -342,7 +342,7 @@ header .appver{margin-left:0!important}
 </style>
 
 
-<style id="edge-font-exact-fix-v05">
+<style id="edge-font-exact-fix-v06">
 /* Edge(Chromium) 글자 렌더링 보정: Chrome과 동일한 가독성 유지 */
 @media screen {
   html.edge-browser{
@@ -420,7 +420,7 @@ header .appver{margin-left:0!important}
   </form>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)" style="align-self:center;font-size:11px;color:#94a3b8;white-space:nowrap;padding:3px 4px">버전 v05</span>
+  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)" style="align-self:center;font-size:11px;color:#94a3b8;white-space:nowrap;padding:3px 4px">버전 v06</span>
 </header>
 
 <div class="wrap">
@@ -960,7 +960,14 @@ function openDrill2(row){
 function closeDrill(){ const p=state._parent; state._drill=false; if(p){ state.sortKey=p.sortKey; state.sortDir=p.sortDir; state._search=p._search; state.chipVal=p.chipVal; } state._parent=null; if(state.act) runAct(); }
 
 /* ---------------- helpers ---------------- */
-function amtOf(r){ return r[state.basis==='공급가'?'supply':'total']; }
+const SCRAP_FIRE_RATE=0.8, SCRAP_PD_RATE=0.2;
+function rawAmtOf(r){ return +(r&&r[state.basis==='공급가'?'supply':'total']||0); }
+function isScrapNamed(r){ return /고철|스크랩|부산물|비철|폐기물/.test((r&&r.name)||''); }
+function isScrapSale(r){ return !!r&&(isScrapVendor((r&&r.cust)||'')||isScrapNamed(r)); }
+function adjustScrapCustAmount(c,amount){ const v=+amount||0; return isScrapVendor(c)?v*SCRAP_FIRE_RATE:v; }
+function adjustScrapLineAmount(ln,amount){ const v=+amount||0; return (isScrapVendor((ln&&ln.cust)||'')||isScrapNamed(ln))?v*SCRAP_FIRE_RATE:v; }
+function adjustScrapProductAmount(o,amount){ const v=+amount||0; return isScrapNamed(o)?v*SCRAP_FIRE_RATE:v; }
+function amtOf(r){ const v=rawAmtOf(r); return isScrapSale(r)?v*SCRAP_FIRE_RATE:v; }
 function won(n){ return Math.round(n).toLocaleString('ko-KR'); }
 function disp(n){ const u=state.unit; return u===1?won(n):(n/u).toLocaleString('ko-KR',{maximumFractionDigits:u>=1000000?1:0}); }
 function unitLabel(){ return state.unit===1?'원':state.unit===1000?'천원':'백만원'; }
@@ -1527,13 +1534,13 @@ function isScrapVendor(c){ return scrapVendorList().indexOf(c)>=0; }
 function scrapVendorLabel(){ const a=scrapVendorList(); return a.length?a.join(', '):'고철업체'; }
 function populateScrapDatalist(){ const dl=document.getElementById('scrapCustList'); if(!dl)return; let cs=[]; try{ cs=(typeof custCatalog==='function'&&typeof CUR!=='undefined'&&CUR.length)?custCatalog():[]; }catch(e){ cs=[]; } if(!cs.length&&typeof GRADE==='object'&&GRADE)cs=Object.keys(GRADE).sort((a,b)=>a.localeCompare(b,'ko')); const reg=new Set(scrapVendorList()); dl.innerHTML=cs.filter(c=>c&&!reg.has(c)).map(c=>`<option value="${esc(c)}"></option>`).join(''); }
 function scrapListItemsHTML(){ const reg=scrapVendorList(); if(!reg.length)return '<span class="sub2">등록된 고철업체가 없습니다. 위 입력란에서 거래처를 검색해 추가하세요.</span>'; return reg.map((n,i)=>{ const ex=(typeof fcIsExcludedCust==='function')&&fcIsExcludedCust(n); return `<span style="display:inline-flex;align-items:center;gap:6px;background:${ex?'#f1f5f9':'#e0f2fe'};border:1px solid ${ex?'#e2e8f0':'#bae6fd'};border-radius:14px;padding:3px 8px;font-size:12px;font-weight:700"><span onclick="scrapToggleExclude(${i})" title="클릭: 매출처 리스트에서 제외/해제" style="cursor:pointer;color:${ex?'#94a3b8':'#0369a1'};text-decoration:${ex?'line-through':'none'}">${esc(n)}${ex?' <b style=\"color:#dc2626;text-decoration:none\">· 제외</b>':''}</span><button type="button" onclick="scrapRemoveIdx(${i})" title="등록 삭제" style="border:none;background:${ex?'#cbd5e1':'#7dd3fc'};color:#0c4a6e;border-radius:50%;width:16px;height:16px;line-height:1;cursor:pointer;font-size:11px;padding:0">\u00d7</button></span>`; }).join(''); }
-function scrapPanelHTML(){ const open=!!(state.trend&&state.trend.scrapOpen); return `<div style="margin-top:4px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#fff"><button id="scrapToggle" type="button" style="width:100%;text-align:left;border:none;cursor:pointer;background:#fff;color:#334155;font-weight:800;font-size:13px;padding:12px 15px;font-family:inherit"><span style="background:#0369a1;color:#fff;padding:4px 11px;border-radius:7px">\u267b\ufe0f 고철업체 등록·관리 ${open?'\u25be':'\u25b8'}</span> <span class="sub2" style="color:#0369a1;font-weight:600">· 업체명 클릭 = 매출처 리스트에서 제외(숨김) · 등록 시 거래처명에 '고철업체' 표시</span></button><div id="scrapWrap" style="display:${open?'block':'none'};padding:0 15px 13px"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><input type="text" id="scrapInput" list="scrapCustList" autocomplete="off" placeholder="거래처명 입력(자동 필터)·선택 후 Enter/추가" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;width:290px;background:#fff" onkeydown="if(event.key===\u0027Enter\u0027){event.preventDefault();scrapAddFromInput();}"><datalist id="scrapCustList"></datalist><button class="btn" type="button" onclick="scrapAddFromInput()" style="background:#0369a1;color:#fff;border-color:#0369a1;font-size:12px;padding:6px 12px">\uff0b 추가</button></div><div id="scrapList" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">${scrapListItemsHTML()}</div></div></div>`; }
+function scrapPanelHTML(){ const open=!!(state.trend&&state.trend.scrapOpen); return `<div style="margin-top:4px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#fff"><button id="scrapToggle" type="button" style="width:100%;text-align:left;border:none;cursor:pointer;background:#fff;color:#334155;font-weight:800;font-size:13px;padding:12px 15px;font-family:inherit"><span style="background:#0369a1;color:#fff;padding:4px 11px;border-radius:7px">\u267b\ufe0f 고철업체 등록·관리 ${open?'\u25be':'\u25b8'}</span> <span class="sub2" style="color:#0369a1;font-weight:600">· 등록 업체 매출은 모든 실적·목표에 80% 자동 반영 · 업체명 클릭 = 매출처 리스트에서 제외(숨김)</span></button><div id="scrapWrap" style="display:${open?'block':'none'};padding:0 15px 13px"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><input type="text" id="scrapInput" list="scrapCustList" autocomplete="off" placeholder="거래처명 입력(자동 필터)·선택 후 Enter/추가" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;width:290px;background:#fff" onkeydown="if(event.key===\u0027Enter\u0027){event.preventDefault();scrapAddFromInput();}"><datalist id="scrapCustList"></datalist><button class="btn" type="button" onclick="scrapAddFromInput()" style="background:#0369a1;color:#fff;border-color:#0369a1;font-size:12px;padding:6px 12px">\uff0b 추가</button></div><div id="scrapList" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">${scrapListItemsHTML()}</div></div></div>`; }
 function renderScrapList(){ const el=document.getElementById('scrapList'); if(el)el.innerHTML=scrapListItemsHTML(); populateScrapDatalist(); }
 function scrapRerender(){ if(state.act==='trend'&&typeof CUR!=='undefined'&&CUR.length&&typeof monthlyTrend==='function'){ monthlyTrend(); } else { renderScrapList(); } }
 function scrapAddFromInput(){ state.trend=state.trend||{}; state.trend.scrapOpen=true; const inp=document.getElementById('scrapInput'); if(!inp)return; const v=(inp.value||'').trim(); if(!v){inp.focus();return;} if(!Array.isArray(state.scrapVendors))state.scrapVendors=scrapVendorList(); if(state.scrapVendors.indexOf(v)<0){ state.scrapVendors.push(v); if(typeof logEdit==='function')logEdit('고철업체',v+' 등록'); if(typeof saveSettings==='function')saveSettings(); } if(inp)inp.value=''; scrapRerender(); }
 function scrapRemoveIdx(i){ if(!state.scrapVendors)return; const n=state.scrapVendors[i]; if(n==null)return; state.trend=state.trend||{}; state.trend.scrapOpen=true; state.scrapVendors.splice(i,1); if(typeof logEdit==='function')logEdit('고철업체',n+' 삭제'); if(typeof saveSettings==='function')saveSettings(); scrapRerender(); }
 function scrapToggleExclude(i){ const n=scrapVendorList()[i]; if(n==null)return; state.trend=state.trend||{}; state.trend.scrapOpen=true; const ex=(typeof fcIsExcludedCust==='function')&&fcIsExcludedCust(n); if(typeof setExcludedCust==='function')setExcludedCust(n,!ex); if(typeof logEdit==='function')logEdit('고철업체',n+(!ex?' 매출처 제외':' 제외 해제')); if(typeof saveSettings==='function')saveSettings(); scrapRerender(); }
-function catChip(c){ const cat=catOf(c); const col=GRADE_COL[cat]||{bg:'#eef2f8',tx:'#475569'}; const gb=(gradeRec(c).grade||'').replace(/[+\-]/g,'').trim(); const gl=/^[ABC]$/.test(gb)?gb:''; return `<span style="display:inline-block;padding:1px 8px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col.bg};color:${col.tx}">${cat}${gl}</span>${isScrapVendor(c)?'<span style="display:inline-block;margin-left:3px;padding:1px 6px;border-radius:9px;font-size:10px;font-weight:800;background:#fff7ed;color:#b45309;border:1px solid #fed7aa">고철업체</span>':''}`; }
+function catChip(c){ const cat=catOf(c); const col=GRADE_COL[cat]||{bg:'#eef2f8',tx:'#475569'}; const gb=(gradeRec(c).grade||'').replace(/[+\-]/g,'').trim(); const gl=/^[ABC]$/.test(gb)?gb:''; return `<span style="display:inline-block;padding:1px 8px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col.bg};color:${col.tx}">${cat}${gl}</span>${isScrapVendor(c)?'<span style="display:inline-block;margin-left:3px;padding:1px 6px;border-radius:9px;font-size:10px;font-weight:800;background:#fff7ed;color:#b45309;border:1px solid #fed7aa">고철업체·80%</span>':''}`; }
 function gdistText(cat){ if(!cat)return ''; return ['정상','관리','주의','위험','선결제','거래제한','거래중지','기타'].filter(c=>cat[c]>0).map(c=>`${c} ${cat[c]}`).join(', '); }
 function gdistBadges(cat){ if(!cat)return '-'; const out=['정상','관리','주의','위험','선결제','거래제한','거래중지','기타'].filter(c=>cat[c]>0).map(c=>{ const col=GRADE_COL[c]||{bg:'#eef2f8',tx:'#475569'}; return `<span style="display:inline-block;margin:1px 3px 1px 0;padding:1px 8px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col.bg};color:${col.tx}">${c} ${cat[c]}</span>`; }).join(''); return out||'-'; }
 const GRADE_CRIT={'A+':{st:'정상',sale:'1,000만원 이상',desc:'대형 거래처 + 정기결제'},'A-':{st:'관리',sale:'1,000만원 이상',desc:'대형 거래처 + 미정기결제'},'B+':{st:'정상',sale:'500만원 이상 ~ 1,000만원 미만',desc:'중형 거래처 + 정기결제'},'B-':{st:'관리',sale:'500만원 이상 ~ 1,000만원 미만',desc:'중형 거래처 + 미정기결제'},'C+':{st:'정상',sale:'100만원 이상 ~ 500만원 미만',desc:'소형 거래처 + 정기결제'},'C-':{st:'관리',sale:'100만원 이상 ~ 500만원 미만',desc:'소형 거래처 + 미정기결제'},'선결제':{st:'선결제',sale:'100만원 미만 또는 불규칙',desc:'소액·비정기 거래'},'거래제한':{st:'거래제한',sale:'승인 후 출고',desc:'승인 후 출고'},'거래중지':{st:'거래중지',sale:'거래중지',desc:'거래중지'}};
@@ -1869,20 +1876,20 @@ function innerReinforce(){
   }
 }
 
-const isScrap=r=>/고철|스크랩|부산물|비철|폐기물/.test(r.name||'');
+const isScrap=r=>isScrapSale(r);
 function scrapSales(){
   state.sortKey=null; state._search='';
   const rows=periodRows().filter(isScrap);
-  const m=new Map(); rows.forEach(r=>{ m.set(r.ym,(m.get(r.ym)||0)+amtOf(r)); });
-  const arr=[...m.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([ym,amt])=>({key:ym,label:ym,ym,amt,divi:amt*0.8,pd:amt*0.2}));
+  const m=new Map(); rows.forEach(r=>{ m.set(r.ym,(m.get(r.ym)||0)+rawAmtOf(r)); });
+  const arr=[...m.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([ym,amt])=>({key:ym,label:ym,ym,amt,divi:amt*SCRAP_FIRE_RATE,pd:amt*SCRAP_PD_RATE}));
   const tot=arr.reduce((a,o)=>a+o.amt,0);
   const cols=[ {k:'label',t:'월',cls:'l',cell:o=>o.ym},
     {k:'amt',t:`고철 매출(${unitLabel()})`,cell:o=>disp(o.amt),sortVal:o=>o.amt},
     {k:'divi',t:'방화문부자재 80%',cell:o=>`<b style="color:var(--navy)">${disp(o.divi)}</b>`,sortVal:o=>o.divi},
     {k:'pd',t:'PD사업부 20%',cell:o=>`<b style="color:#7c3aed">${disp(o.pd)}</b>`,sortVal:o=>o.pd} ];
-  render('부산물(고철) 월별 판매', `${periodLabel()} · ${won(arr.length)}개월 · 고철 ${won(tot)}원 → 방화문부자재 ${won(Math.round(tot*0.8))} / PD ${won(Math.round(tot*0.2))}`, arr, cols, 'label',
-    '고철(부산물) 판매를 월별로 집계하고 <b>매출의 80%는 방화문부자재사업부, 20%는 PD사업부</b>로 배분합니다(총매출에는 미포함). 품명에 <b>고철·스크랩·부산물</b> 등이 포함된 행이 대상입니다.'+(arr.length?'':' <b style="color:var(--red)">현재 데이터에 해당 품명이 없습니다.</b>'),
-    {total:{label:'합 계',amt:tot,cells:{divi:disp(tot*0.8),pd:disp(tot*0.2)}}});
+  render('부산물(고철) 월별 판매', `${periodLabel()} · ${won(arr.length)}개월 · 고철 원매출 ${won(tot)}원 → 방화문부자재 적용 ${won(Math.round(tot*SCRAP_FIRE_RATE))} / PD 배분 ${won(Math.round(tot*SCRAP_PD_RATE))}`, arr, cols, 'label',
+    '고철(부산물) 판매 원매출을 월별로 집계하고 <b>80%는 방화문부자재사업부 실적·목표에 자동 반영</b>, 20%는 PD사업부 배분 참고액으로 표시합니다. <b>등록된 고철업체</b> 또는 품명에 <b>고철·스크랩·부산물·비철·폐기물</b>이 포함된 행이 대상입니다.'+(arr.length?'':' <b style="color:var(--red)">현재 데이터에 해당 매출이 없습니다.</b>'),
+    {total:{label:'합 계',amt:tot,cells:{divi:disp(tot*SCRAP_FIRE_RATE),pd:disp(tot*SCRAP_PD_RATE)}}});
 }
 function unitPrice(r){ return r.price>0? r.price : (r.qty? r.supply/r.qty : 0); }
 function modeOf(ps){ const fr={}; let mode=0,mc=0; ps.forEach(p=>{ const k=Math.round(p); if(k<=0)return; fr[k]=(fr[k]||0)+1; if(fr[k]>mc||(fr[k]===mc&&k>mode)){mc=fr[k];mode=k;} }); return {mode,mc}; }
@@ -3035,18 +3042,18 @@ function fcIsExcludedCust(c){ return fcExcludedCustSet().has(c); }
 function fcAnnualExtraTargets(exSet){
   const set=exSet||fcExcludedCustSet();
   const newCustAnnualGross=Object.entries(state.fc.newCusts||{}).reduce((a,[c,v])=>{
-    const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100;
-    return a+(+v||0)*af;
+    const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; const base=adjustScrapCustAmount(c,+v||0);
+    return a+base*af;
   },0);
   const newCustExcluded=Object.entries(state.fc.newCusts||{}).reduce((a,[c,v])=>{
     if(!set.has(c))return a;
-    const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100;
-    return a+(+v||0)*af;
+    const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; const base=adjustScrapCustAmount(c,+v||0);
+    return a+base*af;
   },0);
   const newCustAnnual=Math.max(0,newCustAnnualGross-newCustExcluded);
   let lineCustTotalGross=0,lineCustExcluded=0;
   (state.fc.newLines||[]).forEach(ln=>{
-    const amt=(+ln.qty||0)*(+ln.price||0); if(amt<=0)return;
+    const raw=(+ln.qty||0)*(+ln.price||0); const amt=adjustScrapLineAmount(ln,raw); if(amt<=0)return;
     lineCustTotalGross+=amt; if(set.has(ln.cust))lineCustExcluded+=amt;
   });
   const lineCustTotal=Math.max(0,lineCustTotalGross-lineCustExcluded);
@@ -3198,7 +3205,7 @@ function monthlyTrend(){
     ${pdPanelHTML(cyRaw,lastAct,tgt)}
     <div class="note" style="margin:10px 0 4px">아래 표 적용 현황: ${bulkNote} · 빨간 수평선 = 올해 목표 1~12월 <b>월평균 ${won(tgtAvg)}원</b> · 💡 <b>실적 월 클릭</b> 시 그 달 거래처별 매출 · <b>전년比</b>=올해 실적 vs 전년 동월(합계=동기간), <b>목표 %</b>=올해 목표 vs 전년</div>
     <div class="tablewrap" style="margin-top:4px"><table><thead><tr><th class="l">월</th><th>전년(${PY})</th><th>올해목표</th><th>증감액</th><th>증%</th><th>실적(${CY})</th><th>증감액</th><th title="실적 vs 전년 동월(합계=동기간)">전년比</th><th>목표달성</th></tr></thead><tbody>${rows}${tot}</tbody></table></div>
-    <div class="note">목표 %는 1~12월 모두 입력 가능하며, 그래프(목표 막대·평균선)·표·<b>매출 목표</b> 메뉴에 자동 반영·저장됩니다. 전년 막대는 체크박스로 표시/숨김.</div>`;
+    <div class="note">목표 %는 1~12월 모두 입력 가능하며, 그래프(목표 막대·평균선)·표·<b>매출 목표</b> 메뉴에 자동 반영·저장됩니다. <b>고철업체·고철 품목 매출은 원매출의 80%</b>로 모든 실적·목표에 반영됩니다. 전년 막대는 체크박스로 표시/숨김.</div>`;
   renderCustom(html,()=>{
     if(typeof setGlobalBar==='function')setGlobalBar(false);
     $('#result').querySelectorAll('.trmrow').forEach(tr=>tr.addEventListener('click',()=>trendMonthDrill(+tr.dataset.m)));
@@ -3327,12 +3334,12 @@ function forecast(){
   const chart=svgGrouped(series,320,refs,_wdL);
   const pyAnnual=py.reduce((a,b)=>a+b,0); const tgtAnnual=tgt.reduce((a,b)=>a+b,0);
   let mixAnnual=0; for(let mm=1;mm<=12;mm++){ mixAnnual += (mm<=lastAct? Math.max(0,cyMonTot[mm]-fcExcludedMonTarget[mm]) : tgt[mm]); }
-  const newCustAnnualGross=Object.entries(state.fc.newCusts||{}).reduce((a,[c,v])=>{ const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; return a+(+v||0)*af; },0);
-  const newCustExcluded=Object.entries(state.fc.newCusts||{}).reduce((a,[c,v])=>{ if(!fcExSet.has(c))return a; const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; return a+(+v||0)*af; },0);
+  const newCustAnnualGross=Object.entries(state.fc.newCusts||{}).reduce((a,[c,v])=>{ const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; return a+adjustScrapCustAmount(c,+v||0)*af; },0);
+  const newCustExcluded=Object.entries(state.fc.newCusts||{}).reduce((a,[c,v])=>{ if(!fcExSet.has(c))return a; const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; return a+adjustScrapCustAmount(c,+v||0)*af; },0);
   const newCustAnnual=Math.max(0,newCustAnnualGross-newCustExcluded);
   const _lines=state.fc.newLines||[];
   const lineCust={}, lineProd={};
-  _lines.forEach(ln=>{ const amt=(+ln.qty||0)*(+ln.price||0); if(amt<=0)return; if(!lineCust[ln.cust])lineCust[ln.cust]={amt:0,lines:[]}; lineCust[ln.cust].amt+=amt; lineCust[ln.cust].lines.push({...ln,amt}); const pk=(ln.code||'(미상)')+'│'+(ln.spec||''); if(!lineProd[pk])lineProd[pk]={code:ln.code||'(미상)',name:ln.name||'',spec:ln.spec||'',amt:0,lines:[]}; lineProd[pk].amt+=amt; lineProd[pk].lines.push({...ln,amt}); });
+  _lines.forEach(ln=>{ const raw=(+ln.qty||0)*(+ln.price||0); const amt=adjustScrapLineAmount(ln,raw); if(amt<=0)return; if(!lineCust[ln.cust])lineCust[ln.cust]={amt:0,lines:[]}; lineCust[ln.cust].amt+=amt; lineCust[ln.cust].lines.push({...ln,amt}); const pk=(ln.code||'(미상)')+'│'+(ln.spec||''); if(!lineProd[pk])lineProd[pk]={code:ln.code||'(미상)',name:ln.name||'',spec:ln.spec||'',amt:0,lines:[]}; lineProd[pk].amt+=amt; lineProd[pk].lines.push({...ln,amt}); });
   const lineCustTotalGross=Object.values(lineCust).reduce((a,o)=>a+o.amt,0);
   const lineCustExcluded=Object.entries(lineCust).reduce((a,[c,o])=>a+(fcExSet.has(c)?(o.amt||0):0),0);
   const lineCustTotal=Math.max(0,lineCustTotalGross-lineCustExcluded);
@@ -3355,7 +3362,7 @@ function forecast(){
   if(newCustAnnual>0) outsideItems.push(`신규업체 ${won(newCustAnnual)}원`);
   if(lineCustTotal>0) outsideItems.push(`신규라인 ${won(lineCustTotal)}원`);
   outsideItems.push(`<span class="pdlink" onclick="event.stopPropagation();state.act='trend';state.trend.pdOpen=true;runAct();setTimeout(()=>{var e=document.getElementById('pdToggle');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});},150);" title="월별 실적·목표의 PD 임가공비로 이동">PD사업부 임가공비 ${won(pdYearNet)}원 ▸</span>`);
-  { const _sLab=_svForOutside.length?('고철업체('+esc(_svForOutside.join(', '))+')'):'고철업체'; const _sAllExcluded=_svForOutside.length>0&&_svIncludedForOutside.length===0; const _sPartialExcluded=_svIncludedForOutside.length>0&&_svExcludedForOutside.length>0; let _sAmtHTML=''; if(_sAllExcluded){ _sAmtHTML='<span style="text-decoration:line-through">'+won(scrapExcludedAnnual)+'원</span>'; }else{ _sAmtHTML=won(scrapIncludedAnnual)+'원'; if(_sPartialExcluded) _sAmtHTML+=' <span style="color:#94a3b8;font-size:9px">(제외 '+_svExcludedForOutside.length+'개사 미포함)</span>'; } outsideItems.push(`<span class="pdlink" onclick="event.stopPropagation();state.act='trend';state.trend=state.trend||{};state.trend.scrapOpen=true;runAct();setTimeout(()=>{var e=document.getElementById('scrapToggle');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});},150);" title="월별 실적·목표의 고철업체 등록·관리로 이동">${_sLab} ${_sAmtHTML} ▸</span>`); }
+  { const _sLab=_svForOutside.length?('고철업체('+esc(_svForOutside.join(', '))+')'):'고철업체'; const _sAllExcluded=_svForOutside.length>0&&_svIncludedForOutside.length===0; const _sPartialExcluded=_svIncludedForOutside.length>0&&_svExcludedForOutside.length>0; let _sAmtHTML=''; if(_sAllExcluded){ _sAmtHTML='<span style="text-decoration:line-through">'+won(scrapExcludedAnnual)+'원</span>'; }else{ _sAmtHTML=won(scrapIncludedAnnual)+'원'; if(_sPartialExcluded) _sAmtHTML+=' <span style="color:#94a3b8;font-size:9px">(제외 '+_svExcludedForOutside.length+'개사 미포함)</span>'; } outsideItems.push(`<span class="pdlink" onclick="event.stopPropagation();state.act='trend';state.trend=state.trend||{};state.trend.scrapOpen=true;runAct();setTimeout(()=>{var e=document.getElementById('scrapToggle');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});},150);" title="월별 실적·목표의 고철업체 등록·관리로 이동">${_sLab} ${_sAmtHTML} <span style="color:#b45309;font-size:9px">(80% 적용)</span> ▸</span>`); }
   const outsideAnnualNote=`<div>${outsideItems.length?'거래처외 매출포함항목: '+outsideItems.join(' · '):'거래처외 매출포함항목 없음'}</div><div style="margin-top:2px;color:#dc2626">제외업체 차감 ${fcExcludedAnnualTarget>0?'-'+won(fcExcludedAnnualTarget)+'원':'없음'}</div>`;
   // 올해 연매출 목표 카드 우측에 추가되는 '목표 구성내역' 카드
   const _scrapSet=new Set(scrapVendorList());
@@ -3395,7 +3402,7 @@ function forecast(){
   const cTotPrevBase=custArrTotalBase.reduce((a,o)=>a+o.prev,0), cTotProjBase=custArrTotalBase.reduce((a,o)=>a+o.proj,0), cTotYtdBase=custArrTotalBase.reduce((a,o)=>a+(o.ytd||0),0);
   let custRows=custArr.map((o,i)=>`<tr class="fcrow${o.excl?' fcexcluded':''}" data-c="${esc(o.c)}"><td class="rank">${i+1}</td><td class="l" style="white-space:nowrap">${esc(o.c)} ${catChip(o.c)} <label class="exclbox" onclick="event.stopPropagation()" title="올해 제외(목표금액에서 제외)"><input type="checkbox" class="fcexcl" data-c="${esc(o.c)}" ${o.excl?'checked':''}>제외</label></td><td class="mgr">${mgrBadge(mgrS(o.c))}</td><td class="mgr">${mgrBadge(mgrT(o.c))}</td><td>${disp(o.ytd)}</td><td>${disp(o.prev)}</td><td>${state.fc.issC?`<span class="sub2" style="color:#64748b;font-size:10px;display:block">전년 ${disp(o.prev)}</span>`:''}${disp(o.proj)}</td><td>${diffSpan(o.diff)}</td><td>${pctSpan(o.pct)}</td><td onclick="event.stopPropagation()"><input type="number" class="fcov" data-c="${esc(o.c)}" value="${o.ov}" placeholder="자동" step="1" style="width:56px"> %${(state.showElog&&((state.fc.overrideAt&&state.fc.overrideAt[o.c])||(o.ov!==''&&o.ov!=null)))?`<div class="sub2" style="color:#7c3aed;font-size:9px;font-weight:700">✎ 조정 ${o.ov}%${(state.fc.overrideAt&&state.fc.overrideAt[o.c])?' · '+editStamp(state.fc.overrideAt[o.c]):''}</div>`:''}</td><td onclick="event.stopPropagation()"><input type="number" class="fcadd" data-c="${esc(o.c)}" value="${o.ad}" placeholder="0" step="1" style="width:56px"> %${(state.showElog&&((state.fc.addPctAt&&state.fc.addPctAt[o.c])||(o.ad!==''&&o.ad!=null&&+o.ad!==0)))?`<div class="sub2" style="color:#7c3aed;font-size:9px;font-weight:700">✎ 추가 +${o.ad}%${(state.fc.addPctAt&&state.fc.addPctAt[o.c])?' · '+editStamp(state.fc.addPctAt[o.c]):''}</div>`:''}</td><td onclick="event.stopPropagation()"><input type="text" class="fcmemo" data-c="${esc(o.c)}" value="${esc(state.fc.custMemo[o.c]||'')}" placeholder="이슈 메모" style="width:180px;font-size:11px"></td></tr>`).join('');
   let newProjSum=0, newProjSumExcl=0;
-  const newRows=Object.entries(state.fc.newCusts||{}).filter(([c])=>!fcExSet.has(c)).map(([c,v])=>{ const target=+v||0; const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; const proj=target*af; newProjSum+=proj; if(fcExSet.has(c))newProjSumExcl+=proj; return `<tr class="fcnewrow"><td class="rank" style="color:#7c3aed;font-weight:700">신규</td><td class="l">${esc(c)} <button class="fcdel" data-c="${esc(c)}" title="삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="mgr">${mgrBadge(mgrS(c))}</td><td class="mgr">${mgrBadge(mgrT(c))}</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" inputmode="numeric" class="fcnewt numfmt" data-c="${esc(c)}" value="${target.toLocaleString('en-US')}" style="width:120px;text-align:right" title="연 목표액(원)"></td><td>${diffSpan(proj)}</td><td><span class="sub2" style="color:#7c3aed;font-weight:700">신규</span></td><td onclick="event.stopPropagation()"><input type="number" value="" placeholder="-" style="width:56px" disabled title="신규는 조정% 미적용"> %</td><td onclick="event.stopPropagation()"><input type="number" class="fcadd" data-c="${esc(c)}" value="${ad==null?'':ad}" placeholder="0" step="1" style="width:56px"> %</td><td onclick="event.stopPropagation()"><input type="text" class="fcmemo" data-c="${esc(c)}" value="${esc(state.fc.custMemo[c]||'')}" placeholder="이슈 메모" style="width:180px;font-size:11px"></td></tr>`; }).join('');
+  const newRows=Object.entries(state.fc.newCusts||{}).filter(([c])=>!fcExSet.has(c)).map(([c,v])=>{ const target=+v||0; const applied=adjustScrapCustAmount(c,target); const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; const proj=applied*af; newProjSum+=proj; if(fcExSet.has(c))newProjSumExcl+=proj; return `<tr class="fcnewrow"><td class="rank" style="color:#7c3aed;font-weight:700">신규</td><td class="l">${esc(c)} ${isScrapVendor(c)?'<span style="font-size:9px;color:#b45309;font-weight:800">80% 적용</span> ':''}<button class="fcdel" data-c="${esc(c)}" title="삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="mgr">${mgrBadge(mgrS(c))}</td><td class="mgr">${mgrBadge(mgrT(c))}</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" inputmode="numeric" class="fcnewt numfmt" data-c="${esc(c)}" value="${target.toLocaleString('en-US')}" style="width:120px;text-align:right" title="연 목표액(원)"></td><td>${diffSpan(proj)}</td><td><span class="sub2" style="color:#7c3aed;font-weight:700">신규</span></td><td onclick="event.stopPropagation()"><input type="number" value="" placeholder="-" style="width:56px" disabled title="신규는 조정% 미적용"> %</td><td onclick="event.stopPropagation()"><input type="number" class="fcadd" data-c="${esc(c)}" value="${ad==null?'':ad}" placeholder="0" step="1" style="width:56px"> %</td><td onclick="event.stopPropagation()"><input type="text" class="fcmemo" data-c="${esc(c)}" value="${esc(state.fc.custMemo[c]||'')}" placeholder="이슈 메모" style="width:180px;font-size:11px"></td></tr>`; }).join('');
   const lineCustRows=Object.entries(lineCust).filter(([c])=>!fcExSet.has(c)).map(([c,o])=>{ const brk=o.lines.map(l=>`${l.name||l.code} ${won(l.qty)}개×${won(Math.round(l.price))}`).join(' · '); return `<tr class="fcnewrow"><td class="rank" style="color:#0d9488;font-weight:700">신규</td><td class="l">${esc(c)} <span class="sub2" title="${esc(brk)}" style="color:#0d9488">🧾라인 ${o.lines.length}</span> <button class="fclinedelc" data-c="${esc(c)}" title="이 거래처 라인 전체 삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="mgr">${mgrBadge(mgrS(c))}</td><td class="mgr">${mgrBadge(mgrT(c))}</td><td>-</td><td>-</td><td><b>${disp(o.amt)}</b> <span class="sub2" style="color:#0d9488">라인합</span></td><td>${diffSpan(o.amt)}</td><td><span class="sub2" style="color:#0d9488;font-weight:700">신규</span></td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" class="fcmemo" data-c="${esc(c)}" value="${esc(state.fc.custMemo[c]||'')}" placeholder="이슈 메모" style="width:180px;font-size:11px"></td></tr>`; }).join('');
   const pdCustRow = pdYear>0?`<tr class="fcnewrow"><td class="rank" style="color:#b45309;font-weight:800">PD</td><td class="l">PD사업부 <span class="sub2" style="color:#b45309">🏭임가공비</span></td><td class="mgr">-</td><td class="mgr">-</td><td>-</td><td>-</td><td><b>${disp(pdYear)}</b> <span class="sub2" style="color:#b45309">임가공</span></td><td>${diffSpan(pdYear)}</td><td><span class="sub2" style="color:#b45309;font-weight:700">PD</span></td><td>-</td><td>-</td><td class="l"><span onclick="event.stopPropagation();state.act='trend';state.trend.pdOpen=true;runAct();setTimeout(()=>{var e=document.getElementById('pdToggle');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});},150);" style="cursor:pointer;color:#1d4ed8;text-decoration:underline;font-size:11px" title="월별 실적·목표의 PD 임가공비로 이동">▸ PD사업부 월별 실적·목표</span></td></tr>`:'';
   custRows = state.fc.showExclRows ? custRows : (pdCustRow + lineCustRows + newRows + custRows); const cTotProjNetBase=custArrTotalBase.reduce((a,o)=>a+(o.excl?0:o.proj),0); const cTotProjAll=state.fc.showExclRows?cTotProj:(cTotProjNetBase+newProjSum+lineCustTotal+pdYearNet); const cTotPrevAll=state.fc.showExclRows?cTotPrev:custArrTotalBase.reduce((a,o)=>a+(o.excl?0:o.prev),0); const cTotYtdAll=state.fc.showExclRows?custArr.reduce((a,o)=>a+(o.ytd||0),0):custArrTotalBase.reduce((a,o)=>a+(o.excl?0:(o.ytd||0)),0);
@@ -3404,7 +3411,7 @@ function forecast(){
   let prodArr=[...prodKeys].map(pk=>{ let prev=0,pq=0,proj0=0,cq=0,ytd=0; for(let m=m1;m<=m2;m++){ const pe=pyMonProd[m].get(pk); if(pe){prev+=pe.amt;pq+=pe.qty;} const ce=(m<=lastAct?cyMonProd[m]:fcProdMon[m]).get(pk); if(ce){proj0+=ce.amt;cq+=ce.qty; if(m<=lastAct)ytd+=ce.amt;} } const meta=prodMeta.get(pk)||{code:pk,name:'',spec:''}; const ov=state.fc.prodOverride[pk]; const ad=state.fc.prodAddPct[pk]; let proj=(ov!=null&&ov!=='')?prev*(1+(+ov)/100):proj0; proj*=1+((ad!=null&&ad!=='')?+ad:0)/100; const cqAdj=proj0>0?cq*(proj/proj0):(prev>0?pq*(proj/prev):cq); const diff=proj-prev; const pct=prev?diff/prev*100:(proj>0?null:0); return {pk,...meta,prev,proj0,proj,diff,pct,pq,cq:cqAdj,ytd,ov:(ov==null?'':ov),ad:(ad==null?'':ad)}; }).filter(o=>o.prev>0||o.proj>0);
   prodArr.forEach(o=>{ if(exP[o.pk]){ o.proj=0; o.diff=-o.prev; o.pct=o.prev?-100:0; o.excl=true; } });
   applyFcSort(prodArr);
-  const newProdArr=Object.entries(state.fc.newProds||{}).map(([pk,o])=>{ const ad=state.fc.prodAddPct[pk]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; const amt=+o.amt||0; return {pk,code:o.code,name:o.name,spec:o.spec,prev:0,proj:amt*af,diff:amt*af,pct:null,pq:0,cq:0,ov:'',ad:(ad==null?'':ad),amt}; });
+  const newProdArr=Object.entries(state.fc.newProds||{}).map(([pk,o])=>{ const ad=state.fc.prodAddPct[pk]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; const amt=+o.amt||0; const base=adjustScrapProductAmount(o,amt); return {pk,code:o.code,name:o.name,spec:o.spec,prev:0,proj:base*af,diff:base*af,pct:null,pq:0,cq:0,ov:'',ad:(ad==null?'':ad),amt}; });
   const pTotPrev=prodArr.reduce((a,o)=>a+o.prev,0); const pTotProj=prodArr.reduce((a,o)=>a+o.proj,0)+newProdArr.reduce((a,o)=>a+o.proj,0)+lineProdTotal+pdYear;
   let prodRows=prodArr.map((o,i)=>`<tr class="fcprow${o.excl?' fcexcluded':''}" data-pk="${esc(o.pk)}"><td class="rank">${i+1}</td><td class="l">${esc(o.code)} <label class="exclbox" onclick="event.stopPropagation()" title="올해 제외"><input type="checkbox" class="fcpexcl" data-pk="${esc(o.pk)}" ${o.excl?'checked':''}>제외</label></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>${disp(o.prev)}</td><td>${disp(o.ytd)}</td><td>${disp(o.proj)}</td><td>${diffSpan(o.diff)}</td><td>${pctSpan(o.pct)}</td><td onclick="event.stopPropagation()"><input type="number" class="fcpov" data-pk="${esc(o.pk)}" value="${o.ov}" placeholder="자동" step="1" style="width:54px"> %</td><td onclick="event.stopPropagation()"><input type="number" class="fcpadd" data-pk="${esc(o.pk)}" value="${o.ad}" placeholder="0" step="1" style="width:54px"> %</td><td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.cq))}</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(o.pk)}" value="${esc(state.fc.prodMemo[o.pk]||'')}" placeholder="이슈 메모" style="width:150px;font-size:11px"></td></tr>`).join('');
   const newProdRows=newProdArr.map(o=>`<tr class="fcnewprow"><td class="rank" style="color:#7c3aed;font-weight:700">신규</td><td class="l">${esc(o.code)} <button class="fcpdel" data-pk="${esc(o.pk)}" title="삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" inputmode="numeric" class="fcnewp numfmt" data-pk="${esc(o.pk)}" value="${o.amt.toLocaleString('en-US')}" style="width:110px;text-align:right" title="연 목표액(원)"></td><td>${diffSpan(o.proj)}</td><td><span class="sub2" style="color:#7c3aed;font-weight:700">신규</span></td><td onclick="event.stopPropagation()"><input type="number" value="" placeholder="-" style="width:54px" disabled> %</td><td onclick="event.stopPropagation()"><input type="number" class="fcpadd" data-pk="${esc(o.pk)}" value="${o.ad}" placeholder="0" step="1" style="width:54px"> %</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(o.pk)}" value="${esc(state.fc.prodMemo[o.pk]||'')}" placeholder="이슈 메모" style="width:150px;font-size:11px"></td></tr>`).join('');
@@ -4085,7 +4092,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
 <script id="sales-sync-v03-final-patch">
 (function(){
   'use strict';
-  var APP_VERSION='v05';
+  var APP_VERSION='v06';
   var BASE_KEY='sales_gsync_base_stable_v1';
   var OLD_BASE_KEYS=['sales_gsync_base_v02','sales_gsync_base_v01'];
   var AUTO_DELAY=5000, BUSY_RETRY=1300, MAX_AUTO_RETRY=5;
