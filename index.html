@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v15 · PD지원인건비 음수 연동</title>
+<title>동방파스텍 매출 분석 도구 v23 · 합계표시 개선</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -196,6 +196,73 @@
   .tm-item .ic{font-size:15px}
   .tm-spacer{flex:1 1 auto;min-width:8px}
   .tm-direct{font-family:inherit;font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;border:1px solid}
+  .wr-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:12px;padding-bottom:10px;border-bottom:3px solid #ef4444}
+  .wr-brand{font-size:18px;font-weight:900;color:#111827;letter-spacing:-.3px}
+  .wr-brand small{display:block;margin-top:4px;font-size:11px;font-weight:600;color:#64748b}
+  .wr-title{font-size:18px;font-weight:900;color:#111827;text-align:right;white-space:nowrap}
+  .wr-tabs{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+  .wr-tab{border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:8px;padding:7px 12px;font-weight:800;font-size:12px;font-family:inherit}
+  .wr-tab.on{background:#1e3a5f;color:#fff;border-color:#1e3a5f}
+  .wr-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}
+  .wr-controls label{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#475569}
+  .wr-controls select{min-width:auto;padding:6px 9px}
+  .wr-section{font-size:15px;font-weight:900;color:#111827;margin:13px 0 7px}
+  .wr-tablewrap{width:100%;overflow-x:hidden;overflow-y:visible;border:1px solid #94a3b8;background:#fff}
+  .wr-table{width:100%;min-width:0!important;border-collapse:collapse;table-layout:fixed;font-size:9.5px}
+  .wr-table th,.wr-table td{border:1px solid #94a3b8;padding:4px 3px;text-align:right;vertical-align:middle;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+  .wr-table th{position:static;background:#e5e7eb;color:#111827;font-size:9px;text-align:center;line-height:1.2;cursor:default;white-space:normal}
+  .wr-table td:first-child,.wr-table th:first-child{text-align:left}
+  .wr-table .wr-no,.wr-table th.wr-no{text-align:center!important}
+  .wr-table tbody tr:hover td{background:#f8fafc}
+  .wr-table .wr-sum td{background:#fff7cc;font-weight:900;border-top:2px solid #111827}
+  .wr-table .wr-rest td{background:#fff8e1}
+  .wr-total-col{font-weight:900!important}
+  .wr-fixed-actual{background:#dcfce7!important;color:#14532d;font-weight:800}
+  .wr-amt{display:block;font-size:8.3px;letter-spacing:-.35px;white-space:nowrap;overflow:visible;text-overflow:clip}
+  .wr-table td:has(.wr-amt){overflow:visible;text-overflow:clip;padding-left:1px;padding-right:1px}
+  .wr-table .wr-sum .wr-amt{font-size:8px;letter-spacing:-.55px}
+  .wr-table .wr-zero{color:#cbd5e1}
+  .wr-table .wr-rate-good{color:#15803d;font-weight:800}
+  .wr-table .wr-rate-bad{color:#dc2626;font-weight:800}
+  .wr-table th.wr-center{ text-align:center!important }
+  .wr-memo{width:100%;min-width:150px;padding:5px 7px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-family:inherit;font-size:11px;color:#1f2937}
+  .wr-memo:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.12)}
+  .wr-subamt{margin-top:3px;padding-top:3px;border-top:1px dashed #cbd5e1;color:#64748b;font-size:8px;line-height:1.25;white-space:normal}
+  .wr-subamt b{display:block;color:#2563eb;font-size:8.5px;white-space:nowrap}
+  .wr-up{color:#dc2626;font-weight:800}.wr-down{color:#2563eb;font-weight:800}.wr-flat{color:#64748b;font-weight:700}
+  .wr-cat{display:inline-block;min-width:42px;padding:2px 5px;border-radius:999px;font-size:9px;font-weight:800;text-align:center;line-height:1.2;border:1px solid #cbd5e1;background:#f8fafc;color:#334155;white-space:nowrap}
+  .wr-cat-ex{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.wr-cat-co{background:#ecfdf5;border-color:#bbf7d0;color:#047857}.wr-cat-la{background:#fff7ed;border-color:#fed7aa;color:#c2410c}.wr-cat-in{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}.wr-cat-etc{background:#f8fafc;border-color:#cbd5e1;color:#334155}
+  .wr-mgr-badge{display:inline-flex;align-items:center;justify-content:center;max-width:100%;min-height:22px;padding:2px 5px;border-radius:999px;background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;font-size:9px;font-weight:900;white-space:normal;line-height:1.15}
+  .wr-mgr-badge.none{background:#f1f5f9;border-color:#cbd5e1;color:#64748b}
+  .wr-top-custom,.wr-pct-custom{width:62px;min-width:0;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:11px}
+  .wr-rankbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:4px 0 8px;padding:7px 9px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px}
+  .wr-rankbar label{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:#475569}
+  .wr-rankbar select{padding:4px 7px;font-size:11px}
+  .wr-rankstat{font-size:11px;color:#334155;background:#fff;border:1px solid #cbd5e1;border-radius:999px;padding:3px 8px;font-weight:800}
+  .wr-mode-btn{border:1px solid #cbd5e1;background:#fff;color:#64748b;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:900;font-family:inherit;cursor:pointer}
+  .wr-mode-btn.on{background:#1e3a5f;color:#fff;border-color:#1e3a5f;box-shadow:0 0 0 2px rgba(30,58,95,.12)}
+  .wr-mode-btn.off{opacity:.55}
+  .wr-mode-field{border:1px solid #e2e8f0;border-radius:8px;padding:4px 6px;background:#fff;transition:opacity .12s,border-color .12s,background .12s}
+  .wr-mode-field.on{border-color:#1e3a5f;background:#eef2ff}
+  .wr-mode-field.off{opacity:.52;background:#f8fafc}
+  .wr-mixbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0 0 8px}
+  .wr-mixitem{border:1px solid #cbd5e1;border-radius:8px;padding:5px 6px;background:#fff;min-width:0}
+  .wr-mixitem b{display:block;font-size:10px;color:#334155;white-space:nowrap;overflow:visible;text-overflow:clip}.wr-mixitem>span{font-size:11px;font-weight:900;color:#111827}
+  .wr-mixicon{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:22px;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:900;line-height:1.2;border:1px solid #cbd5e1;background:#f8fafc;color:#334155;white-space:nowrap}
+  .wr-mixicon.wr-cat-ex{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}
+  .wr-mixicon.wr-cat-co{background:#ecfdf5;border-color:#bbf7d0;color:#047857}
+  .wr-mixicon.wr-cat-la{background:#fff7ed;border-color:#fed7aa;color:#c2410c}
+  .wr-mixicon.wr-cat-in{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+  .wr-mixicon.wr-cat-etc{background:#f8fafc;border-color:#cbd5e1;color:#334155}
+  .wr-mini{min-width:0!important;font-size:9.4px}
+  .wr-mini th,.wr-mini td{padding:4px 4px;white-space:normal;text-overflow:clip}
+  .wr-spec-cell{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;word-break:break-word;line-height:1.25}
+  .wr-mini tbody tr[data-prod]{cursor:pointer}
+  .wr-mini .wr-prod-detail td{background:#f8fafc;color:#475569;text-align:left;padding:8px 12px}
+  .wr-note{margin-top:8px;color:#64748b;font-size:11px;line-height:1.55}
+  .wr-page{background:#fff;border:1px solid #d1d5db;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+  @media(max-width:1200px){.wr-table{font-size:8px}.wr-table th{font-size:7.5px}.wr-table th,.wr-table td{padding:3px 2px}.wr-title{font-size:15px}.wr-page{padding:10px}.wr-controls{margin-left:0;width:100%}.wr-memo{min-width:0;font-size:8px;padding:3px}.wr-subamt,.wr-subamt b{font-size:7px}}
+  @media print{header,.topmenu,#dataPanel,#summary,#mgrFilterBar,.wr-tabs,.wr-controls,.wr-no-print{display:none!important}.wrap{max-width:none;padding:0}.wr-page{border:0;box-shadow:none;padding:0}.wr-tablewrap{overflow:visible}.wr-table{min-width:0;font-size:8px}.wr-table th,.wr-table td{padding:3px}.note{display:none!important}}
   .anntbl th,.anntbl td{padding:4px 5px}
   .fcexcluded{opacity:.5;background:#fef2f2}
   .fcexcluded .l{text-decoration:line-through}
@@ -425,7 +492,7 @@ header .appver{margin-left:0!important}
   </form>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)" style="align-self:center;font-size:11px;color:#94a3b8;white-space:nowrap;padding:3px 4px">버전 v15</span>
+  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)" style="align-self:center;font-size:11px;color:#dc2626;font-weight:800;white-space:nowrap;padding:3px 7px;border:1px solid #fecaca;border-radius:6px;background:#fff1f2">버전 v23 · 합계표시 개선</span>
 </header>
 
 <div class="wrap">
@@ -588,7 +655,7 @@ let datasets=[];     // [{uid, fileName, sheetName, sheetNames:[], recs:[{d,cust
 let RAWMEM={};       // uid -> {sheetName:{headers,rows}}  (session only)
 let CUR=[];          // flattened records w/ Date + period keys
 let uidSeq=1;
-let state={ basis:'공급가', unit:1, period:'year', periodKey:null, periodYear:null, workdays:{}, bep:0, clsOverride:{}, gradeOverride:{}, gbunOverride:{}, region:{level:'do'}, credit:{cat:null,by:'status'}, retain:{issue:false,showExcl:false,visitOnly:false,exclOnly:false}, retainMemo:{}, retainMemoAt:{}, retainExcl:{}, retainVisit:{}, cmgrExcl:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true}, elogSeenTs:0, cross:{base:'',baseSpec:'',targets:[''],filter:'all'}, ir:{target:'all',view:'spec',sm:10}, trend2:{win:12,dim:'cust',grp:'none',catSel:null}, clsCat:null, clsCustSearch:'', rankMonthly:false, rankMonYear:null, prodRankMonthly:false, prodRankYear:null, prodDrillMonthly:false, prodDrillYear:null, monthIssue:{}, price:{mode:'cust',histMode:'all'}, priceSets:[], setDraft:{title:'',items:[{name:'',spec:'',code:'',qty:1,price:'',cost:'',profit:''}]}, rangeStart:null, rangeEnd:null, headcount:53, headMonthly:{}, headYearDefault:{}, mgrOverride:{}, cmgrPrimary:{}, cmgrKey:{}, scrapVendors:[], scrapVendorOff:{}, gsync:{url:'',key:'',auto:true,lastSync:'',user:'',syncCount:0},syncLog:{}, act:null, sortKey:null, sortDir:-1, _search:'', chipVal:null, lastData:null,
+let state={ basis:'공급가', unit:1, period:'year', periodKey:null, periodYear:null, workdays:{}, bep:0, clsOverride:{}, gradeOverride:{}, gbunOverride:{}, region:{level:'do'}, credit:{cat:null,by:'status'}, retain:{issue:false,showExcl:false,visitOnly:false,exclOnly:false}, retainMemo:{}, retainMemoAt:{}, retainExcl:{}, retainVisit:{}, cmgrExcl:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true}, elogSeenTs:0, cross:{base:'',baseSpec:'',targets:[''],filter:'all'}, ir:{target:'all',view:'spec',sm:10}, trend2:{win:12,dim:'cust',grp:'none',catSel:null}, clsCat:null, clsCustSearch:'', rankMonthly:false, rankMonYear:null, prodRankMonthly:false, prodRankYear:null, prodDrillMonthly:false, prodDrillYear:null, monthIssue:{}, price:{mode:'cust',histMode:'all'}, weekly:{page:1,year:null,month:null,week:null,topN:20,topPct:80,rankMode:'count',notes:{}}, priceSets:[], setDraft:{title:'',items:[{name:'',spec:'',code:'',qty:1,price:'',cost:'',profit:''}]}, rangeStart:null, rangeEnd:null, headcount:53, headMonthly:{}, headYearDefault:{}, mgrOverride:{}, cmgrPrimary:{}, cmgrKey:{}, scrapVendors:[], scrapVendorOff:{}, gsync:{url:'',key:'',auto:true,lastSync:'',user:'',syncCount:0},syncLog:{}, act:null, sortKey:null, sortDir:-1, _search:'', chipVal:null, lastData:null,
   inv:{lt:14,z:'95',dfilter:'전체',actual:{},exclude:{},stab:'rec'}, cmgr:{fs:'전체',fe:'전체',ft:'전체',search:'',mode:'none',year:'cy',sortKey:'a',sortDir:-1,editKey:null,cardsOpen:false,infoMode:false,exclMode:false,showPrev:false,showLaser:false}, custInfo:{}, pd:{labor:{1:18912008,2:11016122,3:10729149,4:6283887,5:3589118},process:{1:33311650,2:23295890,3:19221300,4:13994850,5:12362080},indirect:{1:2016627,2:338637,3:1667136,4:625176,5:2298824},useLabor:true,useProcess:true,useIndirect:true,actual:{},estimate:false}, pareto:{dim:'cust',threshold:80,showRest:false,period:'all',m1:1,m2:12,year:'all'}, cmp:{period:'1분기',dim:'cust',m1:1,m2:12,year:null,filter:null}, trend:{showPY:false,editorOpen:false,pdOpen:false,scrapOpen:false}, fc:{pct:{},override:{},addPct:{},newCusts:{},prodOverride:{},prodAddPct:{},custProdOverride:{},newProds:{},newLines:[],custMemo:{},prodMemo:{},notesHtml:'',notesSales:'',notesTech:'',notesTab:'main',notesMeta:{main:{},sales:{},tech:{}},issC:false,issP:false,exclCust:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true},targetExclCust:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true},exclProd:{},showExcl:false,showExclRows:false,annualHist:{2019:7531847061,2020:7404376660,2021:8806423871,2022:10484011261,2023:12035275080,2024:11218223843},annualOpen:false,period:'all',m1:6,m2:12,dim:'cust',showPY:false,sortKey:null,sortDir:-1} };
 function headFor(ym){ const v=state.headMonthly[ym]; if(v!=null&&v!=='')return +v; const yd=state.headYearDefault[ym.slice(0,4)]; if(yd!=null&&yd!=='')return +yd; return state.headcount; }
 const KR_HOLIDAYS={
@@ -626,7 +693,7 @@ function mergePriceSets(localArr, remoteArr){
   (localArr||[]).forEach(add); (remoteArr||[]).forEach(add);
   return [...map.values()].sort((a,b)=>tsOf(b)-tsOf(a));
 }
-async function saveSettings(){ syncExcludedCustMaps(); syncTargetExcludedCustMap(); await idbSet('settings',{headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,workdays:state.workdays,bep:state.bep,fcNewCusts:state.fc.newCusts,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,gbunOverride:state.gbunOverride,priceSets:state.priceSets,comp:state.comp,editLog:state.editLog,custProdOverride:state.fc.custProdOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,monthIssueAt:state.monthIssueAt,fcPctAt:state.fc.pctAt,fcOverrideAt:state.fc.overrideAt,fcAddPctAt:state.fc.addPctAt,syncLog:state.syncLog,retainMemo:state.retainMemo,retainMemoAt:state.retainMemoAt,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,inv:state.inv,pd:state.pd,gsync:state.gsync,_seedV:state._seedV,scrapVendors:state.scrapVendors,scrapVendorOff:state.scrapVendorOff}); gsAutoPush(); }
+async function saveSettings(){ syncExcludedCustMaps(); syncTargetExcludedCustMap(); await idbSet('settings',{headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,workdays:state.workdays,weekly:state.weekly,bep:state.bep,fcNewCusts:state.fc.newCusts,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,gbunOverride:state.gbunOverride,priceSets:state.priceSets,comp:state.comp,editLog:state.editLog,custProdOverride:state.fc.custProdOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,monthIssueAt:state.monthIssueAt,fcPctAt:state.fc.pctAt,fcOverrideAt:state.fc.overrideAt,fcAddPctAt:state.fc.addPctAt,syncLog:state.syncLog,retainMemo:state.retainMemo,retainMemoAt:state.retainMemoAt,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,inv:state.inv,pd:state.pd,gsync:state.gsync,_seedV:state._seedV,scrapVendors:state.scrapVendors,scrapVendorOff:state.scrapVendorOff}); gsAutoPush(); }
 
 /* ---------------- file loading ---------------- */
 const drop=$('#drop');
@@ -872,6 +939,11 @@ function buildHeadMonthly(){
 }
 function segBind(sel,cb){ document.querySelectorAll(sel+' button').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll(sel+' button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); cb(b.dataset.v); })); }
 let _fieldDrag=false; document.addEventListener('mousedown',e=>{ _fieldDrag=!!(e.target&&e.target.closest&&e.target.closest('input,textarea,select')); },true);
+(function addWeeklyReportMenu(){
+  const spacer=document.querySelector('#topMenu .tm-spacer');
+  if(!spacer||document.getElementById('weeklyMenuGroup'))return;
+  spacer.insertAdjacentHTML('beforebegin',`<div class="tm-grp" id="weeklyMenuGroup"><button class="tm-top" type="button">📋 주간보고 ▾</button><div class="tm-drop"><button class="tm-item" data-act="weekly1"><span class="ic">📊</span>1. 목표대비 달성</button><button class="tm-item" data-act="weekly2"><span class="ic">📦</span>2. 품목별 매출 현황</button></div></div>`);
+})();
 document.querySelectorAll('.tile,.tm-item').forEach(b=>b.addEventListener('click',()=>{ setCmgrMode(false); closeFilePanel(); document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); document.querySelectorAll('[data-act="'+b.dataset.act+'"]').forEach(x=>x.classList.add('active')); document.querySelectorAll('.tm-top.open').forEach(t=>{t.classList.remove('open');t.nextElementSibling.classList.remove('open');}); state.act=b.dataset.act; state.sortKey=null; state._search=''; state.chipVal=null; state._drill=false; state._parent=null; runAct(); }));
 document.querySelectorAll('.tm-top').forEach(t=>t.addEventListener('click',e=>{ e.stopPropagation(); const wasOpen=t.classList.contains('open'); document.querySelectorAll('.tm-top.open').forEach(x=>{x.classList.remove('open');x.nextElementSibling.classList.remove('open');}); if(!wasOpen){t.classList.add('open');t.nextElementSibling.classList.add('open');} }));
 document.addEventListener('click',()=>{ document.querySelectorAll('.tm-top.open').forEach(x=>{x.classList.remove('open');x.nextElementSibling.classList.remove('open');}); });
@@ -1017,6 +1089,234 @@ function periodLabel(){
   if(state.period==='half') return `${state.periodKey.slice(0,4)} ${state.periodKey.endsWith('H1')?'상반기':'하반기'}`;
   if(state.period==='quarter') return `${state.periodKey.slice(0,4)} ${state.periodKey.slice(-1)}분기`;
   return state.periodKey; }
+
+/* ---------------- 주간보고 (PPT 2페이지 연동) ---------------- */
+function wrRanges(y,m){
+  const last=new Date(y,m,0).getDate();
+  return [[1,7],[8,14],[15,21],[22,28],[29,last]].filter(r=>r[0]<=last).map((r,i)=>({n:i+1,s:r[0],e:Math.min(r[1],last)}));
+}
+function wrDate(y,m,d){ return new Date(+y,+m-1,+d); }
+function wrDateText(d){ return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}`; }
+function wrMil(v){ return v?Math.round(v/1000000).toLocaleString('ko-KR'):'-'; }
+function wrPct(v){ return (v==null||!isFinite(v))?'-':v.toFixed(1)+'%'; }
+function wrVal(v){ return `<span>${won(v||0)}</span>`; }
+function wrLatestMonth(y){
+  const ms=CUR.filter(r=>+r.y===+y).map(r=>monthOf(r));
+  return ms.length?Math.max(...ms):1;
+}
+function wrLatestWeek(y,m){
+  const ds=CUR.filter(r=>+r.y===+y&&monthOf(r)===+m).map(r=>r.d.getDate());
+  const day=ds.length?Math.max(...ds):1;
+  return Math.min(wrRanges(y,m).length,Math.max(1,Math.ceil(day/7)));
+}
+function wrEnsure(){
+  state.weekly=state.weekly||{page:1,year:null,month:null,week:null,topN:20,topPct:80,rankMode:'count',notes:{}};
+  state.weekly.notes=state.weekly.notes||{};
+  state.weekly.topN=Math.max(1,Math.min(500,Math.round(+state.weekly.topN||20)));
+  state.weekly.topPct=Math.max(1,Math.min(100,Math.round(+state.weekly.topPct||80)));
+  if(state.weekly.rankMode!=='pct')state.weekly.rankMode='count';
+  const ys=dataYears(); if(!ys.length)return null;
+  if(!ys.includes(+state.weekly.year))state.weekly.year=ys[ys.length-1];
+  const y=+state.weekly.year;
+  if(!state.weekly.month||state.weekly.month<1||state.weekly.month>12)state.weekly.month=wrLatestMonth(y);
+  const m=+state.weekly.month, rs=wrRanges(y,m);
+  if(!state.weekly.week||state.weekly.week<1||state.weekly.week>rs.length)state.weekly.week=wrLatestWeek(y,m);
+  return {y,m,w:+state.weekly.week,range:rs[+state.weekly.week-1],ranges:rs,years:ys};
+}
+function wrCustomerPlan(y){
+  const years=dataYears().filter(v=>v<y), py=years.length?years[years.length-1]:null;
+  const base=Array.from({length:13},()=>new Map()), revised=Array.from({length:13},()=>new Map());
+  if(py!=null){
+    for(let m=1;m<=12;m++){
+      const prior=new Map();
+      CUR.forEach(r=>{ if(+r.y===py&&monthOf(r)===m)prior.set(r.cust,(prior.get(r.cust)||0)+amtOf(r)); });
+      const pct=(state.fc&&state.fc.pct&&state.fc.pct[m]!=null&&state.fc.pct[m]!=='')?+state.fc.pct[m]:0;
+      let target=0; prior.forEach(v=>target+=v); target*=1+pct/100;
+      let fixed=0,free=0;
+      prior.forEach((v,c)=>{ const ov=state.fc&&state.fc.override&&state.fc.override[c]; if(ov!=null&&ov!=='')fixed+=v*(1+(+ov)/100); else free+=v; });
+      const freeFactor=free>0?(target-fixed)/free:0;
+      prior.forEach((v,c)=>{
+        const b=v*(1+pct/100); base[m].set(c,Math.max(0,b));
+        const ov=state.fc&&state.fc.override&&state.fc.override[c];
+        const factor=(ov!=null&&ov!=='')?(1+(+ov)/100):freeFactor;
+        const add=state.fc&&state.fc.addPct&&state.fc.addPct[c];
+        const rv=Math.max(0,v*factor*(1+((add!=null&&add!=='')?+add:0)/100));
+        revised[m].set(c,(typeof fcIsTargetExcludedCust==='function'&&fcIsTargetExcludedCust(c))?0:rv);
+      });
+    }
+  }else{
+    const elapsed=Math.max(1,wrLatestMonth(y)), sums=new Map();
+    CUR.forEach(r=>{ if(+r.y===y)sums.set(r.cust,(sums.get(r.cust)||0)+amtOf(r)); });
+    sums.forEach((v,c)=>{ const monthly=v/elapsed; for(let m=1;m<=12;m++){base[m].set(c,monthly);revised[m].set(c,monthly);} });
+  }
+  Object.entries((state.fc&&state.fc.newCusts)||{}).forEach(([c,v])=>{
+    const add=state.fc&&state.fc.addPct&&state.fc.addPct[c]; const annual=adjustScrapCustAmount(c,+v||0)*(1+((add!=null&&add!=='')?+add:0)/100);
+    for(let m=1;m<=12;m++){ base[m].set(c,(base[m].get(c)||0)+annual/12); revised[m].set(c,(revised[m].get(c)||0)+annual/12); }
+  });
+  const lineAnnual=new Map();
+  ((state.fc&&state.fc.newLines)||[]).forEach(ln=>{ const a=adjustScrapLineAmount(ln,(+ln.qty||0)*(+ln.price||0)); if(a>0)lineAnnual.set(ln.cust,(lineAnnual.get(ln.cust)||0)+a); });
+  lineAnnual.forEach((v,c)=>{ for(let m=1;m<=12;m++){base[m].set(c,(base[m].get(c)||0)+v/12);revised[m].set(c,(revised[m].get(c)||0)+v/12);} });
+  const annual=new Map(); revised.forEach((mp,m)=>{ if(!m)return; mp.forEach((v,c)=>annual.set(c,(annual.get(c)||0)+v)); });
+  return {py,base,revised,annual};
+}
+function wrMonthlyTargetLink(y){
+  const ys=dataYears(); if(ys.length<2||+y!==ys[ys.length-1])return null;
+  const PY=ys[0],CY=ys[ys.length-1],py=monthlyTotals(PY),cy=monthlyTotals(CY);
+  let lastAct=0; for(let m=1;m<=12;m++)if(cy[m]>0)lastAct=m;
+  const fixedActualThrough=5;
+  const exSet=fcTargetExcludedCustSet(),pdIncluded=!exSet.has('PD사업부'),fut=fcFutureTotals();
+  const target=Array(13).fill(0),modified=Array(13).fill(0),actual=Array(13).fill(0),pctOf=m=>{const v=state.fc&&state.fc.pct&&state.fc.pct[m];return(v!=null&&v!=='')?+v:0;};
+  for(let m=1;m<=12;m++){
+    const base=(fut.has&&fut.has[m])?fut.tot[m]:(py[m]>0?py[m]*(1+pctOf(m)/100):0);
+    target[m]=base+(pdIncluded?pdMonth(m):0);
+    let actualEligible=0; CUR.forEach(r=>{if(+r.y===CY&&monthOf(r)===m&&!exSet.has(r.cust))actualEligible+=amtOf(r);});
+    if(m<=fixedActualThrough){
+      modified[m]=actualEligible+(pdIncluded?pdMonth(m):0);
+    }else modified[m]=target[m];
+    if(m<=fixedActualThrough)actual[m]=modified[m];
+    else if(m<=lastAct)actual[m]=actualEligible+(pdIncluded?pdMonth(m):0);
+  }
+  const summary=fcAnnualTargetSummary(fut),unallocated=summary.newCustAnnual+summary.lineCustTotal;
+  return {target,modified,actual,targetTotal:target.reduce((a,v)=>a+(v||0),0)+unallocated,modifiedTotal:modified.reduce((a,v)=>a+(v||0),0)+unallocated,lastAct,fixedActualThrough,PY,CY};
+}
+function wrAggregateRows(list,label){
+  const o={cust:label||'기타 업체',annual:0,before:0,monthTarget:0,remainingWeekAvg:0,weeks:[0,0,0,0,0],monthActual:0,memo:''};
+  list.forEach(r=>{o.annual+=r.annual;o.before+=r.before;o.monthTarget+=r.monthTarget;o.remainingWeekAvg+=(r.remainingWeekAvg||0);o.monthActual+=r.monthActual;r.weeks.forEach((v,i)=>o.weeks[i]+=v);});
+  o.annualRate=o.annual?o.before/o.annual*100:null;o.remaining=Math.max(0,o.annual-o.before-o.monthActual);o.monthRate=o.monthTarget?o.monthActual/o.monthTarget*100:null;return o;
+}
+function wrRankMode(){return state.weekly&&state.weekly.rankMode==='pct'?'pct':'count';}
+function wrRankLabel(){return wrRankMode()==='pct'?`상위 ${Math.max(1,Math.min(100,+state.weekly.topPct||80))}%`:`상위 ${Math.max(1,Math.min(500,+state.weekly.topN||20))}`;}
+function wrRankPick(arr,valFn){
+  const list=arr||[];
+  const totalAmt=list.reduce((a,o)=>a+Math.max(0,+valFn(o)||0),0);
+  if(wrRankMode()==='pct'){
+    const pct=Math.max(1,Math.min(100,+state.weekly.topPct||80));
+    if(totalAmt>0){let sum=0,cut=list.length;for(let i=0;i<list.length;i++){sum+=Math.max(0,+valFn(list[i])||0);if(sum/totalAmt*100>=pct){cut=i+1;break;}}const view=list.slice(0,cut),rest=list.slice(cut),share=sum/totalAmt*100;return{view,rest,label:`상위 ${pct}%`,restLabel:`상위 ${pct}%외`,count:view.length,totalCount:list.length,share,mode:'pct'};}
+  }
+  const n=Math.max(1,Math.min(500,Math.round(+state.weekly.topN||20)));
+  const view=list.slice(0,n),rest=list.slice(n),sum=view.reduce((a,o)=>a+Math.max(0,+valFn(o)||0),0);
+  return{view,rest,label:`상위 ${n}`,restLabel:`상위 ${n}위외`,count:view.length,totalCount:list.length,share:totalAmt?sum/totalAmt*100:0,mode:'count'};
+}
+function wrModel(){
+  const s=wrEnsure(); if(!s)return null;
+  const {y,m,w,range,ranges}=s, asOf=wrDate(y,m,range.e), plan=wrCustomerPlan(y);
+  const actualMon=Array(13).fill(0), cutoffRows=CUR.filter(r=>+r.y===y&&r.d<=asOf);
+  cutoffRows.forEach(r=>actualMon[monthOf(r)]+=amtOf(r));
+  const annualRows=['목표액','목표수정액','실적','달성율'].map(label=>({label,vals:Array(13).fill(0),total:0}));
+  for(let mm=1;mm<=12;mm++){
+    let b=0,rv=0; plan.base[mm].forEach(v=>b+=v); plan.revised[mm].forEach(v=>rv+=v);
+    annualRows[0].vals[mm]=b;annualRows[1].vals[mm]=rv;annualRows[2].vals[mm]=actualMon[mm];
+  }
+  annualRows[0].total=annualRows[0].vals.reduce((a,v)=>a+(v||0),0);annualRows[1].total=annualRows[1].vals.reduce((a,v)=>a+(v||0),0);annualRows[2].total=annualRows[2].vals.reduce((a,v)=>a+(v||0),0);
+  const linked=wrMonthlyTargetLink(y);
+  if(linked){annualRows[0].vals=linked.target;annualRows[0].total=linked.targetTotal;annualRows[1].vals=linked.modified;annualRows[1].total=linked.modifiedTotal;annualRows[2].vals=linked.actual;annualRows[2].total=linked.actual.reduce((a,v)=>a+(v||0),0);}
+  for(let mm=1;mm<=12;mm++)annualRows[3].vals[mm]=annualRows[1].vals[mm]?annualRows[2].vals[mm]/annualRows[1].vals[mm]*100:null;
+  annualRows[3].total=annualRows[1].total?annualRows[2].total/annualRows[1].total*100:null;
+  const customers=new Set([...plan.annual.keys(),...cutoffRows.map(r=>r.cust)]), rows=[];
+  customers.forEach(c=>{
+    const before=cutoffRows.filter(r=>r.cust===c&&monthOf(r)<m).reduce((a,r)=>a+amtOf(r),0), weeks=Array(5).fill(0);
+    cutoffRows.filter(r=>r.cust===c&&monthOf(r)===m).forEach(r=>{ const n=Math.min(5,Math.ceil(r.d.getDate()/7)); if(n<=w)weeks[n-1]+=amtOf(r); });
+    const monthActual=weeks.reduce((a,v)=>a+v,0), annual=plan.annual.get(c)||0, monthTarget=plan.revised[m].get(c)||0;
+    const memo=((state.fc&&state.fc.custMemo&&state.fc.custMemo[c])||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+    const remainingWeeks=Math.max(0,ranges.length-w),remainingWeekAvg=remainingWeeks?Math.max(0,monthTarget-monthActual)/remainingWeeks:0;
+    rows.push({cust:c,annual,before,annualRate:annual?before/annual*100:null,remaining:Math.max(0,annual-before-monthActual),monthTarget,remainingWeekAvg,weeks,monthActual,monthRate:monthTarget?monthActual/monthTarget*100:null,memo,total:before+monthActual});
+  });
+  rows.sort((a,b)=>b.total-a.total||b.annual-a.annual||a.cust.localeCompare(b.cust,'ko'));
+  const custPick=wrRankPick(rows,r=>r.total), shown=custPick.view.slice(); if(custPick.rest.length)shown.push(wrAggregateRows(custPick.rest,`${custPick.restLabel} 업체`));
+  const weekStart=wrDate(y,m,range.s),weekEnd=wrDate(y,m,range.e),prevStart=new Date(weekStart),prevEnd=new Date(weekEnd);prevStart.setDate(prevStart.getDate()-7);prevEnd.setDate(prevEnd.getDate()-7);
+  const weekRows=CUR.filter(r=>r.d>=weekStart&&r.d<=weekEnd),prevRows=CUR.filter(r=>r.d>=prevStart&&r.d<=prevEnd),pm=new Map(),prevMap=new Map();
+  weekRows.forEach(r=>{ const k=(r.name||'(미상)')+'│'+(r.code||'')+'│'+(r.spec||''); let o=pm.get(k); if(!o){o={key:k,name:r.name||'(미상)',code:r.code||'',spec:r.spec||'',qty:0,amt:0,cust:new Map()};pm.set(k,o);} o.qty+=(+r.qty||0);o.amt+=amtOf(r);o.cust.set(r.cust,(o.cust.get(r.cust)||0)+amtOf(r)); });
+  prevRows.forEach(r=>{const k=(r.name||'(미상)')+'│'+(r.code||'')+'│'+(r.spec||'');prevMap.set(k,(prevMap.get(k)||0)+amtOf(r));});
+  const products=[...pm.values()].map(o=>{const prevAmt=prevMap.get(o.key)||0,diff=o.amt-prevAmt,pct=prevAmt?diff/prevAmt*100:(o.amt>0?null:0),cat=mixCatOf({code:o.code,name:o.name,spec:o.spec});return{...o,cat,prevAmt,diff,pct};}).sort((a,b)=>b.amt-a.amt||a.name.localeCompare(b.name,'ko'));
+  return {...s,asOf,plan,annualRows,custRows:shown,allCustRows:rows,custRankInfo:custPick,products,rankLabel:custPick.label,weekStart,weekEnd,prevStart,prevEnd,weekTotal:products.reduce((a,v)=>a+v.amt,0),weekQty:products.reduce((a,v)=>a+v.qty,0),prevWeekTotal:[...prevMap.values()].reduce((a,v)=>a+v,0)};
+}
+function wrHeader(model,page){
+  const {y,m,w,range}=model, ys=model.years.map(v=>`<option value="${v}" ${v===y?'selected':''}>${v}년</option>`).join('');
+  const ms=Array.from({length:12},(_,i)=>i+1).map(v=>`<option value="${v}" ${v===m?'selected':''}>${v}월</option>`).join('');
+  const ws=model.ranges.map(r=>`<option value="${r.n}" ${r.n===w?'selected':''}>${r.n}주차 (${r.s}~${r.e}일)</option>`).join('');
+  return `<div class="wr-head"><div class="wr-brand">▣ 방화문부자재 사업부 영업팀 실적보고<small><b style="color:#dc2626">v23 합계표시 개선</b> · 1~5월 실적 + 6~12월 목표 · 고철 80% 기준 반영</small></div><div class="wr-title">${m}월 ${w}주차</div></div>
+    <div class="wr-tabs"><button class="wr-tab ${page===1?'on':''}" data-wrpage="1">1. 목표대비 달성</button><button class="wr-tab ${page===2?'on':''}" data-wrpage="2">2. 품목별 매출 현황</button><div class="wr-controls"><label>연도 <select id="wrYear">${ys}</select></label><label>월 <select id="wrMonth">${ms}</select></label><label>주차 <select id="wrWeek">${ws}</select></label><button class="btn ghost" id="wrXlsx">📥 엑셀</button><button class="btn ghost wr-no-print" id="wrPrint">🖨 인쇄</button></div></div>`;
+}
+function wrRankBar(label,info){
+  const curTop=Math.max(1,Math.min(500,+state.weekly.topN||20)),curPct=Math.max(1,Math.min(100,+state.weekly.topPct||80));
+  const topOpts=[10,20,30,50,100],topExtra=topOpts.includes(curTop)?'':`<option value="${curTop}" selected>상위 ${curTop}</option>`;
+  const pctOpts=[90,80,70,60,50],pctExtra=pctOpts.includes(curPct)?'':`<option value="${curPct}" selected>상위 ${curPct}%</option>`;
+  const cnt=info&&info.count!=null?info.count:0,total=info&&info.totalCount!=null?info.totalCount:0,share=info&&isFinite(info.share)?info.share:0;
+  const isCount=wrRankMode()==='count',base=label==='품목'?'품목표시':'업체표시';
+  return `<div class="wr-rankbar"><b style="font-size:11px;color:#334155">${esc(label)} 표시 기준</b><button type="button" id="wrModeCount" class="wr-mode-btn ${isCount?'on':'off'}">${base} 기준</button><button type="button" id="wrModePct" class="wr-mode-btn ${!isCount?'on':'off'}">비중 기준</button><label class="wr-mode-field ${isCount?'on':'off'}">건수 <select id="wrTopN">${topOpts.map(v=>`<option value="${v}" ${isCount&&v===curTop?'selected':''}>상위 ${v}</option>`).join('')}${topExtra}</select><input id="wrTopCustom" class="wr-top-custom" type="number" min="1" max="500" step="1" value="${curTop}" title="상위 건수 직접 입력" placeholder="건수"></label><label class="wr-mode-field ${!isCount?'on':'off'}">비중 <select id="wrTopPct">${pctOpts.map(v=>`<option value="${v}" ${!isCount&&v===curPct?'selected':''}>상위 ${v}%</option>`).join('')}${pctExtra}</select><input id="wrPctCustom" class="wr-pct-custom" type="number" min="1" max="100" step="1" value="${curPct}" title="상위 누적비중 직접 입력" placeholder="%"></label><span class="wr-rankstat">표시 ${won(cnt)}건 / 전체 ${won(total)}건 · 비중 ${share.toFixed(1)}%</span></div>`;
+}
+function wrCell(v){ return v?wrVal(v):'<span class="wr-zero">-</span>'; }
+function wrAmt(v){ return `<span class="wr-amt">${wrCell(v)}</span>`; }
+function wrNoteKey(model,cust){ return `v2|${model.y}-${String(model.m).padStart(2,'0')}-${model.w}|${cust}`; }
+function wrMemo(model,row){ const k=wrNoteKey(model,row.cust), v=state.weekly&&state.weekly.notes&&state.weekly.notes[k]; return v!=null?v:''; }
+function wrCatClass(cat){ return cat==='전용품'?'wr-cat-ex':cat==='공용품'?'wr-cat-co':cat==='레이저'?'wr-cat-la':cat==='내부보강'?'wr-cat-in':'wr-cat-etc'; }
+function wrMgrBadge(name){ name=String(name||'').trim(); if(name==='-')return ''; if(!name||name==='미배정')return typeof mgrBadge==='function'?mgrBadge('미배정'):'<span class="wr-mgr-badge none">-</span>'; return typeof mgrBadge==='function'?mgrBadge(name):`<span class="wr-mgr-badge" title="${esc(name)}">${esc(name)}</span>`; }
+function wrMixIcon(cat){ return `<span class="wr-mixicon ${wrCatClass(cat)}" title="${esc(cat)}" aria-label="${esc(cat)}">${esc(cat)}</span>`; }
+function wrMixBar(products){
+  const cats=['공용품','전용품','레이저','내부보강','기타'],tot=(products||[]).reduce((a,o)=>a+(+o.amt||0),0)||0;
+  const sums={공용품:0,전용품:0,레이저:0,내부보강:0,기타:0}; (products||[]).forEach(o=>{sums[o.cat||'기타']=(sums[o.cat||'기타']||0)+(+o.amt||0);});
+  return `<div class="wr-mixbar">${cats.map(c=>`<div class="wr-mixitem"><b>${wrMixIcon(c)}</b><span>${tot?(sums[c]/tot*100).toFixed(1):'0.0'}%</span><div style="font-size:9px;color:#64748b;font-weight:700">${won(sums[c]||0)}원</div></div>`).join('')}</div>`;
+}
+function wrPage1(model){
+  const arows=model.annualRows.map((r,i)=>`<tr><td><b>${r.label}</b></td><td class="wr-total-col">${i===3?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${(r.label==='목표수정액'&&mi<5)||(r.label==='실적'&&mi>=5)?'wr-fixed-actual':''}">${i===3?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`).join('');
+  const wkHead=model.ranges.map(r=>`<th style="width:4.2%">${r.n}주<br><span style="font-weight:500">(${r.s}~${r.e})</span></th>`).join('');
+  const body=model.custRows.map((r,i)=>{
+    const isRest=/^상위 .+외 업체$/.test(r.cust),nk=wrNoteKey(model,r.cust),memo=wrMemo(model,r);
+    const weekTds=r.weeks.map((v,idx)=>`<td>${idx<model.w?wrAmt(v):'<span class="wr-zero">-</span>'}</td>`).join('');
+    return `<tr class="${isRest?'wr-rest':''}"><td class="wr-no">${isRest?'-':i+1}</td><td style="text-align:left">${isRest?'<b>':''}${esc(r.cust)}${isRest?'</b>':''}</td><td style="text-align:center">${isRest?wrMgrBadge('-'):wrMgrBadge(mgrS(r.cust)||'미배정')}</td><td>${wrAmt(r.annual)}</td><td>${wrAmt(r.before)}</td><td class="${(r.annualRate||0)>=50?'wr-rate-good':'wr-rate-bad'}">${wrPct(r.annualRate)}</td><td>${wrAmt(r.remaining)}</td><td>${wrAmt(r.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${r.remainingWeekAvg?won(r.remainingWeekAvg)+'원':'-'}</b></div></td>${weekTds}<td><b>${wrAmt(r.monthActual)}</b></td><td class="${(r.monthRate||0)>=100?'wr-rate-good':'wr-rate-bad'}">${wrPct(r.monthRate)}</td><td style="text-align:left"><input class="wr-memo" type="text" data-k="${esc(nk)}" data-cust="${esc(r.cust)}" value="${esc(memo)}" placeholder="비고 직접 입력"></td></tr>`;
+  }).join('');
+  const total=wrAggregateRows(model.custRows,'합계');
+  const totalRow=`<tr class="wr-sum"><td class="wr-no"></td><td>합계</td><td></td><td>${wrAmt(total.annual)}</td><td>${wrAmt(total.before)}</td><td>${wrPct(total.annualRate)}</td><td>${wrAmt(total.remaining)}</td><td>${wrAmt(total.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${total.remainingWeekAvg?won(total.remainingWeekAvg)+'원':'-'}</b></div></td>${total.weeks.map((v,idx)=>`<td>${idx<model.w?wrAmt(v):'-'}</td>`).join('')}<td>${wrAmt(total.monthActual)}</td><td>${wrPct(total.monthRate)}</td><td></td></tr>`;
+  const beforeLab=model.m>1?`1~${model.m-1}월`:'전월';
+  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 목표액=올해 목표 합계 · 목표수정액=1~5월 실적+6~12월 목표)</span></div><div class="wr-tablewrap"><table class="wr-table"><thead><tr><th style="width:82px">구분</th><th style="width:112px">합계액</th>${Array.from({length:12},(_,i)=>`<th>${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
+    <div class="wr-section">▶ 업체별 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">· ${model.y}년 ${model.m}월 ${model.w}주차 기준 · 단위: 원</span></div>${wrRankBar('업체',model.custRankInfo)}<div class="wr-tablewrap"><table class="wr-table"><thead><tr><th class="wr-no" rowspan="2" style="width:2.6%">NO</th><th rowspan="2" style="width:9%">업체</th><th rowspan="2" style="width:6%">영업관리</th><th rowspan="2" style="width:8.5%">${model.y}년도<br>목표액</th><th colspan="3">매출 실적</th><th rowspan="2" style="width:8.5%">${model.m}월<br>월목표<br><span style="font-size:7px;color:#64748b">남은주간 평균</span></th><th colspan="${model.ranges.length}">${model.m}월 주간</th><th rowspan="2" style="width:8.5%">달성금액</th><th rowspan="2" style="width:3.7%">월 달성률</th><th rowspan="2" style="width:8%">비고</th></tr><tr><th class="wr-center" style="width:8.5%">${beforeLab}</th><th style="width:3.6%">달성율</th><th style="width:8.5%">잔여 목표액</th>${wkHead}</tr></thead><tbody>${body}${totalRow}</tbody></table></div><div class="wr-note">월목표 아래 남은주간 평균은 ‘남은 월목표액 ÷ 선택 주차 이후 남은 주차 수’입니다. 표는 화면 폭에 맞춰 자동 축소됩니다.</div></div>`;
+}
+function wrPage2(model){
+  const pick=wrRankPick(model.products,o=>o.amt),view=pick.view,period=`${wrDateText(model.weekStart)}~${wrDateText(model.weekEnd)}`,prevPeriod=`${wrDateText(model.prevStart)}~${wrDateText(model.prevEnd)}`;
+  const change=o=>{const cls=o.diff>0?'wr-up':o.diff<0?'wr-down':'wr-flat',arrow=o.diff>0?'▲':o.diff<0?'▼':'－',pct=o.pct==null?'신규':`${o.pct>=0?'+':''}${o.pct.toFixed(1)}%`;return `<span class="${cls}">${arrow} ${pct}</span>`;};
+  const rows=view.map((o,i)=>`<tr><td class="wr-no" style="font-weight:800">${i+1}</td><td style="text-align:center"><span class="wr-cat ${wrCatClass(o.cat)}">${esc(o.cat||'기타')}</span></td><td style="text-align:left" title="${esc(o.code||'')}">${esc(o.name)}</td><td class="wr-spec-cell" style="text-align:left" title="${esc(o.spec||'')}">${esc(o.spec||'-')}</td><td>${won(o.qty)}</td><td><b>${won(o.amt)}</b></td><td>${won(o.prevAmt)}</td><td class="${o.diff>0?'wr-up':o.diff<0?'wr-down':'wr-flat'}">${o.diff>=0?'+':''}${won(o.diff)}</td><td>${change(o)}</td></tr>`).join('');
+  const vt=view.reduce((a,o)=>{a.qty+=o.qty;a.amt+=o.amt;a.prev+=o.prevAmt;return a;},{qty:0,amt:0,prev:0}),vd=vt.amt-vt.prev,vp=vt.prev?vd/vt.prev*100:(vt.amt>0?null:0),vc={diff:vd,pct:vp};
+  return `<div class="wr-page">${wrHeader(model,2)}<div class="wr-section">2. 품목별 매출 현황 <span style="font-size:12px;font-weight:600">· ${pick.label} · 당주 ${period} · 전주 ${prevPeriod}</span></div>${wrRankBar('품목',pick)}${wrMixBar(model.products)}<div class="wr-tablewrap"><table class="wr-table wr-mini"><thead><tr><th class="wr-no" style="width:4%">NO</th><th style="width:8%">제품구분</th><th style="width:20%;text-align:center">품명</th><th style="width:20%;text-align:center">규격</th><th style="width:8%">수량</th><th style="width:10%">금액</th><th style="width:10%">전주금액</th><th style="width:10%">증감액</th><th style="width:10%">전주대비</th></tr></thead><tbody>${rows}<tr class="wr-sum"><td></td><td colspan="3" style="text-align:left">${pick.label} 합계</td><td>${won(vt.qty)}</td><td>${won(vt.amt)}</td><td>${won(vt.prev)}</td><td class="${vd>0?'wr-up':vd<0?'wr-down':'wr-flat'}">${vd>=0?'+':''}${won(vd)}</td><td>${change(vc)}</td></tr></tbody></table></div><div class="wr-note">품목은 선택 주차 매출금액 순으로 표시합니다. 상위 건수 또는 누적 매출비중(%) 기준으로 조정할 수 있으며, 전주대비는 선택 주차의 7일 전 동일 기간과 비교합니다.</div></div>`;
+}
+function wrBind(model,page){
+  const root=$('#result');
+  root.querySelectorAll('[data-wrpage]').forEach(b=>b.addEventListener('click',()=>{ const p=+b.dataset.wrpage;state.weekly.page=p;state.act=p===1?'weekly1':'weekly2';runAct(); }));
+  const y=$('#wrYear'),m=$('#wrMonth'),w=$('#wrWeek'),n=$('#wrTopN'),tc=$('#wrTopCustom'),p=$('#wrTopPct'),pc=$('#wrPctCustom'),mc=$('#wrModeCount'),mp=$('#wrModePct');
+  y&&y.addEventListener('change',()=>{state.weekly.year=+y.value;state.weekly.month=wrLatestMonth(+y.value);state.weekly.week=wrLatestWeek(+y.value,state.weekly.month);weeklyReport(page);});
+  m&&m.addEventListener('change',()=>{state.weekly.month=+m.value;state.weekly.week=wrLatestWeek(state.weekly.year,+m.value);weeklyReport(page);});
+  w&&w.addEventListener('change',()=>{state.weekly.week=+w.value;weeklyReport(page);});
+  const setTop=v=>{state.weekly.rankMode='count';state.weekly.topN=Math.max(1,Math.min(500,Math.round(+v||20)));weeklyReport(page);};
+  const setPct=v=>{state.weekly.rankMode='pct';state.weekly.topPct=Math.max(1,Math.min(100,Math.round(+v||80)));weeklyReport(page);};
+  n&&n.addEventListener('change',()=>setTop(n.value));
+  tc&&tc.addEventListener('change',()=>setTop(tc.value));
+  p&&p.addEventListener('change',()=>setPct(p.value));
+  pc&&pc.addEventListener('change',()=>setPct(pc.value));
+  mc&&mc.addEventListener('click',()=>setTop(state.weekly.topN));
+  mp&&mp.addEventListener('click',()=>setPct(state.weekly.topPct));
+  root.querySelectorAll('.wr-memo').forEach(inp=>inp.addEventListener('change',e=>{ const k=e.target.dataset.k,v=e.target.value.trim(); state.weekly.notes=state.weekly.notes||{}; if(v)state.weekly.notes[k]=v; else delete state.weekly.notes[k]; if(typeof logEdit==='function')logEdit('주간보고 비고',(e.target.dataset.cust||'업체')+' 비고 '+(v?'저장':'삭제')); saveSettings(); }));
+  const xb=$('#wrXlsx');xb&&xb.addEventListener('click',()=>page===1?wrExport1(model):wrExport2(model));
+  const pb=$('#wrPrint');pb&&pb.addEventListener('click',()=>window.print());
+}
+function weeklyReport(page){
+  state.weekly=state.weekly||{};state.weekly.page=page||state.weekly.page||1;
+  state.weekly.topN=Math.max(1,Math.min(500,Math.round(+state.weekly.topN||20)));
+  state.weekly.topPct=Math.max(1,Math.min(100,Math.round(+state.weekly.topPct||80)));
+  if(state.weekly.rankMode!=='pct')state.weekly.rankMode='count';
+  const model=wrModel(); if(!model){renderCustom('<div class="note">주간보고를 만들 매출 데이터가 없습니다.</div>');return;}
+  renderCustom(state.weekly.page===1?wrPage1(model):wrPage2(model),()=>{setGlobalBar(false);wrBind(model,state.weekly.page);});
+}
+function wrExport1(model){
+  const wb=XLSX.utils.book_new(), h1=[['구분','합계액',...Array.from({length:12},(_,i)=>i+1+'월')]];
+  model.annualRows.forEach((r,i)=>h1.push([r.label,i===3?r.total/100:r.total,...r.vals.slice(1).map(v=>i===3?(v==null?'':v/100):Math.round(v||0))]));
+  const wh=['NO','업체','영업관리',`${model.y}년도 목표액`,model.m>1?`1~${model.m-1}월 실적`:'전월 실적','연 달성율%','잔여 목표액',`${model.m}월 목표`,...model.ranges.map(r=>`${r.n}주(${r.s}~${r.e})`),'달성금액','월 달성률%','비고'];
+  const h2=[wh,...model.custRows.map((r,i)=>{const rest=/^상위 .+외 업체$/.test(r.cust);return[rest?'':i+1,r.cust,rest?'':(mgrS(r.cust)||'미배정'),Math.round(r.annual),Math.round(r.before),r.annualRate==null?'':+r.annualRate.toFixed(1),Math.round(r.remaining),Math.round(r.monthTarget),...r.weeks.map(v=>Math.round(v)),Math.round(r.monthActual),r.monthRate==null?'':+r.monthRate.toFixed(1),wrMemo(model,r)]})];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(h1),'연 목표대비');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(h2),'업체별 주간');XLSX.writeFile(wb,`주간보고_${model.y}_${String(model.m).padStart(2,'0')}_${model.w}주차.xlsx`);
+}
+function wrExport2(model){
+  const pick=wrRankPick(model.products,o=>o.amt),view=pick.view,rows=[['순위','제품구분','품번','품명','규격','수량','금액','전주금액','증감액','증감률%','주요 거래처']];
+  view.forEach((o,i)=>rows.push([i+1,o.cat||'기타',o.code,o.name,o.spec,o.qty,Math.round(o.amt),Math.round(o.prevAmt),Math.round(o.diff),o.pct==null?'신규':+o.pct.toFixed(1),[...o.cust.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5).map(v=>v[0]).join(', ')]));
+  const t=view.reduce((a,o)=>{a.q+=o.qty;a.a+=o.amt;a.p+=o.prevAmt;return a;},{q:0,a:0,p:0});rows.push(['합계','','','','',t.q,Math.round(t.a),Math.round(t.p),Math.round(t.a-t.p),t.p?+((t.a-t.p)/t.p*100).toFixed(1):'','']);dlXLSX(`주간보고_품목_${pick.label.replace(/\\s+/g,'')}_${model.y}_${String(model.m).padStart(2,'0')}_${model.w}주차.xlsx`,'품목별 매출',rows);
+}
 const isL=n=>/\(L\)/.test(n);
 const isLaserScope=n=>isL(n)||n.includes('임가공')||n.includes('레이저');
 const isNonStd=(spec,name)=>/비규격/.test(spec||'')||name.includes('임가공')||['지급자재','자사자재','자사재고'].includes((spec||'').trim());
@@ -1479,7 +1779,7 @@ function applySeedContacts(){
     if(typeof saveSettings==='function')saveSettings();
   }catch(_e){}
 }
-function chromeFor(act){ const onH=(act==='home'); const s=document.getElementById('summary'); if(s)s.style.display=onH?'':'none'; const st=document.getElementById('sumTop'); if(st)st.style.display=onH?'':'none'; const pricePage=(act==='price'||act==='pricemake'); const sp=document.getElementById('setPanel'); if(sp)sp.style.display=(['forecast','trend','safety','disposal','retain','last-prod','last-cust','pareto','trend2','pdelta','compete','compare','cmgr','price','pricemake'].indexOf(act)>=0)?'none':''; const mf=document.getElementById('mgrFilterBar'); if(mf)mf.style.display=pricePage?'none':''; }
+function chromeFor(act){ const onH=(act==='home'); const s=document.getElementById('summary'); if(s)s.style.display=onH?'':'none'; const st=document.getElementById('sumTop'); if(st)st.style.display=onH?'':'none'; const pricePage=(act==='price'||act==='pricemake'); const sp=document.getElementById('setPanel'); if(sp)sp.style.display=(['forecast','trend','safety','disposal','retain','last-prod','last-cust','pareto','trend2','pdelta','compete','compare','cmgr','price','pricemake','weekly1','weekly2'].indexOf(act)>=0)?'none':''; const mf=document.getElementById('mgrFilterBar'); if(mf)mf.style.display=pricePage?'none':''; }
 function runAct(){ const a=state.act; if(!a||!CUR.length) return; state._inDrill=false; state._syncDeferred=false; try{chromeFor(a);}catch(_){}
   if(state._lastAct!==a){ try{foldFilters();}catch(_){} }
   if(!state._backing){ if(state._lastAct && state._lastAct!==a){ state.navHist=state.navHist||[]; if(state.navHist[state.navHist.length-1]!==state._lastAct)state.navHist.push(state._lastAct); if(state.navHist.length>60)state.navHist.shift(); } } state._lastAct=a; state._backing=false;
@@ -1505,6 +1805,8 @@ function runAct(){ const a=state.act; if(!a||!CUR.length) return; state._inDrill
   else if(a==='last-prod') lastShip('code','제품',true);
   else if(a==='price'){ if(state.price.mode==='set')state.price.mode='cust'; priceTable(); }
   else if(a==='pricemake'){ state.price.mode='set'; priceTable(); }
+  else if(a==='weekly1') weeklyReport(1);
+  else if(a==='weekly2') weeklyReport(2);
   else if(a==='scrap') scrapSales();
   else if(a==='retain') retain();
   else if(a==='pdelta') productDelta();
@@ -3937,7 +4239,7 @@ function gsFields(){ return [
   ['retainMemo',state,'retainMemo'],['retainMemoAt',state,'retainMemoAt'],['retainExcl',state,'retainExcl'],['retainVisit',state,'retainVisit'],
   ['custInfo',state,'custInfo'],['cross',state,'cross'],
   ['fcPctAt',state.fc,'pctAt'],['fcOverrideAt',state.fc,'overrideAt'],['fcAddPctAt',state.fc,'addPctAt'],
-  ['cmgrExcl',state,'cmgrExcl']
+  ['weeklyNotes',state.weekly,'notes'],['cmgrExcl',state,'cmgrExcl']
 ]; }
 function gsIsPlain(x){ return x&&typeof x==='object'&&!Array.isArray(x); }
 function gsObjEmpty(o){ return !o||Object.keys(o).length===0; }
@@ -4244,7 +4546,7 @@ function exportCSV(){
 /* ---------------- restore on load ---------------- */
 (async function(){
   const st=await idbGet('settings');
-  if(st){ if(st.headcount){state.headcount=st.headcount;} if(st.headMonthly)state.headMonthly=st.headMonthly; if(st.headYearDefault)state.headYearDefault=st.headYearDefault; if(st.fcPctAt)state.fc.pctAt=st.fcPctAt; if(st.fcOverrideAt)state.fc.overrideAt=st.fcOverrideAt; if(st.fcAddPctAt)state.fc.addPctAt=st.fcAddPctAt; if(st.monthIssueAt)state.monthIssueAt=st.monthIssueAt; if(st.fcPct)state.fc.pct=st.fcPct; if(st.fcOverride)state.fc.override=st.fcOverride; if(st.fcAddPct)state.fc.addPct=st.fcAddPct; if(st.cmgrPrimary)state.cmgrPrimary=st.cmgrPrimary; if(st.cmgrKey)state.cmgrKey=st.cmgrKey; if(st.mgrOverride)state.mgrOverride=st.mgrOverride; if(st.workdays)state.workdays=st.workdays; if(st.bep!=null)state.bep=st.bep; if(st.fcNewCusts)state.fc.newCusts=st.fcNewCusts; if(st.clsOverride)state.clsOverride=st.clsOverride; if(st.gradeOverride)state.gradeOverride=st.gradeOverride; if(st.gbunOverride)state.gbunOverride=st.gbunOverride; if(st.priceSets)state.priceSets=st.priceSets; if(st.comp)state.comp=st.comp; if(st.editLog)state.editLog=st.editLog; if(st.custProdOverride)state.fc.custProdOverride=st.custProdOverride; if(st.fcProdOverride)state.fc.prodOverride=st.fcProdOverride; if(st.fcProdAddPct)state.fc.prodAddPct=st.fcProdAddPct; if(st.fcNewProds)state.fc.newProds=st.fcNewProds; if(st.fcNewLines)state.fc.newLines=st.fcNewLines; if(st.fcCustMemo)state.fc.custMemo=st.fcCustMemo; if(st.fcProdMemo)state.fc.prodMemo=st.fcProdMemo; if(st.fcNotesHtml!=null)state.fc.notesHtml=st.fcNotesHtml; if(st.fcNotesSales!=null)state.fc.notesSales=st.fcNotesSales; if(st.fcNotesTech!=null)state.fc.notesTech=st.fcNotesTech; if(st.fcNotesMeta)state.fc.notesMeta=st.fcNotesMeta; if(st.fcExclCust)state.fc.exclCust=st.fcExclCust; if(st.fcTargetExclCust)state.fc.targetExclCust=st.fcTargetExclCust; if(st.fcExclProd)state.fc.exclProd=st.fcExclProd; if(st.fcShowExclRows!=null)state.fc.showExclRows=!!st.fcShowExclRows; if(st.fcAnnualHist)state.fc.annualHist={...state.fc.annualHist,...st.fcAnnualHist}; if(st.inv)state.inv={...state.inv,...st.inv}; if(st.syncLog)state.syncLog=st.syncLog; if(st.monthIssue)state.monthIssue=st.monthIssue; if(st.pd)state.pd={...state.pd,...st.pd}; if(st.retainMemo)state.retainMemo=st.retainMemo; if(st.retainMemoAt)state.retainMemoAt=st.retainMemoAt; if(st.retainExcl)state.retainExcl=st.retainExcl; if(st.retainVisit)state.retainVisit=st.retainVisit; if(st.cmgrExcl)state.cmgrExcl=st.cmgrExcl; if(st.elogSeenTs)state.elogSeenTs=st.elogSeenTs; if(st.cross)state.cross={...state.cross,...st.cross}; if(st.custInfo)state.custInfo=dedupContacts(st.custInfo); if(st._seedV)state._seedV=st._seedV; if(st.gsync)state.gsync=st.gsync; } syncExcludedCustMaps(); syncTargetExcludedCustMap(); applySeedContacts();
+  if(st){ if(st.headcount){state.headcount=st.headcount;} if(st.headMonthly)state.headMonthly=st.headMonthly; if(st.headYearDefault)state.headYearDefault=st.headYearDefault; if(st.fcPctAt)state.fc.pctAt=st.fcPctAt; if(st.fcOverrideAt)state.fc.overrideAt=st.fcOverrideAt; if(st.fcAddPctAt)state.fc.addPctAt=st.fcAddPctAt; if(st.monthIssueAt)state.monthIssueAt=st.monthIssueAt; if(st.fcPct)state.fc.pct=st.fcPct; if(st.fcOverride)state.fc.override=st.fcOverride; if(st.fcAddPct)state.fc.addPct=st.fcAddPct; if(st.cmgrPrimary)state.cmgrPrimary=st.cmgrPrimary; if(st.cmgrKey)state.cmgrKey=st.cmgrKey; if(st.mgrOverride)state.mgrOverride=st.mgrOverride; if(st.workdays)state.workdays=st.workdays; if(st.weekly)state.weekly={...state.weekly,...st.weekly,notes:{...(state.weekly.notes||{}),...(st.weekly.notes||{})}}; if(st.bep!=null)state.bep=st.bep; if(st.fcNewCusts)state.fc.newCusts=st.fcNewCusts; if(st.clsOverride)state.clsOverride=st.clsOverride; if(st.gradeOverride)state.gradeOverride=st.gradeOverride; if(st.gbunOverride)state.gbunOverride=st.gbunOverride; if(st.priceSets)state.priceSets=st.priceSets; if(st.comp)state.comp=st.comp; if(st.editLog)state.editLog=st.editLog; if(st.custProdOverride)state.fc.custProdOverride=st.custProdOverride; if(st.fcProdOverride)state.fc.prodOverride=st.fcProdOverride; if(st.fcProdAddPct)state.fc.prodAddPct=st.fcProdAddPct; if(st.fcNewProds)state.fc.newProds=st.fcNewProds; if(st.fcNewLines)state.fc.newLines=st.fcNewLines; if(st.fcCustMemo)state.fc.custMemo=st.fcCustMemo; if(st.fcProdMemo)state.fc.prodMemo=st.fcProdMemo; if(st.fcNotesHtml!=null)state.fc.notesHtml=st.fcNotesHtml; if(st.fcNotesSales!=null)state.fc.notesSales=st.fcNotesSales; if(st.fcNotesTech!=null)state.fc.notesTech=st.fcNotesTech; if(st.fcNotesMeta)state.fc.notesMeta=st.fcNotesMeta; if(st.fcExclCust)state.fc.exclCust=st.fcExclCust; if(st.fcTargetExclCust)state.fc.targetExclCust=st.fcTargetExclCust; if(st.fcExclProd)state.fc.exclProd=st.fcExclProd; if(st.fcShowExclRows!=null)state.fc.showExclRows=!!st.fcShowExclRows; if(st.fcAnnualHist)state.fc.annualHist={...state.fc.annualHist,...st.fcAnnualHist}; if(st.inv)state.inv={...state.inv,...st.inv}; if(st.syncLog)state.syncLog=st.syncLog; if(st.monthIssue)state.monthIssue=st.monthIssue; if(st.pd)state.pd={...state.pd,...st.pd}; if(st.retainMemo)state.retainMemo=st.retainMemo; if(st.retainMemoAt)state.retainMemoAt=st.retainMemoAt; if(st.retainExcl)state.retainExcl=st.retainExcl; if(st.retainVisit)state.retainVisit=st.retainVisit; if(st.cmgrExcl)state.cmgrExcl=st.cmgrExcl; if(st.elogSeenTs)state.elogSeenTs=st.elogSeenTs; if(st.cross)state.cross={...state.cross,...st.cross}; if(st.custInfo)state.custInfo=dedupContacts(st.custInfo); if(st._seedV)state._seedV=st._seedV; if(st.gsync)state.gsync=st.gsync; } syncExcludedCustMaps(); syncTargetExcludedCustMap(); applySeedContacts();
   if(st&&st.scrapVendors)state.scrapVendors=st.scrapVendors;
   if(st&&st.scrapVendorOff)state.scrapVendorOff=st.scrapVendorOff; if(state.scrapVendors&&!Array.isArray(state.scrapVendors)){ var _osv=state.scrapVendors; state.scrapVendors=Object.keys(_osv); state.scrapVendorOff=state.scrapVendorOff||{}; Object.keys(_osv).forEach(function(k){ if(_osv[k]===false)state.scrapVendorOff[k]=true; }); }
   if(typeof renderScrapList==='function')renderScrapList();
@@ -4297,7 +4599,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
 <script id="sales-sync-v03-final-patch">
 (function(){
   'use strict';
-  var APP_VERSION='v15';
+  var APP_VERSION='v23 · 합계표시 개선';
   var BASE_KEY='sales_gsync_base_stable_v1';
   var OLD_BASE_KEYS=['sales_gsync_base_v02','sales_gsync_base_v01'];
   var AUTO_DELAY=5000, BUSY_RETRY=1300, MAX_AUTO_RETRY=5;
