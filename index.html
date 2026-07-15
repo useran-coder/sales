@@ -267,6 +267,18 @@
   .fcexcluded{opacity:.5;background:#fef2f2}
   .fcexcluded .l{text-decoration:line-through}
   .fctargetexcluded{background:#fffbeb}
+  .fcexcl-summary{margin:0 0 8px;padding:10px 12px;border:1px solid #fecaca;border-radius:10px;background:#fff7f7}
+  .fcexcl-summary-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;color:#7f1d1d;font-weight:900}
+  .fcexcl-summary-head span{font-size:11px;color:#64748b;font-weight:700}
+  .fcexcl-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:8px}
+  .fcexcl-mini{border:1px solid #e2e8f0;border-radius:8px;background:#fff;overflow:hidden}
+  .fcexcl-mini h5{margin:0;padding:7px 9px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:11px;color:#334155;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .fcexcl-mini h5 b{color:#dc2626}
+  .fcexcl-mini table{width:100%;border-collapse:collapse;font-size:10.5px}
+  .fcexcl-mini th,.fcexcl-mini td{padding:5px 6px;border-bottom:1px solid #f1f5f9;text-align:right;white-space:nowrap}
+  .fcexcl-mini th:first-child,.fcexcl-mini td:first-child{text-align:left}
+  .fcexcl-mini tr:last-child td{border-bottom:0}
+  .fcexcl-mini .empty{padding:12px;color:#94a3b8;text-align:center;font-size:11px}
   .targetexclbox{font-size:10px;color:#b45309;font-weight:700;cursor:pointer;margin-left:5px;white-space:nowrap;text-decoration:none!important;display:none}
   .fcshowexcl .targetexclbox{display:inline-block}
   .targetexclbox input{vertical-align:middle;margin-right:2px}
@@ -3900,6 +3912,11 @@ function forecast(){
   custArr=custArr.filter(o=>(clsFilter==='전체'||(catsOf(o.c)||[]).includes(clsFilter))&&(statusFilter==='전체'||catOf(o.c)===statusFilter));
   custArr.forEach(o=>{ o.excl=fcDisplayExSet.has(o.c); o.targetOnly=fcTargetOnlyKeys.has(fcCustKey(o.c)); o.targetExcl=fcExSet.has(o.c); if(o.targetExcl){ o.proj=0; o.diff=-o.prev; o.pct=o.prev?-100:0; o.ov=''; o.ad=''; } });
   const custArrTotalBase=custArr.slice();
+  const fcExclSummaryVisible=state.fc.showExclRows||state.fc.showExcl;
+  const fcTradeExclRows=custArrTotalBase.filter(o=>o.excl).sort((a,b)=>(b.prev+b.ytd)-(a.prev+a.ytd));
+  const fcTargetExclRows=custArrTotalBase.filter(o=>o.targetOnly).sort((a,b)=>(b.prev+b.ytd)-(a.prev+a.ytd));
+  const fcExclMini=(title,rows,empty)=>`<div class="fcexcl-mini"><h5>${title}<b>${rows.length}개</b></h5>${rows.length?`<table><thead><tr><th>거래처</th><th>영업관리</th><th>기술영업</th><th>실적</th><th>전년</th><th>목표</th></tr></thead><tbody>${rows.map(o=>`<tr><td>${esc(o.c)}</td><td>${esc(o.sales||'-')}</td><td>${esc(o.tech||'-')}</td><td>${disp(o.ytd||0)}</td><td>${disp(o.prev||0)}</td><td>${disp(o.proj||0)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">${empty}</div>`}</div>`;
+  const fcExclOptionSummary=(fcExclSummaryVisible&&(fcTradeExclRows.length||fcTargetExclRows.length))?`<div class="fcexcl-summary"><div class="fcexcl-summary-head">✓ 선택된 제외 옵션만 보기 <span>거래처 제외 ${fcTradeExclRows.length}개 · 목표합산 제외 ${fcTargetExclRows.length}개</span></div><div class="fcexcl-summary-grid">${fcExclMini('거래처 제외 선택',fcTradeExclRows,'선택된 거래처 제외가 없습니다.')}${fcExclMini('목표합산 제외 선택',fcTargetExclRows,'선택된 목표합산 제외가 없습니다.')}</div></div>`:'';
   if(state.fc.showExclRows) custArr=custArr.filter(o=>o.excl); else custArr=custArr.filter(o=>!o.excl);
   applyFcSort(custArr);
   const cTotPrev=custArr.reduce((a,o)=>a+o.prev,0), cTotProj=custArr.reduce((a,o)=>a+o.proj,0);
@@ -3967,7 +3984,7 @@ function forecast(){
       </div>
       <span class="sub2"><b>업체만 추가</b>: 품목·수량 없이 <b>거래처명+연 목표금액</b>만 등록됩니다. 또는 같은 <b>거래처명</b>으로 제품을 여러 개 추가하세요. 단가는 <b>평균단가 자동</b>(수정가능) · 연목표=Σ(수량×단가) · 추가 제품은 <b>제품 목표에도 연동</b>됩니다.</span>
     </div>
-    <div class="note" style="margin:0 0 8px"><b>제외 옵션</b>: <b>거래처 제외</b>는 담당자 표에서 숨기고 목표액도 0원 처리합니다. <b>목표합산 제외</b>만 선택하면 거래처와 실적은 정상 표시하고 2026년 목표액만 합계·목표추이에서 제외합니다. <b>조정%</b>: 입력 시 그 거래처가 전년 동월 比 해당%로 고정되고 나머지는 월 목표총액에 맞춰 <b>재배분</b>(전체 합계 유지). <b>추가%</b>: 그 거래처 목표에 <b>추가로 가산</b>되어 전체 목표금액과 그래프·<b>월별 실적·목표</b>가 함께 늘어납니다(예: 추가 10% → 그만큼 합계 증가). <b>거래처 행 클릭</b> 시 품목군→품번·품명·규격으로 이어집니다.</div>
+    <div class="note" style="margin:0 0 8px"><b>제외 옵션</b>: <b>거래처 제외</b>는 담당자 표에서 숨기고 목표액도 0원 처리합니다. <b>목표합산 제외</b>만 선택하면 거래처와 실적은 정상 표시하고 2026년 목표액만 합계·목표추이에서 제외합니다. <b>조정%</b>: 입력 시 그 거래처가 전년 동월 比 해당%로 고정되고 나머지는 월 목표총액에 맞춰 <b>재배분</b>(전체 합계 유지). <b>추가%</b>: 그 거래처 목표에 <b>추가로 가산</b>되어 전체 목표금액과 그래프·<b>월별 실적·목표</b>가 함께 늘어납니다(예: 추가 10% → 그만큼 합계 증가). <b>거래처 행 클릭</b> 시 품목군→품번·품명·규격으로 이어집니다.</div>${fcExclOptionSummary}
     <div class="tablewrap ${state.fc.showExcl?'fcshowexcl':''} ${state.fc.issC?'fcissue-c':''}" style="max-height:1120px"><table><colgroup><col style="width:44px"><col style="width:150px"><col style="width:84px"><col style="width:84px"><col style="width:92px"><col style="width:92px"><col style="width:92px"><col style="width:92px"><col style="width:72px"><col style="width:62px"><col style="width:62px"><col></colgroup><thead><tr><th>순위</th><th class="l fcsort" data-sk="c">거래처${fcArrow('c')}</th><th class="mgr fcsort" data-sk="sales">영업관리${fcArrow('sales')}</th><th class="mgr fcsort" data-sk="tech">기술영업${fcArrow('tech')}</th><th class="fcsort" data-sk="ytd">실적(1~${lastAct}월)${fcArrow('ytd')}<div style="font-size:8px;color:#0d9488;font-weight:700">제외업체 포함</div></th><th class="fcsort" data-sk="prev">전년(${PY})${fcArrow('prev')}</th><th class="fcsort" data-sk="proj">올해목표${fcArrow('proj')}</th><th class="fcsort" data-sk="diff">증감액${fcArrow('diff')}</th><th class="fcsort" data-sk="pct">증감%${fcArrow('pct')}</th><th title="해당 월 목표 내에서 재분배(전체 합계 유지)">조정%</th><th title="전체 금액에 추가로 가산(합계·그래프 증가)">추가%</th><th class="l">메모(조정·추가% 이슈)</th></tr></thead><tbody>${custRows}<tr class="total-row"><td></td><td class="l">합 계</td><td></td><td></td><td>${disp(cTotYtdAll)}</td><td>${disp(cTotPrevAll)}</td><td>${disp(cTotProjAll)}</td><td>${diffSpan(cTotProjAll-cTotPrevAll)}</td><td></td><td></td><td></td><td></td></tr></tbody></table></div>`:`
     <h4 class="fch">📦 제품(규격)별 매출 목표 · ${rLab} <input type="text" id="fcProdSearch" placeholder="품번·품명·규격 검색" value="${esc(state.fc._psearch||'')}" style="font-family:inherit;font-size:13px;padding:6px 11px;border:1px solid var(--line);border-radius:7px;width:250px;margin-left:8px"> <span style="float:right"><button class="btn" id="fcAddProd" style="font-size:11px;padding:3px 10px">＋ 제품추가</button> <button class="btn ghost" id="fcIssueProd" style="font-size:11px;padding:3px 10px;${state.fc.issP?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.fc.issP?' (해제)':''}</button> <button class="btn ghost fcexcltoggle" style="font-size:11px;padding:3px 8px;${state.fc.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.fc.showExcl?'숨기기':'보이기'}</button> <button class="btn ghost" id="fcProdOvReset" style="font-size:11px;padding:3px 8px">조정% 초기화</button> <button class="btn ghost" id="fcProdAddReset" style="font-size:11px;padding:3px 8px;color:var(--red);border-color:#f3c0c0">추가% 초기화</button> <button class="btn ghost" id="fcProdCsv" style="font-size:11px;padding:3px 8px">엑셀</button></span></h4>
     <div id="fcNewProdForm" style="display:none;margin:0 0 8px;padding:10px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px">
