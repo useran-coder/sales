@@ -1174,8 +1174,8 @@ function wrCustomerPlan(y){
 function wrMonthlyTargetLink(y){
   const ys=dataYears(); if(ys.length<2||+y!==ys[ys.length-1])return null;
   const PY=ys[0],CY=ys[ys.length-1],py=monthlyTotals(PY),cy=monthlyTotals(CY);
-  let lastAct=0; for(let m=1;m<=12;m++)if(cy[m]>0)lastAct=m;
-  const fixedActualThrough=5;
+  const fixedActualThrough=SALES_ACTUAL_CUTOFF_MONTH;
+  const lastAct=fixedActualThrough;
   const exSet=fcTargetExcludedCustSet(),pdIncluded=!exSet.has('PD사업부'),fut=fcFutureTotals();
   const target=Array(13).fill(0),modified=Array(13).fill(0),actual=Array(13).fill(0),pctOf=m=>{const v=state.fc&&state.fc.pct&&state.fc.pct[m];return(v!=null&&v!=='')?+v:0;};
   for(let m=1;m<=12;m++){
@@ -1270,7 +1270,7 @@ function wrMixBar(products){
   return `<div class="wr-mixbar">${cats.map(c=>`<div class="wr-mixitem"><b>${wrMixIcon(c)}</b><span>${tot?(sums[c]/tot*100).toFixed(1):'0.0'}%</span><div style="font-size:9px;color:#64748b;font-weight:700">${won(sums[c]||0)}원</div></div>`).join('')}</div>`;
 }
 function wrPage1(model){
-  const arows=model.annualRows.map((r,i)=>`<tr><td><b>${r.label}</b></td><td class="wr-total-col">${i===3?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${(r.label==='목표수정액'&&mi<5)||(r.label==='실적'&&mi>=5)?'wr-fixed-actual':''}">${i===3?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`).join('');
+  const arows=model.annualRows.map((r,i)=>`<tr><td><b>${r.label}</b></td><td class="wr-total-col">${i===3?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${(r.label==='목표수정액'&&mi<SALES_ACTUAL_CUTOFF_MONTH)||(r.label==='실적'&&mi<SALES_ACTUAL_CUTOFF_MONTH)?'wr-fixed-actual':''}">${i===3?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`).join('');
   const wkHead=model.ranges.map(r=>`<th style="width:4.2%">${r.n}주<br><span style="font-weight:500">(${r.s}~${r.e})</span></th>`).join('');
   const body=model.custRows.map((r,i)=>{
     const isRest=/^상위 .+외 업체$/.test(r.cust),nk=wrNoteKey(model,r.cust),memo=wrMemo(model,r);
@@ -1280,7 +1280,7 @@ function wrPage1(model){
   const total=wrAggregateRows(model.custRows,'합계');
   const totalRow=`<tr class="wr-sum"><td class="wr-no"></td><td>합계</td><td></td><td>${wrAmt(total.annual)}</td><td>${wrAmt(total.before)}</td><td>${wrPct(total.annualRate)}</td><td>${wrAmt(total.remaining)}</td><td>${wrAmt(total.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${total.remainingWeekAvg?won(total.remainingWeekAvg)+'원':'-'}</b></div></td>${total.weeks.map((v,idx)=>`<td>${idx<model.w?wrAmt(v):'-'}</td>`).join('')}<td>${wrAmt(total.monthActual)}</td><td>${wrPct(total.monthRate)}</td><td></td></tr>`;
   const beforeLab=model.m>1?`1~${model.m-1}월`:'전월';
-  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 목표액=올해 목표 합계 · 목표수정액=1~5월 실적+6~12월 목표)</span></div><div class="wr-tablewrap"><table class="wr-table"><thead><tr><th style="width:82px">구분</th><th style="width:112px">합계액</th>${Array.from({length:12},(_,i)=>`<th>${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
+  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 목표액=월별 목표 합계 · 목표수정액=1~5월 확정실적+6~12월 목표 · 실적=1~5월 확정실적)</span></div><div class="wr-tablewrap"><table class="wr-table"><thead><tr><th style="width:82px">구분</th><th style="width:112px">합계액</th>${Array.from({length:12},(_,i)=>`<th>${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
     <div class="wr-section">▶ 업체별 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">· ${model.y}년 ${model.m}월 ${model.w}주차 기준 · 단위: 원</span></div>${wrRankBar('업체',model.custRankInfo)}<div class="wr-tablewrap"><table class="wr-table"><thead><tr><th class="wr-no" rowspan="2" style="width:2.6%">NO</th><th rowspan="2" style="width:9%">업체</th><th rowspan="2" style="width:6%">영업관리</th><th rowspan="2" style="width:8.5%">${model.y}년도<br>목표액</th><th colspan="3">매출 실적</th><th rowspan="2" style="width:8.5%">${model.m}월<br>월목표<br><span style="font-size:7px;color:#64748b">남은주간 평균</span></th><th colspan="${model.ranges.length}">${model.m}월 주간</th><th rowspan="2" style="width:8.5%">달성금액</th><th rowspan="2" style="width:3.7%">월 달성률</th><th rowspan="2" style="width:8%">비고</th></tr><tr><th class="wr-center" style="width:8.5%">${beforeLab}</th><th style="width:3.6%">달성율</th><th style="width:8.5%">잔여 목표액</th>${wkHead}</tr></thead><tbody>${body}${totalRow}</tbody></table></div><div class="wr-note">월목표 아래 남은주간 평균은 ‘남은 월목표액 ÷ 선택 주차 이후 남은 주차 수’입니다. 표는 화면 폭에 맞춰 자동 축소됩니다.</div></div>`;
 }
 function wrPage2(model){
@@ -3517,6 +3517,9 @@ function fcExcludedCustSet(){
 // 행 렌더링 중에는 CUR 전체를 매번 다시 순회하지 않고 현재 제외맵을 즉시 조회한다.
 function fcIsExcludedCust(c){ return fcExcludedKeySet().has(fcCustKey(c)); }
 
+// 2026년 연매출 목표 계산 기준: 1~5월 확정실적 + 6~12월 목표
+const SALES_ACTUAL_CUTOFF_MONTH=5;
+
 // 매출목표 화면과 월별 실적·목표 화면이 동일한 연간 추가목표를 사용하도록 공통 계산
 function fcAnnualExtraTargets(exSet){
   const set=exSet||fcTargetExcludedCustSet();
@@ -3548,7 +3551,7 @@ function fcFutureTotals(){
   for(const r of CUR){ const mo=monthOf(r), y=+r.y, a=amtOf(r);
     if(y===PY){ pyMonTot[mo]+=a; pyMonCust[mo].set(r.cust,(pyMonCust[mo].get(r.cust)||0)+a); }
     else if(y===CY){ cyMonTot[mo]+=a; } }
-  let lastAct=0; for(let m=1;m<=12;m++) if(cyMonTot[m]>0) lastAct=m;
+  const lastAct=SALES_ACTUAL_CUTOFF_MONTH;
   const tot=Array(13).fill(0), has=Array(13).fill(false), custMon=Array.from({length:13},()=>new Map());
   const exSet=fcTargetExcludedCustSet();
   for(let m=1;m<=12;m++){ if(pyMonTot[m]>0){ const pct=(state.fc.pct[m]!=null&&state.fc.pct[m]!=='')?+state.fc.pct[m]:0; const target=pyMonTot[m]*(1+pct/100);
@@ -3563,9 +3566,9 @@ function fcFutureTotals(){
 // 목표제외 업체는 실제 실적에는 남지만 연간 목표에는 0원으로 반영한다.
 function fcAnnualTargetSummary(plan){
   const ys=dataYears();
-  if(!ys.length)return {annualTarget:0,lastAct:0,actualAllRaw:0,actualEligibleRaw:0,actualExcludedRaw:0,futureTargetRaw:0,remainingTarget:0,newCustAnnual:0,lineCustTotal:0,pdYearNet:0};
+  if(!ys.length)return {annualTarget:0,lastAct:SALES_ACTUAL_CUTOFF_MONTH,actualAllRaw:0,actualEligibleRaw:0,actualExcludedRaw:0,actualPeriodTotal:0,futureTargetRaw:0,futurePeriodTarget:0,remainingTarget:0,newCustAnnual:0,lineCustTotal:0,pdActual:0,pdFuture:0,pdYearNet:0};
   const CY=ys[ys.length-1], exSet=fcTargetExcludedCustSet(), fut=plan||fcFutureTotals();
-  const lastAct=fut.lastAct||0;
+  const lastAct=SALES_ACTUAL_CUTOFF_MONTH;
   let actualAllRaw=0,actualEligibleRaw=0,actualExcludedRaw=0;
   for(const r of CUR){
     if(+r.y!==CY||monthOf(r)>lastAct)continue;
@@ -3575,9 +3578,17 @@ function fcAnnualTargetSummary(plan){
   let futureTargetRaw=0;
   for(let m=lastAct+1;m<=12;m++)futureTargetRaw+=(fut.tot[m]||0);
   const extras=fcAnnualExtraTargets(exSet);
-  const remainingTarget=futureTargetRaw+extras.newCustAnnual+extras.lineCustTotal+extras.pdYearNet;
-  const annualTarget=actualEligibleRaw+remainingTarget;
-  return {annualTarget,lastAct,actualAllRaw,actualEligibleRaw,actualExcludedRaw,futureTargetRaw,remainingTarget,newCustAnnual:extras.newCustAnnual,lineCustTotal:extras.lineCustTotal,pdYearNet:extras.pdYearNet};
+  const pdIncluded=!exSet.has('PD사업부');
+  let pdActual=0,pdFuture=0;
+  if(pdIncluded){
+    for(let m=1;m<=lastAct;m++)pdActual+=pdMonth(m);
+    for(let m=lastAct+1;m<=12;m++)pdFuture+=pdMonth(m);
+  }
+  const actualPeriodTotal=actualEligibleRaw+pdActual;
+  const futurePeriodTarget=futureTargetRaw+extras.newCustAnnual+extras.lineCustTotal+pdFuture;
+  const remainingTarget=futurePeriodTarget;
+  const annualTarget=actualPeriodTotal+futurePeriodTarget;
+  return {annualTarget,lastAct,actualAllRaw,actualEligibleRaw,actualExcludedRaw,actualPeriodTotal,futureTargetRaw,futurePeriodTarget,remainingTarget,newCustAnnual:extras.newCustAnnual,lineCustTotal:extras.lineCustTotal,pdActual,pdFuture,pdYearNet:extras.pdYearNet};
 }
 
 function pdAvg(cat){ let s=0,n=0; for(let mm=1;mm<=5;mm++){ const v=+state.pd[cat][mm]||0; if(v){s+=v;n++;} } return n?Math.round(s/n):0; }
@@ -3624,7 +3635,7 @@ function histTableHTML(){
 }
 function monthlyTrend(){
   const ys=dataYears(); const PY=ys[0], CY=ys[ys.length-1]; const py=monthlyTotals(PY), cy=monthlyTotals(CY);
-  let lastAct=0; for(let m=1;m<=12;m++) if(cy[m]>0) lastAct=m;
+  const lastAct=SALES_ACTUAL_CUTOFF_MONTH;
   const exSetTrend=fcTargetExcludedCustSet();
   const pdTrendIncluded=!exSetTrend.has('PD사업부');
   const cyRaw=cy.slice(); for(let m=1;m<=lastAct;m++) cy[m]+=pdMonth(m);
@@ -3644,9 +3655,9 @@ function monthlyTrend(){
   const bepMon = state.bep>0? state.bep/12 : 0;
   const remainMon = 12-lastAct; const bepNeed = (state.bep>0&&remainMon>0)? Math.max(0,(state.bep-cyActT))/remainMon : 0;
   let remTgtMonthly=0; for(let mm=1;mm<=12;mm++){ if(mm>lastAct) remTgtMonthly+=tgt[mm]; }
-  const remTgt=annualSummary.remainingTarget;
+  const remTgt=annualSummary.futurePeriodTarget;
   const annualMix=annualSummary.annualTarget;
-  const targetActual=annualSummary.actualEligibleRaw;
+  const targetActual=annualSummary.actualPeriodTotal;
   const excludedActual=annualSummary.actualExcludedRaw;
   const bepGap = annualMix - state.bep;
   // avg of monthly targets (months with py>0)
@@ -3688,10 +3699,10 @@ function monthlyTrend(){
   const open=state.trend.editorOpen;
   const editor=`<div class="mtarget"><div class="mthead"><b id="mtToggle" title="클릭하면 1~12월 목표 % 입력칸이 펼쳐집니다. 전년 동월 대비 목표 %를 입력하면 그래프·표·매출 목표에 즉시 반영·저장됩니다." style="cursor:pointer;user-select:none;background:#0d9488;color:#fff;padding:4px 11px;border-radius:7px;font-size:13px;display:inline-block">월별 목표 % ${open?'▾':'▸'}</b> ${bulkBadge} <span class="sub2">제목을 클릭하면 1~12월 입력칸이 펼쳐집니다. 전년 동월 대비 목표 %를 입력 → 그래프·표·<b>매출 목표</b>에 즉시 반영·저장. (맨 끝 칸: 미래월 일괄 적용 / 초기화)</span></div>
     <div class="mgrid" id="mtGrid" style="display:${open?'grid':'none'}">${cells?cells+bulkCell:'<span class="sub2">표시할 월이 없습니다.</span>'}</div></div>`;
-  const html=`<div class="rhead"><span class="title">월별 실적 목표 (${PY} vs ${CY})</span><span class="meta">예상연매출 ${won(annualMix)} · 목표 ${won(tgtTAll)} · 실적 ${won(cyActT)} · 단위: 원</span><span class="spacer"></span><button class="btn ghost" id="trCsv">엑셀 내보내기</button></div>
+  const html=`<div class="rhead"><span class="title">월별 실적 목표 (${PY} vs ${CY})</span><span class="meta">연매출 목표 ${won(annualMix)} (실적 1~5월 + 목표 6~12월) · 월별 목표합계 ${won(tgtTAll)} · 실적 ${won(cyActT)} · 단위: 원</span><span class="spacer"></span><button class="btn ghost" id="trCsv">엑셀 내보내기</button></div>
     <div class="fckpi" style="margin:8px 0 4px">
       <div class="kpi" style="border-left:4px solid #94a3b8"><div class="lab">전년 연매출(${PY})</div><div class="val" style="color:#475569">${won(pyT)}<small> 원</small></div><div class="sub2" style="margin-top:2px">${PY}년 전체 실적</div></div>
-      <div class="kpi" style="border-left:4px solid var(--navy)"><div class="lab">올해 연매출 목표(${CY})</div><div class="val" style="color:var(--navy)">${won(annualMix)}<small> 원</small></div><div class="sub2" style="margin-top:2px">목표대상 업체 실적 <b>${won(targetActual)}</b> + 잔여·추가목표 <b>${won(remTgt)}</b>${excludedActual>0?` <span style="color:#dc2626">· 목표제외 업체 실적 ${won(excludedActual)}은 실적에만 포함</span>`:''}</div></div>
+      <div class="kpi" style="border-left:4px solid var(--navy)"><div class="lab">올해 연매출 목표(${CY})</div><div class="val" style="color:var(--navy)">${won(annualMix)}<small> 원</small></div><div class="sub2" style="margin-top:2px">실적(1~5월) <b>${won(targetActual)}</b> + 목표(6~12월) <b>${won(remTgt)}</b>${excludedActual>0?` <span style="color:#dc2626">· 목표합산 제외업체의 1~5월 실적 ${won(excludedActual)}은 연매출 목표에서 제외</span>`:''}</div></div>
       <div class="kpi"><div class="lab">올해 목표 합계(1~12월)</div><div class="val" style="color:#d97706">${won(tgtTAll)}<small> 원</small></div><div class="sub2" style="margin-top:2px">전년 ${won(pyT)} 대비 ${avgPct>=0?'+':''}${avgPct.toFixed(1)}%</div></div>
       ${state.bep>0?`<div class="kpi" style="border-left:4px solid #7c3aed"><div class="lab">BEP(손익분기점) 대비</div><div class="val" style="color:#7c3aed">${won(state.bep)}<small> 원</small></div><div class="sub2" style="margin-top:2px">예상 대비 ${bepGap>=0?`<b style="color:var(--green)">+${won(bepGap)} 초과달성</b>`:`<b style="color:var(--red)">${won(bepGap)} 부족</b> · 남은 ${remainMon}개월 매월 +${won(bepNeed)}`}</div></div>`:''}
     </div>
@@ -3805,7 +3816,7 @@ function forecast(){
       let cp=pyMonCustProd[mo].get(r.cust); if(!cp){cp=new Map();pyMonCustProd[mo].set(r.cust,cp);} addP(cp,pk,a,r.qty); }
     else if(y===CY){ cyMonTot[mo]+=a; cyMonCust[mo].set(r.cust,(cyMonCust[mo].get(r.cust)||0)+a); addP(cyMonProd[mo],pk,a,r.qty);
       let cp=cyMonCustProd[mo].get(r.cust); if(!cp){cp=new Map();cyMonCustProd[mo].set(r.cust,cp);} addP(cp,pk,a,r.qty); } }
-  let lastAct=0; for(let m=1;m<=12;m++) if(cyMonTot[m]>0) lastAct=m;
+  const lastAct=SALES_ACTUAL_CUTOFF_MONTH;
   const fcMonths=[]; for(let m=lastAct+1;m<=12;m++) if(pyMonTot[m]>0) fcMonths.push(m);
   const fcCustMon=M(), fcProdMon=M(), fcCustProdMon=M(), fcMonTot=Array(13).fill(0);
   for(const m of fcMonths){ const pct=state.fc.pct[m]!=null?state.fc.pct[m]:0; const f=1+pct/100; const target=pyMonTot[m]*f;
@@ -3946,14 +3957,14 @@ function forecast(){
   const perBtns=`<div class="seg" id="fcPer"><button data-v="all" class="${state.fc.period==='all'?'on':''}">전체</button><button data-v="H1" class="${state.fc.period==='H1'?'on':''}">상반기</button><button data-v="H2" class="${state.fc.period==='H2'?'on':''}">하반기</button><button data-v="Q1" class="${state.fc.period==='Q1'?'on':''}">1분기</button><button data-v="Q2" class="${state.fc.period==='Q2'?'on':''}">2분기</button><button data-v="Q3" class="${state.fc.period==='Q3'?'on':''}">3분기</button><button data-v="Q4" class="${state.fc.period==='Q4'?'on':''}">4분기</button><button data-v="range" class="${state.fc.period==='range'?'on':''}">기간설정</button></div>`;
   const monOpts=(selV)=>{let s='';for(let i=1;i<=12;i++)s+=`<option value="${i}" ${i===selV?'selected':''}>${i}월</option>`;return s;};
   const rangeSel=`<span id="fcRangeSel" style="display:${state.fc.period==='range'?'inline-flex':'none'};align-items:center;gap:4px"><select id="fcM1">${monOpts(m1)}</select> ~ <select id="fcM2">${monOpts(m2)}</select></span>`;
-  const html=`<div class="rhead"><span class="title">매출 목표 (${CY})</span><span class="meta">실적 ${lastAct}월까지 · 목표 ${fcMonths.length?fcMonths[0]+'~12월':'없음'} · 그래프 단위: 백만원</span></div>
+  const html=`<div class="rhead"><span class="title">매출 목표 (${CY})</span><span class="meta">실적 1~5월 · 목표 6~12월 · 그래프 단위: 백만원</span></div>
     ${legendPY(PY,CY,'fcShowPY',state.fc.showPY)}
     ${annualPanelHTML(PY,CY,olhaeTarget,tgt)}
     <div class="chartbox">${chart}</div>
     <div style="margin-top:14px"><button id="fcNotesToggle" data-t="main" class="btn ghost" type="button" style="font-size:13px;font-weight:800;background:#fef3c7;color:#b45309;border-color:#fde68a">📝 매출목표 주요사항 ▾</button><span id="fcNoteTabs" style="display:inline-flex;gap:5px;margin-left:6px;vertical-align:middle"><button type="button" class="fcntab btn ghost" data-t="sales" style="font-size:12px;font-weight:700;background:#fef3c7;color:#b45309;border-color:#fde68a">영업관리</button><button type="button" class="fcntab btn ghost" data-t="tech" style="font-size:12px;font-weight:700;background:#fef3c7;color:#b45309;border-color:#fde68a">기술영업</button></span><div id="fcNotesWrap" style="display:none;margin-top:8px;border:1px solid var(--line);border-radius:10px;overflow:hidden"><div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:8px 10px;background:#f8fafc;border-bottom:1px solid var(--line)"><span class="sub2">글꼴</span><select id="fcNoteFont" style="font-size:12px;padding:3px 5px;border:1px solid var(--line);border-radius:6px"><option value="Malgun Gothic">맑은 고딕</option><option value="NanumGothic">나눔고딕</option><option value="NanumMyeongjo">나눔명조</option><option value="Dotum">돋움</option><option value="Gulim">굴림</option><option value="Batang">바탕</option><option value="Gungsuh">궁서</option><option value="Arial">Arial</option><option value="Times New Roman">Times</option></select><button type="button" class="fcnb" data-cmd="bold" style="font-weight:800;min-width:30px">B</button><button type="button" class="fcnb" data-cmd="italic" style="font-style:italic;min-width:30px">I</button><button type="button" class="fcnb" data-cmd="underline" style="text-decoration:underline;min-width:30px">U</button><span class="sub2">크기(pt)</span><select id="fcNoteSize" style="font-size:12px;padding:3px 5px;border:1px solid var(--line);border-radius:6px"><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="14" selected>14</option><option value="16">16</option><option value="18">18</option><option value="20">20</option><option value="24">24</option><option value="28">28</option><option value="32">32</option></select><span class="sub2">색</span><span style="display:inline-flex;gap:3px"><button type="button" class="fcnpc" data-c="#000000" title="#000000" style="width:18px;height:18px;border-radius:4px;border:1px solid #cbd5e1;background:#000000;cursor:pointer;padding:0"></button><button type="button" class="fcnpc" data-c="#dc2626" title="#dc2626" style="width:18px;height:18px;border-radius:4px;border:1px solid #cbd5e1;background:#dc2626;cursor:pointer;padding:0"></button><button type="button" class="fcnpc" data-c="#ea580c" title="#ea580c" style="width:18px;height:18px;border-radius:4px;border:1px solid #cbd5e1;background:#ea580c;cursor:pointer;padding:0"></button><button type="button" class="fcnpc" data-c="#ca8a04" title="#ca8a04" style="width:18px;height:18px;border-radius:4px;border:1px solid #cbd5e1;background:#ca8a04;cursor:pointer;padding:0"></button><button type="button" class="fcnpc" data-c="#16a34a" title="#16a34a" style="width:18px;height:18px;border-radius:4px;border:1px solid #cbd5e1;background:#16a34a;cursor:pointer;padding:0"></button><button type="button" class="fcnpc" data-c="#2563eb" title="#2563eb" style="width:18px;height:18px;border-radius:4px;border:1px solid #cbd5e1;background:#2563eb;cursor:pointer;padding:0"></button><button type="button" class="fcnpc" data-c="#7c3aed" title="#7c3aed" style="width:18px;height:18px;border-radius:4px;border:1px solid #cbd5e1;background:#7c3aed;cursor:pointer;padding:0"></button></span><span style="position:relative;display:inline-flex;align-items:center;gap:3px"><button type="button" id="fcNotePalBtn" title="사용자 색(팔레트)" style="width:24px;height:24px;border-radius:6px;border:1px solid var(--line);cursor:pointer;background:conic-gradient(red,orange,yellow,lime,cyan,blue,magenta,red);padding:0"></button><input type="color" id="fcNoteColor" value="#dc2626" style="width:0;height:0;opacity:0;position:absolute;left:0;bottom:-2px;pointer-events:none"></span><span class="sub2">형광펜</span><span style="display:inline-flex;gap:3px"><button type="button" class="fchl" data-c="#fde68a" title="형광펜" style="width:18px;height:18px;border-radius:4px;border:1px solid #cbd5e1;background:#fde68a;cursor:pointer;padding:0"></button><button type="button" class="fchl" data-c="#bbf7d0" title="형광펜" style="width:18px;height:18px;border-radius:4px;border:1px solid #cbd5e1;background:#bbf7d0;cursor:pointer;padding:0"></button><button type="button" class="fchl" data-c="#fbcfe8" title="형광펜" style="width:18px;height:18px;border-radius:4px;border:1px solid #cbd5e1;background:#fbcfe8;cursor:pointer;padding:0"></button><button type="button" class="fchl" data-c="#bfdbfe" title="형광펜" style="width:18px;height:18px;border-radius:4px;border:1px solid #cbd5e1;background:#bfdbfe;cursor:pointer;padding:0"></button><button type="button" class="fchl" data-c="none" title="형광펜 해제" style="width:22px;height:18px;border-radius:4px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;padding:0;font-size:11px;line-height:1">✕</button></span><button type="button" class="fcnb" data-cmd="insertUnorderedList">• 목록</button><span style="margin-left:auto;font-size:11px;color:#0f766e;font-weight:700">⚡ 자동 저장</span><button type="button" id="fcNoteClear" class="btn ghost" style="font-size:11px;padding:4px 9px">전체지우기</button></div><div id="fcNotesEd" contenteditable="true" style="min-height:220px;padding:14px 16px;font-size:14px;line-height:1.7;outline:none;background:#fff"></div><div id="fcNotesBy" class="sub2" style="padding:6px 14px;background:#f8fafc;border-top:1px solid var(--line);color:#64748b"></div></div></div>
     <div class="ctrlbar"><b style="font-size:12px">월별 실적(전년比)·목표%</b> ${mInputs} <span class="sub2">※ 목표 % 입력은 <b>‘월별 실적·목표’</b> 메뉴에서 합니다(여기는 적용값 표시). 전년 막대는 위 체크박스로 표시/숨김.</span></div>
     <div class="fckpi"><div class="kpi"><div class="lab">전년 연매출(${PY})</div><div class="val">${won(pyAnnual)}<small> 원</small></div></div>
-      <div class="kpi"><div class="lab">올해 연매출 목표(${CY})</div><div class="val">${won(olhaeTarget)}<small> 원</small></div><div class="sub2" style="margin-top:2px">실적(1~${lastAct}월)+목표(${lastAct+1}~12월)</div></div>
+      <div class="kpi"><div class="lab">올해 연매출 목표(${CY})</div><div class="val">${won(olhaeTarget)}<small> 원</small></div><div class="sub2" style="margin-top:2px">실적(1~5월) <b>${won(annualSummary.actualPeriodTotal)}</b> + 목표(6~12월) <b>${won(annualSummary.futurePeriodTarget)}</b></div></div>
       ${outsideCardHTML}
       <div class="kpi"><div class="lab">전년比</div><div class="val" style="color:${projPct>=0?'var(--green)':'var(--red)'}">${projPct>=0?'+':''}${projPct.toFixed(1)}<small>%</small></div></div>
       <div class="kpi"><div class="lab">1인당 월 목표매출 <small>(${rLab}·${perMonths}개월)</small></div><div class="val">${won(fcPerCapMon)}<small> 원/월</small></div></div></div>
