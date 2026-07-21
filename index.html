@@ -3645,14 +3645,27 @@ function monthlyTrend(){
   const lastAct=SALES_ACTUAL_CUTOFF_MONTH;
   const exSetTrend=fcTargetExcludedCustSet();
   const pdTrendIncluded=!exSetTrend.has('PD사업부');
-  const cyRaw=cy.slice(); for(let m=1;m<=lastAct;m++) cy[m]+=pdMonth(m);
+  const cyRaw=cy.slice();
+  // 연매출 목표의 실적 확정 구간은 1~5월로 고정한다.
+  // 월별 실적 화면은 실제 매출이 존재하는 마지막 월까지 계속 표시한다.
+  let actualLastMonth=lastAct;
+  for(let m=lastAct+1;m<=12;m++){
+    const hasSalesActual=Math.abs(cyRaw[m]||0)>0.000001;
+    const hasPdActual=!!(state.pd&&state.pd.actual&&state.pd.actual[m]);
+    if(hasSalesActual||hasPdActual)actualLastMonth=m;
+  }
+  for(let m=1;m<=12;m++){
+    const pdIsActual=m<=lastAct||!!(state.pd&&state.pd.actual&&state.pd.actual[m]);
+    if(pdIsActual)cy[m]+=pdMonth(m);
+  }
   const pctOf=m=>{ const t=state.fc.pct[m]; return (t!=null&&t!=='')?+t:0; };
   // target (all months) / actual series — future months reflect 매출목표의 조정%·추가%
   const fut=fcFutureTotals();
   const tgt=Array(13).fill(0), act=Array(13).fill(0);
   for(let m=1;m<=12;m++){ const p=py[m];
-    if(m<=lastAct){ tgt[m]=(fut.has&&fut.has[m])?fut.tot[m]:(p>0?p*(1+pctOf(m)/100):0); act[m]=cy[m]; }
-    else { tgt[m]= (fut.has&&fut.has[m])?fut.tot[m]:(p>0?p*(1+pctOf(m)/100):0); } }
+    tgt[m]=(fut.has&&fut.has[m])?fut.tot[m]:(p>0?p*(1+pctOf(m)/100):0);
+    if(m<=actualLastMonth)act[m]=cy[m];
+  }
   for(let m=1;m<=12;m++) if(pdTrendIncluded)tgt[m]+=pdMonth(m);
   const annualSummary=fcAnnualTargetSummary(fut);
   const unallocatedTgt=annualSummary.newCustAnnual+annualSummary.lineCustTotal;
@@ -3660,7 +3673,7 @@ function monthlyTrend(){
   const tgtTAll=tgtT+unallocatedTgt;
   const avgPct = pyT? (tgtTAll-pyT)/pyT*100 : 0;
   const bepMon = state.bep>0? state.bep/12 : 0;
-  const remainMon = 12-lastAct; const bepNeed = (state.bep>0&&remainMon>0)? Math.max(0,(state.bep-cyActT))/remainMon : 0;
+  const remainMon = 12-actualLastMonth; const bepNeed = (state.bep>0&&remainMon>0)? Math.max(0,(state.bep-cyActT))/remainMon : 0;
   let remTgtMonthly=0; for(let mm=1;mm<=12;mm++){ if(mm>lastAct) remTgtMonthly+=tgt[mm]; }
   const remTgt=annualSummary.futurePeriodTarget;
   const annualMix=annualSummary.annualTarget;
@@ -3679,7 +3692,7 @@ function monthlyTrend(){
   const fcPctVals=fcMonths.map(m=>pctOf(m)); const uniform = fcMonths.length>0 && fcPctVals.every(v=>v===fcPctVals[0]);
   const bulkNote = fcMonths.length? (uniform? `목표 월 일괄 <b style="color:#d97706">${fcPctVals[0]>=0?'+':''}${fcPctVals[0]}%</b> 적용 중` : `목표월 <b>개별 설정</b> 중`) : '목표월 없음';
   // table: 전년 / 목표 / 실적 구분
-  let rows=''; for(let m=1;m<=12;m++){ if(py[m]<=0&&cy[m]<=0)continue; const hasAct=m<=lastAct;
+  let rows=''; for(let m=1;m<=12;m++){ if(py[m]<=0&&cy[m]<=0)continue; const hasAct=m<=actualLastMonth;
     const yoyV = hasAct? (py[m]?(cy[m]-py[m])/py[m]*100:(cy[m]>0?null:0)) : null;
     const ach = (hasAct&&tgt[m]>0)? (cy[m]-tgt[m])/tgt[m]*100 : null;
     const _ti=(state.monthIssue&&state.monthIssue[`${CY}-${String(m).padStart(2,'0')}`])||'';
@@ -3690,11 +3703,13 @@ function monthlyTrend(){
       +`<td>${hasAct?diffSpan(cy[m]-py[m]):'-'}</td>`
       +`<td>${yoyV==null?'-':pctSpan(yoyV)}</td>`
       +`<td>${hasAct?(ach==null?'-':`<b style="color:${ach>=0?'var(--green)':'var(--red)'}">${ach>=0?'+':''}${ach.toFixed(1)}%</b>`):(bepMon>0?`<span class="sub2" style="color:#7c3aed">BEP +${won(bepNeed)}</span>`:'-')}</td></tr>`; }
-  const pyElapsed=py.reduce((a,v,mm)=>a+(mm<=lastAct?v:0),0);
-  const tot=`<tr class="total-row"><td class="l">합계</td><td>${won(pyT)}</td><td><b style="color:#d97706">${won(tgtT)}</b></td><td>${diffSpan(tgtT-pyT)}</td><td>${pctSpan(pyT?(tgtT-pyT)/pyT*100:null)}</td><td>${won(cyActT)}</td><td>${diffSpan(cyActT-pyElapsed)}</td><td>${pctSpan(pyElapsed?(cyActT-pyElapsed)/pyElapsed*100:null)}</td><td>-</td></tr>`;
+  const pyElapsed=py.reduce((a,v,mm)=>a+(mm<=actualLastMonth?v:0),0);
+  const tgtElapsed=tgt.reduce((a,v,mm)=>a+(mm<=actualLastMonth?v:0),0);
+  const totalAch=tgtElapsed?((cyActT-tgtElapsed)/tgtElapsed*100):null;
+  const tot=`<tr class="total-row"><td class="l">합계</td><td>${won(pyT)}</td><td><b style="color:#d97706">${won(tgtT)}</b></td><td>${diffSpan(tgtT-pyT)}</td><td>${pctSpan(pyT?(tgtT-pyT)/pyT*100:null)}</td><td>${won(cyActT)}</td><td>${diffSpan(cyActT-pyElapsed)}</td><td>${pctSpan(pyElapsed?(cyActT-pyElapsed)/pyElapsed*100:null)}</td><td>${totalAch==null?'-':`<b style="color:${totalAch>=0?'var(--green)':'var(--red)'}">${totalAch>=0?'+':''}${totalAch.toFixed(1)}%</b>`}</td></tr>`;
   // editor cells (ALL months get target input)
   let cells='';
-  for(let m=1;m<=12;m++){ const p=py[m], c=cy[m]; if(p<=0&&c<=0)continue; const v=pctOf(m); const hasAct=m<=lastAct;
+  for(let m=1;m<=12;m++){ const p=py[m], c=cy[m]; if(p<=0&&c<=0)continue; const v=pctOf(m); const hasAct=m<=actualLastMonth;
     let info;
     if(hasAct){ const yoy=p?(c-p)/p*100:null; const t2=p*(1+v/100); const vt=t2?(c-t2)/t2*100:null;
       info=`<div class="msub">실적 <b>${won(c)}</b><br>전년比 <b style="color:${yoy==null?'var(--muted)':yoy>=0?'var(--green)':'var(--red)'}">${yoy==null?'-':(yoy>=0?'+':'')+yoy.toFixed(1)+'%'}</b><br>목표대비 <b style="color:${vt==null?'var(--muted)':vt>=0?'var(--green)':'var(--red)'}">${vt==null?'-':(vt>=0?'+':'')+vt.toFixed(1)+'%'}</b></div>`;
@@ -3706,7 +3721,7 @@ function monthlyTrend(){
   const open=state.trend.editorOpen;
   const editor=`<div class="mtarget"><div class="mthead"><b id="mtToggle" title="클릭하면 1~12월 목표 % 입력칸이 펼쳐집니다. 전년 동월 대비 목표 %를 입력하면 그래프·표·매출 목표에 즉시 반영·저장됩니다." style="cursor:pointer;user-select:none;background:#0d9488;color:#fff;padding:4px 11px;border-radius:7px;font-size:13px;display:inline-block">월별 목표 % ${open?'▾':'▸'}</b> ${bulkBadge} <span class="sub2">제목을 클릭하면 1~12월 입력칸이 펼쳐집니다. 전년 동월 대비 목표 %를 입력 → 그래프·표·<b>매출 목표</b>에 즉시 반영·저장. (맨 끝 칸: 미래월 일괄 적용 / 초기화)</span></div>
     <div class="mgrid" id="mtGrid" style="display:${open?'grid':'none'}">${cells?cells+bulkCell:'<span class="sub2">표시할 월이 없습니다.</span>'}</div></div>`;
-  const html=`<div class="rhead"><span class="title">월별 실적 목표 (${PY} vs ${CY})</span><span class="meta">연매출 목표 ${won(annualMix)} (실적 1~5월 + 목표 6~12월) · 월별 목표합계 ${won(tgtTAll)} · 실적 ${won(cyActT)} · 단위: 원</span><span class="spacer"></span><button class="btn ghost" id="trCsv">엑셀 내보내기</button></div>
+  const html=`<div class="rhead"><span class="title">월별 실적 목표 (${PY} vs ${CY})</span><span class="meta">연매출 목표 ${won(annualMix)} (실적 1~5월 + 목표 6~12월) · 월별 목표합계 ${won(tgtTAll)} · 실적(1~${actualLastMonth}월) ${won(cyActT)} · 단위: 원</span><span class="spacer"></span><button class="btn ghost" id="trCsv">엑셀 내보내기</button></div>
     <div class="fckpi" style="margin:8px 0 4px">
       <div class="kpi" style="border-left:4px solid #94a3b8"><div class="lab">전년 연매출(${PY})</div><div class="val" style="color:#475569">${won(pyT)}<small> 원</small></div><div class="sub2" style="margin-top:2px">${PY}년 전체 실적</div></div>
       <div class="kpi" style="border-left:4px solid var(--navy)"><div class="lab">올해 연매출 목표(${CY})</div><div class="val" style="color:var(--navy)">${won(annualMix)}<small> 원</small></div><div class="sub2" style="margin-top:2px">실적(1~5월) <b>${won(targetActual)}</b> + 목표(6~12월) <b>${won(remTgt)}</b>${excludedActual>0?` <span style="color:#dc2626">· 목표합산 제외업체의 1~5월 실적 ${won(excludedActual)}은 연매출 목표에서 제외</span>`:''}</div></div>
@@ -3721,7 +3736,7 @@ function monthlyTrend(){
     ${editor}
     ${scrapPanelHTML()}
     ${pdPanelHTML(cyRaw,lastAct,tgt)}
-    <div class="note" style="margin:10px 0 4px">아래 표 적용 현황: ${bulkNote} · 빨간 수평선 = 올해 목표 1~12월 <b>월평균 ${won(tgtAvg)}원</b> · 💡 <b>실적 월 클릭</b> 시 그 달 거래처별 매출 · <b>전년比</b>=올해 실적 vs 전년 동월(합계=동기간), <b>목표 %</b>=올해 목표 vs 전년</div>
+    <div class="note" style="margin:10px 0 4px">아래 표 적용 현황: ${bulkNote} · 빨간 수평선 = 올해 목표 1~12월 <b>월평균 ${won(tgtAvg)}원</b> · 실제 실적은 <b>1~${actualLastMonth}월</b>까지 그래프·표·목표달성률에 표시 · 연매출 목표 금액은 <b>1~5월 실적 + 6~12월 목표</b>로 고정 · 💡 <b>실적 월 클릭</b> 시 그 달 거래처별 매출</div>
     <div class="tablewrap" style="margin-top:4px"><table><thead><tr><th class="l">월</th><th>전년(${PY})</th><th>올해목표</th><th>증감액</th><th>증%</th><th>실적(${CY})</th><th>증감액</th><th title="실적 vs 전년 동월(합계=동기간)">전년比</th><th>목표달성</th></tr></thead><tbody>${rows}${tot}</tbody></table></div>
     <div class="note">목표 %는 1~12월 모두 입력 가능하며, 그래프(목표 막대·평균선)·표·<b>매출 목표</b> 메뉴에 자동 반영·저장됩니다. <b>고철업체·고철 품목 매출은 원매출의 80%</b>로 모든 실적·목표에 반영됩니다. 전년 막대는 체크박스로 표시/숨김.</div>`;
   renderCustom(html,()=>{
@@ -3742,7 +3757,7 @@ function monthlyTrend(){
     $('#result').querySelectorAll('.pdact').forEach(c=>c.addEventListener('change',e=>{ const m=+e.target.dataset.m; if(!state.pd.actual)state.pd.actual={}; if(e.target.checked)state.pd.actual[m]=true; else delete state.pd.actual[m]; if(typeof logEdit==='function')logEdit('PD',m+' 실적확정 '+(e.target.checked?'설정':'해제')); saveSettings(); monthlyTrend(); }));
     $('#result').querySelectorAll('.pdck').forEach(c=>c.addEventListener('change',e=>{ state.pd[e.target.dataset.k]=e.target.checked; saveSettings(); monthlyTrend(); }));
     const cb=$('#trShowPY'); cb&&cb.addEventListener('change',e=>{ state.trend.showPY=e.target.checked; monthlyTrend(); });
-    const trc=$('#trCsv'); trc&&trc.addEventListener('click',()=>{ const rows=[]; for(let m=1;m<=12;m++){ if(py[m]<=0&&cy[m]<=0)continue; const ha=m<=lastAct; const yo=ha?(py[m]?((cy[m]-py[m])/py[m]*100):''):''; const ac=(ha&&tgt[m]>0)?((cy[m]-tgt[m])/tgt[m]*100):''; rows.push([m+'월', Math.round(py[m]), Math.round(tgt[m]), ha?Math.round(cy[m]):'', ha?Math.round(cy[m]-py[m]):'', yo===''?'':yo.toFixed(1), ac===''?'':ac.toFixed(1)]); } dlCSV('monthly_trend.csv',['월','전년('+PY+')','목표','실적('+CY+')','증감액','전년비%','목표달성%'],rows); });
+    const trc=$('#trCsv'); trc&&trc.addEventListener('click',()=>{ const rows=[]; for(let m=1;m<=12;m++){ if(py[m]<=0&&cy[m]<=0)continue; const ha=m<=actualLastMonth; const yo=ha?(py[m]?((cy[m]-py[m])/py[m]*100):''):''; const ac=(ha&&tgt[m]>0)?((cy[m]-tgt[m])/tgt[m]*100):''; rows.push([m+'월', Math.round(py[m]), Math.round(tgt[m]), ha?Math.round(cy[m]):'', ha?Math.round(cy[m]-py[m]):'', yo===''?'':yo.toFixed(1), ac===''?'':ac.toFixed(1)]); } dlCSV('monthly_trend.csv',['월','전년('+PY+')','목표','실적('+CY+')','증감액','전년비%','목표달성%'],rows); });
   });
 }
 
