@@ -1249,6 +1249,9 @@ function wrRankPick(arr,valFn){
 function wrModel(){
   const s=wrEnsure(); if(!s)return null;
   const {y,m,w,range,ranges}=s, rangeStart=range.sDate,rangeEnd=range.eDate,asOf=rangeEnd, plan=wrCustomerPlan(y);
+  // 일반 주차 조회는 선택 주차만이 아니라 해당 월 1일부터 선택 주차 종료일까지 누적한다.
+  // 이전 실적은 당월 주간 실적과 중복되지 않도록 월 시작일(사용자 지정 기간은 시작일) 이전까지만 집계한다.
+  const actualStart=s.isCustom?rangeStart:wrDate(y,m,1);
   // 주간보고 실적 데이터도 거래처 담당자와 동일하게 거래처 제외업체를 제외한다.
   const eligibleRows=CUR.filter(r=>!fcIsExcludedCust(r.cust));
   const reportRows=eligibleRows.filter(r=>+r.y===y);
@@ -1271,8 +1274,8 @@ function wrModel(){
     return v;
   };
   customers.forEach(c=>{
-    const before=cutoffRows.filter(r=>r.cust===c&&r.d<rangeStart).reduce((a,r)=>a+amtOf(r),0), weeks=Array(ranges.length).fill(0);
-    cutoffRows.filter(r=>r.cust===c&&r.d>=rangeStart&&r.d<=rangeEnd).forEach(r=>{ const n=ranges.findIndex(z=>r.d>=z.sDate&&r.d<=z.eDate); if(n>=0)weeks[n]+=amtOf(r); });
+    const before=cutoffRows.filter(r=>r.cust===c&&r.d<actualStart).reduce((a,r)=>a+amtOf(r),0), weeks=Array(ranges.length).fill(0);
+    cutoffRows.filter(r=>r.cust===c&&r.d>=actualStart&&r.d<=rangeEnd).forEach(r=>{ const n=ranges.findIndex(z=>r.d>=z.sDate&&r.d<=z.eDate); if(n>=0)weeks[n]+=amtOf(r); });
     const monthActual=weeks.reduce((a,v)=>a+v,0), annual=plan.annual.get(c)||0, monthTarget=customTarget(c);
     const memo=((state.fc&&state.fc.custMemo&&state.fc.custMemo[c])||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
     const remainingWeeks=s.isCustom?0:Math.max(0,ranges.length-w),remainingWeekAvg=remainingWeeks?Math.max(0,monthTarget-monthActual)/remainingWeeks:0;
