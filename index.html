@@ -667,7 +667,7 @@ let datasets=[];     // [{uid, fileName, sheetName, sheetNames:[], recs:[{d,cust
 let RAWMEM={};       // uid -> {sheetName:{headers,rows}}  (session only)
 let CUR=[];          // flattened records w/ Date + period keys
 let uidSeq=1;
-let state={ basis:'공급가', unit:1, period:'year', periodKey:null, periodYear:null, workdays:{}, bep:0, clsOverride:{}, gradeOverride:{}, gbunOverride:{}, region:{level:'do'}, credit:{cat:null,by:'status'}, retain:{issue:false,showExcl:false,visitOnly:false,exclOnly:false}, retainMemo:{}, retainMemoAt:{}, retainExcl:{}, retainVisit:{}, cmgrExcl:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true}, elogSeenTs:0, cross:{base:'',baseSpec:'',targets:[''],filter:'all'}, ir:{target:'all',view:'spec',sm:10}, trend2:{win:12,dim:'cust',grp:'none',catSel:null}, clsCat:null, clsCustSearch:'', rankMonthly:false, rankMonYear:null, prodRankMonthly:false, prodRankYear:null, prodDrillMonthly:false, prodDrillYear:null, monthIssue:{}, price:{mode:'cust',histMode:'all'}, weekly:{page:1,year:null,month:null,week:null,rangeStart:'',rangeEnd:'',topN:20,topPct:80,rankMode:'count',notes:{}}, priceSets:[], setDraft:{title:'',items:[{name:'',spec:'',code:'',qty:1,price:'',cost:'',profit:''}]}, rangeStart:null, rangeEnd:null, headcount:53, headMonthly:{}, headYearDefault:{}, mgrOverride:{}, cmgrPrimary:{}, cmgrKey:{}, scrapVendors:[], scrapVendorOff:{}, gsync:{url:'',key:'',auto:true,lastSync:'',user:'',syncCount:0},syncLog:{}, act:null, sortKey:null, sortDir:-1, _search:'', chipVal:null, lastData:null,
+let state={ basis:'공급가', unit:1, period:'year', periodKey:null, periodYear:null, workdays:{}, bep:0, clsOverride:{}, gradeOverride:{}, gbunOverride:{}, region:{level:'do'}, credit:{cat:null,by:'status'}, retain:{issue:false,showExcl:false,visitOnly:false,exclOnly:false}, retainMemo:{}, retainMemoAt:{}, retainExcl:{}, retainVisit:{}, cmgrExcl:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true}, elogSeenTs:0, cross:{base:'',baseSpec:'',targets:[''],filter:'all'}, ir:{target:'all',view:'spec',sm:10}, trend2:{win:12,dim:'cust',grp:'none',catSel:null}, clsCat:null, clsCustSearch:'', rankMonthly:false, rankMonYear:null, prodRankMonthly:false, prodRankYear:null, prodDrillMonthly:false, prodDrillYear:null, monthIssue:{}, price:{mode:'cust',histMode:'all',mixBasis:'qty',rangeStart:'',rangeEnd:''}, weekly:{page:1,year:null,month:null,week:null,rangeStart:'',rangeEnd:'',topN:20,topPct:80,rankMode:'count',notes:{}}, priceSets:[], setDraft:{title:'',items:[{name:'',spec:'',code:'',qty:1,price:'',cost:'',profit:''}]}, rangeStart:null, rangeEnd:null, headcount:53, headMonthly:{}, headYearDefault:{}, mgrOverride:{}, cmgrPrimary:{}, cmgrKey:{}, scrapVendors:[], scrapVendorOff:{}, gsync:{url:'',key:'',auto:true,lastSync:'',user:'',syncCount:0},syncLog:{}, act:null, sortKey:null, sortDir:-1, _search:'', chipVal:null, lastData:null,
   inv:{lt:14,z:'95',dfilter:'전체',actual:{},exclude:{},stab:'rec'}, cmgr:{fs:'전체',fe:'전체',ft:'전체',search:'',mode:'none',year:'cy',sortKey:'a',sortDir:-1,editKey:null,cardsOpen:false,infoMode:false,exclMode:false,showPrev:false,showLaser:false}, custInfo:{}, pd:{labor:{1:18912008,2:11016122,3:10729149,4:6283887,5:3589118},process:{1:33311650,2:23295890,3:19221300,4:13994850,5:12362080},indirect:{1:2016627,2:338637,3:1667136,4:625176,5:2298824},useLabor:true,useProcess:true,useIndirect:true,actual:{},estimate:false}, pareto:{dim:'cust',threshold:80,showRest:false,period:'all',m1:1,m2:12,year:'all'}, cmp:{period:'1분기',dim:'cust',m1:1,m2:12,year:null,filter:null}, trend:{showPY:false,editorOpen:false,pdOpen:false,scrapOpen:false}, fc:{pct:{},override:{},addPct:{},newCusts:{},prodOverride:{},prodAddPct:{},custProdOverride:{},newProds:{},newLines:[],custMemo:{},prodMemo:{},notesHtml:'',notesSales:'',notesTech:'',notesTab:'main',notesMeta:{main:{},sales:{},tech:{}},issC:false,issP:false,exclCust:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true},targetExclCust:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true},exclProd:{},showExcl:false,showExclRows:false,annualHist:{2019:7531847061,2020:7404376660,2021:8806423871,2022:10484011261,2023:12035275080,2024:11218223843},annualOpen:false,period:'all',m1:6,m2:12,dim:'cust',showPY:false,sortKey:null,sortDir:-1} };
 function headFor(ym){ const v=state.headMonthly[ym]; if(v!=null&&v!=='')return +v; const yd=state.headYearDefault[ym.slice(0,4)]; if(yd!=null&&yd!=='')return +yd; return state.headcount; }
 const KR_HOLIDAYS={
@@ -2518,7 +2518,7 @@ function mixCatOf(r){ const key=(r.code||'(미상)')+'│'+(r.spec||''); const o
 function mixCatKey(o){ return mixCatOf({code:o.code,spec:o.spec,name:o.name}); }
 function mixOverrideCust(key){ const ov=(state.gbunOverride||{})[key]; return ov&&ov.cust?ov.cust:''; }
 function mixBadge(cat,clickKey){ const c=MIX_TXT[cat]||'#475569',bg=MIX_BG[cat]||'#f1f5f9'; const ic=MIX_ICON[cat]?MIX_ICON[cat]+' ':''; const cl=clickKey?` class="mixedit" data-k="${esc(clickKey)}" title="클릭하면 구분(전용/공용/레이저/내부보강/기타) 변경" style="cursor:pointer;`:' style="'; return `<span${cl}display:inline-block;padding:1px 8px;border-radius:8px;font-size:10.5px;font-weight:700;background:${bg};color:${c}">${ic}${cat}${clickKey?' ✎':''}</span>`; }
-function mixBarHtml(mq){ const seg=[['전용품',MIX_COL.전용품],['공용품',MIX_COL.공용품],['레이저',MIX_COL.레이저],['내부보강',MIX_COL.내부보강],['기타',MIX_COL.기타]]; const tot=seg.reduce((a,[k])=>a+(mq[k]||0),0)||1; const bar=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span title="${k} ${p.toFixed(1)}%" style="display:inline-block;height:12px;width:${p.toFixed(1)}%;background:${c}"></span>`:'';}).join(''); const leg=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span style="font-size:9px;color:${c};white-space:nowrap;font-weight:700">${MIX_ICON[k]} ${k} ${p.toFixed(0)}%</span>`:'';}).join(' '); return `<div style="min-width:170px"><div style="display:flex;width:100%;border-radius:4px;overflow:hidden;background:#f1f5f9;height:12px;border:1px solid #e2e8f0">${bar}</div><div style="display:flex;flex-wrap:wrap;gap:1px 8px;margin-top:2px">${leg}</div></div>`; }
+function mixBarHtml(mq,basisLabel){ const seg=[['전용품',MIX_COL.전용품],['공용품',MIX_COL.공용품],['레이저',MIX_COL.레이저],['내부보강',MIX_COL.내부보강],['기타',MIX_COL.기타]]; const tot=seg.reduce((a,[k])=>a+(mq[k]||0),0)||1; const bl=basisLabel?(' · '+basisLabel):''; const bar=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span title="${k}${bl} ${p.toFixed(1)}%" style="display:inline-block;height:12px;width:${p.toFixed(1)}%;background:${c}"></span>`:'';}).join(''); const leg=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span style="font-size:9px;color:${c};white-space:nowrap;font-weight:700">${MIX_ICON[k]} ${k} ${p.toFixed(0)}%</span>`:'';}).join(' '); return `<div style="min-width:170px"><div style="display:flex;width:100%;border-radius:4px;overflow:hidden;background:#f1f5f9;height:12px;border:1px solid #e2e8f0">${bar}</div><div style="display:flex;flex-wrap:wrap;gap:1px 8px;margin-top:2px">${leg}</div></div>`; }
 function mixChipsHtml(cur,id){ const opt=[['all','전체'],['전용품','전용품'],['공용품','공용품'],['레이저','레이저'],['내부보강','내부보강'],['기타','기타']]; return `<div class="seg" id="${id}">${opt.map(([v,l])=>{const on=cur===v; const c=v==='all'?'#1e3a5f':(MIX_TXT[v]||MIX_COL[v]); const bg=v==='all'?'#eef2f7':(MIX_BG&&MIX_BG[v]?MIX_BG[v]:'#fff'); return `<button data-v="${v}" class="${on?'on':''}" style="${on?('background:'+c+';color:#fff;border-color:'+c):('color:'+c+';background:'+bg+';border-color:'+c)}">${l}</button>`;}).join('')}</div>`; }
 function mixSummary(arr){ const cnt={전용품:0,공용품:0,레이저:0,내부보강:0,기타:0},qty={전용품:0,공용품:0,레이저:0,내부보강:0,기타:0}; let totQ=0; arr.forEach(o=>{ const c=o.mixCat||mixCatKey(o); cnt[c]=(cnt[c]||0)+1; qty[c]=(qty[c]||0)+(o.qty||0); totQ+=(o.qty||0); }); const seg=['전용품','공용품','레이저','내부보강','기타']; return `<div style="display:flex;flex-wrap:wrap;gap:7px 18px;align-items:center;padding:9px 14px;background:#faf9ff;border:1px solid #ece9fb;border-radius:10px;margin:6px 0 2px;font-size:12px"><span><b>전체</b> ${won(arr.length)}종</span>${seg.map(k=>`<span style="color:${MIX_TXT[k]}"><b>${MIX_ICON[k]} ${k}</b> ${won(cnt[k])}종 · 수량 <b>${totQ?(qty[k]/totQ*100).toFixed(1):0}%</b></span>`).join('')}<span class="sub2">레이저=품명에 레이저·(L) · 기타=운반비/실커버/스텐실/도어가공/PD커버/금형/후레임바/고철/EGI 등 · 전용=1개 거래처 · 공용=2개사↑</span></div>`; }
 function openMixOverride(key,name,spec){
@@ -2609,30 +2609,66 @@ function setPricingView(prSeg){
     root.querySelectorAll('.setsrow').forEach(tr=>tr.addEventListener('click',()=>{ const id=tr.dataset.id; const s=state.priceSets.find(x=>x.id===id); if(!s)return; const nx=tr.nextElementSibling; if(nx&&nx.classList.contains('setdetail')){ nx.remove(); return; } root.querySelectorAll('.setdetail').forEach(x=>x.remove()); const t=setTotals(s.items); const dr=document.createElement('tr'); dr.className='setdetail'; const td=document.createElement('td'); td.colSpan=9; td.style.background='#f8fafc'; td.style.padding='10px 14px'; td.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="font-size:13px">${esc(s.title)} · 상세</b><button class="setdclose" style="border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer;font-size:11px;padding:3px 10px">닫기 ✕</button></div><div class="sub2" style="margin-bottom:6px">저장일 <b>${esc(s.savedAt||'-')}</b> · 저장자 <b>${esc(s.by||'-')}</b> · 합계금액 <b>${won(t.amt)}</b> · 제조원가합계 <b>${won(t.cost)}</b> · <span style="color:#16a34a">이윤합계 <b>${won(t.pfAmt)}</b></span></div><div class="tablewrap"><table style="font-size:11.5px"><thead><tr><th class="l">품번</th><th class="l">품명</th><th class="l">규격</th><th class="l">비고</th><th class="num">수량</th><th class="num">단가</th><th class="num">제조원가</th><th class="num">이윤율</th><th class="num">금액</th></tr></thead><tbody>${s.items.map(it=>{const pf=setProfitPct(it);return `<tr><td class="l">${esc(it.code||'')}</td><td class="l">${esc(it.name||'')}</td><td class="l">${esc(it.spec||'')}</td><td class="l">${esc(it.bigo||'')}</td><td class="num">${won(+it.qty||0)}</td><td class="num">${won(Math.round(+it.price||0))}</td><td class="num">${won(Math.round(+it.cost||0))}</td><td class="num">${pf==null?'-':pf.toFixed(1)+'%'}</td><td class="num">${won((Math.round(+it.price||0))*(+it.qty||0))}</td></tr>`;}).join('')}</tbody></table></div>`; dr.appendChild(td); tr.after(dr); dr.querySelector('.setdclose').addEventListener('click',e=>{ e.stopPropagation(); dr.remove(); }); }));
   });
 }
+function priceDateBounds(rows){
+  const ds=(rows||[]).map(r=>r&&r.d).filter(d=>d instanceof Date&&!isNaN(d)).sort((a,b)=>a-b);
+  return ds.length?{min:wrDateInput(ds[0]),max:wrDateInput(ds[ds.length-1])}:{min:'',max:''};
+}
+function ensurePriceRange(){
+  state.price=state.price||{};
+  state.price.mixBasis=state.price.mixBasis==='amt'?'amt':'qty';
+  const cur=periodRows(), b=priceDateBounds(cur.length?cur:CUR);
+  if(!state.price.rangeStart&&b.min)state.price.rangeStart=b.min;
+  if(!state.price.rangeEnd&&b.max)state.price.rangeEnd=b.max;
+}
+function priceRows(){
+  ensurePriceRange();
+  const s=wrParseDate(state.price.rangeStart),e=wrParseDate(state.price.rangeEnd);
+  let base=(!s||!e)?CUR:CUR.filter(r=>r.d>=s&&r.d<=e);
+  return gActive()?base.filter(r=>gPass(r.cust)):base;
+}
+function pricePeriodLabel(){
+  const s=wrParseDate(state.price&&state.price.rangeStart),e=wrParseDate(state.price&&state.price.rangeEnd);
+  return s&&e?`${fmtD(s)}~${fmtD(e)}`:'전체기간';
+}
+function priceRangeControls(){
+  ensurePriceRange();
+  const b=priceDateBounds(CUR),p=state.price,m=p.mixBasis;
+  const min=b.min?` min="${b.min}"`:'' ,max=b.max?` max="${b.max}"`:'';
+  return `<span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap"><b style="font-size:12px">기간 설정</b><input type="date" id="prRangeStart" value="${esc(p.rangeStart||'')}"${min}${max} style="font-family:inherit;font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:7px"><span class="sub2">~</span><input type="date" id="prRangeEnd" value="${esc(p.rangeEnd||'')}"${min}${max} style="font-family:inherit;font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:7px"><button class="btn ghost" id="prRangeApply" style="font-size:11px;padding:5px 10px;background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe">적용</button><button class="btn ghost" id="prRangeAll" style="font-size:11px;padding:5px 10px">전체기간</button></span><span style="width:1px;height:24px;background:#dbe2ea;display:inline-block;margin:0 2px"></span><b style="font-size:12px">구성비중 기준</b><div class="seg" id="prMixBasis"><button data-v="qty" class="${m==='qty'?'on':''}" style="${m==='qty'?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488'}">출고수량</button><button data-v="amt" class="${m==='amt'?'on':''}" style="${m==='amt'?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed'}">매출비</button></div>`;
+}
+function bindPriceCustControls(){
+  const root=$('#result');
+  root.querySelectorAll('#prSeg button').forEach(b=>b.addEventListener('click',()=>{state.price.mode=b.dataset.v;priceTable();}));
+  root.querySelectorAll('#prMixBasis button').forEach(b=>b.addEventListener('click',()=>{state.price.mixBasis=b.dataset.v==='amt'?'amt':'qty';priceTable();}));
+  const ap=root.querySelector('#prRangeApply'),all=root.querySelector('#prRangeAll'),si=root.querySelector('#prRangeStart'),ei=root.querySelector('#prRangeEnd');
+  ap&&ap.addEventListener('click',()=>{ const sv=si&&si.value,ev=ei&&ei.value,s=wrParseDate(sv),e=wrParseDate(ev); if(!s||!e){alert('시작일과 종료일을 모두 지정해 주세요.');return;} if(s>e){alert('종료일은 시작일 이후로 지정해 주세요.');return;} state.price.rangeStart=sv;state.price.rangeEnd=ev;priceTable(); });
+  all&&all.addEventListener('click',()=>{ const b=priceDateBounds(CUR);state.price.rangeStart=b.min;state.price.rangeEnd=b.max;priceTable(); });
+}
 function priceTable(){
-  const mode=state.price.mode; state.sortKey=null; if(!state._keepSearchOnce)state._search=''; state._keepSearchOnce=false; state.price.gbun=state.price.gbun||'all';
+  const mode=state.price.mode; state.sortKey=null; if(!state._keepSearchOnce)state._search=''; state._keepSearchOnce=false; state.price.gbun=state.price.gbun||'all'; state.price.mixBasis=state.price.mixBasis==='amt'?'amt':'qty';
   const prSeg=`<div class="seg" id="prSeg"><button data-v="cust" class="${mode==='cust'?'on':''}" style="${mode==='cust'?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488'}">업체별</button><button data-v="prod" class="${mode==='prod'?'on':''}" style="${mode==='prod'?'background:#1d4ed8;color:#fff;border-color:#1d4ed8':'color:#1d4ed8'}">제품별</button></div>`;
   if(mode==='set'){ setPricingView(prSeg); return; }
-  const rows=periodRows();
+  const rows=mode==='cust'?priceRows():periodRows();
   if(mode==='cust'){
-    const ctrl=`<div class="ctrlbar"><b style="font-size:12px">단가표 기준</b> ${prSeg} <span class="sub2">업체 선택 → 출고 제품·규격별 <b>마지막 출고단가</b>(타사 최고/최저) · 행 클릭 시 변경이력. <b>구성 비중</b>=거래처별 출고수량 기준 <span style="color:#7c3aed;font-weight:700">전용품</span>·<span style="color:#15803d;font-weight:700">공용품</span>·<span style="color:#0d9488;font-weight:700">레이저</span>·<span style="color:#94a3b8;font-weight:700">기타</span> 비중(전체 거래기간 기준 자동판정)</span></div>`;
-    const bind=()=>{ $('#result').querySelectorAll('#prSeg button').forEach(b=>b.addEventListener('click',()=>{state.price.mode=b.dataset.v;priceTable();})); };
+    const mixBasis=state.price.mixBasis==='amt'?'amt':'qty',mixBasisLabel=mixBasis==='amt'?'매출비 기준':'출고수량 기준';
+    const ctrl=`<div class="ctrlbar" style="flex-wrap:wrap;gap:8px 10px"><b style="font-size:12px">단가표 기준</b> ${prSeg}<span style="width:1px;height:24px;background:#dbe2ea;display:inline-block;margin:0 2px"></span>${priceRangeControls()}<span class="sub2" style="flex-basis:100%">선택 기간의 업체별 구성비중을 <b>${mixBasisLabel}</b>으로 표시합니다. 업체 선택 → 제품·규격별 마지막 출고단가 · 행 클릭 시 변경이력.</span></div>`;
+    const bind=()=>bindPriceCustControls();
     const {arr,tot}=aggBy(rows,'cust');
     const pkByCust={}; rows.forEach(r=>{ const k=(r.code||'(미상)')+'│'+(r.spec||''); (pkByCust[r.cust]||(pkByCust[r.cust]=new Set())).add(k); });
     arr.forEach(o=>o.pkN=(pkByCust[o.key]||{size:0}).size);
-    const mixByCust={}; rows.forEach(r=>{ let mm=mixByCust[r.cust]; if(!mm){mm={전용품:0,공용품:0,레이저:0,내부보강:0,기타:0};mixByCust[r.cust]=mm;} mm[mixCatOf(r)]+=(r.qty>0?r.qty:0); });
+    const mixByCust={}; rows.forEach(r=>{ let mm=mixByCust[r.cust]; if(!mm){mm={전용품:0,공용품:0,레이저:0,내부보강:0,기타:0};mixByCust[r.cust]=mm;} const v=mixBasis==='amt'?Math.max(amtOf(r),0):(r.qty>0?r.qty:0); mm[mixCatOf(r)]+=v; });
     arr.forEach(o=>{ o.mixQ=mixByCust[o.key]||{전용품:0,공용품:0,레이저:0,내부보강:0,기타:0}; const mq=o.mixQ; const tq=(mq.전용품+mq.공용품+mq.레이저+mq.내부보강+mq.기타)||0; o.exQp=tq?mq.전용품/tq*100:0; o.shQp=tq?mq.공용품/tq*100:0; });
     const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
       {k:'label',t:'거래처',cls:'l',cell:o=>esc(o.label)+' '+catChip(o.key)},
       {k:'grade',t:'신용등급',cell:o=>gradeBadge(gradeRec(o.key).grade),sortVal:o=>gradeRec(o.key).grade||''},
       {k:'cat',t:'신용상태',cell:o=>{const col=GRADE_COL[catOf(o.key)]||{bg:'#eef2f8',tx:'#475569'}; return `<span style="display:inline-block;padding:1px 8px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col.bg};color:${col.tx}">${catOf(o.key)}</span>`;},sortVal:o=>catOf(o.key)},
       {k:'pkN',t:'품목/규격수',cell:o=>won(o.pkN),sortVal:o=>o.pkN},
-      {k:'mix',t:'구성 비중(전용·공용·레이저·기타)',cls:'l',nosort:true,cell:o=>mixBarHtml(o.mixQ)},
+      {k:'mix',t:`구성 비중(${mixBasisLabel} · 전용·공용·레이저·내부보강·기타)`,cls:'l',nosort:true,cell:o=>mixBarHtml(o.mixQ,mixBasisLabel)},
       {k:'amt',t:`매출액(${unitLabel()})`,cell:o=>disp(o.amt),sortVal:o=>o.amt},
       {k:'cnt',t:'거래일수',cell:o=>won(o.cnt),sortVal:o=>o.cnt},
       {k:'qty',t:'출고수량',cell:o=>won(o.qty),sortVal:o=>o.qty} ];
-    render('단가표 · 업체별', `${periodLabel()} · 거래처 ${won(arr.length)}개 · <b>업체를 클릭</b>하면 단가표`, arr, cols, 'amt',
-      '거래처를 클릭하면 <b>제품·규격별 마지막 출고단가</b>·<b>타사 최고/최저</b>가 나옵니다. <span style="color:#7c3aed;font-weight:700">전용비중</span>=다른 업체에 판매 이력이 없는 전용품의 수량비중, <span style="color:#4f46e5;font-weight:700">공용비중</span>=타 업체에도 판매되는 공용품의 수량비중(<b>전체 거래기간</b> 기준 자동판정 · 추후 제품별 지정 예정).',
+    render('단가표 · 업체별', `${pricePeriodLabel()} · 구성비중 ${mixBasisLabel} · 거래처 ${won(arr.length)}개 · <b>업체를 클릭</b>하면 단가표`, arr, cols, 'amt',
+      `거래처를 클릭하면 <b>제품·규격별 마지막 출고단가</b>·<b>타사 최고/최저</b>가 나옵니다. 구성비중은 선택 기간의 <b>${mixBasisLabel}</b>이며 반품·음수 수량/매출은 비중 계산에서 제외합니다. 제품 구분은 <b>전체 거래기간</b> 판매처를 기준으로 전용·공용을 자동 판정하고, 레이저·내부보강·기타를 별도 표시합니다.`,
       {controlsHtml:ctrl,onMount:bind,total:{label:'합 계',amt:tot},drill:{custom:row=>custPriceList(row.label, rows.filter(r=>r.cust===row.key), ()=>priceTable())}});
   } else {
     const m=new Map();
@@ -2661,7 +2697,7 @@ function priceTable(){
 }
 function custPriceList(cust, rows, back){
   state.sortKey='name'; state.sortDir=1; state._search='';
-  const allMap=lastPriceByProdCust(periodRows());
+  const allMap=lastPriceByProdCust(priceRows());
   const _vByPk=new Map(); CUR.forEach(r=>{ const k=(r.code||'(미상)')+'│'+(r.spec||''); let s=_vByPk.get(k); if(!s){s=new Set();_vByPk.set(k,s);} s.add(r.cust); });
   const m=new Map();
   rows.forEach(r=>{ const k=(r.code||'(미상)')+'│'+(r.spec||''); let o=m.get(k); if(!o){o={key:k,code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',last:r.d,lastPrice:unitPrice(r),cnt:0,qty:0};m.set(k,o);} o.cnt++; o.qty+=r.qty; if(r.d>=o.last){o.last=r.d;o.lastPrice=unitPrice(r);} if(!o.name&&r.name)o.name=r.name; });
