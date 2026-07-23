@@ -1185,32 +1185,32 @@ function wrCustomerPlan(y){
   const annual=new Map(); revised.forEach((mp,m)=>{ if(!m)return; mp.forEach((v,c)=>annual.set(c,(annual.get(c)||0)+v)); });
   return {py,base,revised,annual};
 }
+// 거래처 담당자 > 월매출 보기의 합계와 동일한 실제 매출 기준을 공통 사용한다.
+// 기준: 선택 연도 전체 실제 매출, 거래처 제외업체만 제외, 목표합산 제외업체의 실제 매출은 포함.
+function wrCmgrMonthlyActuals(y){
+  const actual=Array(13).fill(0);
+  CUR.forEach(r=>{
+    if(+r.y!==+y||fcIsExcludedCust(r.cust))return;
+    const m=monthOf(r); if(m>=1&&m<=12)actual[m]+=amtOf(r);
+  });
+  return actual;
+}
 function wrMonthlyTargetLink(y,asOf){
   const ys=dataYears(); if(ys.length<2||+y!==ys[ys.length-1])return null;
   const PY=ys[0],CY=ys[ys.length-1],py=monthlyTotals(PY);
   const fixedActualThrough=SALES_ACTUAL_CUTOFF_MONTH;
-  const reportDate=asOf instanceof Date?asOf:null;
-  const reportMonth=reportDate?reportDate.getMonth()+1:12;
   const exSet=fcTargetExcludedCustSet(),pdIncluded=!exSet.has('PD사업부'),fut=fcFutureTotals();
-  const target=Array(13).fill(0),modified=Array(13).fill(0),actual=Array(13).fill(0),actualEligible=Array(13).fill(0),pctOf=m=>{const v=state.fc&&state.fc.pct&&state.fc.pct[m];return(v!=null&&v!=='')?+v:0;};
-  CUR.forEach(r=>{
-    if(+r.y!==CY||exSet.has(r.cust))return;
-    if(reportDate&&r.d>reportDate)return;
-    const m=monthOf(r); if(m>=1&&m<=12)actualEligible[m]+=amtOf(r);
-  });
+  const target=Array(13).fill(0),modified=Array(13).fill(0),actual=wrCmgrMonthlyActuals(CY),pctOf=m=>{const v=state.fc&&state.fc.pct&&state.fc.pct[m];return(v!=null&&v!=='')?+v:0;};
   for(let m=1;m<=12;m++){
     const base=(fut.has&&fut.has[m])?fut.tot[m]:(py[m]>0?py[m]*(1+pctOf(m)/100):0);
     target[m]=base+(pdIncluded?pdMonth(m):0);
-    // 연매출 목표(목표수정액)는 1~5월 실제 실적 + 6~12월 목표로 고정한다.
-    modified[m]=m<=fixedActualThrough
-      ?actualEligible[m]+(pdIncluded?pdMonth(m):0)
-      :target[m];
-    // 실적 행은 보고서 조회시점까지 실제 매출을 표시한다. 6월 이후 실적은 목표수정액에 섞지 않고 목표대비 실적에서만 비교한다.
-    const pdActualMonth=m<=fixedActualThrough||!!(state.pd&&state.pd.actual&&state.pd.actual[m]);
-    if(m<=reportMonth)actual[m]=actualEligible[m]+(pdIncluded&&pdActualMonth?pdMonth(m):0);
+    // 목표수정액의 확정실적도 거래처 담당자 월매출 합계와 같은 실제 매출을 사용한다.
+    modified[m]=m<=fixedActualThrough?actual[m]:target[m];
+    // 실제 실적은 조회 주차로 자르거나 PD 수동액을 더하지 않고 월매출 보기의 월 합계와 일치시킨다.
   }
+  let lastAct=0; for(let m=1;m<=12;m++){if(actual[m]!==0)lastAct=m;}
   const summary=fcAnnualTargetSummary(fut),unallocated=summary.newCustAnnual+summary.lineCustTotal;
-  return {target,modified,actual,targetTotal:target.reduce((a,v)=>a+(v||0),0)+unallocated,modifiedTotal:modified.reduce((a,v)=>a+(v||0),0)+unallocated,lastAct:reportMonth,fixedActualThrough,PY,CY};
+  return {target,modified,actual,targetTotal:target.reduce((a,v)=>a+(v||0),0)+unallocated,modifiedTotal:modified.reduce((a,v)=>a+(v||0),0)+unallocated,lastAct,fixedActualThrough,PY,CY};
 }
 function wrAggregateRows(list,label){
   const o={cust:label||'기타 업체',annual:0,before:0,monthTarget:0,remainingWeekAvg:0,weeks:[0,0,0,0,0],monthActual:0,memo:''};
@@ -1233,8 +1233,10 @@ function wrRankPick(arr,valFn){
 function wrModel(){
   const s=wrEnsure(); if(!s)return null;
   const {y,m,w,range,ranges}=s, rangeStart=range.sDate,rangeEnd=range.eDate,asOf=rangeEnd, plan=wrCustomerPlan(y);
-  const actualMon=Array(13).fill(0), cutoffRows=CUR.filter(r=>+r.y===y&&r.d<=asOf);
-  cutoffRows.forEach(r=>actualMon[monthOf(r)]+=amtOf(r));
+  // 주간보고 실적 데이터도 거래처 담당자와 동일하게 거래처 제외업체를 제외한다.
+  const eligibleRows=CUR.filter(r=>!fcIsExcludedCust(r.cust));
+  const reportRows=eligibleRows.filter(r=>+r.y===y);
+  const actualMon=wrCmgrMonthlyActuals(y), cutoffRows=reportRows.filter(r=>r.d<=asOf);
   const annualRows=['목표액','목표수정액','실적','달성율'].map(label=>({label,vals:Array(13).fill(0),total:0}));
   for(let mm=1;mm<=12;mm++){
     let b=0,rv=0; plan.base[mm].forEach(v=>b+=v); plan.revised[mm].forEach(v=>rv+=v);
@@ -1263,7 +1265,7 @@ function wrModel(){
   rows.sort((a,b)=>b.total-a.total||b.annual-a.annual||a.cust.localeCompare(b.cust,'ko'));
   const custPick=wrRankPick(rows,r=>r.total), shown=custPick.view.slice(); if(custPick.rest.length)shown.push(wrAggregateRows(custPick.rest,`${custPick.restLabel} 업체`));
   const weekStart=new Date(rangeStart),weekEnd=new Date(rangeEnd),prevEnd=new Date(weekStart);prevEnd.setDate(prevEnd.getDate()-1);const prevStart=new Date(prevEnd);prevStart.setDate(prevStart.getDate()-(Math.round((weekEnd-weekStart)/86400000)));
-  const weekRows=CUR.filter(r=>r.d>=weekStart&&r.d<=weekEnd),prevRows=CUR.filter(r=>r.d>=prevStart&&r.d<=prevEnd),pm=new Map(),prevMap=new Map();
+  const weekRows=eligibleRows.filter(r=>r.d>=weekStart&&r.d<=weekEnd),prevRows=eligibleRows.filter(r=>r.d>=prevStart&&r.d<=prevEnd),pm=new Map(),prevMap=new Map();
   weekRows.forEach(r=>{ const k=(r.name||'(미상)')+'│'+(r.code||'')+'│'+(r.spec||''); let o=pm.get(k); if(!o){o={key:k,name:r.name||'(미상)',code:r.code||'',spec:r.spec||'',qty:0,amt:0,cust:new Map()};pm.set(k,o);} o.qty+=(+r.qty||0);o.amt+=amtOf(r);o.cust.set(r.cust,(o.cust.get(r.cust)||0)+amtOf(r)); });
   prevRows.forEach(r=>{const k=(r.name||'(미상)')+'│'+(r.code||'')+'│'+(r.spec||'');prevMap.set(k,(prevMap.get(k)||0)+amtOf(r));});
   const products=[...pm.values()].map(o=>{const prevAmt=prevMap.get(o.key)||0,diff=o.amt-prevAmt,pct=prevAmt?diff/prevAmt*100:(o.amt>0?null:0),cat=mixCatOf({code:o.code,name:o.name,spec:o.spec});return{...o,cat,prevAmt,diff,pct};}).sort((a,b)=>b.amt-a.amt||a.name.localeCompare(b.name,'ko'));
@@ -1308,7 +1310,7 @@ function wrPage1(model){
   const total=wrAggregateRows(model.custRows,'합계');
   const totalRow=`<tr class="wr-sum"><td class="wr-no"></td><td>합계</td><td></td><td>${wrAmt(total.annual)}</td><td>${wrAmt(total.before)}</td><td>${wrPct(total.annualRate)}</td><td>${wrAmt(total.remaining)}</td><td>${wrAmt(total.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${total.remainingWeekAvg?won(total.remainingWeekAvg)+'원':'-'}</b></div></td>${total.weeks.map((v,idx)=>`<td>${model.isCustom||idx<model.w?wrAmt(v):'-'}</td>`).join('')}<td>${wrAmt(total.monthActual)}</td><td>${wrPct(total.monthRate)}</td><td></td></tr>`;
   const beforeEnd=new Date(model.rangeStart);beforeEnd.setDate(beforeEnd.getDate()-1);const beforeLab=model.isCustom?`${model.y}.1.1~${wrDateText(beforeEnd)}`:(model.m>1?`1~${model.m-1}월`:'전월'); const selectedLab=model.isCustom?'기간':' '+model.m+'월';
-  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 목표액=월별 목표 합계 · 목표수정액=1~5월 확정실적+6~12월 목표 · 실적=조회 주차까지 실제 실적)</span></div><div class="wr-tablewrap"><table class="wr-table"><thead><tr><th style="width:82px">구분</th><th style="width:112px">합계액</th>${Array.from({length:12},(_,i)=>`<th>${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
+  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 목표액=월별 목표 합계 · 목표수정액=1~5월 확정실적+6~12월 목표 · 실적=거래처 담당자 월매출 합계 기준)</span></div><div class="wr-tablewrap"><table class="wr-table"><thead><tr><th style="width:82px">구분</th><th style="width:112px">합계액</th>${Array.from({length:12},(_,i)=>`<th>${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
     <div class="wr-section">▶ 업체별 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">· ${model.isCustom?wrDateText(model.rangeStart)+' ~ '+wrDateText(model.rangeEnd):model.y+'년 '+model.m+'월 '+model.w+'주차'} 기준 · 단위: 원</span></div>${wrRankBar('업체',model.custRankInfo)}<div class="wr-tablewrap"><table class="wr-table"><thead><tr><th class="wr-no" rowspan="2" style="width:2.6%">NO</th><th rowspan="2" style="width:9%">업체</th><th rowspan="2" style="width:6%">영업관리</th><th rowspan="2" style="width:8.5%">${model.y}년도<br>목표액</th><th colspan="3">매출 실적</th><th rowspan="2" style="width:8.5%">${model.isCustom?'기간':' '+model.m+'월'}<br>목표<br><span style="font-size:7px;color:#64748b">${model.isCustom?'일할 계산':'남은주간 평균'}</span></th><th colspan="${model.ranges.length}">${selectedLab} 구간</th><th rowspan="2" style="width:8.5%">달성금액</th><th rowspan="2" style="width:3.7%">${model.isCustom?'기간 달성률':'월 달성률'}</th><th rowspan="2" style="width:8%">비고</th></tr><tr><th class="wr-center" style="width:8.5%">${beforeLab}</th><th style="width:3.6%">달성율</th><th style="width:8.5%">잔여 목표액</th>${wkHead}</tr></thead><tbody>${body}${totalRow}</tbody></table></div><div class="wr-note">${model.isCustom?'기간 목표는 해당 월 목표를 일수 기준으로 계산합니다.':'월목표 아래 남은주간 평균은 ‘남은 월목표액 ÷ 선택 주차 이후 남은 주차 수’입니다.'} 표는 화면 폭에 맞춰 자동 축소됩니다.</div></div>`;
 }
 function wrPage2(model){
