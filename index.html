@@ -1195,17 +1195,11 @@ function wrCmgrMonthlyActuals(y){
   });
   return actual;
 }
-// 목표추이 > 올해 연매출 목표의 1~5월 확정실적 기준을 월별로 반환한다.
-// 기준: 목표합산 제외업체의 실제 매출 제외 + PD사업부 임가공 실적 포함.
-function wrAnnualTargetMonthlyActuals(y,exSet){
-  const actual=Array(13).fill(0),set=exSet||fcTargetExcludedCustSet();
-  CUR.forEach(r=>{
-    if(+r.y!==+y||set.has(r.cust))return;
-    const m=monthOf(r); if(m>=1&&m<=SALES_ACTUAL_CUTOFF_MONTH)actual[m]+=amtOf(r);
-  });
-  if(!set.has('PD사업부')){
-    for(let m=1;m<=SALES_ACTUAL_CUTOFF_MONTH;m++)actual[m]+=pdMonth(m);
-  }
+// 목표추이와 주간보고의 확정실적은 거래처 담당자 > 월매출 보기와 동일한 기준을 사용한다.
+// 목표합산 제외 설정은 미래 목표에만 적용하고, 이미 발생한 실제 매출은 제외하지 않는다.
+function wrAnnualTargetMonthlyActuals(y){
+  const source=wrCmgrMonthlyActuals(y), actual=Array(13).fill(0);
+  for(let m=1;m<=SALES_ACTUAL_CUTOFF_MONTH;m++)actual[m]=source[m]||0;
   return actual;
 }
 function wrMonthlyTargetLink(y,asOf){
@@ -1215,7 +1209,7 @@ function wrMonthlyTargetLink(y,asOf){
   const exSet=fcTargetExcludedCustSet(),pdIncluded=!exSet.has('PD사업부'),fut=fcFutureTotals();
   const target=Array(13).fill(0),modified=Array(13).fill(0);
   const actual=wrCmgrMonthlyActuals(CY);
-  const annualTargetActual=wrAnnualTargetMonthlyActuals(CY,exSet);
+  const annualTargetActual=wrAnnualTargetMonthlyActuals(CY);
   const pctOf=m=>{const v=state.fc&&state.fc.pct&&state.fc.pct[m];return(v!=null&&v!=='')?+v:0;};
   for(let m=1;m<=12;m++){
     const base=(fut.has&&fut.has[m])?fut.tot[m]:(py[m]>0?py[m]*(1+pctOf(m)/100):0);
@@ -1266,6 +1260,10 @@ function wrModel(){
   if(linked){annualRows[0].vals=linked.target;annualRows[0].total=linked.targetTotal;annualRows[1].vals=linked.modified;annualRows[1].total=linked.modifiedTotal;annualRows[2].vals=linked.actual;annualRows[2].total=linked.actual.reduce((a,v)=>a+(v||0),0);}
   for(let mm=1;mm<=12;mm++)annualRows[3].vals[mm]=annualRows[1].vals[mm]?annualRows[2].vals[mm]/annualRows[1].vals[mm]*100:null;
   annualRows[3].total=annualRows[1].total?annualRows[2].total/annualRows[1].total*100:null;
+  // PD사업부 임가공비는 매출·목표와 구분해 월별 원금액을 별도 표시한다.
+  const pdVals=Array(13).fill(0);
+  for(let mm=1;mm<=12;mm++)pdVals[mm]=pdMonth(mm);
+  annualRows.push({label:'PD임가공',vals:pdVals,total:pdVals.reduce((a,v)=>a+(v||0),0)});
   const customers=new Set([...plan.annual.keys(),...cutoffRows.map(r=>r.cust)]), rows=[];
   const customTarget=(c)=>{
     if(!s.isCustom)return plan.revised[m].get(c)||0;
@@ -3618,28 +3616,28 @@ function fcFutureTotals(){
 }
 
 // '목표추이 > 올해 연매출 목표'와 '업체별 매출 목표 > 올해목표 합계'의 공통 계산식.
-// 목표제외 업체는 실제 실적에는 남지만 연간 목표에는 0원으로 반영한다.
+// 확정실적은 거래처 담당자 월매출 합계를 사용하고, 목표 제외 설정은 이후 월 목표에만 반영한다.
 function fcAnnualTargetSummary(plan){
   const ys=dataYears();
   if(!ys.length)return {annualTarget:0,lastAct:SALES_ACTUAL_CUTOFF_MONTH,actualAllRaw:0,actualEligibleRaw:0,actualExcludedRaw:0,actualPeriodTotal:0,futureTargetRaw:0,futurePeriodTarget:0,remainingTarget:0,newCustAnnual:0,lineCustTotal:0,pdActual:0,pdFuture:0,pdYearNet:0};
   const CY=ys[ys.length-1], exSet=fcTargetExcludedCustSet(), fut=plan||fcFutureTotals();
   const lastAct=SALES_ACTUAL_CUTOFF_MONTH;
-  let actualAllRaw=0,actualEligibleRaw=0,actualExcludedRaw=0;
+  let actualAllRaw=0;
   for(const r of CUR){
     if(+r.y!==CY||monthOf(r)>lastAct)continue;
-    const a=amtOf(r); actualAllRaw+=a;
-    if(exSet.has(r.cust))actualExcludedRaw+=a; else actualEligibleRaw+=a;
+    actualAllRaw+=amtOf(r);
   }
+  const actualMonthly=wrAnnualTargetMonthlyActuals(CY);
+  const actualEligibleRaw=actualMonthly.reduce((sum,v,m)=>sum+(m>=1&&m<=lastAct?(v||0):0),0);
+  const actualExcludedRaw=Math.max(0,actualAllRaw-actualEligibleRaw);
   let futureTargetRaw=0;
   for(let m=lastAct+1;m<=12;m++)futureTargetRaw+=(fut.tot[m]||0);
   const extras=fcAnnualExtraTargets(exSet);
   const pdIncluded=!exSet.has('PD사업부');
-  let pdActual=0,pdFuture=0;
-  if(pdIncluded){
-    for(let m=1;m<=lastAct;m++)pdActual+=pdMonth(m);
-    for(let m=lastAct+1;m<=12;m++)pdFuture+=pdMonth(m);
-  }
-  const actualPeriodTotal=actualEligibleRaw+pdActual;
+  let pdFuture=0;
+  if(pdIncluded)for(let m=lastAct+1;m<=12;m++)pdFuture+=pdMonth(m);
+  const pdActual=0;
+  const actualPeriodTotal=actualEligibleRaw;
   const futurePeriodTarget=futureTargetRaw+extras.newCustAnnual+extras.lineCustTotal+pdFuture;
   const remainingTarget=futurePeriodTarget;
   const annualTarget=actualPeriodTotal+futurePeriodTarget;
@@ -3969,12 +3967,13 @@ function forecast(){
   const scrapExcludedAnnual=_svExcludedForOutside.length&&typeof CUR!=='undefined'
     ?CUR.filter(function(r){return _svExcludedForOutside.indexOf(r.cust)>=0&&(+String(r.ym||'').slice(0,4))===CY;}).reduce(function(a,r){return a+amtOf(r);},0)
     :0;
-  const outsideAnnualTotal=newCustAnnual+lineCustTotal+pdYearNet+scrapIncludedAnnual;
+  // PD 임가공비는 거래처외 매출포함항목과 분리해 목표합산 제외 바로 위에 표시한다.
+  const outsideAnnualTotal=newCustAnnual+lineCustTotal+scrapIncludedAnnual;
   const outsideItems=[];
   if(newCustAnnual>0) outsideItems.push(`신규업체 ${won(newCustAnnual)}원`);
   if(lineCustTotal>0) outsideItems.push(`신규라인 ${won(lineCustTotal)}원`);
-  outsideItems.push(`<span class="pdlink" onclick="event.stopPropagation();state.act='trend';state.trend.pdOpen=true;runAct();setTimeout(()=>{var e=document.getElementById('pdToggle');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});},150);" title="월별 실적·목표의 PD 임가공비로 이동">PD사업부 임가공비 ${won(pdYearNet)}원 ▸</span>`);
   { const _sLab=_svForOutside.length?('고철업체('+esc(_svForOutside.join(', '))+')'):'고철업체'; const _sAllExcluded=_svForOutside.length>0&&_svIncludedForOutside.length===0; const _sPartialExcluded=_svIncludedForOutside.length>0&&_svExcludedForOutside.length>0; let _sAmtHTML=''; if(_sAllExcluded){ _sAmtHTML='<span style="text-decoration:line-through">'+won(scrapExcludedAnnual)+'원</span>'; }else{ _sAmtHTML=won(scrapIncludedAnnual)+'원'; if(_sPartialExcluded) _sAmtHTML+=' <span style="color:#94a3b8;font-size:9px">(제외 '+_svExcludedForOutside.length+'개사 미포함)</span>'; } outsideItems.push(`<span class="pdlink" onclick="event.stopPropagation();state.act='trend';state.trend=state.trend||{};state.trend.scrapOpen=true;runAct();setTimeout(()=>{var e=document.getElementById('scrapToggle');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});},150);" title="월별 실적·목표의 고철업체 등록·관리로 이동">${_sLab} ${_sAmtHTML} <span style="color:#b45309;font-size:9px">(80% 적용)</span> ▸</span>`); }
+  const pdAnnualRow=`<div style="display:flex;justify-content:space-between;gap:8px;border-top:1px dashed #e2e8f0;padding-top:5px;align-items:center"><span class="pdlink" onclick="event.stopPropagation();state.act='trend';state.trend.pdOpen=true;runAct();setTimeout(()=>{var e=document.getElementById('pdToggle');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});},150);" title="월별 실적·목표의 PD 임가공비로 이동" style="color:#92400e;font-weight:700">PD사업부 임가공비 ▸</span><b style="color:#b45309;white-space:nowrap">${pdYearNet>0?'+'+won(pdYearNet)+'원':'없음'}</b></div>`;
   const outsideAnnualNote=`<div>${outsideItems.length?'거래처외 매출포함항목: '+outsideItems.join(' · '):'거래처외 매출포함항목 없음'}</div><div style="margin-top:2px;color:#dc2626">목표합산 제외 ${fcExcludedAnnualTarget>0?'-'+won(fcExcludedAnnualTarget)+'원':'없음'}</div>`;
   // 올해 연매출 목표 카드 우측에 추가되는 '목표 구성내역' 카드
   const _scrapSet=new Set(scrapVendorList());
@@ -3992,7 +3991,7 @@ function forecast(){
   const fcExclCount=fcExclNames.length;
   const fcExclShown=fcExclNames.join(', ');
   const fcExclLabel='목표합산 제외 <span style="color:#94a3b8;font-weight:400;font-size:10px">(전체 '+fcExclCount+'개사)</span>';
-  const outsideCardHTML=`<div class="kpi" style="border-left:5px solid #2563eb;grid-column:span 2;padding:15px 20px"><div class="lab" style="font-size:12px;font-weight:700;color:#1e3a5f">목표 구성내역(${CY})</div><div style="margin-top:8px;display:flex;flex-direction:column;gap:7px;font-size:12.5px;line-height:1.4"><div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#475569">거래처외 매출포함항목</span><b style="color:#2563eb;white-space:nowrap">${outsideAnnualTotal>0?'+'+won(outsideAnnualTotal)+'원':'없음'}</b></div>${outsideItems.length?`<div class="sub2" style="margin:0 0 1px 6px;color:#64748b;line-height:1.55;font-size:9px">${outsideItems.map(function(it){return '- '+it;}).join('<br>')}</div>`:''}<div style="display:flex;justify-content:space-between;gap:8px;border-top:1px dashed #e2e8f0;padding-top:5px;align-items:flex-start"><span style="color:#475569">${fcExclLabel}</span><b style="color:#dc2626;white-space:nowrap">${fcExclShownAmt>0?'-'+won(fcExclShownAmt)+'원':'없음'}</b></div>${fcExclCount>0?`<div class="sub2" style="margin:0 0 1px 6px;color:#94a3b8;font-size:7px;line-height:1.5;word-break:keep-all">${esc(fcExclShown)}</div>`:''}</div></div>`;
+  const outsideCardHTML=`<div class="kpi" style="border-left:5px solid #2563eb;grid-column:span 2;padding:15px 20px"><div class="lab" style="font-size:12px;font-weight:700;color:#1e3a5f">목표 구성내역(${CY})</div><div style="margin-top:8px;display:flex;flex-direction:column;gap:7px;font-size:12.5px;line-height:1.4"><div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#475569">거래처외 매출포함항목</span><b style="color:#2563eb;white-space:nowrap">${outsideAnnualTotal>0?'+'+won(outsideAnnualTotal)+'원':'없음'}</b></div>${outsideItems.length?`<div class="sub2" style="margin:0 0 1px 6px;color:#64748b;line-height:1.55;font-size:9px">${outsideItems.map(function(it){return '- '+it;}).join('<br>')}</div>`:''}${pdAnnualRow}<div style="display:flex;justify-content:space-between;gap:8px;border-top:1px dashed #e2e8f0;padding-top:5px;align-items:flex-start"><span style="color:#475569">${fcExclLabel}</span><b style="color:#dc2626;white-space:nowrap">${fcExclShownAmt>0?'-'+won(fcExclShownAmt)+'원':'없음'}</b></div>${fcExclCount>0?`<div class="sub2" style="margin:0 0 1px 6px;color:#94a3b8;font-size:7px;line-height:1.5;word-break:keep-all">${esc(fcExclShown)}</div>`:''}</div></div>`;
   // read-only month summary (편집은 '월별 추이' 메뉴에서)
   let mInputs=''; for(let m=1;m<=12;m++){ const py=pyMonTot[m], cy=cyMonTot[m]; if(py<=0&&cy<=0&&tgtV[m]<=0&&actV[m]<=0)continue;
     const pdIsActual=m<=lastAct||!!(state.pd&&state.pd.actual&&state.pd.actual[m]);
