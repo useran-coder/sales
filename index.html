@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v25 · 목표·실적 기준 분리</title>
+<title>동방파스텍 매출 분석 도구 v37 · 업체 신용도 매출순위 표시</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -218,6 +218,7 @@
   .wr-table .wr-rest td{background:#fff8e1}
   .wr-total-col{font-weight:900!important}
   .wr-fixed-actual{background:#dcfce7!important;color:#14532d;font-weight:800}
+  .wr-current-date{background:#fffced!important}
   .wr-amt{display:block;font-size:8.3px;letter-spacing:-.35px;white-space:nowrap;overflow:visible;text-overflow:clip}
   .wr-table td:has(.wr-amt){overflow:visible;text-overflow:clip;padding-left:1px;padding-right:1px}
   .wr-table .wr-sum .wr-amt{font-size:8px;letter-spacing:-.55px}
@@ -238,6 +239,8 @@
   .wr-rankbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:4px 0 8px;padding:7px 9px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px}
   .wr-rankbar label{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:#475569}
   .wr-rankbar select{padding:4px 7px;font-size:11px}
+  .wr-rank-spacer{margin-left:auto}
+  .wr-rank-actions{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
   .wr-rankstat{font-size:11px;color:#334155;background:#fff;border:1px solid #cbd5e1;border-radius:999px;padding:3px 8px;font-weight:800}
   .wr-mode-btn{border:1px solid #cbd5e1;background:#fff;color:#64748b;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:900;font-family:inherit;cursor:pointer}
   .wr-mode-btn.on{background:#1e3a5f;color:#fff;border-color:#1e3a5f;box-shadow:0 0 0 2px rgba(30,58,95,.12)}
@@ -261,6 +264,80 @@
   .wr-mini .wr-prod-detail td{background:#f8fafc;color:#475569;text-align:left;padding:8px 12px}
   .wr-note{margin-top:8px;color:#64748b;font-size:11px;line-height:1.55}
   .wr-page{background:#fff;border:1px solid #d1d5db;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+  .wr-issue-headline{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:4px 0 10px}
+  .wr-issue-period{font-size:14px;font-weight:900;color:#111827}
+  .wr-issue-period small{font-size:11px;font-weight:700;color:#64748b;margin-left:5px}
+  .wr-issue-form{border:1px solid #cbd5e1;border-radius:11px;background:#f8fafc;padding:12px;margin-bottom:11px}
+  .wr-issue-grid{display:grid;grid-template-columns:minmax(130px,.62fr) minmax(240px,1.2fr) minmax(270px,1.25fr) minmax(190px,.9fr);gap:9px;align-items:end}
+  .wr-issue-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .wr-issue-field>label,.wr-issue-lab{font-size:11px;font-weight:800;color:#475569}
+  .wr-issue-field input,.wr-issue-field select,.wr-issue-field textarea{width:100%;min-width:0;padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#1f2937;font-family:inherit;font-size:12px}
+  .wr-issue-field textarea{min-height:120px;resize:vertical;line-height:1.55}
+  .wr-issue-contact-row{display:grid;grid-template-columns:minmax(150px,.95fr) minmax(130px,.8fr);gap:6px}
+  .wr-issue-triplet{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:2px}
+  .wr-issue-stage{display:flex;flex-direction:column;min-width:0;border:1px solid #cbd5e1;border-radius:9px;background:#fff;overflow:hidden}
+  .wr-issue-stage>label{padding:7px 9px;font-size:11.5px;font-weight:900;border-bottom:1px solid #e2e8f0;color:#334155}
+  .wr-issue-stage.prev>label{background:#fff7ed;color:#9a3412}
+  .wr-issue-stage.actual>label{background:#eff6ff;color:#1d4ed8}
+  .wr-issue-stage.next>label{background:#ecfdf5;color:#047857}
+  .wr-issue-stage textarea{border:0!important;border-radius:0!important;min-height:145px!important;box-shadow:none!important}
+  .wr-issue-metrics{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap;width:100%}
+  .wr-issue-metric{flex:1 1 190px;min-width:170px;padding:7px 9px;border:1px solid #dbe3ee;border-radius:8px;background:#fff}
+  .wr-issue-metric b{display:block;font-size:10px;color:#64748b;margin-bottom:3px}
+  .wr-issue-metric strong{font-size:13px;color:#0f172a;font-variant-numeric:tabular-nums}
+  .wr-issue-metric em{font-style:normal;font-size:10px;font-weight:900;margin-left:4px;color:#2563eb}
+  .wr-issue-help{font-size:9.5px;color:#94a3b8;margin-top:2px}
+  .wr-issue-type{display:flex;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;background:#fff;height:34px}
+  .wr-issue-type button{flex:1;border:0;background:#fff;color:#64748b;font-family:inherit;font-size:12px;font-weight:900;padding:6px 8px}
+  .wr-issue-type button.on[data-v="실적"]{background:#1d4ed8;color:#fff}
+  .wr-issue-type button.on[data-v="계획"]{background:#0f766e;color:#fff}
+  .wr-issue-credit{min-height:34px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:5px 7px;border:1px solid #dbe3ee;border-radius:7px;background:#fff;font-size:10.5px;color:#475569}
+  .wr-issue-credit .empty{color:#94a3b8}
+  .wr-issue-badge{display:inline-flex;align-items:center;justify-content:center;min-height:22px;padding:2px 7px;border-radius:999px;border:1px solid #cbd5e1;background:#f8fafc;color:#334155;font-size:10px;font-weight:900;white-space:nowrap}
+  .wr-issue-badge.actual{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+  .wr-issue-badge.plan{background:#ecfdf5;border-color:#a7f3d0;color:#047857}
+  .wr-issue-manager{min-height:34px;display:flex;align-items:center;padding:5px 8px;border:1px solid #dbe3ee;border-radius:7px;background:#fff;font-size:11px;font-weight:800;color:#334155;white-space:normal}
+  .wr-issue-manager-input{width:100%;min-width:0;height:34px;padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#1f2937;font-family:inherit;font-size:12px;font-weight:800}
+  .wr-issue-manager-input:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.12)}
+  .wr-sortable{cursor:pointer!important;user-select:none;transition:background .12s,color .12s}
+  .wr-sortable:hover{background:#dbe7f5!important}
+  .wr-sort-arrow{display:inline-block;margin-left:3px;color:#64748b;font-size:9px;font-weight:900}
+  .wr-sortable.active .wr-sort-arrow{color:#2563eb}
+  .wr-issue-content{grid-column:1 / -1;margin-top:2px}
+  .wr-issue-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;margin-top:9px;flex-wrap:wrap}
+  .wr-issue-search{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:8px 0;padding:8px 10px;border:1px solid #e2e8f0;border-radius:9px;background:#fff}
+  .wr-issue-search input{flex:1 1 260px;min-width:180px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;font-family:inherit;font-size:12px}
+  .wr-issue-scope{display:inline-flex;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden}
+  .wr-issue-scope button{border:0;background:#fff;color:#64748b;padding:6px 10px;font-family:inherit;font-size:11px;font-weight:900}
+  .wr-issue-scope button.on{background:#1e3a5f;color:#fff}
+  .wr-issue-table{font-size:11px;table-layout:fixed}
+  .wr-issue-table th,.wr-issue-table td{padding:7px 6px;white-space:normal;line-height:1.35;vertical-align:top}
+  .wr-issue-table td{text-align:left}
+  .wr-issue-table .num{text-align:center}
+  .wr-issue-table .when{text-align:center;font-size:10px;color:#64748b}
+  .wr-issue-text{white-space:pre-wrap;word-break:break-word;color:#1f2937}
+  .wr-issue-cust{font-weight:900;color:#1e3a5f;margin-bottom:4px}
+  .wr-issue-row-actions{display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
+  .wr-issue-row-actions button{border:1px solid #cbd5e1;background:#fff;border-radius:6px;padding:3px 7px;font-family:inherit;font-size:10px;font-weight:800;color:#475569}
+  .wr-issue-row-actions button:hover{background:#f1f5f9}
+  .wr-issue-carry-row td{background:#fff}
+  .wr-issue-carry-row:hover td{background:#f8fafc!important}
+  .wr-issue-carry-note{display:inline-flex;align-items:center;margin-top:5px;padding:2px 6px;border:1px solid #fcd34d;border-radius:999px;background:#fef3c7;color:#92400e;font-size:9px;font-weight:900}
+  .wr-issue-carry-banner{grid-column:1/-1;padding:8px 10px;border:1px solid #fcd34d;border-radius:8px;background:#fffbeb;color:#92400e;font-size:11px;font-weight:800}
+  .wr-issue-carry-open{border-color:#f59e0b!important;background:#fffbeb!important;color:#92400e!important}
+  .wr-issue-carry-open:hover{background:#fef3c7!important}
+  .wr-issue-contact-cell{display:flex;align-items:center;justify-content:flex-start;gap:3px;flex-wrap:wrap;line-height:1.25}
+  .wr-issue-cat-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#f1f5f9;border:1px solid #cbd5e1;font-size:11px;cursor:help}
+  .wr-weekcell{display:flex;min-height:29px;flex-direction:column;align-items:center;justify-content:center}
+  .wr-issue-jump{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:21px;min-height:16px;margin-top:3px;padding:1px 4px;border:1px solid #93c5fd;border-radius:8px;background:#eff6ff;color:#1d4ed8;font:800 9px/1 inherit;cursor:pointer}
+  .wr-issue-jump:hover{background:#dbeafe;border-color:#3b82f6;transform:translateY(-1px)}
+  .wr-issue-filter-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:7px 0 5px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#f8fafc}
+  .wr-issue-filter-btn{border:1px solid #bfdbfe;border-radius:6px;background:#fff;color:#1e40af;padding:5px 8px;font:800 10px/1.15 inherit;cursor:pointer}
+  .wr-issue-filter-btn:hover{background:#eff6ff}
+  .wr-issue-filter-btn.on{background:#2563eb;border-color:#2563eb;color:#fff}
+  .wr-issue-empty{padding:28px 12px!important;text-align:center!important;color:#94a3b8;font-size:12px}
+  @media(max-width:1250px){.wr-issue-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wr-issue-triplet{grid-column:1/-1}.wr-issue-content{grid-column:1/-1}}
+  @media(max-width:760px){.wr-issue-grid{grid-template-columns:1fr}.wr-issue-triplet{grid-column:auto;grid-template-columns:1fr}.wr-issue-contact-row{grid-template-columns:1fr}.wr-issue-content{grid-column:auto}.wr-issue-table{min-width:1450px}.wr-issue-form{padding:9px}}
   @media(max-width:1200px){.wr-table{font-size:8px}.wr-table th{font-size:7.5px}.wr-table th,.wr-table td{padding:3px 2px}.wr-title{font-size:15px}.wr-page{padding:10px}.wr-controls{margin-left:0;width:100%}.wr-memo{min-width:0;font-size:8px;padding:3px}.wr-subamt,.wr-subamt b{font-size:7px}}
   @media print{header,.topmenu,#dataPanel,#summary,#mgrFilterBar,.wr-tabs,.wr-controls,.wr-no-print{display:none!important}.wrap{max-width:none;padding:0}.wr-page{border:0;box-shadow:none;padding:0}.wr-tablewrap{overflow:visible}.wr-table{min-width:0;font-size:8px}.wr-table th,.wr-table td{padding:3px}.note{display:none!important}}
   .anntbl th,.anntbl td{padding:4px 5px}
@@ -504,7 +581,7 @@ header .appver{margin-left:0!important}
   </form>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)" style="align-self:center;font-size:11px;color:#dc2626;font-weight:800;white-space:nowrap;padding:3px 7px;border:1px solid #fecaca;border-radius:6px;background:#fff1f2">버전 v23 · 합계표시 개선</span>
+  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)" style="align-self:center;font-size:11px;color:#dc2626;font-weight:800;white-space:nowrap;padding:3px 7px;border:1px solid #fecaca;border-radius:6px;background:#fff1f2">버전 v37 · 업체 매출순위 표시</span>
 </header>
 
 <div class="wrap">
@@ -518,7 +595,7 @@ header .appver{margin-left:0!important}
   <div id="loading" class="loading hidden"><div class="spin"></div><div id="loadMsg">파일을 읽는 중입니다…</div></div>
 
   <div id="app" class="hidden">
-    <nav class="topmenu" id="topMenu"><button class="tm-direct" id="homeBtn" type="button" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f">🏠 홈</button><div class="tm-grp"><button class="tm-top" type="button">📊 매출분석 ▾</button><div class="tm-drop"><button class="tm-item" data-act="rank-cust"><span class="ic">🏢</span>거래처 매출</button><button class="tm-item" data-act="rank-group"><span class="ic">🗂️</span>품목군 매출</button><button class="tm-item" data-act="rank-prod"><span class="ic">📦</span>제품 매출</button><button class="tm-item" data-act="cls"><span class="ic">🏷️</span>업체분류별 매출</button><button class="tm-item" data-act="region"><span class="ic">🗺️</span>지역별 매출</button><button class="tm-item" data-act="credit"><span class="ic">💳</span>신용등급별 매출</button><button class="tm-item" data-act="scrap"><span class="ic">♻️</span>부산물(고철)</button></div></div><div class="tm-grp"><button class="tm-top" type="button">🏢 영업분석 ▾</button><div class="tm-drop"><button class="tm-item" data-act="compete"><span class="ic">🏢</span>동종업체분석</button><button class="tm-item" data-act="cross"><span class="ic">🔗</span>제품판매유도</button><button class="tm-item" data-act="pdelta"><span class="ic">📊</span>제품 증감분석</button><button class="tm-item" data-act="inner"><span class="ic">🧩</span>내부보강분석</button><button class="tm-item" data-act="trend2"><span class="ic">📈</span>매출추이차트</button><button class="tm-item" data-act="pareto"><span class="ic">🎯</span>매출 집중도(파레토)</button><button class="tm-item" data-act="compare"><span class="ic">⚖️</span>전년 대비 비교</button></div></div><div class="tm-grp"><button class="tm-top" type="button">⏱️ 거래·최근 ▾</button><div class="tm-drop"><button class="tm-item" data-act="last-cust"><span class="ic">⏱️</span>거래처 최근출고</button><button class="tm-item" data-act="last-prod"><span class="ic">📅</span>제품 최근출고</button><button class="tm-item" data-act="retain"><span class="ic">🔁</span>거래유지 점검</button></div></div><div class="tm-grp"><button class="tm-top" type="button">🔶 레이저 ▾</button><div class="tm-drop"><button class="tm-item" data-act="laser-cust"><span class="ic">🏢</span>거래처별 레이저 발주</button><button class="tm-item" data-act="laser-group"><span class="ic">🔦</span>레이저 품목군</button><button class="tm-item" data-act="laser-spec"><span class="ic">📐</span>레이저 규격별</button><button class="tm-item" data-act="laser-std"><span class="ic">⚠️</span>품목규격화 대상</button></div></div><div class="tm-grp"><button class="tm-top" type="button">📦 재고 ▾</button><div class="tm-drop"><button class="tm-item" data-act="safety"><span class="ic">🛡️</span>안전재고</button><button class="tm-item" data-act="disposal"><span class="ic">🗑️</span>폐기검토</button></div></div><div class="tm-grp"><button class="tm-top" type="button">🎯 목표·추이 ▾</button><div class="tm-drop"><button class="tm-item" data-act="forecast"><span class="ic">🎯</span>매출 목표</button><button class="tm-item" data-act="trend"><span class="ic">📊</span>월별 실적·목표</button></div></div><div class="tm-grp"><button class="tm-top" type="button">💲 단가표 ▾</button><div class="tm-drop"><button class="tm-item" data-act="price"><span class="ic">🏷️</span>단가표</button><button class="tm-item" data-act="pricemake"><span class="ic">🧮</span>단가표만들기</button></div></div><span class="tm-spacer"></span><button id="cmgrBtn" class="tm-direct" type="button" style="background:#8b5cf6;color:#fff;border-color:#8b5cf6"><span style="background:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;margin-right:5px;font-size:11px">👥</span>거래처 담당자</button><button id="fileToggle" class="tm-direct" type="button" style="background:#14b8a6;color:#fff;border-color:#14b8a6">📁 파일·관리 ▾</button></nav>
+    <nav class="topmenu" id="topMenu"><button class="tm-direct" id="homeBtn" type="button" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f">🏠 홈</button><div class="tm-grp"><button class="tm-top" type="button">📊 매출분석 ▾</button><div class="tm-drop"><button class="tm-item" data-act="rank-cust"><span class="ic">🏢</span>거래처 매출</button><button class="tm-item" data-act="rank-group"><span class="ic">🗂️</span>품목군 매출</button><button class="tm-item" data-act="rank-prod"><span class="ic">📦</span>제품 매출</button><button class="tm-item" data-act="cls"><span class="ic">🏷️</span>업체분류별 매출</button><button class="tm-item" data-act="region"><span class="ic">🗺️</span>지역별 매출</button><button class="tm-item" data-act="credit"><span class="ic">💳</span>신용등급별 매출</button><button class="tm-item" data-act="scrap"><span class="ic">♻️</span>부산물(고철)</button></div></div><div class="tm-grp"><button class="tm-top" type="button">🏢 영업분석 ▾</button><div class="tm-drop"><button class="tm-item" data-act="compete"><span class="ic">🏢</span>동종업체분석</button><button class="tm-item" data-act="cross"><span class="ic">🔗</span>제품판매유도</button><button class="tm-item" data-act="pdelta"><span class="ic">📊</span>제품 증감분석</button><button class="tm-item" data-act="inner"><span class="ic">🧩</span>내부보강분석</button><button class="tm-item" data-act="trend2"><span class="ic">📈</span>매출추이차트</button><button class="tm-item" data-act="pareto"><span class="ic">🎯</span>매출 집중도(파레토)</button><button class="tm-item" data-act="compare"><span class="ic">⚖️</span>전년 대비 비교</button></div></div><div class="tm-grp"><button class="tm-top" type="button">⏱️ 거래·최근 ▾</button><div class="tm-drop"><button class="tm-item" data-act="last-cust"><span class="ic">⏱️</span>거래처 최근출고</button><button class="tm-item" data-act="last-prod"><span class="ic">📅</span>제품 최근출고</button><button class="tm-item" data-act="retain"><span class="ic">🔁</span>거래유지 점검</button></div></div><div class="tm-grp"><button class="tm-top" type="button">🔶 레이저 ▾</button><div class="tm-drop"><button class="tm-item" data-act="laser-cust"><span class="ic">🏢</span>거래처별 레이저 발주</button><button class="tm-item" data-act="laser-group"><span class="ic">🔦</span>레이저 품목군</button><button class="tm-item" data-act="laser-spec"><span class="ic">📐</span>레이저 규격별</button><button class="tm-item" data-act="laser-std"><span class="ic">⚠️</span>품목규격화 대상</button></div></div><div class="tm-grp"><button class="tm-top" type="button">📦 재고 ▾</button><div class="tm-drop"><button class="tm-item" data-act="safety"><span class="ic">🛡️</span>안전재고</button><button class="tm-item" data-act="disposal"><span class="ic">🗑️</span>폐기검토</button></div></div><div class="tm-grp"><button class="tm-top" type="button">🎯 목표·추이 ▾</button><div class="tm-drop"><button class="tm-item" data-act="forecast"><span class="ic">🎯</span>매출 목표</button><button class="tm-item" data-act="trend"><span class="ic">📊</span>월별 실적·목표</button></div></div><div class="tm-grp"><button class="tm-top" type="button">💲 단가표 ▾</button><div class="tm-drop"><button class="tm-item" data-act="price"><span class="ic">🏷️</span>단가표</button><button class="tm-item" data-act="pricemake"><span class="ic">🧮</span>단가표만들기</button></div></div><div class="tm-grp" id="weeklyMenuGroup"><button class="tm-top" type="button">📋 주간보고 ▾</button><div class="tm-drop"><button class="tm-item" data-act="weekly1"><span class="ic">📊</span>1. 목표대비 달성</button><button class="tm-item" data-act="weekly2"><span class="ic">📦</span>2. 품목별 매출 현황</button><button class="tm-item" data-act="weekly3"><span class="ic">📝</span>3. 주간이슈사항</button></div></div><span class="tm-spacer"></span><button id="cmgrBtn" class="tm-direct" type="button" style="background:#8b5cf6;color:#fff;border-color:#8b5cf6"><span style="background:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;margin-right:5px;font-size:11px">👥</span>거래처 담당자</button><button id="fileToggle" class="tm-direct" type="button" style="background:#14b8a6;color:#fff;border-color:#14b8a6">📁 파일·관리 ▾</button></nav>
     <div class="panel" id="dataPanel">
       <h3 style="display:none">데이터</h3>
       <div id="fileList"></div>
@@ -667,7 +744,7 @@ let datasets=[];     // [{uid, fileName, sheetName, sheetNames:[], recs:[{d,cust
 let RAWMEM={};       // uid -> {sheetName:{headers,rows}}  (session only)
 let CUR=[];          // flattened records w/ Date + period keys
 let uidSeq=1;
-let state={ basis:'공급가', unit:1, period:'year', periodKey:null, periodYear:null, workdays:{}, bep:0, clsOverride:{}, gradeOverride:{}, gbunOverride:{}, region:{level:'do'}, credit:{cat:null,by:'status'}, retain:{issue:false,showExcl:false,visitOnly:false,exclOnly:false}, retainMemo:{}, retainMemoAt:{}, retainExcl:{}, retainVisit:{}, cmgrExcl:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true}, elogSeenTs:0, cross:{base:'',baseSpec:'',targets:[''],filter:'all'}, ir:{target:'all',view:'spec',sm:10}, trend2:{win:12,dim:'cust',grp:'none',catSel:null}, clsCat:null, clsCustSearch:'', rankMonthly:false, rankMonYear:null, prodRankMonthly:false, prodRankYear:null, prodDrillMonthly:false, prodDrillYear:null, monthIssue:{}, price:{mode:'cust',histMode:'all',mixBasis:'qty',rangeStart:'',rangeEnd:''}, weekly:{page:1,year:null,month:null,week:null,rangeStart:'',rangeEnd:'',topN:20,topPct:80,rankMode:'count',notes:{}}, priceSets:[], setDraft:{title:'',items:[{name:'',spec:'',code:'',qty:1,price:'',cost:'',profit:''}]}, rangeStart:null, rangeEnd:null, headcount:53, headMonthly:{}, headYearDefault:{}, mgrOverride:{}, cmgrPrimary:{}, cmgrKey:{}, scrapVendors:[], scrapVendorOff:{}, gsync:{url:'',key:'',auto:true,lastSync:'',user:'',syncCount:0},syncLog:{}, act:null, sortKey:null, sortDir:-1, _search:'', chipVal:null, lastData:null,
+let state={ basis:'공급가', unit:1, period:'year', periodKey:null, periodYear:null, workdays:{}, bep:0, clsOverride:{}, gradeOverride:{}, gbunOverride:{}, region:{level:'do'}, credit:{cat:null,by:'status'}, retain:{issue:false,showExcl:false,visitOnly:false,exclOnly:false}, retainMemo:{}, retainMemoAt:{}, retainExcl:{}, retainVisit:{}, cmgrExcl:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true}, elogSeenTs:0, cross:{base:'',baseSpec:'',targets:[''],filter:'all'}, ir:{target:'all',view:'spec',sm:10}, trend2:{win:12,dim:'cust',grp:'none',catSel:null}, clsCat:null, clsCustSearch:'', rankMonthly:false, rankMonYear:null, prodRankMonthly:false, prodRankYear:null, prodDrillMonthly:false, prodDrillYear:null, monthIssue:{}, price:{mode:'cust',histMode:'all',mixBasis:'qty',rangeStart:'',rangeEnd:''}, weekly:{page:1,year:null,month:null,week:null,rangeStart:'',rangeEnd:'',topN:20,topPct:80,rankMode:'count',notes:{},issues:{},issueScope:'current',issueSearch:'',issueDraft:null,issueEditId:null,issueAuthor:''}, priceSets:[], setDraft:{title:'',items:[{name:'',spec:'',code:'',qty:1,price:'',cost:'',profit:''}]}, rangeStart:null, rangeEnd:null, headcount:53, headMonthly:{}, headYearDefault:{}, mgrOverride:{}, cmgrPrimary:{}, cmgrKey:{}, scrapVendors:[], scrapVendorOff:{}, gsync:{url:'',key:'',auto:true,lastSync:'',user:'',syncCount:0},syncLog:{}, act:null, sortKey:null, sortDir:-1, _search:'', chipVal:null, lastData:null,
   inv:{lt:14,z:'95',dfilter:'전체',actual:{},exclude:{},stab:'rec'}, cmgr:{fs:'전체',fe:'전체',ft:'전체',search:'',mode:'none',year:'cy',sortKey:'a',sortDir:-1,editKey:null,cardsOpen:false,infoMode:false,exclMode:false,showPrev:false,showLaser:false}, custInfo:{}, pd:{labor:{1:18912008,2:11016122,3:10729149,4:6283887,5:3589118},process:{1:33311650,2:23295890,3:19221300,4:13994850,5:12362080},indirect:{1:2016627,2:338637,3:1667136,4:625176,5:2298824},useLabor:true,useProcess:true,useIndirect:true,actual:{},estimate:false}, pareto:{dim:'cust',threshold:80,showRest:false,period:'all',m1:1,m2:12,year:'all'}, cmp:{period:'1분기',dim:'cust',m1:1,m2:12,year:null,filter:null}, trend:{showPY:false,editorOpen:false,pdOpen:false,scrapOpen:false}, fc:{pct:{},override:{},addPct:{},newCusts:{},prodOverride:{},prodAddPct:{},custProdOverride:{},newProds:{},newLines:[],custMemo:{},prodMemo:{},notesHtml:'',notesSales:'',notesTech:'',notesTab:'main',notesMeta:{main:{},sales:{},tech:{}},issC:false,issP:false,exclCust:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true},targetExclCust:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true},exclProd:{},showExcl:false,showExclRows:false,annualHist:{2019:7531847061,2020:7404376660,2021:8806423871,2022:10484011261,2023:12035275080,2024:11218223843},annualOpen:false,period:'all',m1:6,m2:12,dim:'cust',showPY:false,sortKey:null,sortDir:-1} };
 function headFor(ym){ const v=state.headMonthly[ym]; if(v!=null&&v!=='')return +v; const yd=state.headYearDefault[ym.slice(0,4)]; if(yd!=null&&yd!=='')return +yd; return state.headcount; }
 const KR_HOLIDAYS={
@@ -954,7 +1031,7 @@ let _fieldDrag=false; document.addEventListener('mousedown',e=>{ _fieldDrag=!!(e
 (function addWeeklyReportMenu(){
   const spacer=document.querySelector('#topMenu .tm-spacer');
   if(!spacer||document.getElementById('weeklyMenuGroup'))return;
-  spacer.insertAdjacentHTML('beforebegin',`<div class="tm-grp" id="weeklyMenuGroup"><button class="tm-top" type="button">📋 주간보고 ▾</button><div class="tm-drop"><button class="tm-item" data-act="weekly1"><span class="ic">📊</span>1. 목표대비 달성</button><button class="tm-item" data-act="weekly2"><span class="ic">📦</span>2. 품목별 매출 현황</button></div></div>`);
+  spacer.insertAdjacentHTML('beforebegin',`<div class="tm-grp" id="weeklyMenuGroup"><button class="tm-top" type="button">📋 주간보고 ▾</button><div class="tm-drop"><button class="tm-item" data-act="weekly1"><span class="ic">📊</span>1. 목표대비 달성</button><button class="tm-item" data-act="weekly2"><span class="ic">📦</span>2. 품목별 매출 현황</button><button class="tm-item" data-act="weekly3"><span class="ic">📝</span>3. 주간이슈사항</button></div></div>`);
 })();
 document.querySelectorAll('.tile,.tm-item').forEach(b=>b.addEventListener('click',()=>{ setCmgrMode(false); closeFilePanel(); document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); document.querySelectorAll('[data-act="'+b.dataset.act+'"]').forEach(x=>x.classList.add('active')); document.querySelectorAll('.tm-top.open').forEach(t=>{t.classList.remove('open');t.nextElementSibling.classList.remove('open');}); state.act=b.dataset.act; state.sortKey=null; state._search=''; state.chipVal=null; state._drill=false; state._parent=null; runAct(); }));
 document.querySelectorAll('.tm-top').forEach(t=>t.addEventListener('click',e=>{ e.stopPropagation(); const wasOpen=t.classList.contains('open'); document.querySelectorAll('.tm-top.open').forEach(x=>{x.classList.remove('open');x.nextElementSibling.classList.remove('open');}); if(!wasOpen){t.classList.add('open');t.nextElementSibling.classList.add('open');} }));
@@ -1129,8 +1206,12 @@ function wrLatestWeek(y,m){
   return Math.min(wrRanges(y,m).length,Math.max(1,Math.ceil(day/7)));
 }
 function wrEnsure(){
-  state.weekly=state.weekly||{page:1,year:null,month:null,week:null,rangeStart:'',rangeEnd:'',topN:20,topPct:80,rankMode:'count',notes:{}};
+  state.weekly=state.weekly||{page:1,year:null,month:null,week:null,rangeStart:'',rangeEnd:'',topN:20,topPct:80,rankMode:'count',notes:{},issues:{},issueScope:'current',issueSearch:'',issueDraft:null,issueEditId:null,issueAuthor:''};
   state.weekly.notes=state.weekly.notes||{};
+  state.weekly.issues=state.weekly.issues||{};
+  if(state.weekly.issueScope!=='all')state.weekly.issueScope='current';
+  if(state.weekly.issueSearch==null)state.weekly.issueSearch='';
+  if(state.weekly.issueAuthor==null)state.weekly.issueAuthor='';
   if(state.weekly.rangeStart==null)state.weekly.rangeStart=''; if(state.weekly.rangeEnd==null)state.weekly.rangeEnd='';
   state.weekly.topN=Math.max(1,Math.min(500,Math.round(+state.weekly.topN||20)));
   state.weekly.topPct=Math.max(1,Math.min(100,Math.round(+state.weekly.topPct||80)));
@@ -1293,16 +1374,16 @@ function wrHeader(model,page){
   const ms=Array.from({length:12},(_,i)=>i+1).map(v=>`<option value="${v}" ${v===m?'selected':''}>${v}월</option>`).join('');
   const ws=model.ranges.map(r=>`<option value="${r.n}" ${r.n===w?'selected':''}>${r.n}주차 (${r.s}~${r.e}일)</option>`).join('');
   const periodTitle=model.isCustom?`${wrDateText(model.rangeStart)} ~ ${wrDateText(model.rangeEnd)}`:`${m}월 ${w}주차`;
-  return `<div class="wr-head"><div class="wr-brand">▣ 방화문부자재 사업부 영업팀 실적보고<small><b style="color:#dc2626">v25 목표·실적 기준 분리</b> · 연매출 목표=1~5월 실적+6~12월 목표 · 실적행=조회시점까지 · 고철 80% 기준 반영</small></div><div class="wr-title">${periodTitle}</div></div>
-    <div class="wr-tabs"><button class="wr-tab ${page===1?'on':''}" data-wrpage="1">1. 목표대비 달성</button><button class="wr-tab ${page===2?'on':''}" data-wrpage="2">2. 품목별 매출 현황</button><div class="wr-controls"><span class="sub2" style="font-weight:700;color:#334155">기간 설정</span><label>시작일 <input type="date" id="wrRangeStart" value="${esc(state.weekly.rangeStart||'')}"></label><label>종료일 <input type="date" id="wrRangeEnd" value="${esc(state.weekly.rangeEnd||'')}"></label><button class="btn ghost" id="wrRangeApply" style="font-size:11px;padding:4px 9px">적용</button><button class="btn ghost" id="wrRangeReset" style="font-size:11px;padding:4px 9px">기간 해제</button><span class="sub2" style="border-left:1px solid #cbd5e1;padding-left:7px">주차</span><label>연도 <select id="wrYear">${ys}</select></label><label>월 <select id="wrMonth">${ms}</select></label><label>주차 <select id="wrWeek">${ws}</select></label><button class="btn ghost" id="wrXlsx">📥 엑셀</button><button class="btn ghost wr-no-print" id="wrPrint">🖨 인쇄</button></div></div>`;
+  return `<div class="wr-head"><div class="wr-brand">▣ 방화문부자재 사업부 영업팀 실적보고<small><b style="color:#dc2626">v37 업체 신용도·매출순위 표시</b> · 연매출 목표=1~5월 실적+6~12월 목표 · 실적행=조회시점까지 · 고철 80% 기준 반영</small></div><div class="wr-title">${periodTitle}</div></div>
+    <div class="wr-tabs"><button class="wr-tab ${page===1?'on':''}" data-wrpage="1">1. 목표대비 달성</button><button class="wr-tab ${page===2?'on':''}" data-wrpage="2">2. 품목별 매출 현황</button><button class="wr-tab ${page===3?'on':''}" data-wrpage="3">3. 주간이슈사항</button><div class="wr-controls"><span class="sub2" style="font-weight:700;color:#334155">기간 설정</span><label>시작일 <input type="date" id="wrRangeStart" value="${esc(state.weekly.rangeStart||'')}"></label><label>종료일 <input type="date" id="wrRangeEnd" value="${esc(state.weekly.rangeEnd||'')}"></label><button class="btn ghost" id="wrRangeApply" style="font-size:11px;padding:4px 9px">적용</button><button class="btn ghost" id="wrRangeReset" style="font-size:11px;padding:4px 9px">기간 해제</button><span class="sub2" style="border-left:1px solid #cbd5e1;padding-left:7px">주차</span><label>연도 <select id="wrYear">${ys}</select></label><label>월 <select id="wrMonth">${ms}</select></label><label>주차 <select id="wrWeek">${ws}</select></label><button class="btn ghost" id="wrXlsx">📥 엑셀</button><button class="btn ghost wr-no-print" id="wrPrint">🖨 인쇄</button></div></div>`;
 }
-function wrRankBar(label,info){
+function wrRankBar(label,info,tailHtml=''){
   const curTop=Math.max(1,Math.min(500,+state.weekly.topN||20)),curPct=Math.max(1,Math.min(100,+state.weekly.topPct||80));
   const topOpts=[10,20,30,50,100],topExtra=topOpts.includes(curTop)?'':`<option value="${curTop}" selected>상위 ${curTop}</option>`;
   const pctOpts=[90,80,70,60,50],pctExtra=pctOpts.includes(curPct)?'':`<option value="${curPct}" selected>상위 ${curPct}%</option>`;
   const cnt=info&&info.count!=null?info.count:0,total=info&&info.totalCount!=null?info.totalCount:0,share=info&&isFinite(info.share)?info.share:0;
   const isCount=wrRankMode()==='count',base=label==='품목'?'품목표시':'업체표시';
-  return `<div class="wr-rankbar"><b style="font-size:11px;color:#334155">${esc(label)} 표시 기준</b><button type="button" id="wrModeCount" class="wr-mode-btn ${isCount?'on':'off'}">${base} 기준</button><button type="button" id="wrModePct" class="wr-mode-btn ${!isCount?'on':'off'}">비중 기준</button><label class="wr-mode-field ${isCount?'on':'off'}">건수 <select id="wrTopN">${topOpts.map(v=>`<option value="${v}" ${isCount&&v===curTop?'selected':''}>상위 ${v}</option>`).join('')}${topExtra}</select><input id="wrTopCustom" class="wr-top-custom" type="number" min="1" max="500" step="1" value="${curTop}" title="상위 건수 직접 입력" placeholder="건수"></label><label class="wr-mode-field ${!isCount?'on':'off'}">비중 <select id="wrTopPct">${pctOpts.map(v=>`<option value="${v}" ${!isCount&&v===curPct?'selected':''}>상위 ${v}%</option>`).join('')}${pctExtra}</select><input id="wrPctCustom" class="wr-pct-custom" type="number" min="1" max="100" step="1" value="${curPct}" title="상위 누적비중 직접 입력" placeholder="%"></label><span class="wr-rankstat">표시 ${won(cnt)}건 / 전체 ${won(total)}건 · 비중 ${share.toFixed(1)}%</span></div>`;
+  return `<div class="wr-rankbar"><b style="font-size:11px;color:#334155">${esc(label)} 표시 기준</b><button type="button" id="wrModeCount" class="wr-mode-btn ${isCount?'on':'off'}">${base} 기준</button><button type="button" id="wrModePct" class="wr-mode-btn ${!isCount?'on':'off'}">비중 기준</button><label class="wr-mode-field ${isCount?'on':'off'}">건수 <select id="wrTopN">${topOpts.map(v=>`<option value="${v}" ${isCount&&v===curTop?'selected':''}>상위 ${v}</option>`).join('')}${topExtra}</select><input id="wrTopCustom" class="wr-top-custom" type="number" min="1" max="500" step="1" value="${curTop}" title="상위 건수 직접 입력" placeholder="건수"></label><label class="wr-mode-field ${!isCount?'on':'off'}">비중 <select id="wrTopPct">${pctOpts.map(v=>`<option value="${v}" ${!isCount&&v===curPct?'selected':''}>상위 ${v}%</option>`).join('')}${pctExtra}</select><input id="wrPctCustom" class="wr-pct-custom" type="number" min="1" max="100" step="1" value="${curPct}" title="상위 누적비중 직접 입력" placeholder="%"></label><span class="wr-rankstat">표시 ${won(cnt)}건 / 전체 ${won(total)}건 · 비중 ${share.toFixed(1)}%</span>${tailHtml?`<span class="wr-rank-spacer"></span><span class="wr-rank-actions">${tailHtml}</span>`:''}</div>`;
 }
 function wrCell(v){ return v?wrVal(v):'<span class="wr-zero">-</span>'; }
 function wrAmt(v){ return `<span class="wr-amt">${wrCell(v)}</span>`; }
@@ -1316,31 +1397,316 @@ function wrMixBar(products){
   const sums={공용품:0,전용품:0,레이저:0,내부보강:0,기타:0}; (products||[]).forEach(o=>{sums[o.cat||'기타']=(sums[o.cat||'기타']||0)+(+o.amt||0);});
   return `<div class="wr-mixbar">${cats.map(c=>`<div class="wr-mixitem"><b>${wrMixIcon(c)}</b><span>${tot?(sums[c]/tot*100).toFixed(1):'0.0'}%</span><div style="font-size:9px;color:#64748b;font-weight:700">${won(sums[c]||0)}원</div></div>`).join('')}</div>`;
 }
-function wrPage1(model){
-  const arows=model.annualRows.map((r,i)=>`<tr><td><b>${r.label}</b></td><td class="wr-total-col">${i===3?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${(r.label==='목표수정액'&&mi<SALES_ACTUAL_CUTOFF_MONTH)||(r.label==='실적'&&mi<SALES_ACTUAL_CUTOFF_MONTH)?'wr-fixed-actual':''}">${i===3?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`).join('');
-  const wkHead=model.ranges.map(r=>`<th style="width:4.2%">${model.isCustom?wrDateText(r.sDate).slice(5):r.n+'주'}<br><span style="font-weight:500">(${model.isCustom?wrDateText(r.sDate).slice(5)+'~'+wrDateText(r.eDate).slice(5):r.s+'~'+r.e})</span></th>`).join('');
-  const body=model.custRows.map((r,i)=>{
-    const isRest=/^상위 .+외 업체$/.test(r.cust),nk=wrNoteKey(model,r.cust),memo=wrMemo(model,r);
-    const weekTds=r.weeks.map((v,idx)=>`<td>${model.isCustom||idx<model.w?wrAmt(v):'<span class="wr-zero">-</span>'}</td>`).join('');
-    return `<tr class="${isRest?'wr-rest':''}"><td class="wr-no">${isRest?'-':i+1}</td><td style="text-align:left">${isRest?'<b>':''}${esc(r.cust)}${isRest?'</b>':''}</td><td style="text-align:center">${isRest?wrMgrBadge('-'):wrMgrBadge(mgrS(r.cust)||'미배정')}</td><td>${wrAmt(r.annual)}</td><td>${wrAmt(r.before)}</td><td class="${(r.annualRate||0)>=50?'wr-rate-good':'wr-rate-bad'}">${wrPct(r.annualRate)}</td><td>${wrAmt(r.remaining)}</td><td>${wrAmt(r.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${r.remainingWeekAvg?won(r.remainingWeekAvg)+'원':'-'}</b></div></td>${weekTds}<td><b>${wrAmt(r.monthActual)}</b></td><td class="${(r.monthRate||0)>=100?'wr-rate-good':'wr-rate-bad'}">${wrPct(r.monthRate)}</td><td style="text-align:left"><input class="wr-memo" type="text" data-k="${esc(nk)}" data-cust="${esc(r.cust)}" value="${esc(memo)}" placeholder="비고 직접 입력"></td></tr>`;
-  }).join('');
-  const total=wrAggregateRows(model.custRows,'합계');
-  const totalRow=`<tr class="wr-sum"><td class="wr-no"></td><td>합계</td><td></td><td>${wrAmt(total.annual)}</td><td>${wrAmt(total.before)}</td><td>${wrPct(total.annualRate)}</td><td>${wrAmt(total.remaining)}</td><td>${wrAmt(total.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${total.remainingWeekAvg?won(total.remainingWeekAvg)+'원':'-'}</b></div></td>${total.weeks.map((v,idx)=>`<td>${model.isCustom||idx<model.w?wrAmt(v):'-'}</td>`).join('')}<td>${wrAmt(total.monthActual)}</td><td>${wrPct(total.monthRate)}</td><td></td></tr>`;
-  const beforeEnd=new Date(model.rangeStart);beforeEnd.setDate(beforeEnd.getDate()-1);const beforeLab=model.isCustom?`${model.y}.1.1~${wrDateText(beforeEnd)}`:(model.m>1?`1~${model.m-1}월`:'전월'); const selectedLab=model.isCustom?'기간':' '+model.m+'월';
-  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 목표액=월별 목표 합계 · 목표수정액=목표추이 올해 연매출 목표와 동일 · 실적=거래처 담당자 월매출 합계 기준)</span></div><div class="wr-tablewrap"><table class="wr-table"><thead><tr><th style="width:82px">구분</th><th style="width:112px">합계액</th>${Array.from({length:12},(_,i)=>`<th>${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
-    <div class="wr-section">▶ 업체별 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">· ${model.isCustom?wrDateText(model.rangeStart)+' ~ '+wrDateText(model.rangeEnd):model.y+'년 '+model.m+'월 '+model.w+'주차'} 기준 · 단위: 원</span></div>${wrRankBar('업체',model.custRankInfo)}<div class="wr-tablewrap"><table class="wr-table"><thead><tr><th class="wr-no" rowspan="2" style="width:2.6%">NO</th><th rowspan="2" style="width:9%">업체</th><th rowspan="2" style="width:6%">영업관리</th><th rowspan="2" style="width:8.5%">${model.y}년도<br>목표액</th><th colspan="3">매출 실적</th><th rowspan="2" style="width:8.5%">${model.isCustom?'기간':' '+model.m+'월'}<br>목표<br><span style="font-size:7px;color:#64748b">${model.isCustom?'일할 계산':'남은주간 평균'}</span></th><th colspan="${model.ranges.length}">${selectedLab} 구간</th><th rowspan="2" style="width:8.5%">달성금액</th><th rowspan="2" style="width:3.7%">${model.isCustom?'기간 달성률':'월 달성률'}</th><th rowspan="2" style="width:8%">비고</th></tr><tr><th class="wr-center" style="width:8.5%">${beforeLab}</th><th style="width:3.6%">달성율</th><th style="width:8.5%">잔여 목표액</th>${wkHead}</tr></thead><tbody>${body}${totalRow}</tbody></table></div><div class="wr-note">${model.isCustom?'기간 목표는 해당 월 목표를 일수 기준으로 계산합니다.':'월목표 아래 남은주간 평균은 ‘남은 월목표액 ÷ 선택 주차 이후 남은 주차 수’입니다.'} 표는 화면 폭에 맞춰 자동 축소됩니다.</div></div>`;
+function wrIssueCategoryIcons(cust){
+  if(typeof catsBadges==='function')return catsBadges(cust);
+  const cats=typeof catsOf==='function'?catsOf(cust):[];
+  return cats.filter(Boolean).map(k=>{const c=(typeof CLS_CATS!=='undefined'?CLS_CATS:[]).find(x=>x.k===k),icon=c?c.ic:'🏢';return `<span class="wr-issue-cat-icon" title="${esc(k)}" aria-label="${esc(k)}">${icon}</span>`;}).join('');
 }
+function wrIssueRecordRange(r){
+  const s=wrParseDate(r&&r.periodStart),e=wrParseDate(r&&r.periodEnd);if(s&&e)return {start:s,end:e};
+  const p=String(r&&r.periodKey||'').split('|');
+  if(p[0]==='R'){const rs=wrParseDate(p[1]),re=wrParseDate(p[2]);return rs&&re?{start:rs,end:re}:null;}
+  if(p[0]==='W'){const y=+p[1],m=+p[2],w=+p[3],rg=wrRanges(y,m)[w-1];return rg?{start:wrDate(y,m,rg.s),end:wrDate(y,m,rg.e)}:null;}
+  return null;
+}
+function wrIssueRangeKey(range){
+  const s=range&&range.sDate,e=range&&range.eDate;if(!s||!e)return '';
+  if(s.getFullYear()===e.getFullYear()&&s.getMonth()===e.getMonth()){const y=s.getFullYear(),m=s.getMonth()+1,rg=wrRanges(y,m).find(x=>x.s===s.getDate()&&x.e===e.getDate());if(rg)return `W|${y}|${String(m).padStart(2,'0')}|${rg.n}`;}
+  return `R|${wrDateInput(s)}|${wrDateInput(e)}`;
+}
+function wrIssueMatchesRange(cust,range){
+  if(!cust||!range||!range.sDate||!range.eDate)return [];
+  const start=range.sDate,end=range.eDate,seen=new Set(),out=[];
+  wrIssueStoredEntries().forEach(({record:r})=>{
+    if(String(r.cust||'').trim()!==String(cust).trim())return;
+    const add=key=>{if(!seen.has(key)){seen.add(key);out.push(r);}};
+    const rr=wrIssueRecordRange(r);if(rr&&rr.start<=end&&rr.end>=start)add(`record|${r.periodKey||r.id||''}`);
+    if(String(r.nextPlan||'').trim()){
+      const ns=wrParseDate(r.nextPeriodStart),ne=wrParseDate(r.nextPeriodEnd);
+      if(ns&&ne&&ns<=end&&ne>=start)add(`carry|${r.periodKey||r.id||''}`);
+    }
+  });
+  return out;
+}
+function wrIssueCellLink(cust,range){
+  const entries=wrIssueMatchesRange(cust,range);if(!entries.length)return '';
+  const key=wrIssueRangeKey(range),count=entries.length;
+  return `<button type="button" class="wr-issue-jump" data-issue-cust="${esc(cust)}" data-issue-key="${esc(key)}" title="${esc(cust)} 주간이슈 ${count}건 보기" aria-label="${esc(cust)} 주간이슈 ${count}건 보기">📝${count>1?count:''}</button>`;
+}
+function wrIssueFilterRanges(model,mode){
+  if(mode==='current')return [{sDate:model.rangeStart,eDate:model.rangeEnd}];
+  if(mode!=='future')return [];
+  if(model.isCustom){const next=wrIssueAdjacentPeriod(model,1);return next?[{sDate:next.startDate,eDate:next.endDate}]:[];}
+  return model.ranges.slice(Math.max(0,+model.w||0));
+}
+function wrIssueFilteredRows(model,mode){
+  const ranges=wrIssueFilterRanges(model,mode);if(!ranges.length)return [];
+  return (model.allCustRows||[]).filter(row=>ranges.some(range=>wrIssueMatchesRange(row.cust,range).length));
+}
+function wrTodayDate(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+function wrTodayWeekRange(){const d=wrTodayDate(),y=d.getFullYear(),m=d.getMonth()+1,rg=wrRanges(y,m).find(r=>d.getDate()>=r.s&&d.getDate()<=r.e);return rg?{sDate:wrDate(y,m,rg.s),eDate:wrDate(y,m,rg.e)}:null;}
+function wrIssueCustomerCount(ranges){
+  const custs=[...new Set(wrIssueStoredEntries().map(x=>String(x.record&&x.record.cust||'').trim()).filter(Boolean))];
+  return custs.filter(c=>(ranges||[]).some(range=>wrIssueMatchesRange(c,range).length)).length;
+}
+function wrPage1(model){
+  const today=wrTodayDate(),currentMonthNo=+model.y===today.getFullYear()?today.getMonth()+1:0,currentWeekIdx=model.ranges.findIndex(r=>today>=r.sDate&&today<=r.eDate);
+  const arows=model.annualRows.map((r,i)=>`<tr><td><b>${r.label}</b></td><td class="wr-total-col">${i===3?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${[(r.label==='목표수정액'&&mi<SALES_ACTUAL_CUTOFF_MONTH)||(r.label==='실적'&&mi<SALES_ACTUAL_CUTOFF_MONTH)?'wr-fixed-actual':'',mi+1===currentMonthNo?'wr-current-date':''].filter(Boolean).join(' ')}">${i===3?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`).join('');
+  const wkHead=model.ranges.map((r,idx)=>`<th class="wr-sortable ${idx===currentWeekIdx?'wr-current-date':''}" data-sort-col="${8+idx}" data-sort-type="num" style="width:4.2%" title="클릭하여 정렬">${model.isCustom?wrDateText(r.sDate).slice(5):r.n+'주'}<br><span style="font-weight:500">(${model.isCustom?wrDateText(r.sDate).slice(5)+'~'+wrDateText(r.eDate).slice(5):r.s+'~'+r.e})</span><span class="wr-sort-arrow">↕</span></th>`).join('');
+  const issueMode=['current','future'].includes(state.weekly&&state.weekly.issueTableFilter)?state.weekly.issueTableFilter:'all';
+  const currentIssueRows=wrIssueFilteredRows(model,'current'),futureIssueRows=wrIssueFilteredRows(model,'future'),tableRows=issueMode==='current'?currentIssueRows:issueMode==='future'?futureIssueRows:model.custRows;
+  const todayIssueCount=wrIssueCustomerCount([wrTodayWeekRange()].filter(Boolean));
+  const issueFilterActions=`<button type="button" class="wr-issue-filter-btn ${issueMode==='current'?'on':''}" data-wr-issue-filter="current">이번주 이슈내용보기 (${won(todayIssueCount)})</button><button type="button" class="wr-issue-filter-btn ${issueMode==='future'?'on':''}" data-wr-issue-filter="future">차주 이슈내용보기 (${won(futureIssueRows.length)})</button>${issueMode!=='all'?'<button type="button" class="wr-issue-filter-btn" data-wr-issue-filter="all">전체 업체 보기</button>':''}`;
+  const body=tableRows.map((r,i)=>{
+    const isRest=/^상위 .+외 업체$/.test(r.cust),nk=wrNoteKey(model,r.cust),memo=wrMemo(model,r),mgrName=isRest?'':(mgrS(r.cust)||'미배정');
+    const weekTds=r.weeks.map((v,idx)=>{const visible=model.isCustom||idx<model.w,issueLink=!isRest?wrIssueCellLink(r.cust,model.ranges[idx]):'';return `<td class="${idx===currentWeekIdx?'wr-current-date':''}" data-sort-v="${+v||0}"><div class="wr-weekcell">${visible?wrAmt(v):'<span class="wr-zero">-</span>'}${issueLink}</div></td>`;}).join('');
+    return `<tr class="${isRest?'wr-rest':''}"><td class="wr-no">${isRest?'-':i+1}</td><td data-sort-v="${esc(r.cust)}" style="text-align:left">${isRest?'<b>':''}${esc(r.cust)}${isRest?'</b>':''}</td><td data-sort-v="${esc(mgrName)}" style="text-align:center">${isRest?wrMgrBadge('-'):wrMgrBadge(mgrName)}</td><td data-sort-v="${+r.annual||0}">${wrAmt(r.annual)}</td><td data-sort-v="${+r.before||0}">${wrAmt(r.before)}</td><td data-sort-v="${r.annualRate==null?-1:+r.annualRate}" class="${(r.annualRate||0)>=50?'wr-rate-good':'wr-rate-bad'}">${wrPct(r.annualRate)}</td><td data-sort-v="${+r.remaining||0}">${wrAmt(r.remaining)}</td><td data-sort-v="${+r.monthTarget||0}">${wrAmt(r.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${r.remainingWeekAvg?won(r.remainingWeekAvg)+'원':'-'}</b></div></td>${weekTds}<td data-sort-v="${+r.monthActual||0}"><b>${wrAmt(r.monthActual)}</b></td><td data-sort-v="${r.monthRate==null?-1:+r.monthRate}" class="${(r.monthRate||0)>=100?'wr-rate-good':'wr-rate-bad'}">${wrPct(r.monthRate)}</td><td style="text-align:left"><input class="wr-memo" type="text" data-k="${esc(nk)}" data-cust="${esc(r.cust)}" value="${esc(memo)}" placeholder="비고 직접 입력"></td></tr>`;
+  }).join('');
+  const total=wrAggregateRows(tableRows,'합계');
+  const totalRow=`<tr class="wr-sum"><td class="wr-no"></td><td>합계</td><td></td><td>${wrAmt(total.annual)}</td><td>${wrAmt(total.before)}</td><td>${wrPct(total.annualRate)}</td><td>${wrAmt(total.remaining)}</td><td>${wrAmt(total.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${total.remainingWeekAvg?won(total.remainingWeekAvg)+'원':'-'}</b></div></td>${total.weeks.map((v,idx)=>`<td class="${idx===currentWeekIdx?'wr-current-date':''}">${model.isCustom||idx<model.w?wrAmt(v):'-'}</td>`).join('')}<td>${wrAmt(total.monthActual)}</td><td>${wrPct(total.monthRate)}</td><td></td></tr>`;
+  const beforeEnd=new Date(model.rangeStart);beforeEnd.setDate(beforeEnd.getDate()-1);const beforeLab=model.isCustom?`${model.y}.1.1~${wrDateText(beforeEnd)}`:(model.m>1?`1~${model.m-1}월`:'전월'); const selectedLab=model.isCustom?'기간':' '+model.m+'월',monthActualCol=8+model.ranges.length,monthRateCol=9+model.ranges.length;
+  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 목표액=월별 목표 합계 · 목표수정액=목표추이 올해 연매출 목표와 동일 · 실적=거래처 담당자 월매출 합계 기준)</span></div><div class="wr-tablewrap"><table class="wr-table"><thead><tr><th style="width:82px">구분</th><th style="width:112px">합계액</th>${Array.from({length:12},(_,i)=>`<th class="${i+1===currentMonthNo?'wr-current-date':''}">${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
+    <div class="wr-section">▶ 업체별 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">· ${model.isCustom?wrDateText(model.rangeStart)+' ~ '+wrDateText(model.rangeEnd):model.y+'년 '+model.m+'월 '+model.w+'주차'} 기준 · 단위: 원 · 정렬할 항목의 헤더를 클릭</span></div>${wrRankBar('업체',model.custRankInfo,issueFilterActions)}<div class="wr-tablewrap"><table class="wr-table" id="wrCustTargetTable"><thead><tr><th class="wr-no" rowspan="2" style="width:2.6%">NO</th><th class="wr-sortable" data-sort-col="1" data-sort-type="text" rowspan="2" style="width:9%" title="업체명 정렬">업체<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="2" data-sort-type="text" rowspan="2" style="width:6%" title="영업관리 구분 정렬">영업관리<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="3" data-sort-type="num" rowspan="2" style="width:8.5%" title="목표액 정렬">${model.y}년도<br>목표액<span class="wr-sort-arrow">↕</span></th><th colspan="3">매출 실적</th><th class="wr-sortable" data-sort-col="7" data-sort-type="num" rowspan="2" style="width:8.5%" title="기간 목표 정렬">${model.isCustom?'기간':' '+model.m+'월'}<br>목표<br><span style="font-size:7px;color:#64748b">${model.isCustom?'일할 계산':'남은주간 평균'}</span><span class="wr-sort-arrow">↕</span></th><th colspan="${model.ranges.length}">${selectedLab} 구간</th><th class="wr-sortable" data-sort-col="${monthActualCol}" data-sort-type="num" rowspan="2" style="width:8.5%" title="달성금액 정렬">달성금액<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="${monthRateCol}" data-sort-type="num" rowspan="2" style="width:3.7%" title="달성률 정렬">${model.isCustom?'기간 달성률':'월 달성률'}<span class="wr-sort-arrow">↕</span></th><th rowspan="2" style="width:8%">비고</th></tr><tr><th class="wr-center wr-sortable" data-sort-col="4" data-sort-type="num" style="width:8.5%" title="이전 실적 정렬">${beforeLab}<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="5" data-sort-type="num" style="width:3.6%" title="연 달성률 정렬">달성율<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="6" data-sort-type="num" style="width:8.5%" title="잔여 목표액 정렬">잔여 목표액<span class="wr-sort-arrow">↕</span></th>${wkHead}</tr></thead><tbody>${body}${totalRow}</tbody></table></div><div class="wr-note">${model.isCustom?'기간 목표는 해당 월 목표를 일수 기준으로 계산합니다.':'월목표 아래 남은주간 평균은 ‘남은 월목표액 ÷ 선택 주차 이후 남은 주차 수’입니다.'} 현재 날짜가 포함된 월·주차는 연한 노랑색으로 표시됩니다. 앞으로의 미선택 주차에도 이슈가 있으면 금액 아래 📝 아이콘이 표시됩니다.</div></div>`;
+}
+
 function wrPage2(model){
   const pick=wrRankPick(model.products,o=>o.amt),view=pick.view,period=`${wrDateText(model.weekStart)}~${wrDateText(model.weekEnd)}`,prevPeriod=`${wrDateText(model.prevStart)}~${wrDateText(model.prevEnd)}`;
   const change=o=>{const cls=o.diff>0?'wr-up':o.diff<0?'wr-down':'wr-flat',arrow=o.diff>0?'▲':o.diff<0?'▼':'－',pct=o.pct==null?'신규':`${o.pct>=0?'+':''}${o.pct.toFixed(1)}%`;return `<span class="${cls}">${arrow} ${pct}</span>`;};
-  const rows=view.map((o,i)=>`<tr><td class="wr-no" style="font-weight:800">${i+1}</td><td style="text-align:center"><span class="wr-cat ${wrCatClass(o.cat)}">${esc(o.cat||'기타')}</span></td><td style="text-align:left" title="${esc(o.code||'')}">${esc(o.name)}</td><td class="wr-spec-cell" style="text-align:left" title="${esc(o.spec||'')}">${esc(o.spec||'-')}</td><td>${won(o.qty)}</td><td><b>${won(o.amt)}</b></td><td>${won(o.prevAmt)}</td><td class="${o.diff>0?'wr-up':o.diff<0?'wr-down':'wr-flat'}">${o.diff>=0?'+':''}${won(o.diff)}</td><td>${change(o)}</td></tr>`).join('');
+  const rows=view.map((o,i)=>`<tr><td class="wr-no" style="font-weight:800">${i+1}</td><td data-sort-v="${esc(o.cat||'기타')}" style="text-align:center"><span class="wr-cat ${wrCatClass(o.cat)}">${esc(o.cat||'기타')}</span></td><td data-sort-v="${esc(o.name)}" style="text-align:left" title="${esc(o.code||'')}">${esc(o.name)}</td><td data-sort-v="${esc(o.spec||'')}" class="wr-spec-cell" style="text-align:left" title="${esc(o.spec||'')}">${esc(o.spec||'-')}</td><td data-sort-v="${+o.qty||0}">${won(o.qty)}</td><td data-sort-v="${+o.amt||0}"><b>${won(o.amt)}</b></td><td data-sort-v="${+o.prevAmt||0}">${won(o.prevAmt)}</td><td data-sort-v="${+o.diff||0}" class="${o.diff>0?'wr-up':o.diff<0?'wr-down':'wr-flat'}">${o.diff>=0?'+':''}${won(o.diff)}</td><td data-sort-v="${o.pct==null?999999:+o.pct}">${change(o)}</td></tr>`).join('');
   const vt=view.reduce((a,o)=>{a.qty+=o.qty;a.amt+=o.amt;a.prev+=o.prevAmt;return a;},{qty:0,amt:0,prev:0}),vd=vt.amt-vt.prev,vp=vt.prev?vd/vt.prev*100:(vt.amt>0?null:0),vc={diff:vd,pct:vp};
   const nowLab=model.isCustom?'선택기간':'당주',prevLab=model.isCustom?'직전 동일기간':'전주';
-  return `<div class="wr-page">${wrHeader(model,2)}<div class="wr-section">2. 품목별 매출 현황 <span style="font-size:12px;font-weight:600">· ${pick.label} · ${nowLab} ${period} · ${prevLab} ${prevPeriod}</span></div>${wrRankBar('품목',pick)}${wrMixBar(model.products)}<div class="wr-tablewrap"><table class="wr-table wr-mini"><thead><tr><th class="wr-no" style="width:4%">NO</th><th style="width:8%">제품구분</th><th style="width:20%;text-align:center">품명</th><th style="width:20%;text-align:center">규격</th><th style="width:8%">수량</th><th style="width:10%">금액</th><th style="width:10%">${prevLab} 금액</th><th style="width:10%">증감액</th><th style="width:10%">${prevLab} 대비</th></tr></thead><tbody>${rows}<tr class="wr-sum"><td></td><td colspan="3" style="text-align:left">${pick.label} 합계</td><td>${won(vt.qty)}</td><td>${won(vt.amt)}</td><td>${won(vt.prev)}</td><td class="${vd>0?'wr-up':vd<0?'wr-down':'wr-flat'}">${vd>=0?'+':''}${won(vd)}</td><td>${change(vc)}</td></tr></tbody></table></div><div class="wr-note">품목은 선택 기간 매출금액 순으로 표시합니다. 상위 건수 또는 누적 매출비중(%) 기준으로 조정할 수 있으며, 이전 금액은 선택 기간과 같은 길이의 직전 기간을 비교합니다.</div></div>`;
+  return `<div class="wr-page">${wrHeader(model,2)}<div class="wr-section">2. 품목별 매출 현황 <span style="font-size:12px;font-weight:600">· ${pick.label} · ${nowLab} ${period} · ${prevLab} ${prevPeriod} · 헤더 클릭 정렬</span></div>${wrRankBar('품목',pick)}${wrMixBar(model.products)}<div class="wr-tablewrap"><table class="wr-table wr-mini" id="wrProdTable"><thead><tr><th class="wr-no" style="width:4%">NO</th><th class="wr-sortable" data-sort-col="1" data-sort-type="text" style="width:8%" title="제품구분 정렬">제품구분<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="2" data-sort-type="text" style="width:20%;text-align:center" title="품명 정렬">품명<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="3" data-sort-type="text" style="width:20%;text-align:center" title="규격 정렬">규격<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="4" data-sort-type="num" style="width:8%" title="수량 정렬">수량<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="5" data-sort-type="num" style="width:10%" title="금액 정렬">금액<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="6" data-sort-type="num" style="width:10%" title="${prevLab} 금액 정렬">${prevLab} 금액<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="7" data-sort-type="num" style="width:10%" title="증감액 정렬">증감액<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="8" data-sort-type="num" style="width:10%" title="${prevLab} 대비 정렬">${prevLab} 대비<span class="wr-sort-arrow">↕</span></th></tr></thead><tbody>${rows}<tr class="wr-sum"><td></td><td colspan="3" style="text-align:left">${pick.label} 합계</td><td>${won(vt.qty)}</td><td>${won(vt.amt)}</td><td>${won(vt.prev)}</td><td class="${vd>0?'wr-up':vd<0?'wr-down':'wr-flat'}">${vd>=0?'+':''}${won(vd)}</td><td>${change(vc)}</td></tr></tbody></table></div><div class="wr-note">품목은 선택 기간 매출금액 순으로 표시합니다. 제품구분·품명·규격·수량·금액 등 각 헤더를 클릭하면 오름차순/내림차순으로 정렬되며 합계행은 아래에 고정됩니다.</div></div>`;
+}
+
+function wrIssuePeriodKey(model){
+  if(model.isCustom)return `R|${wrDateInput(model.rangeStart)}|${wrDateInput(model.rangeEnd)}`;
+  return `W|${model.y}|${String(model.m).padStart(2,'0')}|${model.w}`;
+}
+function wrIssuePeriodInfo(model){
+  const start=wrDateInput(model.rangeStart),end=wrDateInput(model.rangeEnd);
+  return {key:wrIssuePeriodKey(model),label:model.isCustom?`선택기간 ${wrDateText(model.rangeStart)}~${wrDateText(model.rangeEnd)}`:`${model.y}년 ${model.m}월 ${model.w}주`,short:model.isCustom?`선택기간 / 기간 ${wrDateText(model.rangeStart)}~${wrDateText(model.rangeEnd)}`:`${model.m}월 ${model.w}주 / 기간 ${wrDateText(model.rangeStart)}~${wrDateText(model.rangeEnd)}`,start,end,startDate:new Date(model.rangeStart),endDate:new Date(model.rangeEnd),y:model.y,m:model.m,w:model.w,isCustom:!!model.isCustom};
+}
+function wrIssueAdjacentPeriod(model,dir){
+  const step=dir<0?-1:1;
+  if(model.isCustom){
+    const days=Math.max(1,Math.round((model.rangeEnd-model.rangeStart)/86400000)+1);let start,end;
+    if(step>0){start=new Date(model.rangeEnd);start.setDate(start.getDate()+1);end=new Date(start);end.setDate(end.getDate()+days-1);}
+    else{end=new Date(model.rangeStart);end.setDate(end.getDate()-1);start=new Date(end);start.setDate(start.getDate()-days+1);}
+    const s=wrDateInput(start),e=wrDateInput(end);
+    return {key:`R|${s}|${e}`,label:`선택기간 ${wrDateText(start)}~${wrDateText(end)}`,short:`선택기간 / 기간 ${wrDateText(start)}~${wrDateText(end)}`,start:s,end:e,startDate:start,endDate:end,y:start.getFullYear(),m:start.getMonth()+1,w:0,isCustom:true};
+  }
+  let y=+model.y,m=+model.m,w=+model.w;
+  if(step>0){
+    const cur=wrRanges(y,m);if(w<cur.length)w++;else{m++;if(m>12){m=1;y++;}w=1;}
+  }else{
+    if(w>1)w--;else{m--;if(m<1){m=12;y--;}w=wrRanges(y,m).length;}
+  }
+  const r=wrRanges(y,m)[w-1];if(!r)return null;
+  const start=wrDate(y,m,r.s),end=wrDate(y,m,r.e),s=wrDateInput(start),e=wrDateInput(end);
+  return {key:`W|${y}|${String(m).padStart(2,'0')}|${w}`,label:`${y}년 ${m}월 ${w}주`,short:`${m}월 ${w}주 / 기간 ${wrDateText(start)}~${wrDateText(end)}`,start:s,end:e,startDate:start,endDate:end,y,m,w,isCustom:false};
+}
+function wrIssueBucket(model,create){
+  state.weekly.issues=state.weekly.issues||{}; const k=wrIssuePeriodKey(model);
+  if(create&&!state.weekly.issues[k])state.weekly.issues[k]={};
+  return state.weekly.issues[k]||{};
+}
+function wrIssueCusts(){
+  const s=new Set(); CUR.forEach(r=>{if(r.cust)s.add(r.cust)}); Object.keys(state.custInfo||{}).forEach(c=>s.add(c)); Object.keys(state.mgrOverride||{}).forEach(c=>s.add(c));
+  return [...s].filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b),'ko'));
+}
+function wrIssueContacts(cust){
+  const info=(state.custInfo&&state.custInfo[cust])||{},src=[];
+  if(info.keyman&&String(info.keyman.n||'').trim())src.push({...info.keyman,_role:'키맨'});
+  (Array.isArray(info.contacts)?info.contacts:[]).forEach(c=>src.push({...c,_role:'담당'}));
+  const seen=new Set(),out=[];
+  src.forEach(c=>{
+    const n=String(c&&c.n||'').trim();if(!n)return;
+    const key=[n,c.pos||'',c.dept||'',c.p||''].join('|');if(seen.has(key))return;seen.add(key);
+    const sub=[c._role,c.pos,c.dept].filter(Boolean).join(' · '),phone=String(c.p||'').trim();
+    out.push({name:n,label:`${n}${sub?' ('+sub+')':''}${phone?' · '+phone:''}`,pos:c.pos||'',dept:c.dept||'',phone});
+  });
+  return out;
+}
+function wrIssueInternalManager(cust){
+  if(!cust)return '-'; const s=mgrS(cust),t=mgrT(cust); return [s?`영업관리 ${s}`:'',t?`기술영업 ${t}`:''].filter(Boolean).join(' · ')||'미배정';
+}
+function wrIssueSalesRank(cust,model){
+  if(!cust||!model)return {annualRank:null,annualRankTotal:0};
+  const y=+model.y,asOf=model.asOf||model.rangeEnd,totals=new Map();
+  CUR.forEach(r=>{
+    if(+r.y!==y||r.d>asOf||fcIsExcludedCust(r.cust))return;
+    const c=String(r.cust||'').trim();if(!c)return;
+    totals.set(c,(totals.get(c)||0)+amtOf(r));
+  });
+  const ranked=[...totals.entries()].filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]||String(a[0]).localeCompare(String(b[0]),'ko'));
+  const idx=ranked.findIndex(([c])=>c===cust);
+  return {annualRank:idx>=0?idx+1:null,annualRankTotal:ranked.length};
+}
+function wrIssuePerformance(cust,model){
+  if(!cust||!model)return {annualActual:0,annualTarget:0,annualRate:null,annualRank:null,annualRankTotal:0,monthActual:0,monthTarget:0,monthRate:null,weekActual:0};
+  const y=+model.y,m=+model.m,asOf=model.asOf||model.rangeEnd,monthStart=new Date(y,m-1,1),monthEnd=new Date(y,m,0);
+  const effectiveMonthEnd=asOf<monthEnd?asOf:monthEnd;
+  const rows=CUR.filter(r=>r.cust===cust&&+r.y===y&&!fcIsExcludedCust(r.cust));
+  const annualActual=rows.filter(r=>r.d<=asOf).reduce((a,r)=>a+amtOf(r),0);
+  const annualTarget=(model.plan&&model.plan.annual&&model.plan.annual.get(cust))||0;
+  const monthActual=effectiveMonthEnd>=monthStart?rows.filter(r=>r.d>=monthStart&&r.d<=effectiveMonthEnd).reduce((a,r)=>a+amtOf(r),0):0;
+  const monthTarget=(model.plan&&model.plan.revised&&model.plan.revised[m]&&model.plan.revised[m].get(cust))||0;
+  const weekActual=rows.filter(r=>r.d>=model.rangeStart&&r.d<=model.rangeEnd).reduce((a,r)=>a+amtOf(r),0);
+  const rank=wrIssueSalesRank(cust,model);
+  return {annualActual,annualTarget,annualRate:annualTarget?annualActual/annualTarget*100:null,...rank,monthActual,monthTarget,monthRate:monthTarget?monthActual/monthTarget*100:null,weekActual};
+}
+function wrIssueCreditData(cust,model){
+  if(!cust)return {grade:'-',status:'-',pay:'-',manager:'-',...wrIssuePerformance('',model)};
+  const g=gradeRec(cust)||{},perf=wrIssuePerformance(cust,model); return {grade:(typeof gradeDisp==='function'?gradeDisp(g.grade):g.grade)||'-',status:(typeof catOf==='function'?catOf(cust):'')||'기타',pay:(typeof payOf==='function'?payOf(cust):g.pay)||'(미지정)',manager:wrIssueInternalManager(cust),...perf};
+}
+function wrIssueMoney(v){return `${won(Math.round(+v||0))}원`;}
+function wrIssueRate(v){return v==null||!isFinite(v)?'-':`${(+v).toFixed(1)}%`;}
+function wrIssueCreditHtml(cust,snap,model){
+  if(!cust)return '<span class="empty">업체를 검색·선택하면 신용도와 매출순위·올해·이번달·이번주 매출이 표시됩니다.</span>';
+  const live=wrIssueCreditData(cust,model),d={...live};if(snap)Object.entries(snap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
+  const col=(typeof GRADE_COL!=='undefined'&&GRADE_COL[d.status])||{bg:'#f1f5f9',tx:'#475569'};
+  const ar=d.annualRate!=null?d.annualRate:(+d.annualTarget?+d.annualActual/+d.annualTarget*100:null),mr=d.monthRate!=null?d.monthRate:(+d.monthTarget?+d.monthActual/+d.monthTarget*100:null);
+  const rankText=d.annualRank?`${won(d.annualRank)}위 / ${won(d.annualRankTotal||0)}개 업체`:`순위 없음${d.annualRankTotal?` / ${won(d.annualRankTotal)}개 업체`:''}`;
+  return `<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;width:100%"><span class="wr-issue-badge" style="background:${col.bg};color:${col.tx};border-color:${col.tx}33">신용 ${esc(d.grade||'-')}</span><span class="wr-issue-badge" style="background:${col.bg};color:${col.tx};border-color:${col.tx}33">${esc(d.status||'-')}</span><span class="wr-issue-badge">결제 ${esc(d.pay||'-')}</span><span class="wr-issue-badge" style="background:#fff7ed;border-color:#fdba74;color:#c2410c">${model?model.y+'년 ':''}매출순위 ${rankText}</span></div><div class="wr-issue-metrics"><div class="wr-issue-metric"><b>${model?model.y+'년':'올해'} 매출액</b><strong>${wrIssueMoney(d.annualActual)}</strong><em>달성 ${wrIssueRate(ar)}</em><div class="wr-issue-help">목표 ${wrIssueMoney(d.annualTarget)}</div></div><div class="wr-issue-metric"><b>${model?model.m+'월':'이번달'} 매출액</b><strong>${wrIssueMoney(d.monthActual)}</strong><em>달성 ${wrIssueRate(mr)}</em><div class="wr-issue-help">목표 ${wrIssueMoney(d.monthTarget)}</div></div><div class="wr-issue-metric"><b>${model&&model.isCustom?'선택기간':'이번주'} 매출액</b><strong>${wrIssueMoney(d.weekActual)}</strong><div class="wr-issue-help">${model?wrDateText(model.rangeStart)+' ~ '+wrDateText(model.rangeEnd):''}</div></div></div>`;
+}
+function wrIssueNormalize(r){
+  r=r||{}; const legacy=String(r.content||'');
+  return {...r,prevPlan:r.prevPlan||'',actual:r.actual||((r.type!=='계획')?legacy:''),nextPlan:r.nextPlan||((r.type==='계획')?legacy:'')};
+}
+function wrIssueStoredEntries(){
+  const out=[];Object.entries(state.weekly.issues||{}).forEach(([pk,b])=>{if(!b||typeof b!=='object')return;Object.entries(b).forEach(([entryId,raw])=>{if(!raw||typeof raw!=='object')return;const record=wrIssueNormalize({...raw,id:raw.id||entryId,periodKey:raw.periodKey||pk});out.push({periodKey:pk,entryId,record});});});return out;
+}
+function wrIssueAll(){
+  return wrIssueStoredEntries().map(x=>x.record).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));
+}
+function wrIssueCarryRows(model){
+  const target=wrIssuePeriodInfo(model),prev=wrIssueAdjacentPeriod(model,-1),current=Object.values(wrIssueBucket(model,false)).filter(Boolean).map(wrIssueNormalize);
+  const consumed=new Set(current.filter(r=>r.carryFromPeriodKey&&r.carryFromId).map(r=>`${r.carryFromPeriodKey}|${r.carryFromId}`));
+  return wrIssueStoredEntries().filter(({periodKey,entryId,record:r})=>{
+    if(!String(r.nextPlan||'').trim())return false;
+    const token=`${periodKey}|${r.id||entryId}`;if(consumed.has(token))return false;
+    if(r.nextPeriodKey&&r.nextPeriodKey===target.key)return true;
+    if(r.nextPeriodStart&&r.nextPeriodEnd&&r.nextPeriodStart===target.start&&r.nextPeriodEnd===target.end)return true;
+    return !!prev&&(periodKey===prev.key||(r.periodStart===prev.start&&r.periodEnd===prev.end));
+  }).map(({periodKey,entryId,record:r})=>{
+    const cd=wrIssueCreditData(r.cust||'',model),sourceId=r.id||entryId;
+    return {id:`carry_${sourceId}`,periodKey:target.key,periodLabel:target.label,periodStart:target.start,periodEnd:target.end,type:'자동이월',author:r.author||'',cust:r.cust||'',contact:r.contact||'',salesManager:r.salesManager||cd.manager,creditGrade:cd.grade,creditStatus:cd.status,creditPay:cd.pay,annualActual:cd.annualActual,annualTarget:cd.annualTarget,annualRate:cd.annualRate,annualRank:cd.annualRank,annualRankTotal:cd.annualRankTotal,monthActual:cd.monthActual,monthTarget:cd.monthTarget,monthRate:cd.monthRate,weekActual:cd.weekActual,prevPlan:String(r.nextPlan||'').trim(),actual:'',nextPlan:'',content:'',createdAt:r.updatedAt||r.createdAt||'',updatedAt:r.updatedAt||r.createdAt||'',isCarry:true,carryFromPeriodKey:periodKey,carryFromId:sourceId,carrySourceLabel:r.periodLabel||prev&&prev.label||''};
+  }).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+}
+function wrIssueCurrentRows(model){
+  const saved=Object.values(wrIssueBucket(model,false)).filter(Boolean).map(wrIssueNormalize),carry=wrIssueCarryRows(model);
+  return [...saved,...carry].sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));
+}
+function wrIssueView(model){
+  const key=wrIssuePeriodKey(model),scope=state.weekly.issueScope==='all'?'all':'current',q=String(state.weekly.issueSearch||'').trim().toLowerCase();
+  let arr=scope==='all'?wrIssueAll():wrIssueCurrentRows(model);
+  if(q)arr=arr.filter(r=>[r.author,r.cust,r.contact,r.salesManager,r.prevPlan,r.actual,r.nextPlan,r.periodLabel,r.creditGrade,r.creditStatus,r.creditPay,r.carrySourceLabel].join(' ').toLowerCase().includes(q));
+  return {arr,key,scope,q};
+}
+function wrIssueDraft(model){
+  const pk=wrIssuePeriodKey(model),d=state.weekly.issueDraft;
+  if(d&&d.periodKey===pk)return wrIssueNormalize(d);
+  return {periodKey:pk,author:state.weekly.issueAuthor||((state.gsync&&state.gsync.user)||''),cust:'',contact:'',salesManager:'',prevPlan:'',actual:'',nextPlan:''};
+}
+function wrIssueFmtTime(v){ if(!v)return '-'; const d=new Date(v); if(isNaN(d))return '-'; const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function wrPage3(model){
+  const pi=wrIssuePeriodInfo(model),draft=wrIssueDraft(model),view=wrIssueView(model),custs=wrIssueCusts(),prevPi=wrIssueAdjacentPeriod(model,-1),nextPi=wrIssueAdjacentPeriod(model,1);
+  const custOpts=custs.map(c=>`<option value="${esc(c)}"></option>`).join('');
+  const contacts=wrIssueContacts(draft.cust||''),contactOpts=['<option value="">📇 매출처 담당정보에서 선택</option>',...contacts.map(c=>`<option value="${esc(c.name)}" ${c.name===draft.contact?'selected':''}>${esc(c.label)}</option>`)].join('');
+  const edit=!!state.weekly.issueEditId,prevStagePeriod=prevPi?`${wrDateText(prevPi.startDate)}~${wrDateText(prevPi.endDate)}`:'-',actualStagePeriod=`${wrDateText(model.rangeStart)}~${wrDateText(model.rangeEnd)}`,nextStagePeriod=nextPi?`${wrDateText(nextPi.startDate)}~${wrDateText(nextPi.endDate)}`:'-';
+  const rows=view.arr.map((raw,i)=>{
+    const r=wrIssueNormalize(raw),isCarry=!!r.isCarry,snap={grade:r.creditGrade||'-',status:r.creditStatus||'-',pay:r.creditPay||'-',annualActual:r.annualActual||0,annualTarget:r.annualTarget||0,annualRate:r.annualRate,annualRank:r.annualRank,annualRankTotal:r.annualRankTotal,monthActual:r.monthActual||0,monthTarget:r.monthTarget||0,monthRate:r.monthRate,weekActual:r.weekActual||0};
+    const search=[r.author,r.cust,r.contact,r.salesManager,r.prevPlan,r.actual,r.nextPlan,r.periodLabel,r.creditGrade,r.creditStatus,r.creditPay,r.carrySourceLabel].join(' ').toLowerCase();
+    const carryNote=isCarry?`<div class="wr-issue-carry-note">↪ ${esc(r.carrySourceLabel||'전 회차')} 차주계획 자동 이월</div>`:'';
+    const actions=isCarry?`<button type="button" class="wr-issue-carry-open" data-source-pk="${esc(r.carryFromPeriodKey||'')}" data-source-id="${esc(r.carryFromId||'')}">작성</button>`:`<button type="button" class="wr-issue-edit" data-pk="${esc(r.periodKey||'')}" data-id="${esc(r.id||'')}">수정</button><button type="button" class="wr-issue-del" data-pk="${esc(r.periodKey||'')}" data-id="${esc(r.id||'')}">삭제</button>`;
+    return `<tr class="wr-issue-row ${isCarry?'wr-issue-carry-row':''}" data-search="${esc(search)}"><td class="num">${i+1}</td><td><b>${esc(r.periodLabel||'-')}</b><div class="sub2" style="font-size:9.5px">${esc((r.periodStart||'')+(r.periodEnd?' ~ '+r.periodEnd:''))}</div>${isCarry?'<div class="wr-issue-carry-note">자동 이월</div>':''}</td><td><div class="wr-issue-cust">${esc(r.cust||'업체 미지정')}</div>${r.cust?wrIssueCreditHtml(r.cust,snap,model):'<span class="sub2">-</span>'}<div class="sub2" style="margin-top:4px">${esc(r.salesManager||'')}</div></td><td><div class="wr-issue-contact-cell">${r.cust?wrIssueCategoryIcons(r.cust):''}<span>${esc(r.contact||'-')}</span></div></td><td><b>${esc(r.author||'-')}</b></td><td><div class="wr-issue-text">${esc(r.prevPlan||'')}</div>${carryNote}</td><td><div class="wr-issue-text">${esc(r.actual||'')}</div></td><td><div class="wr-issue-text">${esc(r.nextPlan||'')}</div></td><td class="when">${wrIssueFmtTime(r.updatedAt||r.createdAt)}</td><td><div class="wr-issue-row-actions">${actions}</div></td></tr>`;
+  }).join('');
+  const managerValue=draft.salesManager!=null&&String(draft.salesManager).trim()?draft.salesManager:(draft.cust?wrIssueInternalManager(draft.cust):''),currentCount=wrIssueCurrentRows(model).length;
+  const carryBanner=draft.carryFromId?`<div class="wr-issue-carry-banner">↪ ${esc(draft.carrySourceLabel||'전 회차')}의 차주계획을 이전계획으로 불러왔습니다. 실적 또는 새 차주계획을 입력한 뒤 저장하세요.</div>`:'';
+  return `<div class="wr-page">${wrHeader(model,3)}<div class="wr-issue-headline"><div class="wr-issue-period">3. 주간이슈사항 <small>(${esc(pi.short)})</small></div><span class="wr-rankstat">현재 기간 ${won(currentCount)}건 · 저장 전체 ${won(wrIssueAll().length)}건</span></div>
+  <div class="wr-issue-form wr-no-print"><div class="wr-issue-grid">
+    <div class="wr-issue-field"><label for="wrIssueAuthor">작성자</label><input id="wrIssueAuthor" value="${esc(draft.author||'')}" placeholder="작성자 이름"></div>
+    <div class="wr-issue-field"><label for="wrIssueCust">업체선택 · 직접검색</label><input id="wrIssueCust" list="wrIssueCustList" value="${esc(draft.cust||'')}" placeholder="업체명을 입력하여 검색"><datalist id="wrIssueCustList">${custOpts}</datalist></div>
+    <div class="wr-issue-field"><label for="wrIssueContact">업체담당자</label><div class="wr-issue-contact-row"><select id="wrIssueContactSelect">${contactOpts}</select><input id="wrIssueContact" value="${esc(draft.contact||'')}" placeholder="직접 작성"></div></div>
+    <div class="wr-issue-field"><label for="wrIssueManager">담당자</label><input class="wr-issue-manager-input" id="wrIssueManager" value="${esc(managerValue)}" placeholder="담당자 직접 입력"></div>
+    <div class="wr-issue-field" style="grid-column:1/-1"><span class="wr-issue-lab">업체 신용도 · 매출 현황</span><div class="wr-issue-credit" id="wrIssueCredit">${wrIssueCreditHtml(draft.cust||'',null,model)}</div></div>
+    ${carryBanner}
+    <div class="wr-issue-triplet"><div class="wr-issue-stage prev"><label for="wrIssuePrevPlan">① 이전계획 <span>(${esc(prevStagePeriod)})</span></label><textarea id="wrIssuePrevPlan" placeholder="지난 기간에 계획했던 내용과 진행 예정사항을 입력하세요.">${esc(draft.prevPlan||'')}</textarea></div><div class="wr-issue-stage actual"><label for="wrIssueActual">② 실적 <span>(${esc(actualStagePeriod)})</span></label><textarea id="wrIssueActual" placeholder="선택 기간의 진행 결과와 실적을 입력하세요.">${esc(draft.actual||'')}</textarea></div><div class="wr-issue-stage next"><label for="wrIssueNextPlan">③ 차주계획 <span>(${esc(nextStagePeriod)})</span></label><textarea id="wrIssueNextPlan" placeholder="다음 기간의 추진계획과 후속조치를 입력하세요.">${esc(draft.nextPlan||'')}</textarea></div></div>
+  </div><div class="wr-issue-actions"><button class="btn" type="button" id="wrIssueSave">${edit?'수정 저장':'주간현황 저장'}</button>${edit?'<button class="btn ghost" type="button" id="wrIssueCancel">수정 취소</button>':''}<span class="sub2">차주계획이 있는 항목만 다음 주·다음 회차의 이전계획으로 자동 표시됩니다.</span></div></div>
+  <div class="wr-issue-search wr-no-print"><b style="font-size:11px;color:#334155">🔍 찾기</b><input id="wrIssueSearch" value="${esc(state.weekly.issueSearch||'')}" placeholder="이전계획·실적·차주계획·업체·작성자·업체담당자 검색"><div class="wr-issue-scope"><button type="button" data-v="current" class="${view.scope==='current'?'on':''}">현재기간</button><button type="button" data-v="all" class="${view.scope==='all'?'on':''}">전체기간</button></div><button type="button" class="btn ghost" id="wrIssueSearchClear" style="font-size:11px;padding:5px 9px">초기화</button><span class="sub2" id="wrIssueCount">검색 ${won(view.arr.length)}건</span></div>
+  <div class="wr-tablewrap"><table class="wr-table wr-issue-table"><thead><tr><th style="width:3%">NO</th><th style="width:9%">기간</th><th style="width:20%">업체·신용도·매출현황</th><th style="width:7%">업체담당자</th><th style="width:6%">작성자</th><th style="width:15%">이전계획</th><th style="width:15%">실적</th><th style="width:15%">차주계획</th><th style="width:6%">수정일</th><th style="width:4%">관리</th></tr></thead><tbody id="wrIssueBody">${rows||'<tr><td colspan="10" class="wr-issue-empty">등록되거나 자동 이월된 주간이슈가 없습니다.</td></tr>'}</tbody></table></div><div class="wr-note">차주계획에 내용이 있는 항목만 바로 다음 주 또는 다음 사용자 지정 회차의 이전계획으로 자동 이월됩니다. 자동 이월 행의 ‘작성’을 누르면 실적과 새 차주계획을 이어서 저장할 수 있습니다.</div></div>`;
+}
+
+function wrBindIssue(model){
+  const root=$('#result'),pk=wrIssuePeriodKey(model),custs=wrIssueCusts();
+  const cust=$('#wrIssueCust'),contact=$('#wrIssueContact'),contactSel=$('#wrIssueContactSelect'),credit=$('#wrIssueCredit'),manager=$('#wrIssueManager');
+  let lastCust=String(cust&&cust.value||'').trim();
+  const refreshCust=(clearContact=false)=>{
+    const c=String(cust&&cust.value||'').trim(),exact=custs.includes(c),custChanged=c!==lastCust;
+    if(credit)credit.innerHTML=wrIssueCreditHtml(exact?c:'',null,model);
+    if(manager&&((clearContact&&custChanged)||!String(manager.value||'').trim()))manager.value=exact?wrIssueInternalManager(c):'';
+    const cs=exact?wrIssueContacts(c):[];
+    if(contactSel){const current=String(contact&&contact.value||'').trim();contactSel.innerHTML=['<option value="">📇 매출처 담당정보에서 선택</option>',...cs.map(x=>`<option value="${esc(x.name)}" ${x.name===current?'selected':''}>${esc(x.label)}</option>`)].join('');}
+    if(clearContact&&custChanged&&contact){contact.value='';if(contactSel)contactSel.value='';}
+    lastCust=c;
+  };
+  cust&&cust.addEventListener('input',()=>refreshCust(true));
+  cust&&cust.addEventListener('change',()=>refreshCust(true));
+  contactSel&&contactSel.addEventListener('change',()=>{if(contactSel.value&&contact)contact.value=contactSel.value;});
+  const save=async()=>{
+    const author=String($('#wrIssueAuthor')&&$('#wrIssueAuthor').value||'').trim(),c=String(cust&&cust.value||'').trim(),ct=String(contact&&contact.value||'').trim(),mgr=String(manager&&manager.value||'').trim(),prevPlan=String($('#wrIssuePrevPlan')&&$('#wrIssuePrevPlan').value||'').trim(),actual=String($('#wrIssueActual')&&$('#wrIssueActual').value||'').trim(),nextPlan=String($('#wrIssueNextPlan')&&$('#wrIssueNextPlan').value||'').trim();
+    if(!author){alert('작성자를 입력해 주세요.');$('#wrIssueAuthor')&&$('#wrIssueAuthor').focus();return;}
+    if(!prevPlan&&!actual&&!nextPlan){alert('이전계획, 실적, 차주계획 중 하나 이상 입력해 주세요.');$('#wrIssueActual')&&$('#wrIssueActual').focus();return;}
+    const pi=wrIssuePeriodInfo(model),nextPi=wrIssueAdjacentPeriod(model,1),bucket=wrIssueBucket(model,true),id=state.weekly.issueEditId||('wi_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)),old=bucket[id]||{},draftMeta=(state.weekly.issueDraft&&state.weekly.issueDraft.periodKey===pk)?state.weekly.issueDraft:{},cd=wrIssueCreditData(c,model),now=new Date().toISOString();
+    bucket[id]={...old,id,periodKey:pk,periodLabel:pi.label,periodStart:pi.start,periodEnd:pi.end,type:'주간현황',author,cust:c,contact:ct,salesManager:mgr||cd.manager,creditGrade:cd.grade,creditStatus:cd.status,creditPay:cd.pay,annualActual:cd.annualActual,annualTarget:cd.annualTarget,annualRate:cd.annualRate,annualRank:cd.annualRank,annualRankTotal:cd.annualRankTotal,monthActual:cd.monthActual,monthTarget:cd.monthTarget,monthRate:cd.monthRate,weekActual:cd.weekActual,prevPlan,actual,nextPlan,content:actual,carryFromPeriodKey:old.carryFromPeriodKey||draftMeta.carryFromPeriodKey||'',carryFromId:old.carryFromId||draftMeta.carryFromId||'',carrySourceLabel:old.carrySourceLabel||draftMeta.carrySourceLabel||'',nextPeriodKey:nextPi?nextPi.key:'',nextPeriodStart:nextPi?nextPi.start:'',nextPeriodEnd:nextPi?nextPi.end:'',createdAt:old.createdAt||now,updatedAt:now};
+    state.weekly.issueAuthor=author;state.weekly.issueDraft=null;state.weekly.issueEditId=null;if(typeof logEdit==='function')logEdit('주간이슈',`${pi.label} · ${c||'업체 미지정'} ${old.id?'수정':'등록'}`);await saveSettings();weeklyReport(3);
+  };
+  const sb=$('#wrIssueSave');sb&&sb.addEventListener('click',save);
+  const cb=$('#wrIssueCancel');cb&&cb.addEventListener('click',()=>{state.weekly.issueDraft=null;state.weekly.issueEditId=null;weeklyReport(3);});
+  root.querySelectorAll('.wr-issue-carry-open').forEach(b=>b.addEventListener('click',()=>{
+    const sourcePk=b.dataset.sourcePk,sourceId=b.dataset.sourceId,bp=(state.weekly.issues||{})[sourcePk]||{},raw=bp[sourceId];if(!raw)return;
+    const r=wrIssueNormalize(raw);if(!String(r.nextPlan||'').trim()){weeklyReport(3);return;}
+    state.weekly.issueEditId=null;state.weekly.issueDraft={periodKey:pk,author:r.author||state.weekly.issueAuthor||'',cust:r.cust||'',contact:r.contact||'',salesManager:r.salesManager||'',prevPlan:String(r.nextPlan||'').trim(),actual:'',nextPlan:'',carryFromPeriodKey:sourcePk,carryFromId:r.id||sourceId,carrySourceLabel:r.periodLabel||''};weeklyReport(3);
+  }));
+  root.querySelectorAll('.wr-issue-edit').forEach(b=>b.addEventListener('click',()=>{const bp=(state.weekly.issues||{})[b.dataset.pk]||{},raw=bp[b.dataset.id];if(!raw)return;const r=wrIssueNormalize(raw);state.weekly.issueEditId=r.id;state.weekly.issueDraft={periodKey:pk,author:r.author||'',cust:r.cust||'',contact:r.contact||'',salesManager:r.salesManager||'',prevPlan:r.prevPlan||'',actual:r.actual||'',nextPlan:r.nextPlan||'',carryFromPeriodKey:r.carryFromPeriodKey||'',carryFromId:r.carryFromId||'',carrySourceLabel:r.carrySourceLabel||''};if(b.dataset.pk!==pk){alert('해당 이슈가 저장된 기간으로 이동한 후 수정해 주세요. 전체기간 찾기에서는 과거 이슈를 확인할 수 있습니다.');state.weekly.issueEditId=null;state.weekly.issueDraft=null;return;}weeklyReport(3);}));
+  root.querySelectorAll('.wr-issue-del').forEach(b=>b.addEventListener('click',async()=>{const bp=(state.weekly.issues||{})[b.dataset.pk]||{},r=bp[b.dataset.id];if(!r)return;if(!await uiConfirm(`주간이슈를 삭제할까요?\n${r.cust||'업체 미지정'}`))return;delete bp[b.dataset.id];if(!Object.keys(bp).length)delete state.weekly.issues[b.dataset.pk];if(typeof logEdit==='function')logEdit('주간이슈',`${r.periodLabel||''} · ${r.cust||'업체 미지정'} 삭제`);await saveSettings();weeklyReport(3);}));
+  const search=$('#wrIssueSearch');if(search)search.addEventListener('input',()=>{state.weekly.issueSearch=search.value;const q=search.value.trim().toLowerCase();let n=0;root.querySelectorAll('.wr-issue-row').forEach(tr=>{const on=!q||(tr.dataset.search||'').includes(q);tr.style.display=on?'':'none';if(on)n++;});const cnt=$('#wrIssueCount');if(cnt)cnt.textContent='검색 '+won(n)+'건';});
+  root.querySelectorAll('.wr-issue-scope button').forEach(b=>b.addEventListener('click',()=>{state.weekly.issueScope=b.dataset.v==='all'?'all':'current';weeklyReport(3);}));
+  const clr=$('#wrIssueSearchClear');clr&&clr.addEventListener('click',()=>{state.weekly.issueSearch='';weeklyReport(3);});
+}
+
+function wrExport3(model){
+  const view=wrIssueView(model),rows=[['기간','시작일','종료일','업체','신용등급','신용상태','결제조건','올해매출순위','순위대상업체수','올해매출','올해목표','올해달성률','이번달매출','이번달목표','이번달달성률','이번주매출','담당자','업체담당자','작성자','이전계획','실적','차주계획','등록일','수정일']];
+  view.arr.forEach(raw=>{const r=wrIssueNormalize(raw);rows.push([r.periodLabel||'',r.periodStart||'',r.periodEnd||'',r.cust||'',r.creditGrade||'',r.creditStatus||'',r.creditPay||'',r.annualRank||'',r.annualRankTotal||'',r.annualActual||0,r.annualTarget||0,r.annualRate==null?'':r.annualRate,r.monthActual||0,r.monthTarget||0,r.monthRate==null?'':r.monthRate,r.weekActual||0,r.salesManager||'',r.contact||'',r.author||'',r.prevPlan||'',r.actual||'',r.nextPlan||'',r.createdAt||'',r.updatedAt||'']);});
+  const pi=wrIssuePeriodInfo(model),suffix=view.scope==='all'?'전체기간':pi.key.replace(/[^0-9A-Za-z가-힣_-]+/g,'_');dlXLSX(`주간보고_주간이슈_${suffix}.xlsx`,'주간이슈',rows);
+}
+function wrBindSortableTable(table){
+  if(!table||!table.tBodies||!table.tBodies[0])return;
+  const heads=[...table.querySelectorAll('thead th[data-sort-col]')],tbody=table.tBodies[0];
+  const valueOf=(tr,col,type)=>{
+    const cell=tr.cells[col];if(!cell)return type==='num'?0:'';
+    const raw=cell.dataset.sortV!=null?cell.dataset.sortV:cell.textContent;
+    if(type==='num'){const n=Number(String(raw).replace(/,/g,'').replace(/[^\d.+-]/g,''));return isFinite(n)?n:0;}
+    return String(raw||'').trim();
+  };
+  heads.forEach(th=>th.addEventListener('click',()=>{
+    const col=+th.dataset.sortCol,type=th.dataset.sortType||'text',dir=th.dataset.sortDir==='asc'?'desc':'asc';
+    heads.forEach(h=>{h.dataset.sortDir='';h.classList.remove('active');const a=h.querySelector('.wr-sort-arrow');if(a)a.textContent='↕';});
+    th.dataset.sortDir=dir;th.classList.add('active');const arrow=th.querySelector('.wr-sort-arrow');if(arrow)arrow.textContent=dir==='asc'?'▲':'▼';
+    const rows=[...tbody.rows],normal=rows.filter(tr=>!tr.classList.contains('wr-sum')&&!tr.classList.contains('wr-rest')),rests=rows.filter(tr=>tr.classList.contains('wr-rest')),sums=rows.filter(tr=>tr.classList.contains('wr-sum'));
+    normal.sort((a,b)=>{
+      const av=valueOf(a,col,type),bv=valueOf(b,col,type);
+      const cmp=type==='num'?(av-bv):String(av).localeCompare(String(bv),'ko',{numeric:true,sensitivity:'base'});
+      return dir==='asc'?cmp:-cmp;
+    });
+    normal.forEach((tr,i)=>{tbody.appendChild(tr);const no=tr.querySelector('.wr-no');if(no)no.textContent=i+1;});
+    rests.forEach(tr=>tbody.appendChild(tr));
+    sums.forEach(tr=>tbody.appendChild(tr));
+  }));
 }
 function wrBind(model,page){
   const root=$('#result');
-  root.querySelectorAll('[data-wrpage]').forEach(b=>b.addEventListener('click',()=>{ const p=+b.dataset.wrpage;state.weekly.page=p;state.act=p===1?'weekly1':'weekly2';runAct(); }));
+  root.querySelectorAll('[data-wrpage]').forEach(b=>b.addEventListener('click',()=>{ const p=+b.dataset.wrpage;state.weekly.page=p;state.act=p===1?'weekly1':p===2?'weekly2':'weekly3';runAct(); }));
   const y=$('#wrYear'),m=$('#wrMonth'),w=$('#wrWeek'),rs=$('#wrRangeStart'),re=$('#wrRangeEnd'),ra=$('#wrRangeApply'),rr=$('#wrRangeReset'),n=$('#wrTopN'),tc=$('#wrTopCustom'),p=$('#wrTopPct'),pc=$('#wrPctCustom'),mc=$('#wrModeCount'),mp=$('#wrModePct');
   const clearRange=()=>{state.weekly.rangeStart='';state.weekly.rangeEnd='';};
   y&&y.addEventListener('change',()=>{clearRange();state.weekly.year=+y.value;state.weekly.month=wrLatestMonth(+y.value);state.weekly.week=wrLatestWeek(+y.value,state.weekly.month);saveSettings();weeklyReport(page);});
@@ -1357,7 +1723,25 @@ function wrBind(model,page){
   mc&&mc.addEventListener('click',()=>setTop(state.weekly.topN));
   mp&&mp.addEventListener('click',()=>setPct(state.weekly.topPct));
   root.querySelectorAll('.wr-memo').forEach(inp=>inp.addEventListener('change',e=>{ const k=e.target.dataset.k,v=e.target.value.trim(); state.weekly.notes=state.weekly.notes||{}; if(v)state.weekly.notes[k]=v; else delete state.weekly.notes[k]; if(typeof logEdit==='function')logEdit('주간보고 비고',(e.target.dataset.cust||'업체')+' 비고 '+(v?'저장':'삭제')); saveSettings(); }));
-  const xb=$('#wrXlsx');xb&&xb.addEventListener('click',()=>page===1?wrExport1(model):wrExport2(model));
+  if(page===1){
+    wrBindSortableTable($('#wrCustTargetTable'));
+    root.querySelectorAll('[data-wr-issue-filter]').forEach(b=>b.addEventListener('click',()=>{
+      const next=b.dataset.wrIssueFilter||'all',cur=state.weekly.issueTableFilter||'all';
+      state.weekly.issueTableFilter=(next==='all'||cur===next)?'all':next;
+      weeklyReport(1);
+    }));
+    root.querySelectorAll('.wr-issue-jump').forEach(b=>b.addEventListener('click',e=>{
+      e.preventDefault();e.stopPropagation();
+      const key=String(b.dataset.issueKey||''),p=key.split('|'),cust=String(b.dataset.issueCust||'').trim();
+      state.weekly.issueEditId=null;state.weekly.issueDraft=null;state.weekly.issueSearch=cust;state.weekly.issueScope='current';
+      if(p[0]==='W'){state.weekly.rangeStart='';state.weekly.rangeEnd='';state.weekly.year=+p[1];state.weekly.month=+p[2];state.weekly.week=+p[3];}
+      else if(p[0]==='R'){state.weekly.rangeStart=p[1]||'';state.weekly.rangeEnd=p[2]||'';const d=wrParseDate(p[1]);if(d)state.weekly.year=d.getFullYear();}
+      state.weekly.page=3;state.act='weekly3';weeklyReport(3);
+    }));
+  }
+  if(page===2)wrBindSortableTable($('#wrProdTable'));
+  if(page===3)wrBindIssue(model);
+  const xb=$('#wrXlsx');xb&&xb.addEventListener('click',()=>page===1?wrExport1(model):page===2?wrExport2(model):wrExport3(model));
   const pb=$('#wrPrint');pb&&pb.addEventListener('click',()=>window.print());
 }
 function weeklyReport(page){
@@ -1366,7 +1750,8 @@ function weeklyReport(page){
   state.weekly.topPct=Math.max(1,Math.min(100,Math.round(+state.weekly.topPct||80)));
   if(state.weekly.rankMode!=='pct')state.weekly.rankMode='count';
   const model=wrModel(); if(!model){renderCustom('<div class="note">주간보고를 만들 매출 데이터가 없습니다.</div>');return;}
-  renderCustom(state.weekly.page===1?wrPage1(model):wrPage2(model),()=>{setGlobalBar(false);wrBind(model,state.weekly.page);});
+  const pageHtml=state.weekly.page===1?wrPage1(model):state.weekly.page===2?wrPage2(model):wrPage3(model);
+  renderCustom(pageHtml,()=>{setGlobalBar(false);wrBind(model,state.weekly.page);});
 }
 function wrExport1(model){
   const wb=XLSX.utils.book_new(), h1=[['구분','합계액',...Array.from({length:12},(_,i)=>i+1+'월')]];
@@ -1844,7 +2229,7 @@ function applySeedContacts(){
     if(typeof saveSettings==='function')saveSettings();
   }catch(_e){}
 }
-function chromeFor(act){ const onH=(act==='home'); const s=document.getElementById('summary'); if(s)s.style.display=onH?'':'none'; const st=document.getElementById('sumTop'); if(st)st.style.display=onH?'':'none'; const pricePage=(act==='price'||act==='pricemake'); const sp=document.getElementById('setPanel'); if(sp)sp.style.display=(['forecast','trend','safety','disposal','retain','last-prod','last-cust','pareto','trend2','pdelta','compete','compare','cmgr','price','pricemake','weekly1','weekly2'].indexOf(act)>=0)?'none':''; const mf=document.getElementById('mgrFilterBar'); if(mf)mf.style.display=pricePage?'none':''; }
+function chromeFor(act){ const onH=(act==='home'); const s=document.getElementById('summary'); if(s)s.style.display=onH?'':'none'; const st=document.getElementById('sumTop'); if(st)st.style.display=onH?'':'none'; const pricePage=(act==='price'||act==='pricemake'); const sp=document.getElementById('setPanel'); if(sp)sp.style.display=(['forecast','trend','safety','disposal','retain','last-prod','last-cust','pareto','trend2','pdelta','compete','compare','cmgr','price','pricemake','weekly1','weekly2','weekly3'].indexOf(act)>=0)?'none':''; const mf=document.getElementById('mgrFilterBar'); if(mf)mf.style.display=pricePage?'none':''; }
 function runAct(){ const a=state.act; if(!a||!CUR.length) return; state._inDrill=false; state._syncDeferred=false; try{chromeFor(a);}catch(_){}
   if(state._lastAct!==a){ try{foldFilters();}catch(_){} }
   if(!state._backing){ if(state._lastAct && state._lastAct!==a){ state.navHist=state.navHist||[]; if(state.navHist[state.navHist.length-1]!==state._lastAct)state.navHist.push(state._lastAct); if(state.navHist.length>60)state.navHist.shift(); } } state._lastAct=a; state._backing=false;
@@ -1872,6 +2257,7 @@ function runAct(){ const a=state.act; if(!a||!CUR.length) return; state._inDrill
   else if(a==='pricemake'){ state.price.mode='set'; priceTable(); }
   else if(a==='weekly1') weeklyReport(1);
   else if(a==='weekly2') weeklyReport(2);
+  else if(a==='weekly3') weeklyReport(3);
   else if(a==='scrap') scrapSales();
   else if(a==='retain') retain();
   else if(a==='pdelta') productDelta();
@@ -1969,14 +2355,14 @@ const CLS_CATS=[
  {k:'특수문',kw:['특수문'],ic:'🔐'},
  {k:'방음문',kw:['방음문'],ic:'🔇'},
  {k:'문틀가공',kw:['금속가공','문틀'],ic:'⚙️'},
- {k:'스텐창호',kw:['스텐','산업용 도어','스텐창호'],ic:'🚧'},
+ {k:'스텐/상업용도어',kw:['스텐','산업용 도어','스텐창호'],ic:'🚧'},
  {k:'고급현관문',kw:['고급현관문','현관문'],ic:'🚪'},
  {k:'하드웨어',kw:['하드웨어'],ic:'🔩'},
  {k:'부자재가공',kw:['부자재가공'],ic:'🧩'},
  {k:'콘테이너',kw:['콘테이너'],ic:'📦'},
  {k:'일반업체',kw:['일반업체'],ic:'🏬'} ];
-const CLS_COLORS={'건설사':'#1d4ed8','단종/전문건설':'#0e7490','대리점':'#b45309','공업사':'#15803d','인테리어/리모델링':'#9333ea','특수문':'#be123c','방음문':'#7c3aed','문틀가공':'#475569','스텐창호':'#0891b2','고급현관문':'#a21caf','하드웨어':'#a16207','부자재가공':'#4d7c0f','콘테이너':'#0d9488','일반업체':'#64748b','미분류':'#94a3b8'};
-function catsOf(cust){ const o=state.clsOverride,k=_nm(cust); const ov=o&&(o[cust]||o[k]); if(Array.isArray(ov))return ov.filter(Boolean).slice(0,4); const src=clsOf(cust)||''; const cats=[]; for(const c of CLS_CATS){ if(c.kw.some(kw=>src.includes(kw)))cats.push(c.k); } if(cats.length)return [...new Set(cats)].slice(0,4); return (src&&src!=='미분류')?['일반업체']:['미분류']; }
+const CLS_COLORS={'건설사':'#1d4ed8','단종/전문건설':'#0e7490','대리점':'#b45309','공업사':'#15803d','인테리어/리모델링':'#9333ea','특수문':'#be123c','방음문':'#7c3aed','문틀가공':'#475569','스텐/상업용도어':'#0891b2','고급현관문':'#a21caf','하드웨어':'#a16207','부자재가공':'#4d7c0f','콘테이너':'#0d9488','일반업체':'#64748b','미분류':'#94a3b8'};
+function catsOf(cust){ const o=state.clsOverride,k=_nm(cust); const ov=o&&(o[cust]||o[k]),renameCat=v=>v==='스텐창호'?'스텐/상업용도어':v; if(Array.isArray(ov))return [...new Set(ov.filter(Boolean).map(renameCat))].slice(0,4); const src=clsOf(cust)||''; const cats=[]; for(const c of CLS_CATS){ if(c.kw.some(kw=>src.includes(kw)))cats.push(c.k); } if(cats.length)return [...new Set(cats)].slice(0,4); return (src&&src!=='미분류')?['일반업체']:['미분류']; }
 function catBadge(kk){ const cc=CLS_CATS.find(c=>c.k===kk); const ic=cc?cc.ic:''; const col=CLS_COLORS[kk]||'#64748b'; return `<span style="display:inline-block;margin:1px 3px 1px 0;padding:1px 7px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col}1a;color:${col};border:1px solid ${col}55;white-space:nowrap">${ic} ${esc(kk)}</span>`; }
 function catsBadges(cust){ const cs=catsOf(cust); return cs.length?cs.map(catBadge).join(''):'<span class="sub2">미분류</span>'; }
 function creditVendorSearch(rows){
@@ -4402,7 +4788,7 @@ function gsFields(){ return [
   ['retainMemo',state,'retainMemo'],['retainMemoAt',state,'retainMemoAt'],['retainExcl',state,'retainExcl'],['retainVisit',state,'retainVisit'],
   ['custInfo',state,'custInfo'],['cross',state,'cross'],
   ['fcPctAt',state.fc,'pctAt'],['fcOverrideAt',state.fc,'overrideAt'],['fcAddPctAt',state.fc,'addPctAt'],
-  ['weeklyNotes',state.weekly,'notes'],['cmgrExcl',state,'cmgrExcl']
+  ['weeklyNotes',state.weekly,'notes'],['weeklyIssues',state.weekly,'issues'],['cmgrExcl',state,'cmgrExcl']
 ]; }
 function gsIsPlain(x){ return x&&typeof x==='object'&&!Array.isArray(x); }
 function gsObjEmpty(o){ return !o||Object.keys(o).length===0; }
@@ -4446,7 +4832,7 @@ function gsTrimSyncLog(){
 }
 function gsDeltaSummary(d){
   if(!d)return '변경없음';
-  const names={mgrOverride:'담당자',cmgrPrimary:'주담당',cmgrKey:'거래처키',fcPct:'월목표%',fcOverride:'거래처목표',fcAddPct:'추가%',fcCustMemo:'거래처메모',fcProdMemo:'제품메모',fcNotesHtml:'주요사항',fcNotesSales:'영업관리메모',fcNotesTech:'기술영업메모',fcExclCust:'제외거래처',fcTargetExclCust:'목표합산제외',fcExclProd:'제외제품',clsOverride:'업체분류',gradeOverride:'신용등급',monthIssue:'월별이슈',pd:'PD설정',retainMemo:'거래유지메모',custInfo:'거래처정보',syncLog:'수정이력'};
+  const names={mgrOverride:'담당자',cmgrPrimary:'주담당',cmgrKey:'거래처키',fcPct:'월목표%',fcOverride:'거래처목표',fcAddPct:'추가%',fcCustMemo:'거래처메모',fcProdMemo:'제품메모',fcNotesHtml:'주요사항',fcNotesSales:'영업관리메모',fcNotesTech:'기술영업메모',fcExclCust:'제외거래처',fcTargetExclCust:'목표합산제외',fcExclProd:'제외제품',clsOverride:'업체분류',gradeOverride:'신용등급',monthIssue:'월별이슈',weeklyIssues:'주간이슈',pd:'PD설정',retainMemo:'거래유지메모',custInfo:'거래처정보',syncLog:'수정이력'};
   const keys=Object.keys(d).filter(k=>k!=='syncLog');
   if(!keys.length)return '수정이력';
   return keys.slice(0,6).map(k=>names[k]||k).join(', ')+(keys.length>6?' 외 '+(keys.length-6)+'건':'');
@@ -4709,7 +5095,7 @@ function exportCSV(){
 /* ---------------- restore on load ---------------- */
 (async function(){
   const st=await idbGet('settings');
-  if(st){ if(st.headcount){state.headcount=st.headcount;} if(st.headMonthly)state.headMonthly=st.headMonthly; if(st.headYearDefault)state.headYearDefault=st.headYearDefault; if(st.fcPctAt)state.fc.pctAt=st.fcPctAt; if(st.fcOverrideAt)state.fc.overrideAt=st.fcOverrideAt; if(st.fcAddPctAt)state.fc.addPctAt=st.fcAddPctAt; if(st.monthIssueAt)state.monthIssueAt=st.monthIssueAt; if(st.fcPct)state.fc.pct=st.fcPct; if(st.fcOverride)state.fc.override=st.fcOverride; if(st.fcAddPct)state.fc.addPct=st.fcAddPct; if(st.cmgrPrimary)state.cmgrPrimary=st.cmgrPrimary; if(st.cmgrKey)state.cmgrKey=st.cmgrKey; if(st.mgrOverride)state.mgrOverride=st.mgrOverride; if(st.workdays)state.workdays=st.workdays; if(st.weekly)state.weekly={...state.weekly,...st.weekly,notes:{...(state.weekly.notes||{}),...(st.weekly.notes||{})}}; if(st.bep!=null)state.bep=st.bep; if(st.fcNewCusts)state.fc.newCusts=st.fcNewCusts; if(st.clsOverride)state.clsOverride=st.clsOverride; if(st.gradeOverride)state.gradeOverride=st.gradeOverride; if(st.gbunOverride)state.gbunOverride=st.gbunOverride; if(st.priceSets)state.priceSets=st.priceSets; if(st.comp)state.comp=st.comp; if(st.editLog)state.editLog=st.editLog; if(st.custProdOverride)state.fc.custProdOverride=st.custProdOverride; if(st.fcProdOverride)state.fc.prodOverride=st.fcProdOverride; if(st.fcProdAddPct)state.fc.prodAddPct=st.fcProdAddPct; if(st.fcNewProds)state.fc.newProds=st.fcNewProds; if(st.fcNewLines)state.fc.newLines=st.fcNewLines; if(st.fcCustMemo)state.fc.custMemo=st.fcCustMemo; if(st.fcProdMemo)state.fc.prodMemo=st.fcProdMemo; if(st.fcNotesHtml!=null)state.fc.notesHtml=st.fcNotesHtml; if(st.fcNotesSales!=null)state.fc.notesSales=st.fcNotesSales; if(st.fcNotesTech!=null)state.fc.notesTech=st.fcNotesTech; if(st.fcNotesMeta)state.fc.notesMeta=st.fcNotesMeta; if(st.fcExclCust)state.fc.exclCust=st.fcExclCust; if(st.fcTargetExclCust)state.fc.targetExclCust=st.fcTargetExclCust; if(st.fcExclProd)state.fc.exclProd=st.fcExclProd; if(st.fcShowExclRows!=null)state.fc.showExclRows=!!st.fcShowExclRows; if(st.fcAnnualHist)state.fc.annualHist={...state.fc.annualHist,...st.fcAnnualHist}; if(st.inv)state.inv={...state.inv,...st.inv}; if(st.syncLog)state.syncLog=st.syncLog; if(st.monthIssue)state.monthIssue=st.monthIssue; if(st.pd)state.pd={...state.pd,...st.pd}; if(st.retainMemo)state.retainMemo=st.retainMemo; if(st.retainMemoAt)state.retainMemoAt=st.retainMemoAt; if(st.retainExcl)state.retainExcl=st.retainExcl; if(st.retainVisit)state.retainVisit=st.retainVisit; if(st.cmgrExcl)state.cmgrExcl=st.cmgrExcl; if(st.elogSeenTs)state.elogSeenTs=st.elogSeenTs; if(st.cross)state.cross={...state.cross,...st.cross}; if(st.custInfo)state.custInfo=dedupContacts(st.custInfo); if(st._seedV)state._seedV=st._seedV; if(st.gsync)state.gsync=st.gsync; } syncExcludedCustMaps(); syncTargetExcludedCustMap(); applySeedContacts();
+  if(st){ if(st.headcount){state.headcount=st.headcount;} if(st.headMonthly)state.headMonthly=st.headMonthly; if(st.headYearDefault)state.headYearDefault=st.headYearDefault; if(st.fcPctAt)state.fc.pctAt=st.fcPctAt; if(st.fcOverrideAt)state.fc.overrideAt=st.fcOverrideAt; if(st.fcAddPctAt)state.fc.addPctAt=st.fcAddPctAt; if(st.monthIssueAt)state.monthIssueAt=st.monthIssueAt; if(st.fcPct)state.fc.pct=st.fcPct; if(st.fcOverride)state.fc.override=st.fcOverride; if(st.fcAddPct)state.fc.addPct=st.fcAddPct; if(st.cmgrPrimary)state.cmgrPrimary=st.cmgrPrimary; if(st.cmgrKey)state.cmgrKey=st.cmgrKey; if(st.mgrOverride)state.mgrOverride=st.mgrOverride; if(st.workdays)state.workdays=st.workdays; if(st.weekly)state.weekly={...state.weekly,...st.weekly,notes:{...(state.weekly.notes||{}),...(st.weekly.notes||{})},issues:{...(state.weekly.issues||{}),...(st.weekly.issues||{})}}; if(st.bep!=null)state.bep=st.bep; if(st.fcNewCusts)state.fc.newCusts=st.fcNewCusts; if(st.clsOverride)state.clsOverride=st.clsOverride; if(st.gradeOverride)state.gradeOverride=st.gradeOverride; if(st.gbunOverride)state.gbunOverride=st.gbunOverride; if(st.priceSets)state.priceSets=st.priceSets; if(st.comp)state.comp=st.comp; if(st.editLog)state.editLog=st.editLog; if(st.custProdOverride)state.fc.custProdOverride=st.custProdOverride; if(st.fcProdOverride)state.fc.prodOverride=st.fcProdOverride; if(st.fcProdAddPct)state.fc.prodAddPct=st.fcProdAddPct; if(st.fcNewProds)state.fc.newProds=st.fcNewProds; if(st.fcNewLines)state.fc.newLines=st.fcNewLines; if(st.fcCustMemo)state.fc.custMemo=st.fcCustMemo; if(st.fcProdMemo)state.fc.prodMemo=st.fcProdMemo; if(st.fcNotesHtml!=null)state.fc.notesHtml=st.fcNotesHtml; if(st.fcNotesSales!=null)state.fc.notesSales=st.fcNotesSales; if(st.fcNotesTech!=null)state.fc.notesTech=st.fcNotesTech; if(st.fcNotesMeta)state.fc.notesMeta=st.fcNotesMeta; if(st.fcExclCust)state.fc.exclCust=st.fcExclCust; if(st.fcTargetExclCust)state.fc.targetExclCust=st.fcTargetExclCust; if(st.fcExclProd)state.fc.exclProd=st.fcExclProd; if(st.fcShowExclRows!=null)state.fc.showExclRows=!!st.fcShowExclRows; if(st.fcAnnualHist)state.fc.annualHist={...state.fc.annualHist,...st.fcAnnualHist}; if(st.inv)state.inv={...state.inv,...st.inv}; if(st.syncLog)state.syncLog=st.syncLog; if(st.monthIssue)state.monthIssue=st.monthIssue; if(st.pd)state.pd={...state.pd,...st.pd}; if(st.retainMemo)state.retainMemo=st.retainMemo; if(st.retainMemoAt)state.retainMemoAt=st.retainMemoAt; if(st.retainExcl)state.retainExcl=st.retainExcl; if(st.retainVisit)state.retainVisit=st.retainVisit; if(st.cmgrExcl)state.cmgrExcl=st.cmgrExcl; if(st.elogSeenTs)state.elogSeenTs=st.elogSeenTs; if(st.cross)state.cross={...state.cross,...st.cross}; if(st.custInfo)state.custInfo=dedupContacts(st.custInfo); if(st._seedV)state._seedV=st._seedV; if(st.gsync)state.gsync=st.gsync; } syncExcludedCustMaps(); syncTargetExcludedCustMap(); applySeedContacts();
   if(st&&st.scrapVendors)state.scrapVendors=st.scrapVendors;
   if(st&&st.scrapVendorOff)state.scrapVendorOff=st.scrapVendorOff; if(state.scrapVendors&&!Array.isArray(state.scrapVendors)){ var _osv=state.scrapVendors; state.scrapVendors=Object.keys(_osv); state.scrapVendorOff=state.scrapVendorOff||{}; Object.keys(_osv).forEach(function(k){ if(_osv[k]===false)state.scrapVendorOff[k]=true; }); }
   if(typeof renderScrapList==='function')renderScrapList();
@@ -4762,7 +5148,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
 <script id="sales-sync-v03-final-patch">
 (function(){
   'use strict';
-  var APP_VERSION='v23 · 합계표시 개선';
+  var APP_VERSION='v37 · 업체 매출순위 표시';
   var BASE_KEY='sales_gsync_base_stable_v1';
   var OLD_BASE_KEYS=['sales_gsync_base_v02','sales_gsync_base_v01'];
   var AUTO_DELAY=5000, BUSY_RETRY=1300, MAX_AUTO_RETRY=5;
