@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v37 · 업체 신용도 매출순위 표시</title>
+<title>동방파스텍 매출 분석 도구 v43 · 주간이슈 오늘주·업체검색</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -272,6 +272,12 @@
   .wr-issue-field{display:flex;flex-direction:column;gap:5px;min-width:0}
   .wr-issue-field>label,.wr-issue-lab{font-size:11px;font-weight:800;color:#475569}
   .wr-issue-field input,.wr-issue-field select,.wr-issue-field textarea{width:100%;min-width:0;padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#1f2937;font-family:inherit;font-size:12px}
+  .wr-issue-cust-search{position:relative;min-width:0}
+  .wr-issue-cust-results{display:none;position:absolute;z-index:85;top:calc(100% + 4px);left:0;right:0;max-height:260px;overflow-y:auto;border:1px solid #94a3b8;border-radius:8px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.18);padding:4px}
+  .wr-issue-cust-results.open{display:block}
+  .wr-issue-cust-option{display:block;width:100%;border:0;border-radius:6px;background:#fff;color:#1f2937;padding:7px 9px;text-align:left;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:normal;line-height:1.35}
+  .wr-issue-cust-option:hover,.wr-issue-cust-option:focus{background:#eff6ff;color:#1d4ed8;outline:0;transform:none;box-shadow:none;filter:none}
+  .wr-issue-cust-empty{padding:9px;color:#94a3b8;font-size:11px;text-align:center}
   .wr-issue-field textarea{min-height:120px;resize:vertical;line-height:1.55}
   .wr-issue-contact-row{display:grid;grid-template-columns:minmax(150px,.95fr) minmax(130px,.8fr);gap:6px}
   .wr-issue-triplet{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:2px}
@@ -1180,6 +1186,17 @@ function periodLabel(){
   return state.periodKey; }
 
 /* ---------------- 주간보고 (PPT 2페이지 연동) ---------------- */
+let WR_ISSUE_TODAY_INITIALIZED=false;
+function wrSetIssueTodayPeriod(){
+  if(WR_ISSUE_TODAY_INITIALIZED)return;
+  WR_ISSUE_TODAY_INITIALIZED=true;
+  state.weekly=state.weekly||{};
+  const today=new Date(),y=today.getFullYear(),m=today.getMonth()+1,ys=dataYears();
+  if(!ys.includes(y))return;
+  const ranges=wrRanges(y,m),day=today.getDate(),hit=ranges.find(r=>day>=r.s&&day<=r.e);
+  state.weekly.rangeStart='';state.weekly.rangeEnd='';
+  state.weekly.year=y;state.weekly.month=m;state.weekly.week=hit?hit.n:Math.min(ranges.length,Math.max(1,Math.ceil(day/7)));
+}
 function wrRanges(y,m){
   const last=new Date(y,m,0).getDate();
   return [[1,7],[8,14],[15,21],[22,28],[29,last]].filter(r=>r[0]<=last).map((r,i)=>({n:i+1,s:r[0],e:Math.min(r[1],last)}));
@@ -1626,7 +1643,7 @@ function wrPage3(model){
   return `<div class="wr-page">${wrHeader(model,3)}<div class="wr-issue-headline"><div class="wr-issue-period">3. 주간이슈사항 <small>(${esc(pi.short)})</small></div><span class="wr-rankstat">현재 기간 ${won(currentCount)}건 · 저장 전체 ${won(wrIssueAll().length)}건</span></div>
   <div class="wr-issue-form wr-no-print"><div class="wr-issue-grid">
     <div class="wr-issue-field"><label for="wrIssueAuthor">작성자</label><input id="wrIssueAuthor" value="${esc(draft.author||'')}" placeholder="작성자 이름"></div>
-    <div class="wr-issue-field"><label for="wrIssueCust">업체선택 · 직접검색</label><input id="wrIssueCust" list="wrIssueCustList" value="${esc(draft.cust||'')}" placeholder="업체명을 입력하여 검색"><datalist id="wrIssueCustList">${custOpts}</datalist></div>
+    <div class="wr-issue-field"><label for="wrIssueCust">업체선택 · 직접검색</label><div class="wr-issue-cust-search"><input id="wrIssueCust" value="${esc(draft.cust||'')}" placeholder="업체명을 입력하여 검색" autocomplete="off" aria-autocomplete="list" aria-controls="wrIssueCustResults"><div class="wr-issue-cust-results" id="wrIssueCustResults" role="listbox" aria-label="검색 업체 목록"></div></div></div>
     <div class="wr-issue-field"><label for="wrIssueContact">업체담당자</label><div class="wr-issue-contact-row"><select id="wrIssueContactSelect">${contactOpts}</select><input id="wrIssueContact" value="${esc(draft.contact||'')}" placeholder="직접 작성"></div></div>
     <div class="wr-issue-field"><label for="wrIssueManager">담당자</label><input class="wr-issue-manager-input" id="wrIssueManager" value="${esc(managerValue)}" placeholder="담당자 직접 입력"></div>
     <div class="wr-issue-field" style="grid-column:1/-1"><span class="wr-issue-lab">업체 신용도 · 매출 현황</span><div class="wr-issue-credit" id="wrIssueCredit">${wrIssueCreditHtml(draft.cust||'',null,model)}</div></div>
@@ -1639,7 +1656,7 @@ function wrPage3(model){
 
 function wrBindIssue(model){
   const root=$('#result'),pk=wrIssuePeriodKey(model),custs=wrIssueCusts();
-  const cust=$('#wrIssueCust'),contact=$('#wrIssueContact'),contactSel=$('#wrIssueContactSelect'),credit=$('#wrIssueCredit'),manager=$('#wrIssueManager');
+  const cust=$('#wrIssueCust'),custResults=$('#wrIssueCustResults'),contact=$('#wrIssueContact'),contactSel=$('#wrIssueContactSelect'),credit=$('#wrIssueCredit'),manager=$('#wrIssueManager');
   let lastCust=String(cust&&cust.value||'').trim();
   const refreshCust=(clearContact=false)=>{
     const c=String(cust&&cust.value||'').trim(),exact=custs.includes(c),custChanged=c!==lastCust;
@@ -1650,8 +1667,24 @@ function wrBindIssue(model){
     if(clearContact&&custChanged&&contact){contact.value='';if(contactSel)contactSel.value='';}
     lastCust=c;
   };
-  cust&&cust.addEventListener('input',()=>refreshCust(true));
-  cust&&cust.addEventListener('change',()=>refreshCust(true));
+  const closeCustResults=()=>{if(custResults){custResults.classList.remove('open');custResults.innerHTML='';}};
+  const custSearchKey=v=>String(v||'').toLocaleLowerCase('ko').replace(/\s+/g,'');
+  const renderCustResults=()=>{
+    if(!cust||!custResults)return;
+    const q=String(cust.value||'').trim(),nq=custSearchKey(q);
+    if(!nq){closeCustResults();return;}
+    const matches=custs.map((name,order)=>{const key=custSearchKey(name),pos=key.indexOf(nq);return{name,order,pos,key};}).filter(x=>x.pos>=0).sort((a,b)=>(a.pos===0?0:1)-(b.pos===0?0:1)||a.pos-b.pos||a.order-b.order).slice(0,30);
+    custResults.innerHTML=matches.length?matches.map(x=>`<button type="button" class="wr-issue-cust-option" role="option" data-cust="${esc(x.name)}">${esc(x.name)}</button>`).join(''):`<div class="wr-issue-cust-empty">일치하는 등록 업체가 없습니다. 직접 입력은 가능합니다.</div>`;
+    custResults.classList.add('open');
+    custResults.querySelectorAll('.wr-issue-cust-option').forEach(b=>b.addEventListener('mousedown',e=>{
+      e.preventDefault();cust.value=b.dataset.cust||'';closeCustResults();refreshCust(true);cust.focus();
+    }));
+  };
+  cust&&cust.addEventListener('input',()=>{refreshCust(true);renderCustResults();});
+  cust&&cust.addEventListener('focus',renderCustResults);
+  cust&&cust.addEventListener('change',()=>{refreshCust(true);closeCustResults();});
+  cust&&cust.addEventListener('keydown',e=>{if(e.key==='Escape')closeCustResults();});
+  cust&&cust.addEventListener('blur',()=>setTimeout(closeCustResults,120));
   contactSel&&contactSel.addEventListener('change',()=>{if(contactSel.value&&contact)contact.value=contactSel.value;});
   const save=async()=>{
     const author=String($('#wrIssueAuthor')&&$('#wrIssueAuthor').value||'').trim(),c=String(cust&&cust.value||'').trim(),ct=String(contact&&contact.value||'').trim(),mgr=String(manager&&manager.value||'').trim(),prevPlan=String($('#wrIssuePrevPlan')&&$('#wrIssuePrevPlan').value||'').trim(),actual=String($('#wrIssueActual')&&$('#wrIssueActual').value||'').trim(),nextPlan=String($('#wrIssueNextPlan')&&$('#wrIssueNextPlan').value||'').trim();
@@ -1736,7 +1769,7 @@ function wrBind(model,page){
       state.weekly.issueEditId=null;state.weekly.issueDraft=null;state.weekly.issueSearch=cust;state.weekly.issueScope='current';
       if(p[0]==='W'){state.weekly.rangeStart='';state.weekly.rangeEnd='';state.weekly.year=+p[1];state.weekly.month=+p[2];state.weekly.week=+p[3];}
       else if(p[0]==='R'){state.weekly.rangeStart=p[1]||'';state.weekly.rangeEnd=p[2]||'';const d=wrParseDate(p[1]);if(d)state.weekly.year=d.getFullYear();}
-      state.weekly.page=3;state.act='weekly3';weeklyReport(3);
+      WR_ISSUE_TODAY_INITIALIZED=true;state.weekly.page=3;state.act='weekly3';weeklyReport(3);
     }));
   }
   if(page===2)wrBindSortableTable($('#wrProdTable'));
@@ -1746,6 +1779,7 @@ function wrBind(model,page){
 }
 function weeklyReport(page){
   state.weekly=state.weekly||{};state.weekly.page=page||state.weekly.page||1;
+  if(state.weekly.page===3&&!WR_ISSUE_TODAY_INITIALIZED)wrSetIssueTodayPeriod();
   state.weekly.topN=Math.max(1,Math.min(500,Math.round(+state.weekly.topN||20)));
   state.weekly.topPct=Math.max(1,Math.min(100,Math.round(+state.weekly.topPct||80)));
   if(state.weekly.rankMode!=='pct')state.weekly.rankMode='count';
