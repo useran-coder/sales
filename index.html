@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v43 · 주간이슈 오늘주·업체검색</title>
+<title>동방파스텍 매출 분석 도구 v77 · 거래처 증감분석 정렬유지</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -282,6 +282,12 @@
   .wr-ytgl-btn+.wr-ytgl-btn{border-left:1px solid #cbd5e1}
   .wr-ytgl-btn.on{background:#1e3a5f;color:#fff}
   .wr-ytgl-btn:not(.on):hover{background:#f1f5f9}
+  .wr-year-pace-head{border:1px solid #cbd5e1;border-radius:9px;background:#f8fafc;padding:7px 9px;margin-top:14px!important}
+  .wr-year-pace-toggle{display:flex;align-items:center;gap:7px;flex:1 1 520px;min-width:0;border:0;background:transparent;color:#111827;padding:2px 3px;text-align:left;font:900 15px/1.35 inherit;cursor:pointer}
+  .wr-year-pace-toggle:hover{background:transparent;box-shadow:none;transform:none;filter:none;color:#1d4ed8}
+  .wr-year-pace-toggle .wr-toggle-caret{flex:0 0 auto;min-width:31px;text-align:center}
+  .wr-year-pace-toggle .wr-year-pace-desc{font-size:11px;color:#64748b;font-weight:600}
+  .wr-year-pace-head .wr-ytgl{margin-left:auto;flex:0 0 auto}
   @media(max-width:760px){.wr-mpace-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .wr-memo{width:100%;min-width:150px;padding:5px 7px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-family:inherit;font-size:11px;color:#1f2937}
   .wr-memo:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.12)}
@@ -323,6 +329,15 @@
   .wr-note{margin-top:8px;color:#64748b;font-size:11px;line-height:1.55}
   .wr-page{background:#fff;border:1px solid #d1d5db;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(15,23,42,.05)}
   .wr-issue-headline{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:4px 0 10px}
+  .wr-issue-nav{display:inline-flex;align-items:stretch;border:1px solid #cbd5e1;border-radius:9px;overflow:hidden;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+  .wr-issue-nav-btn{min-width:94px;border:0;border-radius:0!important;padding:7px 11px;font:800 11px/1.2 inherit;cursor:pointer;transition:background .14s,color .14s;box-shadow:none!important;transform:none!important}
+  .wr-issue-nav-btn+.wr-issue-nav-btn{border-left:1px solid #cbd5e1}
+  .wr-issue-nav-btn.prev,.wr-issue-nav-btn.next{background:#f8fafc;color:#475569}
+  .wr-issue-nav-btn.prev:hover,.wr-issue-nav-btn.next:hover{background:#e2e8f0;color:#1e3a5f;filter:none}
+  .wr-issue-nav-btn.today{background:#2563eb;color:#fff;min-width:78px}
+  .wr-issue-nav-btn.today:hover{background:#1d4ed8;filter:none}
+  .wr-issue-nav-btn.today.is-current{background:#0f766e}
+  .wr-issue-nav-btn.today.is-current:hover{background:#0d665f}
   .wr-issue-period{font-size:14px;font-weight:900;color:#111827}
   .wr-issue-period small{font-size:11px;font-weight:700;color:#64748b;margin-left:5px}
   .wr-issue-form{border:1px solid #cbd5e1;border-radius:11px;background:#f8fafc;padding:12px;margin-bottom:11px}
@@ -721,7 +736,7 @@ header .appver{margin-left:0!important}
   <div id="loading" class="loading hidden"><div class="spin"></div><div id="loadMsg">파일을 읽는 중입니다…</div></div>
 
   <div id="app" class="hidden">
-    <nav class="topmenu" id="topMenu"><button class="tm-direct" id="homeBtn" type="button" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f">🏠 홈</button><div class="tm-grp"><button class="tm-top" type="button">📊 매출분석 ▾</button><div class="tm-drop"><button class="tm-item" data-act="rank-cust"><span class="ic">🏢</span>거래처 매출</button><button class="tm-item" data-act="rank-group"><span class="ic">🗂️</span>품목군 매출</button><button class="tm-item" data-act="rank-prod"><span class="ic">📦</span>제품 매출</button><button class="tm-item" data-act="cls"><span class="ic">🏷️</span>업체분류별 매출</button><button class="tm-item" data-act="region"><span class="ic">🗺️</span>지역별 매출</button><button class="tm-item" data-act="credit"><span class="ic">💳</span>신용등급별 매출</button><button class="tm-item" data-act="scrap"><span class="ic">♻️</span>부산물(고철)</button></div></div><div class="tm-grp"><button class="tm-top" type="button">🏢 영업분석 ▾</button><div class="tm-drop"><button class="tm-item" data-act="compete"><span class="ic">🏢</span>동종업체분석</button><button class="tm-item" data-act="cross"><span class="ic">🔗</span>제품판매유도</button><button class="tm-item" data-act="pdelta"><span class="ic">📊</span>제품 증감분석</button><button class="tm-item" data-act="inner"><span class="ic">🧩</span>내부보강분석</button><button class="tm-item" data-act="trend2"><span class="ic">📈</span>매출추이차트</button><button class="tm-item" data-act="pareto"><span class="ic">🎯</span>매출 집중도(파레토)</button><button class="tm-item" data-act="compare"><span class="ic">⚖️</span>전년 대비 비교</button></div></div><div class="tm-grp"><button class="tm-top" type="button">⏱️ 거래·최근 ▾</button><div class="tm-drop"><button class="tm-item" data-act="last-cust"><span class="ic">⏱️</span>거래처 최근출고</button><button class="tm-item" data-act="last-prod"><span class="ic">📅</span>제품 최근출고</button><button class="tm-item" data-act="retain"><span class="ic">🔁</span>거래유지 점검</button></div></div><div class="tm-grp"><button class="tm-top" type="button">🔶 레이저 ▾</button><div class="tm-drop"><button class="tm-item" data-act="laser-cust"><span class="ic">🏢</span>거래처별 레이저 발주</button><button class="tm-item" data-act="laser-group"><span class="ic">🔦</span>레이저 품목군</button><button class="tm-item" data-act="laser-spec"><span class="ic">📐</span>레이저 규격별</button><button class="tm-item" data-act="laser-std"><span class="ic">⚠️</span>품목규격화 대상</button></div></div><div class="tm-grp"><button class="tm-top" type="button">📦 재고 ▾</button><div class="tm-drop"><button class="tm-item" data-act="safety"><span class="ic">🛡️</span>안전재고</button><button class="tm-item" data-act="disposal"><span class="ic">🗑️</span>폐기검토</button></div></div><div class="tm-grp"><button class="tm-top" type="button">🎯 목표·추이 ▾</button><div class="tm-drop"><button class="tm-item" data-act="forecast"><span class="ic">🎯</span>매출 목표</button><button class="tm-item" data-act="trend"><span class="ic">📊</span>월별 실적·목표</button></div></div><div class="tm-grp"><button class="tm-top" type="button">💲 단가표 ▾</button><div class="tm-drop"><button class="tm-item" data-act="price"><span class="ic">🏷️</span>단가표</button><button class="tm-item" data-act="pricemake"><span class="ic">🧮</span>단가표만들기</button></div></div><div class="tm-grp" id="weeklyMenuGroup"><button class="tm-top" type="button">📋 주간보고 ▾</button><div class="tm-drop"><button class="tm-item" data-act="weekly1"><span class="ic">📊</span>1. 목표대비 달성</button><button class="tm-item" data-act="weekly2"><span class="ic">📦</span>2. 품목별 매출 현황</button><button class="tm-item" data-act="weekly3"><span class="ic">📝</span>3. 주간이슈사항</button></div></div><span class="tm-spacer"></span><button id="cmgrBtn" class="tm-direct" type="button" style="background:#8b5cf6;color:#fff;border-color:#8b5cf6"><span style="background:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;margin-right:5px;font-size:11px">👥</span>거래처 담당자</button><button id="fileToggle" class="tm-direct" type="button" style="background:#14b8a6;color:#fff;border-color:#14b8a6">📁 파일·관리 ▾</button></nav>
+    <nav class="topmenu" id="topMenu"><button class="tm-direct" id="homeBtn" type="button" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f">🏠 홈</button><div class="tm-grp"><button class="tm-top" type="button">📊 매출분석 ▾</button><div class="tm-drop"><button class="tm-item" data-act="rank-cust"><span class="ic">🏢</span>거래처 매출</button><button class="tm-item" data-act="rank-group"><span class="ic">🗂️</span>품목군 매출</button><button class="tm-item" data-act="rank-prod"><span class="ic">📦</span>제품 매출</button><button class="tm-item" data-act="cls"><span class="ic">🏷️</span>업체분류별 매출</button><button class="tm-item" data-act="region"><span class="ic">🗺️</span>지역별 매출</button><button class="tm-item" data-act="credit"><span class="ic">💳</span>신용등급별 매출</button><button class="tm-item" data-act="scrap"><span class="ic">♻️</span>부산물(고철)</button></div></div><div class="tm-grp"><button class="tm-top" type="button">🏢 영업분석 ▾</button><div class="tm-drop"><button class="tm-item" data-act="compete"><span class="ic">🏢</span>동종업체분석</button><button class="tm-item" data-act="cross"><span class="ic">🔗</span>제품판매유도</button><button class="tm-item" data-act="pdelta"><span class="ic">📊</span>제품 증감분석</button><button class="tm-item" data-act="cust-delta"><span class="ic">📉</span>거래처 증감분석</button><button class="tm-item" data-act="inner"><span class="ic">🧩</span>내부보강분석</button><button class="tm-item" data-act="trend2"><span class="ic">📈</span>매출추이차트</button><button class="tm-item" data-act="pareto"><span class="ic">🎯</span>매출 집중도(파레토)</button><button class="tm-item" data-act="compare"><span class="ic">⚖️</span>전년 대비 비교</button></div></div><div class="tm-grp"><button class="tm-top" type="button">⏱️ 거래·최근 ▾</button><div class="tm-drop"><button class="tm-item" data-act="last-cust"><span class="ic">⏱️</span>거래처 최근출고</button><button class="tm-item" data-act="last-prod"><span class="ic">📅</span>제품 최근출고</button><button class="tm-item" data-act="retain"><span class="ic">🔁</span>거래유지 점검</button></div></div><div class="tm-grp"><button class="tm-top" type="button">🔶 레이저 ▾</button><div class="tm-drop"><button class="tm-item" data-act="laser-cust"><span class="ic">🏢</span>거래처별 레이저 발주</button><button class="tm-item" data-act="laser-group"><span class="ic">🔦</span>레이저 품목군</button><button class="tm-item" data-act="laser-spec"><span class="ic">📐</span>레이저 규격별</button><button class="tm-item" data-act="laser-std"><span class="ic">⚠️</span>품목규격화 대상</button></div></div><div class="tm-grp"><button class="tm-top" type="button">📦 재고 ▾</button><div class="tm-drop"><button class="tm-item" data-act="safety"><span class="ic">🛡️</span>안전재고</button><button class="tm-item" data-act="disposal"><span class="ic">🗑️</span>폐기검토</button></div></div><div class="tm-grp"><button class="tm-top" type="button">🎯 목표·추이 ▾</button><div class="tm-drop"><button class="tm-item" data-act="forecast"><span class="ic">🎯</span>매출 목표</button><button class="tm-item" data-act="trend"><span class="ic">📊</span>월별 실적·목표</button></div></div><div class="tm-grp"><button class="tm-top" type="button">💲 단가표 ▾</button><div class="tm-drop"><button class="tm-item" data-act="price"><span class="ic">🏷️</span>단가표</button><button class="tm-item" data-act="pricemake"><span class="ic">🧮</span>단가표만들기</button></div></div><div class="tm-grp" id="weeklyMenuGroup"><button class="tm-top" type="button">📋 주간보고 ▾</button><div class="tm-drop"><button class="tm-item" data-act="weekly1"><span class="ic">📊</span>1. 목표대비 달성</button><button class="tm-item" data-act="weekly2"><span class="ic">📦</span>2. 품목별 매출 현황</button><button class="tm-item" data-act="weekly3"><span class="ic">📝</span>3. 주간이슈사항</button></div></div><span class="tm-spacer"></span><button id="cmgrBtn" class="tm-direct" type="button" style="background:#8b5cf6;color:#fff;border-color:#8b5cf6"><span style="background:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;margin-right:5px;font-size:11px">👥</span>거래처 담당자</button><button id="fileToggle" class="tm-direct" type="button" style="background:#14b8a6;color:#fff;border-color:#14b8a6">📁 파일·관리 ▾</button></nav>
     <div class="panel" id="dataPanel">
       <h3 style="display:none">데이터</h3>
       <div id="fileList"></div>
@@ -1358,6 +1373,7 @@ function wrEnsure(){
   if(state.weekly.issueSearch==null)state.weekly.issueSearch='';
   if(state.weekly.issueAuthor==null)state.weekly.issueAuthor='';
   if(!['base','modified'].includes(state.weekly.yearTargetMode))state.weekly.yearTargetMode='modified';
+  if(typeof state.weekly.yearPacingOpen!=='boolean')state.weekly.yearPacingOpen=false;
   if(!['year','month','week'].includes(state.weekly.p2Period))state.weekly.p2Period='month';
   if(state.weekly.p2ProdKey==null)state.weekly.p2ProdKey='';
   if(state.weekly.p2Cat==null)state.weekly.p2Cat='';
@@ -1669,12 +1685,14 @@ function wrMonthPacingSection(model){
     const wk=i+1, cumv=P.cum[i], actual=P.curWeeks[i]||0, done=i<P.w;
     const range=model.ranges[i],weekDays=range?Math.round((range.eDate-range.sDate)/86400000)+1:0,monthDays=new Date(model.y,model.m,0).getDate(),targetAmt=monthDays?P.monthTarget*weekDays/monthDays:0;
     const cumActual=P.curWeeks.slice(0,i+1).reduce((a,v)=>a+v,0), isBase=(i+1===P.w);const projW=(P.projMonth!=null)?P.projMonth*sh:null;
+    const showForecast=wk>=P.w;
+    const projWCell=showForecast&&projW!=null?won(projW)+'\uc6d0':'<span class="wr-zero">-</span>';
     const cls=(isBase?'wr-mpace-base':'')+(done?'':' wr-mpace-future');
     const rate=targetAmt>0?actual/targetAmt*100:null, status=done?(actual>=targetAmt?'<span class="wr-rate-good">\ub2ec\uc131</span>':'<span class="wr-rate-bad">\ubbf8\ub2ec</span>'):'<span class="wr-zero">\uc608\uc815</span>',shortfall=done&&actual<targetAmt?'<span class="wr-rate-bad">-'+won(targetAmt-actual)+'\uc6d0</span>':'<span class="wr-zero">-</span>',rateCell=done?'<span class="'+(actual>=targetAmt?'wr-rate-good':'wr-rate-bad')+'">'+wrPct(rate)+'</span>':'<span class="wr-zero">-</span>';
-    return `<tr class="${cls}"><td class="wr-center"><b>${wk}\uc8fc</b>${isBase?' <span class="wr-mpace-tag">\uae30\uc900</span>':''}</td><td class="wr-center">${wrPct(sh*100)}</td><td class="wr-center">${wrPct(cumv*100)}</td><td class="wr-right">${done?won(actual)+'\uc6d0':'<span class="wr-zero">-</span>'}</td><td class="wr-right">${done?won(cumActual)+'\uc6d0':'<span class="wr-zero">-</span>'}</td><td class="wr-right">${won(targetAmt)}\uc6d0</td><td class="wr-right">${projW!=null?won(projW)+'\uc6d0':'-'}</td><td class="wr-center">${status}</td><td class="wr-right">${shortfall}</td><td class="wr-center">${rateCell}</td></tr>`;
+    return `<tr class="${cls}"><td class="wr-center"><b>${wk}\uc8fc</b>${isBase?' <span class="wr-mpace-tag">\uae30\uc900</span>':''}</td><td class="wr-center">${wrPct(sh*100)}</td><td class="wr-center">${wrPct(cumv*100)}</td><td class="wr-right">${done?won(actual)+'\uc6d0':'<span class="wr-zero">-</span>'}</td><td class="wr-right">${done?won(cumActual)+'\uc6d0':'<span class="wr-zero">-</span>'}</td><td class="wr-right">${won(targetAmt)}\uc6d0</td><td class="wr-right">${projWCell}</td><td class="wr-center">${status}</td><td class="wr-right">${shortfall}</td><td class="wr-center">${rateCell}</td></tr>`;
   }).join('');
   const table=`<div class="wr-tablewrap"><table class="wr-table wr-mpace-table"><thead><tr><th style="width:7%;text-align:center">\uc8fc\ucc28</th><th style="width:12%">\uacfc\uac70\ud3c9\uade0\ub9e4\ucd9c\ube44\uc911</th><th style="width:10%">\ub204\uc801\ube44\uc911</th><th style="width:12%">\uc774\ubc88\ub2ec \uc8fc\uc2e4\uc801</th><th style="width:14%">\uc774\ubc88\ub2ec \ub204\uc801\uc2e4\uc801</th><th style="width:13%">\ubaa9\ud45c\uc561</th><th style="width:15%">\ud3c9\uade0\uc608\uce21\ub9e4\ucd9c(\uc8fc\ub2e8\uc704)</th><th style="width:5%">\uc0c1\ud0dc</th><th style="width:8%">\ubbf8\ub2ec\uae08\uc561</th><th style="width:4%">\ub2ec\uc131\ub960</th></tr></thead><tbody>${trows}</tbody></table></div>`;
-  const note=`<div class="wr-note">\uacfc\uac70 \uc644\ub8cc \uc6d4\ub4e4\uc758 \uc8fc\ucc28\ubcc4(1~7\u00b78~14\u00b715~21\u00b722~28\u00b729~\ub9d0\uc77c) \ub9e4\ucd9c\ube44\uc911\uc744 \ud3c9\uade0\ud574 \uc774\ubc88 \ub2ec \uad6c\uc870\uc5d0 \ub9de\ucdb0 \ud658\uc0b0\ud588\uc2b5\ub2c8\ub2e4. <b>\ud3c9\uade0\uc608\uce21 \ub9e4\ucd9c = \uae30\uc900 \uc8fc\ucc28\uae4c\uc9c0 \uc2e4\uc801 \u00f7 \ud574\ub2f9 \uc2dc\uc810 \ub204\uc801 \ube44\uc911</b>. \ubaa9\ud45c\uc740 \uc5c5\uccb4\ubcc4 \uc6d4 \ubaa9\ud45c(\ubaa9\ud45c\uc218\uc815\uc561)\uc758 \ud569\uacc4\uc785\ub2c8\ub2e4. \uae30\uc900 \uc8fc\ucc28(\uc5f0\ud55c \ud30c\ub791)\ub294 \uc0c1\ub2e8\uc5d0\uc11c <b>\uc8fc\ucc28</b>\ub97c \ubc14\uafd4 \uc120\ud0dd\ud569\ub2c8\ub2e4.</div>`;
+  const note=`<div class="wr-note">\uacfc\uac70 \uc644\ub8cc \uc6d4\ub4e4\uc758 \uc8fc\ucc28\ubcc4(1~7\u00b78~14\u00b715~21\u00b722~28\u00b729~\ub9d0\uc77c) \ub9e4\ucd9c\ube44\uc911\uc744 \ud3c9\uade0\ud574 \uc774\ubc88 \ub2ec \uad6c\uc870\uc5d0 \ub9de\ucdb0 \ud658\uc0b0\ud588\uc2b5\ub2c8\ub2e4. <b>\ud3c9\uade0\uc608\uce21 \ub9e4\ucd9c = \uae30\uc900 \uc8fc\ucc28\uae4c\uc9c0 \uc2e4\uc801 \u00f7 \ud574\ub2f9 \uc2dc\uc810 \ub204\uc801 \ube44\uc911</b>. \ud3c9\uade0\uc608\uce21\ub9e4\ucd9c(\uc8fc\ub2e8\uc704)\uc740 <b>\uae30\uc900 \uc8fc\ucc28\uc640 \uc55e\uc73c\ub85c \ub0a8\uc740 \uc8fc\ucc28\ub9cc</b> \ud45c\uc2dc\ud558\uba70, \uc9c0\ub09c \uc8fc\ucc28\ub294 -\ub85c \ud45c\uc2dc\ud569\ub2c8\ub2e4. \ubaa9\ud45c\uc740 \uc5c5\uccb4\ubcc4 \uc6d4 \ubaa9\ud45c(\ubaa9\ud45c\uc218\uc815\uc561)\uc758 \ud569\uacc4\uc785\ub2c8\ub2e4. \uae30\uc900 \uc8fc\ucc28(\uc5f0\ud55c \ud30c\ub791)\ub294 \uc0c1\ub2e8\uc5d0\uc11c <b>\uc8fc\ucc28</b>\ub97c \ubc14\uafd4 \uc120\ud0dd\ud569\ub2c8\ub2e4.</div>`;
   return head+banner+grid+table+note;
 }
 function wrYearPacing(model){
@@ -1723,33 +1741,40 @@ function wrYearPacing(model){
 function wrYearPacingSection(model){
   const P=wrYearPacing(model);
   const _ym=(state.weekly.yearTargetMode==='modified')?'modified':'base';
-  const _ytoggle=`<span class="wr-ytgl"><button type="button" class="wr-ytgl-btn ${_ym==='base'?'on':''}" data-wr-year-target="base">\ubaa9\ud45c\uc561</button><button type="button" class="wr-ytgl-btn ${_ym==='modified'?'on':''}" data-wr-year-target="modified">\uc218\uc815 \ubaa9\ud45c\uc561</button></span>`;
-  const head=`<div class="wr-section" style="margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">\u25b6 \uc5f0 \ubaa9\ud45c\ub300\ube44 \ub2ec\uc131 <span style="font-size:11px;color:#64748b;font-weight:600">\u00b7 \uc9c1\uc804 5\uac1c\ub144 \uc911 ${won(P.years)}\uac1c\ub144 \uc6d4\ubcc4 \ub9e4\ucd9c\ube44\uc911 \ud3c9\uade0 \uae30\uc900 \u00b7 ${model.y}\ub144 ${P.m}\uc6d4\uae4c\uc9c0 \uc2e4\uc801\ub85c \uc5f0\ub9d0 \uc608\uce21</span>${_ytoggle}</div>`;
-  if(P.years<1)return head+`<div class="wr-mpace-note">\uc6d4\ubcc4 \ube44\uc911\uc744 \uacc4\uc0b0\ud560 \uacfc\uac70 \uc5f0\ub3c4 \ub370\uc774\ud130\uac00 \ubd80\uc871\ud569\ub2c8\ub2e4. \uc804\ub144\ub3c4 \uc774\uc0c1 \ub370\uc774\ud130\uac00 \uc788\uc73c\uba74 \uc804\ub9dd\uc774 \ud45c\uc2dc\ub429\ub2c8\ub2e4.</div>`;
-  if(P.annualTarget<=0)return head+`<div class="wr-mpace-note">\uc5f0 \ubaa9\ud45c\uac00 \uc124\uc815\ub418\uc5b4 \uc788\uc9c0 \uc54a\uc544 \uc5f0 \ub2ec\uc131 \uc804\ub9dd\uc744 \uacc4\uc0b0\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.</div>`;
-  const vmap={ok:['#065f46','#ecfdf5','#a7f3d0','\u2705 \uc5f0 \ubaa9\ud45c \ub2ec\uc131 \uac00\ub2a5'],warn:['#92400e','#fffbeb','#fde68a','\ud83d\udfe1 \uc5f0 \ubaa9\ud45c \uadfc\uc811 \u00b7 \ubd84\ubc1c \ud544\uc694'],bad:['#991b1b','#fef2f2','#fecaca','\ud83d\udd34 \uc5f0 \ubaa9\ud45c \ubbf8\ub2ec \uc6b0\ub824 \u00b7 \uc9d1\uc911 \ud544\uc694'],na:['#334155','#f8fafc','#e2e8f0','\u2139\ufe0f \uc804\ub9dd \uacc4\uc0b0 \ubd88\uac00']};
+  const _open=state.weekly.yearPacingOpen===true;
+  const _ytoggle=`<span class="wr-ytgl"><button type="button" class="wr-ytgl-btn ${_ym==='base'?'on':''}" data-wr-year-target="base">목표액</button><button type="button" class="wr-ytgl-btn ${_ym==='modified'?'on':''}" data-wr-year-target="modified">수정 목표액</button></span>`;
+  const head=`<div class="wr-section wr-year-pace-head" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button type="button" class="wr-year-pace-toggle" data-wr-year-collapse aria-expanded="${_open?'true':'false'}"><span class="wr-toggle-caret">${_open?'▼':'▶'}</span><span>연 목표대비 달성 <span class="wr-year-pace-desc">· 직전 5개년 중 ${won(P.years)}개년 월별 매출비중 평균 기준 · ${model.y}년 ${P.m}월까지 실적으로 연말 예측</span></span></button>${_ytoggle}</div>`;
+  if(!_open)return head;
+  if(P.years<1)return head+`<div class="wr-mpace-note">월별 비중을 계산할 과거 연도 데이터가 부족합니다. 전년도 이상 데이터가 있으면 전망이 표시됩니다.</div>`;
+  if(P.annualTarget<=0)return head+`<div class="wr-mpace-note">연 목표가 설정되어 있지 않아 연 달성 전망을 계산할 수 없습니다.</div>`;
+  const vmap={ok:['#065f46','#ecfdf5','#a7f3d0','✅ 연 목표 달성 가능'],warn:['#92400e','#fffbeb','#fde68a','🟡 연 목표 근접 · 분발 필요'],bad:['#991b1b','#fef2f2','#fecaca','🔴 연 목표 미달 우려 · 집중 필요'],na:['#334155','#f8fafc','#e2e8f0','ℹ️ 전망 계산 불가']};
   const vc=vmap[P.verdict]||vmap.na;
   let why='';
-  if(P.verdict==='ok')why=`\ud604\uc7ac \ud398\uc774\uc2a4(\uc804\ub9dd \ub2ec\uc131\ub960 <b>${wrPct(P.projRate)}</b>)\ub97c \uc720\uc9c0\ud558\uba74 \ub0a8\uc740 ${P.remainingMonths}\uac1c\uc6d4 \ub3d9\uc548 \uc5f0 \ubaa9\ud45c\ub97c \ucc44\uc6b8 \uc218 \uc788\uc2b5\ub2c8\ub2e4.`;
-  else if(P.verdict==='warn')why=`\uc804\ub9dd \ub2ec\uc131\ub960 <b>${wrPct(P.projRate)}</b>. \ub0a8\uc740 ${P.remainingMonths}\uac1c\uc6d4 \ub3d9\uc548 \uc6d4\ub2f9 <b>${won(P.requiredPerMonth)}\uc6d0</b>${P.paceMult?` (\ud3c9\uc18c \ud398\uc774\uc2a4\uc758 \uc57d ${P.paceMult.toFixed(2)}\ubc30)`:''}\uc774 \ud544\uc694\ud569\ub2c8\ub2e4.`;
-  else if(P.verdict==='bad')why=`\uc804\ub9dd \ub2ec\uc131\ub960 <b>${wrPct(P.projRate)}</b>\ub85c \uc5f0 \ubaa9\ud45c \ubbf8\ub2ec\uc774 \uc6b0\ub824\ub429\ub2c8\ub2e4. \ub0a8\uc740 ${P.remainingMonths}\uac1c\uc6d4 \ub3d9\uc548 \uc6d4\ub2f9 <b>${won(P.requiredPerMonth)}\uc6d0</b>${P.paceMult?` (\ud3c9\uc18c \ud398\uc774\uc2a4\uc758 \uc57d ${P.paceMult.toFixed(2)}\ubc30)`:''}\uc774 \ud544\uc694\ud569\ub2c8\ub2e4.`;
-  else why=`\ub0a8\uc740 \uac1c\uc6d4\uc774 \uc5c6\uac70\ub098 \uae30\uc900\uc774 \ubd80\uc871\ud569\ub2c8\ub2e4.`;
+  if(P.verdict==='ok')why=`현재 페이스(전망 달성률 <b>${wrPct(P.projRate)}</b>)를 유지하면 남은 ${P.remainingMonths}개월 동안 연 목표를 채울 수 있습니다.`;
+  else if(P.verdict==='warn')why=`전망 달성률 <b>${wrPct(P.projRate)}</b>. 남은 ${P.remainingMonths}개월 동안 월당 <b>${won(P.requiredPerMonth)}원</b>${P.paceMult?` (평소 페이스의 약 ${P.paceMult.toFixed(2)}배)`:''}이 필요합니다.`;
+  else if(P.verdict==='bad')why=`전망 달성률 <b>${wrPct(P.projRate)}</b>로 연 목표 미달이 우려됩니다. 남은 ${P.remainingMonths}개월 동안 월당 <b>${won(P.requiredPerMonth)}원</b>${P.paceMult?` (평소 페이스의 약 ${P.paceMult.toFixed(2)}배)`:''}이 필요합니다.`;
+  else why=`남은 개월이 없거나 기준이 부족합니다.`;
   const banner=`<div class="wr-mpace-verdict" style="color:${vc[0]};background:${vc[1]};border-color:${vc[2]}"><div class="wr-mpace-vtitle">${vc[3]}</div><div class="wr-mpace-vwhy">${why}</div></div>`;
   const kpi=(label,val,sub)=>`<div class="wr-mpace-kpi"><div class="wr-mpace-k">${label}</div><div class="wr-mpace-v">${val}</div>${sub?`<div class="wr-mpace-s">${sub}</div>`:''}</div>`;
-  const grid=`<div class="wr-mpace-grid">${kpi('\uc5f0 \ubaa9\ud45c',won(P.annualTarget)+'\uc6d0',_ym==='modified'?'\uc218\uc815 \ubaa9\ud45c\uc561 \uae30\uc900':'\ubaa9\ud45c\uc561 \uae30\uc900')}${kpi('\uae30\uc900 \uc6d4\uae4c\uc9c0 \uc2e4\uc801',won(P.annualActualCum)+'\uc6d0',model.y+'\ub144 1~'+P.m+'\uc6d4 \ub204\uc801')}${kpi('\uc9c4\ud589 \ube44\uc911(\ud328\ud134)',wrPct(P.cumThroughM*100),'\uc774 \uc2dc\uc810 \uc18c\uc9c4 \uc608\uc0c1 \ube44\uc911')}${kpi('\ud604\uc7ac \ub2ec\uc131\ub960',wrPct(P.toDateRate))}${kpi('\ud3c9\uade0\uc608\uce21 \uc5f0\ub9e4\ucd9c',P.projYear!=null?won(P.projYear)+'\uc6d0':'-','\ud328\ud134 \ud658\uc0b0')}${kpi('\ud3c9\uade0\uc608\uce21 \ub2ec\uc131\ub960',P.projRate!=null?wrPct(P.projRate):'-')}${kpi('\uc794\uc5ec \ubaa9\ud45c',won(P.neededRemaining)+'\uc6d0','\ub0a8\uc740 '+P.remainingMonths+'\uac1c\uc6d4')}${kpi('\ud544\uc694 \uc2e4\uc801/\uc6d4',P.remainingMonths>0?won(P.requiredPerMonth)+'\uc6d0':'-',P.patPerMonth!=null?'\ud328\ud134 \ud398\uc774\uc2a4 '+won(P.patPerMonth)+'\uc6d0/\uc6d4':'')}</div>`;
+  const grid=`<div class="wr-mpace-grid">${kpi('연 목표',won(P.annualTarget)+'원',_ym==='modified'?'수정 목표액 기준':'목표액 기준')}${kpi('기준 월까지 실적',won(P.annualActualCum)+'원',model.y+'년 1~'+P.m+'월 누적')}${kpi('진행 비중(패턴)',wrPct(P.cumThroughM*100),'이 시점 소진 예상 비중')}${kpi('현재 달성률',wrPct(P.toDateRate))}${kpi('평균예측 연매출',P.projYear!=null?won(P.projYear)+'원':'-','패턴 환산')}${kpi('평균예측 달성률',P.projRate!=null?wrPct(P.projRate):'-')}${kpi('잔여 목표',won(P.neededRemaining)+'원','남은 '+P.remainingMonths+'개월')}${kpi('필요 실적/월',P.remainingMonths>0?won(P.requiredPerMonth)+'원':'-',P.patPerMonth!=null?'패턴 페이스 '+won(P.patPerMonth)+'원/월':'')}</div>`;
+  const selectedTargetRow=(model.annualRows&&model.annualRows[_ym==='modified'?1:0])||null;
+  const targetLabel=_ym==='modified'?'목표수정액':'목표액';
   const trows=[];
   for(let i=1;i<=12;i++){
-    const sh=P.pat[i],cumv=P.cum[i],actual=P.curMonths[i-1]||0,done=(i<=P.m),targetModified=+((model.annualRows&&model.annualRows[1]&&model.annualRows[1].vals[i])||0);
+    const sh=P.pat[i],cumv=P.cum[i],actual=P.curMonths[i-1]||0,done=(i<=P.m),targetAmount=+((selectedTargetRow&&selectedTargetRow.vals[i])||0);
     let cumActual=0; for(let j=0;j<i;j++)cumActual+=P.curMonths[j]||0;
     const projM=(P.projYear!=null)?P.projYear*sh:null;
+    const showForecast=i>=P.m;
+    const projMCell=showForecast&&projM!=null?won(projM)+'원':'<span class="wr-zero">-</span>';
     const isBase=(i===P.m),cls=(isBase?'wr-mpace-base':'')+(done?'':' wr-mpace-future');
-    const rate=targetModified>0?actual/targetModified*100:null,status=done?(actual>=targetModified?'<span class="wr-rate-good">\ub2ec\uc131</span>':'<span class="wr-rate-bad">\ubbf8\ub2ec</span>'):'<span class="wr-zero">\uc608\uc815</span>',shortfall=done&&actual<targetModified?'<span class="wr-rate-bad">-'+won(targetModified-actual)+'\uc6d0</span>':'<span class="wr-zero">-</span>',rateCell=done?'<span class="'+(actual>=targetModified?'wr-rate-good':'wr-rate-bad')+'">'+wrPct(rate)+'</span>':'<span class="wr-zero">-</span>';
-    trows.push(`<tr class="${cls}"><td class="wr-center"><b>${i}\uc6d4</b>${isBase?' <span class="wr-mpace-tag">\uae30\uc900</span>':''}</td><td class="wr-center">${wrPct(sh*100)}</td><td class="wr-center">${wrPct(cumv*100)}</td><td class="wr-right">${done?won(actual)+'\uc6d0':'<span class="wr-zero">-</span>'}</td><td class="wr-right">${done?won(cumActual)+'\uc6d0':'<span class="wr-zero">-</span>'}</td><td class="wr-right">${won(targetModified)}\uc6d0</td><td class="wr-right">${projM!=null?won(projM)+'\uc6d0':'-'}</td><td class="wr-center">${status}</td><td class="wr-right">${shortfall}</td><td class="wr-center">${rateCell}</td></tr>`);
+    const rate=targetAmount>0?actual/targetAmount*100:null,status=done?(actual>=targetAmount?'<span class="wr-rate-good">달성</span>':'<span class="wr-rate-bad">미달</span>'):'<span class="wr-zero">예정</span>',shortfall=done&&actual<targetAmount?'<span class="wr-rate-bad">-'+won(targetAmount-actual)+'원</span>':'<span class="wr-zero">-</span>',rateCell=done?'<span class="'+(actual>=targetAmount?'wr-rate-good':'wr-rate-bad')+'">'+wrPct(rate)+'</span>':'<span class="wr-zero">-</span>';
+    trows.push(`<tr class="${cls}"><td class="wr-center"><b>${i}월</b>${isBase?' <span class="wr-mpace-tag">기준</span>':''}</td><td class="wr-center">${wrPct(sh*100)}</td><td class="wr-center">${wrPct(cumv*100)}</td><td class="wr-right">${done?won(actual)+'원':'<span class="wr-zero">-</span>'}</td><td class="wr-right">${done?won(cumActual)+'원':'<span class="wr-zero">-</span>'}</td><td class="wr-right">${won(targetAmount)}원</td><td class="wr-right">${projMCell}</td><td class="wr-center">${status}</td><td class="wr-right">${shortfall}</td><td class="wr-center">${rateCell}</td></tr>`);
   }
-  const table=`<div class="wr-tablewrap"><table class="wr-table wr-mpace-table"><thead><tr><th style="width:7%;text-align:center">\uc6d4</th><th style="width:12%">\uacfc\uac70\ud3c9\uade0\uc6d4\ube44\uc911</th><th style="width:10%">\ub204\uc801\ube44\uc911</th><th style="width:12%">\uc62c\ud574 \uc6d4\uc2e4\uc801</th><th style="width:14%">\uc62c\ud574 \ub204\uc801\uc2e4\uc801</th><th style="width:13%">\ubaa9\ud45c\uc218\uc815\uc561</th><th style="width:15%">\ud3c9\uade0\uc608\uce21\ub9e4\ucd9c(\uc6d4\ub2e8\uc704)</th><th style="width:5%">\uc0c1\ud0dc</th><th style="width:8%">\ubbf8\ub2ec\uae08\uc561</th><th style="width:4%">\ub2ec\uc131\ub960</th></tr></thead><tbody>${trows.join('')}</tbody></table></div>`;
-  const note=`<div class="wr-note">\uacfc\uac70 \uc644\ub8cc \uc5f0\ub3c4\ub4e4\uc758 \uc6d4\ubcc4 \ub9e4\ucd9c\ube44\uc911\uc744 \ud3c9\uade0\ud588\uc2b5\ub2c8\ub2e4. <b>\uacfc\uac70\ud3c9\uade0\uc6d4\ube44\uc911</b>\uc740 \uc9c1\uc804 5\uac1c\ub144 \uc911 <b>\ud574\ub2f9 \uc6d4\uc5d0 \uc2e4\uc81c \ub9e4\ucd9c \ub370\uc774\ud130\uac00 \uc788\ub294 \uc5f0\ub3c4\ub9cc</b> \ud3c9\uade0\uc5d0 \ud3ec\ud568\ud569\ub2c8\ub2e4. <b>\ud3c9\uade0\uc608\uce21 \uc5f0\ub9e4\ucd9c = \uae30\uc900 \uc6d4\uae4c\uc9c0 \uc2e4\uc801 \u00f7 \ud574\ub2f9 \uc2dc\uc810 \ub204\uc801 \ube44\uc911</b>. \uc5f0 \ubaa9\ud45c\ub294 \uc0c1\ub2e8\uc5d0\uc11c \uace0\ub978 <b>\ubaa9\ud45c\uc561/\uc218\uc815 \ubaa9\ud45c\uc561</b> \uae30\uc900\uc785\ub2c8\ub2e4. \uae30\uc900 \uc6d4\uc740 \uc0c1\ub2e8\uc5d0\uc11c <b>\uc6d4</b>\uc744 \ubc14\uafd4 \uc120\ud0dd\ud569\ub2c8\ub2e4.</div>`;
+  const table=`<div class="wr-tablewrap"><table class="wr-table wr-mpace-table"><thead><tr><th style="width:7%;text-align:center">월</th><th style="width:12%">과거평균월비중</th><th style="width:10%">누적비중</th><th style="width:12%">올해 월실적</th><th style="width:14%">올해 누적실적</th><th style="width:13%">${targetLabel}</th><th style="width:15%">평균예측매출(월단위)</th><th style="width:5%">상태</th><th style="width:8%">미달금액</th><th style="width:4%">달성률</th></tr></thead><tbody>${trows.join('')}</tbody></table></div>`;
+  const note=`<div class="wr-note">과거 완료 연도들의 월별 매출비중을 평균했습니다. <b>과거평균월비중</b>은 직전 5개년 중 <b>해당 월에 실제 매출 데이터가 있는 연도만</b> 평균에 포함합니다. <b>평균예측 연매출 = 기준 월까지 실적 ÷ 해당 시점 누적 비중</b>. 평균예측매출(월단위)은 <b>기준 월과 앞으로 남은 월만</b> 표시합니다. 연 목표와 월별 목표 열은 상단에서 고른 <b>목표액/수정 목표액</b> 기준으로 함께 변경됩니다. 기준 월은 상단에서 <b>월</b>을 바꿔 선택합니다.</div>`;
   return head+banner+grid+table+note;
 }
+
 function wrP2Forecast(model){
   const per=['year','month','week'].includes(state.weekly.p2Period)?state.weekly.p2Period:'month';
   const dim=state.weekly.p2Dim==='cust'?'cust':'prod';
@@ -1938,6 +1963,26 @@ function wrIssueAdjacentPeriod(model,dir){
   const start=wrDate(y,m,r.s),end=wrDate(y,m,r.e),s=wrDateInput(start),e=wrDateInput(end);
   return {key:`W|${y}|${String(m).padStart(2,'0')}|${w}`,label:`${y}년 ${m}월 ${w}주`,short:`${m}월 ${w}주 / 기간 ${wrDateText(start)}~${wrDateText(end)}`,start:s,end:e,startDate:start,endDate:end,y,m,w,isCustom:false};
 }
+function wrIssueTodayPeriod(){
+  const d=typeof wrTodayDate==='function'?wrTodayDate():new Date(),y=d.getFullYear(),m=d.getMonth()+1,rg=wrRanges(y,m).find(r=>d.getDate()>=r.s&&d.getDate()<=r.e);
+  if(!rg)return null;
+  const start=wrDate(y,m,rg.s),end=wrDate(y,m,rg.e),s=wrDateInput(start),e=wrDateInput(end);
+  return {key:`W|${y}|${String(m).padStart(2,'0')}|${rg.n}`,label:`${y}년 ${m}월 ${rg.n}주`,short:`${m}월 ${rg.n}주 / 기간 ${wrDateText(start)}~${wrDateText(end)}`,start:s,end:e,startDate:start,endDate:end,y,m,w:rg.n,isCustom:false,periodMode:'week'};
+}
+function wrIssueMovePeriod(target){
+  if(!target)return;
+  const key=typeof target==='string'?target:String(target.key||'');
+  const p=key.split('|');
+  state.weekly.issueEditId=null;state.weekly.issueDraft=null;state.weekly.issueScope='current';state.weekly.issueFormOpen=false;
+  if(p[0]==='W'){
+    state.weekly.periodMode='week';state.weekly.periodModes={1:'week',2:'month',3:'week',...(state.weekly.periodModes||{}),3:'week'};
+    state.weekly.rangeStart='';state.weekly.rangeEnd='';state.weekly.year=+(target.y||p[1]);state.weekly.month=+(target.m||p[2]);state.weekly.week=+(target.w||p[3]);
+  }else if(p[0]==='R'){
+    state.weekly.periodMode='custom';state.weekly.periodModes={1:'week',2:'month',3:'week',...(state.weekly.periodModes||{}),3:'custom'};
+    state.weekly.rangeStart=(target.start||p[1]||'');state.weekly.rangeEnd=(target.end||p[2]||'');const d=wrParseDate(state.weekly.rangeStart);if(d)state.weekly.year=d.getFullYear();
+  }else return;
+  weeklyReport(3);
+}
 function wrIssueBucket(model,create){
   state.weekly.issues=state.weekly.issues||{}; const k=wrIssuePeriodKey(model);
   if(create&&!state.weekly.issues[k])state.weekly.issues[k]={};
@@ -2082,7 +2127,7 @@ function wrToast(msg,ok){
 }
 function wrIssueFmtTime(v){ if(!v)return '-'; const d=new Date(v); if(isNaN(d))return '-'; const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
 function wrPage3(model){
-  const pi=wrIssuePeriodInfo(model),draft=wrIssueDraft(model),view=wrIssueView(model),custs=wrIssueCusts(),prevPi=wrIssueAdjacentPeriod(model,-1),nextPi=wrIssueAdjacentPeriod(model,1);
+  const pi=wrIssuePeriodInfo(model),draft=wrIssueDraft(model),view=wrIssueView(model),custs=wrIssueCusts(),prevPi=wrIssueAdjacentPeriod(model,-1),nextPi=wrIssueAdjacentPeriod(model,1),todayPi=wrIssueTodayPeriod(),isTodayPeriod=!!(todayPi&&todayPi.key===wrIssuePeriodKey(model));
   const newRows=wrAutoNewCustomerRows(model),common=wrCommonPlan(model);
   const hasCommonSaved=!!(state.weekly.commonPlans&&state.weekly.commonPlans[common.periodKey]);
   const commonWeekRows=wrCommonWeeklyRows(model),commonTitle=model.periodMode==='month'?'📌 영업계획·실적 · 월간 종합':'📌 영업계획·실적';
@@ -2102,7 +2147,7 @@ function wrPage3(model){
     const r=wrIssueNormalize(raw),isCarry=!!r.isCarry,snap={grade:r.creditGrade||'-',status:r.creditStatus||'-',pay:r.creditPay||'-',annualActual:r.annualActual||0,annualTarget:r.annualTarget||0,annualRate:r.annualRate,annualRank:r.annualRank,annualRankTotal:r.annualRankTotal,monthActual:r.monthActual||0,monthTarget:r.monthTarget||0,monthRate:r.monthRate,weekActual:r.weekActual||0};
     const search=[r.author,r.cust,r.contact,r.salesManager,r.prevPlan,r.actual,r.nextPlan,r.periodLabel,r.creditGrade,r.creditStatus,r.creditPay,r.carrySourceLabel].join(' ').toLowerCase();
     const carryNote=isCarry?`<div class="wr-issue-carry-note">↪ ${esc(r.carrySourceLabel||'전 회차')} 차주계획 자동 이월</div>`:'';
-    const actions=isCarry?`<button type="button" class="wr-issue-carry-open" data-source-pk="${esc(r.carryFromPeriodKey||'')}" data-source-id="${esc(r.carryFromId||'')}">작성</button>`:`<button type="button" class="wr-issue-edit" data-pk="${esc(r.periodKey||'')}" data-id="${esc(r.id||'')}">수정</button><button type="button" class="wr-issue-del" data-pk="${esc(r.periodKey||'')}" data-id="${esc(r.id||'')}">삭제</button>`;
+    const actions=isCarry?`<button type="button" class="wr-issue-source-open" data-source-pk="${esc(r.carryFromPeriodKey||'')}" title="원본 차주계획이 저장된 이전 주차로 이동">이전주 이동</button><button type="button" class="wr-issue-carry-open" data-source-pk="${esc(r.carryFromPeriodKey||'')}" data-source-id="${esc(r.carryFromId||'')}">작성</button>`:`<button type="button" class="wr-issue-edit" data-pk="${esc(r.periodKey||'')}" data-id="${esc(r.id||'')}">수정</button><button type="button" class="wr-issue-del" data-pk="${esc(r.periodKey||'')}" data-id="${esc(r.id||'')}">삭제</button>`;
     const type=r.type||(isCarry?'자동이월':'주간현황');
     return `<tr class="wr-issue-row ${isCarry?'wr-issue-carry-row':''}" data-search="${esc(search)}" data-issue-kind="${esc(type)}"><td class="num wr-no">${i+1}</td><td class="wr-issue-kind">${esc(type)}</td><td><b>${esc(r.periodLabel||'-')}</b><div class="sub2" style="font-size:9.5px">${esc((r.periodStart||'')+(r.periodEnd?' ~ '+r.periodEnd:''))}</div>${isCarry?'<div class="wr-issue-carry-note">자동 이월</div>':''}</td><td><div class="wr-issue-cust">${esc(r.cust||'업체 미지정')}</div>${r.cust?wrIssueCreditHtml(r.cust,snap,model):'<span class="sub2">-</span>'}<div class="sub2" style="margin-top:4px">${esc(r.salesManager||'')}</div></td><td><div class="wr-issue-contact-cell">${r.cust?wrIssueCategoryIcons(r.cust):''}<span>${esc(r.contact||'-')}</span></div></td><td><b>${esc(r.author||'-')}</b></td><td><div class="wr-issue-text">${esc(r.prevPlan||'')}</div>${carryNote}</td><td><div class="wr-issue-text">${esc(r.actual||'')}</div></td><td><div class="wr-issue-text">${esc(r.nextPlan||'')}</div></td><td class="when">${wrIssueFmtTime(r.updatedAt||r.createdAt)}</td><td><div class="wr-issue-row-actions">${actions}</div></td></tr>`;
   }).join('');
@@ -2113,7 +2158,7 @@ function wrPage3(model){
   const commonStatus=common.updatedAt?`<span class="wr-common-save-status">✓ 저장 완료 · ${esc(wrIssueFmtTime(common.updatedAt))}</span>`:model.periodMode==='month'&&commonWeekRows.length?`<span class="wr-common-save-status empty">주간 작성 ${won(commonWeekRows.length)}주 표시</span>`:'<span class="wr-common-save-status empty">미저장</span>';
   const wrCwCard=r=>`<div class="wr-cw-card"><div class="wr-cw-head"><span class="wr-cw-week">${esc(r.periodLabel||'-')}</span><span class="wr-cw-range">${esc((r.periodStart||'')+(r.periodEnd?' ~ '+r.periodEnd:''))}</span><button type="button" class="wr-common-history-open" data-pk="${esc(r.periodKey||'')}">주간 열기 ▸</button></div><div class="wr-cw-body"><div class="wr-cw-col prev"><h5>① 이전계획</h5><div>${r.prevPlan?esc(r.prevPlan):'<span class=\"wr-cw-empty\">-</span>'}</div></div><div class="wr-cw-col actual"><h5>② 실적</h5><div>${r.actual?esc(r.actual):'<span class=\"wr-cw-empty\">-</span>'}</div></div><div class="wr-cw-col next"><h5>③ 차주계획</h5><div>${r.nextPlan?esc(r.nextPlan):'<span class=\"wr-cw-empty\">-</span>'}</div></div></div></div>`;
   const commonHistory=commonWeekRows.length?`<div class="wr-common-history"><div class="wr-common-history-title"><span>🗓 ${model.y}년 ${model.m}월 · 주간 작성 내역 모아보기</span><span class="wr-rankstat">${won(commonWeekRows.length)}주 저장</span></div><div class="wr-cw-note">아래는 이 달에 <b>주간 단위</b>로 저장한 영업계획·실적입니다. 위 <b>월간 종합</b> 칸은 달 전체 요약용으로 따로 저장됩니다. 각 카드의 <b>주간 열기</b>로 해당 주로 이동해 수정할 수 있습니다.</div><div class="wr-cw-list">${commonWeekRows.map(wrCwCard).join('')}</div></div>`:(model.periodMode==='month'?'<div class="wr-common-history"><div class="wr-common-history-title"><span>🗓 선택 월의 주간 작성 내역</span></div><div class="sub2">저장된 주간 영업계획·실적이 없습니다. 주간 단위에서 작성하면 이곳에 자동으로 모아 표시됩니다.</div></div>':'');
-  return `<div class="wr-page">${wrHeader(model,3)}<div class="wr-issue-headline"><div class="wr-issue-period">3. 주간이슈사항 <small>(${esc(pi.short)})</small></div><span class="wr-rankstat">현재 기간 ${won(currentCount)}건 · 저장 전체 ${won(wrIssueAll().length)}건</span></div>
+  return `<div class="wr-page">${wrHeader(model,3)}<div class="wr-issue-headline"><div class="wr-issue-period">3. 주간이슈사항 <small>(${esc(pi.short)})</small></div><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-left:auto"><div class="wr-issue-nav wr-no-print"><button type="button" class="wr-issue-nav-btn prev" id="wrIssuePrevPeriod" title="${esc(prevPi?prevPi.label:'이전 주차')}">← 이전주 이동</button><button type="button" class="wr-issue-nav-btn today ${isTodayPeriod?'is-current':''}" id="wrIssueTodayPeriod" title="${esc(todayPi?todayPi.label:'이번 주차')}">이번주</button><button type="button" class="wr-issue-nav-btn next" id="wrIssueNextPeriod" title="${esc(nextPi?nextPi.label:'다음 주차')}">차주 이동 →</button></div><span class="wr-rankstat">현재 기간 ${won(currentCount)}건 · 저장 전체 ${won(wrIssueAll().length)}건</span></div></div>
   <div class="wr-newcust-panel"><div class="wr-newcust-head"><div class="wr-newcust-title">✨ 신규업체 현황 <small>매출 데이터에서 선택 기간 내 첫 거래 업체를 자동 표시</small></div><span class="wr-rankstat">현재 기간 ${won(newRows.length)}건</span></div><div class="wr-newcust-help">기준: 전체 매출 이력에서 거래처별 최초 매출일이 선택 기간에 포함된 업체입니다. 제품·품목은 첫 거래일 기준이며, 매출액은 선택 기간의 누적 매출입니다.</div>
     <div class="wr-tablewrap"><table class="wr-table wr-newcust-table"><thead><tr><th class="wr-no" style="width:3%">NO</th><th style="width:13%">신규업체</th><th style="width:8%">첫거래일</th><th style="width:30%">제품·품목</th><th style="width:7%">매출액</th><th style="width:10%">지역</th><th style="width:9%">담당자</th><th style="width:20%">비고</th></tr></thead><tbody>${newCustomerRows||'<tr><td colspan="8" class="wr-issue-empty">선택 기간에 첫 거래가 발생한 신규업체가 없습니다.</td></tr>'}</tbody></table></div>
   </div>
@@ -2129,11 +2174,16 @@ function wrPage3(model){
     <div class="wr-issue-triplet"><div class="wr-issue-stage prev"><label for="wrIssuePrevPlan">① 이전계획 <span>(${esc(prevStagePeriod)})</span></label><textarea id="wrIssuePrevPlan" placeholder="지난 기간에 계획했던 내용과 진행 예정사항을 입력하세요.">${esc(draft.prevPlan||'')}</textarea></div><div class="wr-issue-stage actual"><label for="wrIssueActual">② 실적 <span>(${esc(actualStagePeriod)})</span></label><textarea id="wrIssueActual" placeholder="선택 기간의 진행 결과와 실적을 입력하세요.">${esc(draft.actual||'')}</textarea></div><div class="wr-issue-stage next"><label for="wrIssueNextPlan">③ 차주계획 <span>(${esc(nextStagePeriod)})</span></label><textarea id="wrIssueNextPlan" placeholder="다음 기간의 추진계획과 후속조치를 입력하세요.">${esc(draft.nextPlan||'')}</textarea></div></div>
   </div><div class="wr-issue-actions"><button class="btn" type="button" id="wrIssueSave">${edit?'수정 저장':'주간현황 저장'}</button>${edit?'<button class="btn ghost" type="button" id="wrIssueCancel">수정 취소</button>':''}<span class="sub2">차주계획이 있는 항목만 다음 주·다음 회차의 이전계획으로 자동 표시됩니다.</span></div></div>
   <div class="wr-issue-search wr-no-print"><b style="font-size:11px;color:#334155">🔍 찾기</b><input id="wrIssueSearch" value="${esc(state.weekly.issueSearch||'')}" placeholder="이전계획·실적·차주계획·업체·작성자·업체담당자 검색"><div class="wr-issue-scope"><button type="button" data-v="current" class="${view.scope==='current'?'on':''}">현재기간</button><button type="button" data-v="all" class="${view.scope==='all'?'on':''}">전체기간</button></div><button type="button" class="btn ghost" id="wrIssueSearchClear" style="font-size:11px;padding:5px 9px">초기화</button><span class="sub2" id="wrIssueCount">검색 ${won(view.arr.length)}건</span></div>
-  <div class="wr-tablewrap"><table class="wr-table wr-issue-table" id="wrIssueTable"><thead><tr><th class="wr-no" style="width:3%">NO</th><th class="wr-center" style="width:5%" aria-sort="${issueSortDir==='asc'?'ascending':issueSortDir==='desc'?'descending':'none'}"><button type="button" id="wrIssueKindSort" class="wr-issue-kind-sort ${issueSortDir?'active':''}" title="클릭하여 구분 정렬">구분<span class="wr-sort-arrow">${issueSortArrow}</span></button></th><th style="width:8%">기간</th><th style="width:19%">업체·신용도·매출현황</th><th style="width:7%">업체담당자</th><th style="width:6%">작성자</th><th style="width:14%">이전계획</th><th style="width:14%">실적</th><th style="width:14%">차주계획</th><th style="width:6%">수정일</th><th style="width:4%">관리</th></tr></thead><tbody id="wrIssueBody">${rows||'<tr><td colspan="11" class="wr-issue-empty">등록되거나 자동 이월된 주간이슈가 없습니다.</td></tr>'}</tbody></table></div><div class="wr-note">차주계획에 내용이 있는 항목만 바로 다음 주 또는 다음 사용자 지정 회차의 이전계획으로 자동 이월됩니다. 자동 이월 행의 ‘작성’을 누르면 실적과 새 차주계획을 이어서 저장할 수 있습니다.</div></div>`;
+  <div class="wr-tablewrap"><table class="wr-table wr-issue-table" id="wrIssueTable"><thead><tr><th class="wr-no" style="width:3%">NO</th><th class="wr-center" style="width:5%" aria-sort="${issueSortDir==='asc'?'ascending':issueSortDir==='desc'?'descending':'none'}"><button type="button" id="wrIssueKindSort" class="wr-issue-kind-sort ${issueSortDir?'active':''}" title="클릭하여 구분 정렬">구분<span class="wr-sort-arrow">${issueSortArrow}</span></button></th><th style="width:8%">기간</th><th style="width:19%">업체·신용도·매출현황</th><th style="width:7%">업체담당자</th><th style="width:6%">작성자</th><th style="width:14%">이전계획</th><th style="width:14%">실적</th><th style="width:14%">차주계획</th><th style="width:6%">수정일</th><th style="width:4%">관리</th></tr></thead><tbody id="wrIssueBody">${rows||'<tr><td colspan="11" class="wr-issue-empty">등록되거나 자동 이월된 주간이슈가 없습니다.</td></tr>'}</tbody></table></div><div class="wr-note">차주계획에 내용이 있는 항목만 바로 다음 주 또는 다음 사용자 지정 회차의 이전계획으로 자동 이월됩니다. 자동 이월 행의 <b>이전주 이동</b>을 누르면 원본 차주계획이 저장된 주차로 이동하여 수정·삭제할 수 있고, <b>작성</b>을 누르면 현재 주차의 이전계획으로 이어서 저장할 수 있습니다.</div></div>`;
 }
 
 function wrBindIssue(model){
   const root=$('#result'),pk=wrIssuePeriodKey(model),custs=wrIssueCusts();
+  const prevMove=$('#wrIssuePrevPeriod'),todayMove=$('#wrIssueTodayPeriod'),nextMove=$('#wrIssueNextPeriod');
+  prevMove&&prevMove.addEventListener('click',()=>wrIssueMovePeriod(wrIssueAdjacentPeriod(model,-1)));
+  todayMove&&todayMove.addEventListener('click',()=>wrIssueMovePeriod(wrIssueTodayPeriod()));
+  nextMove&&nextMove.addEventListener('click',()=>wrIssueMovePeriod(wrIssueAdjacentPeriod(model,1)));
+  root.querySelectorAll('.wr-issue-source-open').forEach(b=>b.addEventListener('click',()=>wrIssueMovePeriod(b.dataset.sourcePk)));
   const kindSort=$('#wrIssueKindSort');kindSort&&kindSort.addEventListener('click',wrSortIssueKind);
   const cust=$('#wrIssueCust'),custResults=$('#wrIssueCustResults'),contact=$('#wrIssueContact'),contactSel=$('#wrIssueContactSelect'),credit=$('#wrIssueCredit'),manager=$('#wrIssueManager');
   let lastCust=String(cust&&cust.value||'').trim();
@@ -2325,6 +2375,7 @@ function wrBind(model,page){
     wrBindSortableTable($('#wrCustTargetTable'));
     wrFitCustTargetTable();
     requestAnimationFrame(wrFitCustTargetTable);
+    root.querySelectorAll('[data-wr-year-collapse]').forEach(b=>b.addEventListener('click',()=>{state.weekly.yearPacingOpen=!(state.weekly.yearPacingOpen===true);saveSettings();weeklyReport(1);}));
     root.querySelectorAll('[data-wr-year-target]').forEach(b=>b.addEventListener('click',()=>{state.weekly.yearTargetMode=b.dataset.wrYearTarget==='modified'?'modified':'base';saveSettings();weeklyReport(1);}));
     root.querySelectorAll('[data-wr-issue-filter]').forEach(b=>b.addEventListener('click',()=>{
       const next=b.dataset.wrIssueFilter||'all',cur=state.weekly.issueTableFilter||'all';
@@ -2841,7 +2892,7 @@ function applySeedContacts(){
     if(typeof saveSettings==='function')saveSettings();
   }catch(_e){}
 }
-function chromeFor(act){ const onH=(act==='home'); const s=document.getElementById('summary'); if(s)s.style.display=onH?'':'none'; const st=document.getElementById('sumTop'); if(st)st.style.display=onH?'':'none'; const pricePage=(act==='price'||act==='pricemake'); const sp=document.getElementById('setPanel'); if(sp)sp.style.display=(['forecast','trend','safety','disposal','retain','last-prod','last-cust','pareto','trend2','pdelta','compete','compare','cmgr','price','pricemake','weekly1','weekly2','weekly3'].indexOf(act)>=0)?'none':''; const mf=document.getElementById('mgrFilterBar'); if(mf)mf.style.display=pricePage?'none':''; }
+function chromeFor(act){ const onH=(act==='home'); const s=document.getElementById('summary'); if(s)s.style.display=onH?'':'none'; const st=document.getElementById('sumTop'); if(st)st.style.display=onH?'':'none'; const pricePage=(act==='price'||act==='pricemake'); const sp=document.getElementById('setPanel'); if(sp)sp.style.display=(['forecast','trend','safety','disposal','retain','last-prod','last-cust','pareto','trend2','pdelta','cust-delta','compete','compare','cmgr','price','pricemake','weekly1','weekly2','weekly3'].indexOf(act)>=0)?'none':''; const mf=document.getElementById('mgrFilterBar'); if(mf)mf.style.display=pricePage?'none':''; }
 function runAct(){ const a=state.act; if(!a||!CUR.length) return; state._inDrill=false; state._syncDeferred=false; try{chromeFor(a);}catch(_){}
   if(state._lastAct!==a){ try{foldFilters();}catch(_){} }
   if(!state._backing){ if(state._lastAct && state._lastAct!==a){ state.navHist=state.navHist||[]; if(state.navHist[state.navHist.length-1]!==state._lastAct)state.navHist.push(state._lastAct); if(state.navHist.length>60)state.navHist.shift(); } } state._lastAct=a; state._backing=false;
@@ -2873,6 +2924,7 @@ function runAct(){ const a=state.act; if(!a||!CUR.length) return; state._inDrill
   else if(a==='scrap') scrapSales();
   else if(a==='retain') retain();
   else if(a==='pdelta') productDelta();
+  else if(a==='cust-delta') customerDelta();
   else if(a==='compete') competeView();
   else if(a==='pareto') pareto();
   else if(a==='compare') compareYoY();
@@ -3953,6 +4005,197 @@ function lastShip(key,label,isProd){
     {drill});
 }
 
+function customerDelta(){
+  state.sortKey=state.sortKey||null;
+  state.cdelta=state.cdelta||{};
+  const cd=state.cdelta;
+  if(!cd.defaultFilterV2){ cd.filter='z1'; cd.defaultFilterV2=true; }
+  if(!cd.filter) cd.filter='z1';
+  if(!cd.view) cd.view='sales';
+  if(!['sales','manager','issue','monthly'].includes(cd.view))cd.view='sales';
+  if(cd.issueAll==null)cd.issueAll=false;
+  if(cd.exclEdit==null)cd.exclEdit=false;
+  if(cd.exclOnly==null)cd.exclOnly=false;
+  syncTargetExcludedCustMap();
+  const src=MF();
+  const allYm=[...new Set(src.map(r=>r.ym).filter(Boolean))].sort();
+  if(!allYm.length){ render('📉 거래처 증감분석','분석 가능한 월 데이터가 없습니다.',[],[],null,'월별 데이터가 있는 파일을 불러오세요.'); return; }
+  const ymShift=(ym,delta)=>{ const p=String(ym).split('-').map(Number); const d=new Date(p[0],p[1]-1+delta,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
+  const ymText=ym=>{ const p=String(ym).split('-'); return (+p[0])+'년 '+(+p[1])+'월'; };
+  const ymIndex=ym=>{ const p=String(ym).split('-').map(Number); return p[0]*12+p[1]-1; };
+  const currentYm=TODAY.getFullYear()+'-'+String(TODAY.getMonth()+1).padStart(2,'0');
+  const completedYm=allYm.filter(k=>k<currentYm);
+  const selectableYm=[...new Set([...completedYm,currentYm])].sort();
+  const defaultYm=completedYm.length?completedYm[completedYm.length-1]:currentYm;
+  if(!cd.baseYm || !selectableYm.includes(cd.baseYm)) cd.baseYm=defaultYm;
+  const baseYm=cd.baseYm;
+  const isCurrentReference=(baseYm===currentYm);
+  const judgeYm=isCurrentReference?ymShift(baseYm,-1):baseYm;
+  const displayKeys=[ymShift(baseYm,-2),ymShift(baseYm,-1),baseYm];
+  const monthlyKeys=Array.from({length:12},(_,i)=>ymShift(currentYm,i-11));
+  const recentKeys=[ymShift(judgeYm,-2),ymShift(judgeYm,-1),judgeYm];
+  const priorKeys=[ymShift(judgeYm,-5),ymShift(judgeYm,-4),ymShift(judgeYm,-3)];
+  const baseEnd=isCurrentReference?new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate(),23,59,59,999):new Date(+baseYm.slice(0,4),+baseYm.slice(5,7),0,23,59,59,999);
+  const map=new Map();
+  src.forEach(r=>{
+    const c=r.cust||'(미상)'; let o=map.get(c);
+    if(!o){ o={key:c,label:c,mon:{},last:null,first:null,total:0}; map.set(c,o); }
+    const v=amtOf(r); o.mon[r.ym]=(o.mon[r.ym]||0)+v; o.total+=v;
+    if(r.d<=baseEnd){ if(!o.last||r.d>o.last)o.last=r.d; if(!o.first||r.d<o.first)o.first=r.d; }
+  });
+  const statusStyle={
+    '이탈의심(3개월+)':['#dc2626','#fff'],
+    '이탈위험(2개월)':['#ea580c','#fff'],
+    '주의(1개월)':['#d97706','#fff'],
+    '매출급감':['#be123c','#fff'],
+    '거래회복':['#0d9488','#fff'],
+    '신규거래':['#2563eb','#fff'],
+    '매출증가':['#16a34a','#fff'],
+    '유지':['#64748b','#fff']
+  };
+  let arr=[...map.values()].filter(o=>o.last).map(o=>{
+    const displayVals=displayKeys.map(k=>o.mon[k]||0);
+    const vals=recentKeys.map(k=>o.mon[k]||0), prevVals=priorKeys.map(k=>o.mon[k]||0);
+    const recent3=vals.reduce((a,b)=>a+b,0), prior3=prevVals.reduce((a,b)=>a+b,0);
+    const delta=recent3-prior3;
+    const pct=prior3>0?delta/prior3*100:(recent3>0?100:0);
+    let zeroMonths=0;
+    for(let i=0;i<60;i++){ if((o.mon[ymShift(judgeYm,-i)]||0)<=0)zeroMonths++; else break; }
+    // 현재월에 실제 매출이 발생한 거래처는 완료월 기준 무매출 대상에서 제외한다.
+    // 과거 거래가 없으면 신규거래, 과거 거래가 있으면 현재월 거래회복으로 판정한다.
+    const currentMonthSales=o.mon[currentYm]||0;
+    const hasPastSalesBeforeCurrent=Object.entries(o.mon).some(([k,v])=>k<currentYm&&(+v||0)>0);
+    const currentOnlyNew=currentMonthSales>0&&!hasPastSalesBeforeCurrent;
+    const recoveredInCurrent=currentMonthSales>0&&zeroMonths>0&&hasPastSalesBeforeCurrent;
+    if(currentOnlyNew||recoveredInCurrent)zeroMonths=0;
+    const beforeRecentTotal=Object.entries(o.mon).reduce((a,[k,v])=>a+(k<recentKeys[0]?v:0),0);
+    const beforePriorTotal=Object.entries(o.mon).reduce((a,[k,v])=>a+(k<priorKeys[0]?v:0),0);
+    let verdict='유지',prio=1;
+    if(currentOnlyNew){ verdict='신규거래'; prio=3; }
+    else if(recoveredInCurrent){ verdict='거래회복'; prio=4; }
+    else if(zeroMonths>=3){ verdict='이탈의심(3개월+)'; prio=8; }
+    else if(zeroMonths===2){ verdict='이탈위험(2개월)'; prio=7; }
+    else if(zeroMonths===1){ verdict='주의(1개월)'; prio=6; }
+    else if(prior3>0 && pct<=-50){ verdict='매출급감'; prio=5; }
+    else if(recent3>0 && prior3===0 && beforePriorTotal>0){ verdict='거래회복'; prio=4; }
+    else if(recent3>0 && prior3===0 && beforePriorTotal<=0){ verdict='신규거래'; prio=3; }
+    else if(vals[2]>0 && vals[1]===0 && beforeRecentTotal>0){ verdict='거래회복'; prio=4; }
+    else if(pct>=20){ verdict='매출증가'; prio=2; }
+    const lastYm=o.last?o.last.getFullYear()+'-'+String(o.last.getMonth()+1).padStart(2,'0'):'';
+    const gapMonths=lastYm?Math.max(0,ymIndex(baseYm)-ymIndex(lastYm)):0;
+    let riskMonthly=0;
+    if(zeroMonths>0){
+      const activeYm=ymShift(judgeYm,-zeroMonths);
+      riskMonthly=[ymShift(activeYm,-2),ymShift(activeYm,-1),activeYm].reduce((a,k)=>a+(o.mon[k]||0),0)/3;
+    }else if(verdict==='매출급감') riskMonthly=Math.max(0,(prior3-recent3)/3);
+    const colors=statusStyle[verdict]||statusStyle['유지'];
+    const memo=(state.retainMemo&&state.retainMemo[o.key])||'';
+    const excluded=fcIsTargetExcludedCust(o.key);
+    return {...o,m2:displayVals[0],m1:displayVals[1],m0:displayVals[2],recent3,prior3,delta,pct,zeroMonths,gapMonths,riskMonthly,verdict,prio,vcBg:colors[0],vcTx:colors[1],memo,excluded,visit:!!(state.retainVisit&&state.retainVisit[o.key]),_search:o.key+' '+verdict+' '+memo+' '+(catsOf(o.key)||[]).join(' ')+' '+mgrS(o.key)+' '+mgrT(o.key)};
+  });
+  const allRows=arr.slice();
+  const includedRows=allRows.filter(o=>!o.excluded);
+  const excludedRows=allRows.filter(o=>o.excluded);
+  const isRisk=o=>['이탈의심(3개월+)','이탈위험(2개월)','주의(1개월)','매출급감'].includes(o.verdict);
+  const counts={all:includedRows.length,risk:includedRows.filter(isRisk).length,z1:includedRows.filter(o=>o.zeroMonths===1).length,z2:includedRows.filter(o=>o.zeroMonths===2).length,z3:includedRows.filter(o=>o.zeroMonths>=3).length,drop:includedRows.filter(o=>o.verdict==='매출급감').length,recover:includedRows.filter(o=>o.verdict==='거래회복'||o.verdict==='신규거래').length,issue:includedRows.filter(o=>String(o.memo||'').trim()).length,excl:excludedRows.length};
+  let pool=cd.exclOnly?excludedRows:(cd.exclEdit?allRows:includedRows);
+  if(cd.issueAll){
+    arr=pool.filter(o=>String(o.memo||'').trim());
+  }else{
+    arr=pool;
+    if(cd.filter==='risk')arr=arr.filter(isRisk);
+    else if(cd.filter==='z1')arr=arr.filter(o=>o.zeroMonths===1);
+    else if(cd.filter==='z2')arr=arr.filter(o=>o.zeroMonths===2);
+    else if(cd.filter==='z3')arr=arr.filter(o=>o.zeroMonths>=3);
+    else if(cd.filter==='drop')arr=arr.filter(o=>o.verdict==='매출급감');
+    else if(cd.filter==='recover')arr=arr.filter(o=>o.verdict==='거래회복'||o.verdict==='신규거래');
+  }
+  arr.sort((a,b)=>b.prio-a.prio||b.riskMonthly-a.riskMonthly||b.prior3-a.prior3);
+  const riskMonthly=includedRows.filter(isRisk).reduce((a,o)=>a+o.riskMonthly,0);
+  const filterDefs=[['z1','1개월 무매출',counts.z1,'#d97706'],['z2','2개월 무매출',counts.z2,'#ea580c'],['z3','3개월+ 무매출',counts.z3,'#dc2626'],['drop','매출급감',counts.drop,'#be123c'],['recover','회복·신규',counts.recover,'#0d9488'],['risk','점검대상',counts.risk,'#dc2626'],['all','전체',counts.all,'#1e3a5f']];
+  const monthOpts=selectableYm.slice(-24).reverse().map(k=>`<option value="${k}" ${k===baseYm?'selected':''}>${ymText(k)}${k===currentYm?' (현재월·참조)':''}</option>`).join('');
+  const kpi=(lab,val,sub,bg,tx)=>`<div style="border:1px solid #e2e8f0;border-radius:10px;padding:9px 12px;background:${bg};min-width:145px;flex:1 1 145px"><div style="font-size:10.5px;color:#64748b;font-weight:800">${lab}</div><div style="font-size:20px;font-weight:900;color:${tx};margin-top:2px">${val}</div><div style="font-size:9.5px;color:#64748b;margin-top:1px">${sub}</div></div>`;
+  const viewBtn=(v,label,icon,color)=>`<button class="cdview" data-v="${v}" style="border:1px solid ${cd.view===v?color:'#cbd5e1'};background:${cd.view===v?color:'#fff'};color:${cd.view===v?'#fff':'#475569'};border-radius:7px;padding:4px 7px;font:800 10.5px/1.2 inherit;white-space:nowrap">${icon} ${label}${cd.view===v?' ✓':''}</button>`;
+  const issueLabel=cd.issueAll?'이슈내용 전체 보기':(cd.view==='issue'?'이슈내용 보기':'이슈내용 보기');
+  const issueMenu=`<span id="cdIssueWrap" style="position:relative;display:inline-flex"><button id="cdIssueBtn" type="button" style="border:1px solid ${(cd.view==='issue'||cd.issueAll)?'#be123c':'#cbd5e1'};background:${(cd.view==='issue'||cd.issueAll)?'#be123c':'#fff'};color:${(cd.view==='issue'||cd.issueAll)?'#fff':'#475569'};border-radius:7px;padding:4px 7px;font:800 10.5px/1.2 inherit;white-space:nowrap">📌 ${issueLabel}${(cd.view==='issue'||cd.issueAll)?' ✓':''} ▾</button><span id="cdIssueMenu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:90;min-width:190px;padding:5px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 8px 22px rgba(15,23,42,.18)"><button type="button" class="cdissueopt" data-mode="current" style="display:block;width:100%;border:0;background:${cd.view==='issue'&&!cd.issueAll?'#fff1f2':'#fff'};color:#475569;border-radius:6px;padding:7px 9px;text-align:left;font:800 11px/1.2 inherit">현재 필터 이슈 보기</button><button type="button" class="cdissueopt" data-mode="all" style="display:block;width:100%;border:0;background:${cd.issueAll?'#fff1f2':'#fff'};color:#be123c;border-radius:6px;padding:7px 9px;text-align:left;font:800 11px/1.2 inherit">이슈내용 전체 보기 (${counts.issue})</button><button type="button" class="cdissueopt" data-mode="sales" style="display:block;width:100%;border:0;background:#fff;color:#64748b;border-radius:6px;padding:7px 9px;text-align:left;font:800 11px/1.2 inherit">기본 매출 보기</button></span></span>`;
+  const exclEditBtn=`<button id="cdExclEditBtn" type="button" style="border:1px solid ${cd.exclEdit?'#b45309':'#cbd5e1'};background:${cd.exclEdit?'#b45309':'#fff'};color:${cd.exclEdit?'#fff':'#475569'};border-radius:7px;padding:4px 7px;font:800 10.5px/1.2 inherit;white-space:nowrap">🚫 제외/숨기기${cd.exclEdit?' ✓':''}</button>`;
+  const exclOnlyBtn=`<button id="cdExclOnlyBtn" type="button" style="border:1px solid ${cd.exclOnly?'#dc2626':'#cbd5e1'};background:${cd.exclOnly?'#dc2626':'#fff'};color:${cd.exclOnly?'#fff':'#475569'};border-radius:7px;padding:4px 7px;font:800 10.5px/1.2 inherit;white-space:nowrap">제외만 보기 (${counts.excl})${cd.exclOnly?' ✓':''}</button>`;
+  const monthlyBtn=`<button id="cdMonthlyBtn" type="button" style="border:1px solid ${cd.view==='monthly'?'#2563eb':'#93c5fd'};background:${cd.view==='monthly'?'#2563eb':'#eff6ff'};color:${cd.view==='monthly'?'#fff':'#1d4ed8'};border-radius:7px;padding:4px 7px;font:900 10.5px/1.2 inherit;white-space:nowrap">📅 월매출보기${cd.view==='monthly'?' ✓':''}</button>`;
+  const controls=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 9px">${kpi('1개월 무매출',won(counts.z1)+'개사','최근 완료월 매출 없음','#fffbeb','#b45309')}${kpi('2개월 연속 무매출',won(counts.z2)+'개사','이탈위험 우선 확인','#fff7ed','#c2410c')}${kpi('3개월 이상 무매출',won(counts.z3)+'개사','거래이탈 의심','#fef2f2','#b91c1c')}${kpi('월 위험매출 추정',won(riskMonthly)+'원','목표합산 제외업체 미포함','#eff6ff','#1d4ed8')}</div>
+  <div class="ctrlbar" style="display:flex;flex-wrap:nowrap;align-items:center;gap:4px;padding:7px 8px;white-space:nowrap;overflow:visible"><label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:#475569;white-space:nowrap">기준월 <select id="cdBase" style="min-width:126px;padding:4px 6px;font-size:10.5px">${monthOpts}</select>${monthlyBtn}</label><span style="flex:0 0 1px;width:1px;height:22px;background:#cbd5e1;margin:0 1px"></span>${filterDefs.map(([v,l,n,c])=>`<button class="cdfilter" data-v="${v}" style="border:1px solid ${!cd.issueAll&&cd.filter===v?c:'#cbd5e1'};background:${!cd.issueAll&&cd.filter===v?c:'#fff'};color:${!cd.issueAll&&cd.filter===v?'#fff':'#475569'};border-radius:999px;padding:4px 7px;font:800 10.5px/1.2 inherit;white-space:nowrap">${l} <b>${n}</b></button>`).join('')}<span style="flex:0 0 1px;width:1px;height:22px;background:#cbd5e1;margin:0 1px"></span>${viewBtn('manager','담당자','👥','#7c3aed')}${issueMenu}${exclEditBtn}${exclOnlyBtn}</div>`;
+  const statusCell=o=>`<span class="badge" style="background:${o.vcBg};color:${o.vcTx};font-size:10px">${o.verdict}</span>`;
+  const amtCell=v=>(+v||0)!==0?`<b>${disp(v)}</b>`:'<span style="color:#94a3b8;font-weight:700">-</span>';
+  const showMonthly=cd.view==='monthly';
+  const showManagers=cd.view==='manager';
+  const showIssue=cd.view==='issue'||cd.issueAll;
+  const showExclCtl=cd.exclEdit||cd.exclOnly;
+  const customerWidth=showMonthly?'245px':(showManagers?'240px':(showIssue?'250px':'270px'));
+  const managerCols=showManagers?[
+    {k:'_s',t:'영업관리',w:'76px',cell:o=>mgrBadge(mgrS(o.label)),sortVal:o=>mgrS(o.label)},
+    {k:'_t',t:'기술영업',w:'76px',cell:o=>mgrBadge(mgrT(o.label)),sortVal:o=>mgrT(o.label)}
+  ]:[];
+  const threeMonthCols=(showManagers||showIssue)?[]:[
+    {k:'recent3',t:'최근 3개월',w:'92px',cell:o=>amtCell(o.recent3)},
+    {k:'prior3',t:'직전 3개월',w:'92px',cell:o=>amtCell(o.prior3)}
+  ];
+  const baseCols=[
+    {k:'risk',t:'우선<br>순위',w:'44px',cell:(o,i)=>i+1,sortVal:o=>o.prio*1e15+o.riskMonthly},
+    {k:'verdict',t:'판정',cls:'l',w:'125px',cell:statusCell,sortVal:o=>o.prio},
+    {k:'label',t:'거래처',cls:'l',w:customerWidth,cell:o=>`${showExclCtl?`<label onclick="event.stopPropagation()" title="체크 시 실적은 유지하고 목표합산에서 제외"><input type="checkbox" class="cdexcl" data-c="${esc(o.key)}" ${o.excluded?'checked':''} style="vertical-align:-2px;margin:0 4px 0 0"></label>`:''}<span class="rtvname${o.visit?' vis':''}"><b>${esc(o.label)}</b></span> ${catChip(o.label)}${o.excluded?'<span class="targetexclbadge">목표 제외</span>':''}`}
+  ];
+  const monthlyCols=monthlyKeys.map(k=>({
+    k:'mcol:'+k,
+    t:`${String(+k.slice(0,4)).slice(-2)}년<br>${+k.slice(5)}월${k===currentYm?'<br><span style="font-size:8px;color:#2563eb">현재</span>':''}`,
+    w:'70px',
+    cell:o=>amtCell((o.mon&&o.mon[k])||0),
+    sortVal:o=>(o.mon&&o.mon[k])||0
+  }));
+  const normalCols=[
+    ...managerCols,
+    {k:'m2',t:`${+displayKeys[0].slice(5)}월`,w:'82px',cell:o=>amtCell(o.m2)},
+    {k:'m1',t:`${+displayKeys[1].slice(5)}월`,w:'82px',cell:o=>amtCell(o.m1)},
+    {k:'m0',t:`${+displayKeys[2].slice(5)}월${isCurrentReference?'<br><span style="font-size:8px;color:#64748b">참조</span>':''}`,w:'82px',cell:o=>amtCell(o.m0)},
+    {k:'zeroMonths',t:'연속<br>무매출',w:'76px',cell:o=>o.zeroMonths?`<b style="color:${o.zeroMonths>=3?'#dc2626':o.zeroMonths===2?'#ea580c':'#d97706'}">${Math.min(o.zeroMonths,36)}개월${o.zeroMonths>=36?'+':''}</b>`:'-'},
+    ...threeMonthCols,
+    {k:'delta',t:'증감액',w:'88px',cell:o=>`<b style="color:${o.delta<0?'#dc2626':o.delta>0?'#16a34a':'#64748b'}">${o.delta>0?'+':''}${disp(o.delta)}</b>`},
+    {k:'pct',t:'증감률',w:'70px',cell:o=>o.prior3>0?`<b style="color:${o.pct<0?'#dc2626':o.pct>0?'#16a34a':'#64748b'}">${o.pct>0?'+':''}${o.pct.toFixed(1)}%</b>`:(o.recent3>0?'<b style="color:#2563eb">신규/회복</b>':'-')},
+    ...(showManagers?[]:[{k:'riskMonthly',t:'<span title="연속 무매출: 마지막 정상거래월 포함 직전 3개월 평균 / 매출급감: 직전·최근 3개월 월평균 감소액">위험매출/월</span>',w:'92px',cell:o=>o.riskMonthly>0?`<b style="color:#be123c">${disp(o.riskMonthly)}</b>`:'-'}]),
+    {k:'last',t:'마지막 출고',w:'82px',cell:o=>fmtD(o.last)},
+    {k:'gapMonths',t:'월 경과',w:'58px',cell:o=>o.gapMonths+'개월'},
+    {k:'visit',t:'방문<br>필요',w:'45px',nosort:true,cell:o=>`<input type="checkbox" class="cdvisit" data-c="${esc(o.key)}" ${o.visit?'checked':''} title="방문필요">`},
+    {k:'memo',t:'📌 이슈내용',cls:'l',w:showIssue?'394px':'205px',nosort:true,cell:o=>`<input type="text" class="cdmemo${o.memo?' editedm':''}" data-c="${esc(o.key)}" value="${esc(o.memo)}" placeholder="" style="width:100%;padding:5px 7px;border:1px solid ${o.memo?'#fca5a5':'#cbd5e1'};border-radius:6px;background:${o.memo?'#fff1f2':'#fff'};color:${o.memo?'#7f1d1d':'#1f2937'};font:inherit">`}
+  ];
+  const cols=showMonthly?[...baseCols,...monthlyCols]:[...baseCols,...normalCols];
+  const sixStart=ymShift(baseYm,-5);
+  const drillStart=showMonthly?monthlyKeys[0]:sixStart;
+  const drillEnd=showMonthly?currentYm:baseYm;
+  const drillLabel=showMonthly?'최근 12개월':'최근 6개월';
+  const bind=()=>{
+    const tbl=$('#tbl'); if(tbl){ tbl.style.tableLayout='fixed'; tbl.style.minWidth='0'; tbl.style.width='100%'; tbl.style.maxWidth='100%'; const wrap=tbl.closest('.tablewrap'); if(wrap){wrap.style.overflowX='hidden';} }
+    const bs=$('#cdBase'); bs&&bs.addEventListener('change',e=>{ cd.baseYm=e.target.value; if(cd.view==='monthly')cd.view='sales'; customerDelta(); });
+    const mb=$('#cdMonthlyBtn'); mb&&mb.addEventListener('click',()=>{ cd.issueAll=false; cd.view=(cd.view==='monthly'?'sales':'monthly'); if(cd.view==='monthly')cd.baseYm=currentYm; customerDelta(); });
+    $('#result').querySelectorAll('.cdfilter').forEach(b=>b.addEventListener('click',()=>{ cd.issueAll=false; cd.filter=b.dataset.v; customerDelta(); }));
+    $('#result').querySelectorAll('.cdview').forEach(b=>b.addEventListener('click',()=>{ const v=b.dataset.v; cd.issueAll=false; cd.view=(cd.view===v?'sales':v); customerDelta(); }));
+    const issueBtn=$('#cdIssueBtn'), issueMenuEl=$('#cdIssueMenu');
+    issueBtn&&issueBtn.addEventListener('click',e=>{ e.stopPropagation(); if(issueMenuEl)issueMenuEl.style.display=issueMenuEl.style.display==='block'?'none':'block'; });
+    $('#result').querySelectorAll('.cdissueopt').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); const mode=b.dataset.mode; if(mode==='all'){cd.issueAll=true;cd.view='issue';}else if(mode==='current'){cd.issueAll=false;cd.view='issue';}else{cd.issueAll=false;cd.view='sales';} customerDelta(); }));
+    const eb=$('#cdExclEditBtn'); eb&&eb.addEventListener('click',()=>{ cd.exclEdit=!cd.exclEdit; if(cd.exclEdit){cd.exclOnly=false;if(cd.view==='monthly')cd.view='sales';} customerDelta(); });
+    const ob=$('#cdExclOnlyBtn'); ob&&ob.addEventListener('click',()=>{ cd.exclOnly=!cd.exclOnly; if(cd.exclOnly)cd.exclEdit=false; customerDelta(); });
+  };
+  const afterDraw=()=>{
+    $('#result').querySelectorAll('.cdmemo').forEach(inp=>{ inp.addEventListener('mousedown',e=>e.stopPropagation()); inp.addEventListener('click',e=>e.stopPropagation()); inp.addEventListener('change',e=>{ const c=e.target.dataset.c,v=e.target.value.trim(); state.retainMemo=state.retainMemo||{}; state.retainMemoAt=state.retainMemoAt||{}; if(v){state.retainMemo[c]=v;state.retainMemoAt[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};}else{delete state.retainMemo[c];delete state.retainMemoAt[c];} e.target.classList.toggle('editedm',!!v); e.target.style.background=v?'#fff1f2':'#fff'; e.target.style.borderColor=v?'#fca5a5':'#cbd5e1'; e.target.style.color=v?'#7f1d1d':'#1f2937'; saveSettings(); }); });
+    $('#result').querySelectorAll('.cdvisit').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('click',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ const c=e.target.dataset.c; state.retainVisit=state.retainVisit||{}; if(e.target.checked)state.retainVisit[c]=true; else delete state.retainVisit[c]; const tr=e.target.closest('tr'); if(tr){ const nm=tr.querySelector('.rtvname'); if(nm)nm.classList.toggle('vis',e.target.checked); } if(typeof logEdit==='function')logEdit('거래유지/증감분석',c+' 방문필요 '+(e.target.checked?'설정':'해제')); saveSettings(); }); });
+    $('#result').querySelectorAll('.cdexcl').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('click',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ const c=e.target.dataset.c, checked=e.target.checked; setTargetExcludedCust(c,checked); if(typeof logEdit==='function')logEdit('거래처 증감분석',c+' 목표합산 제외/숨기기 '+(checked?'설정':'해제')); saveSettings(); customerDelta(); }); });
+    $('#tbl')&&$('#tbl').querySelectorAll('tbody tr').forEach(tr=>{ const cb=tr.querySelector('.cdexcl'); if(cb)tr.classList.toggle('fctargetexcluded',cb.checked); });
+  };
+  const baseCaption=isCurrentReference?`${ymText(baseYm)} 현재월 참조 · 판정 ${ymText(judgeYm)} 기준`:`${ymText(baseYm)} 기준`;
+  const monthRangeCaption=showMonthly?` · 월매출 ${ymText(monthlyKeys[0])}~${ymText(monthlyKeys[11])}`:'';
+  const modeCaption=monthRangeCaption+(cd.exclOnly?' · 제외 거래처만 표시':(cd.issueAll?' · 작성된 이슈 전체 표시':''));
+  render('📉 거래처 증감분석',`${baseCaption}${modeCaption} · 표시 ${arr.length.toLocaleString()}개사 / 실적 전체 ${allRows.length.toLocaleString()}개사 · 목표합산 제외 ${excludedRows.length.toLocaleString()}개사 · 점검대상 ${counts.risk.toLocaleString()}개사`,arr,cols,'risk',
+    `<b>메뉴 위치:</b> 영업분석에 배치했습니다. 이 화면은 월별 매출의 <b>1·2·3개월 무매출 및 증감</b>을 찾고, ‘거래·최근 &gt; 거래유지 점검’은 실제 마지막 출고일과 거래주기를 판단하는 용도로 구분됩니다.<br><b>판정:</b> 현재월은 선택 목록에서 참조할 수 있지만 무매출·증감 판정에는 포함하지 않습니다. 완료월부터 연속 무매출 1개월=주의, 2개월=이탈위험, 3개월 이상=이탈의심이며, 최근 3개월 매출이 직전 3개월보다 50% 이상 감소하면 매출급감으로 표시합니다.<br><b>제외/숨기기:</b> 체크한 거래처의 실제 매출은 모든 실적에 그대로 포함되며, 매출목표의 목표액·목표합산에서만 제외됩니다. 거래처 증감분석 기본 화면에서는 숨기고 <b>제외만 보기</b>에서 별도로 확인할 수 있습니다. <b>행 클릭</b> 시 해당 거래처의 ${showMonthly?'최근 12개월':'최근 6개월'} 품목·규격별 매출을 확인할 수 있습니다.`,
+    {controlsHtml:controls,onMount:bind,afterDraw,drill:{custom:o=>custProdDrill(o.key+' · '+drillLabel,MF().filter(r=>r.cust===o.key&&r.ym>=drillStart&&r.ym<=drillEnd),()=>{state.act='cust-delta';customerDelta();})}});
+}
+
 function retain(){
   const m=new Map();
   for(const r of MF()){ const k=r.cust; let o=m.get(k); if(!o){o={k,amt:0,dates:new Set(),first:r.d,last:r.d};m.set(k,o);} o.amt+=amtOf(r); o.dates.add(+r.d); if(r.d<o.first)o.first=r.d; if(r.d>o.last)o.last=r.d; }
@@ -3997,7 +4240,7 @@ function retain(){
   const rtHead=`<button class="btn ghost" id="rtVisitBtn" style="font-size:11px;padding:5px 10px;${state.retain.visitOnly?'background:#eab308;color:#1e293b;border-color:#eab308;font-weight:700':''}">🚩 방문필요${_visitCnt>0?'('+_visitCnt+')':''}${state.retain.visitOnly?' ✓':''}</button> <button class="btn ghost" id="rtIssueBtn" style="font-size:11px;padding:5px 10px;${state.retain.issue?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.retain.issue?' (해제)':''}</button> <button class="btn ghost" id="rtExclOnlyBtn" style="font-size:11px;padding:5px 10px;${state.retain.exclOnly?'background:#dc2626;color:#fff;border-color:#dc2626':''}">🚫 제외만 보기${(()=>{const n=Object.values(state.retainExcl||{}).filter(Boolean).length;return n>0?'('+n+')':''})()}${state.retain.exclOnly?' ✓':''}</button> <button class="btn ghost" id="rtExclBtn" style="font-size:11px;padding:5px 8px;${state.retain.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">체크제외 ${state.retain.showExcl?'숨기기':'보이기'}</button>`;
   const rtBind=()=>{ const t=$('#tbl'); if(t){ t.classList.toggle('rtissue',!!state.retain.issue); t.classList.toggle('rtshowexcl',!!state.retain.showExcl); }
     $('#result').querySelectorAll('.rtmemo').forEach(inp=>{ inp.addEventListener('mousedown',e=>e.stopPropagation()); inp.addEventListener('click',e=>e.stopPropagation()); inp.addEventListener('change',e=>{ const c=e.target.dataset.c; const v=e.target.value.trim(); if(v){ state.retainMemo[c]=v; state.retainMemoAt[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'}; } else { state.retainMemo[c]=''; delete state.retainMemoAt[c]; } e.target.classList.toggle('editedm',!!v); saveSettings(); const k=(window.CSS&&CSS.escape)?CSS.escape(c):c; const at=$('#result').querySelector('.rtmemoat[data-c="'+k+'"]'); if(at)at.textContent=state.retainMemoAt[c]?('✎ '+editStamp(state.retainMemoAt[c])):''; }); });
-    $('#result').querySelectorAll('.rtvisitcb').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ const c=e.target.dataset.c; if(e.target.checked)state.retainVisit[c]=true; else delete state.retainVisit[c]; const tr=e.target.closest('tr'); if(tr){ const nm=tr.querySelector('.rtvname'); if(nm)nm.classList.toggle('vis',e.target.checked); if(state.retain.visitOnly&&!e.target.checked)tr.style.display='none'; } if(typeof logEdit==='function')logEdit('거래유지',(c||'')+' 방문필요 '+(e.target.checked?'설정':'해제')); saveSettings(); const _vb=$('#rtVisitBtn'); if(_vb){ const n=Object.keys(state.retainVisit||{}).filter(k=>state.retainVisit[k]).length; _vb.innerHTML='🚩 방문필요'+(n>0?'('+n+')':'')+(state.retain.visitOnly?' ✓':''); } }); });
+    $('#result').querySelectorAll('.rtvisitcb').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ const c=e.target.dataset.c; if(e.target.checked)state.retainVisit[c]=true; else delete state.retainVisit[c]; const tr=e.target.closest('tr'); if(tr){ const nm=tr.querySelector('.rtvname'); if(nm)nm.classList.toggle('vis',e.target.checked); if(state.retain.visitOnly&&!e.target.checked)tr.style.display='none'; } if(typeof logEdit==='function')logEdit('거래유지/증감분석',(c||'')+' 방문필요 '+(e.target.checked?'설정':'해제')); saveSettings(); const _vb=$('#rtVisitBtn'); if(_vb){ const n=Object.keys(state.retainVisit||{}).filter(k=>state.retainVisit[k]).length; _vb.innerHTML='🚩 방문필요'+(n>0?'('+n+')':'')+(state.retain.visitOnly?' ✓':''); } }); });
     $('#result').querySelectorAll('.rtexclcb').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ const c=e.target.dataset.c; if(e.target.checked)state.retainExcl[c]=true; else delete state.retainExcl[c]; const tr=e.target.closest('tr'); if(tr)tr.classList.toggle('rtexcluded',e.target.checked); if(typeof logEdit==='function')logEdit('거래유지',(e.target.dataset.c||'')+' 제외 '+(e.target.checked?'설정':'해제')); saveSettings(); }); });
     $('#tbl').querySelectorAll('tbody tr').forEach(tr=>{ const cb=tr.querySelector('.rtexclcb'); if(cb)tr.classList.toggle('rtexcluded',cb.checked); }); };
   const rtMount=()=>{ const _t=$('#tbl'); if(_t){ _t.style.tableLayout='fixed'; _t.style.width='100%'; _t.querySelectorAll('thead th').forEach(function(th){ th.style.textAlign='center'; th.style.verticalAlign='middle'; }); _t.querySelectorAll('tbody td').forEach(function(td){ td.style.overflow='hidden'; }); } const vb=$('#rtVisitBtn'); vb&&vb.addEventListener('click',()=>{ state.retain.visitOnly=!state.retain.visitOnly; retain(); }); const ib=$('#rtIssueBtn'); ib&&ib.addEventListener('click',()=>{ state.retain.issue=!state.retain.issue; retain(); }); const xob=$('#rtExclOnlyBtn'); xob&&xob.addEventListener('click',()=>{ state.retain.exclOnly=!state.retain.exclOnly; retain(); }); const eb=$('#rtExclBtn'); eb&&eb.addEventListener('click',()=>{ state.retain.showExcl=!state.retain.showExcl; retain(); }); };
@@ -5691,10 +5934,11 @@ function exportCSV(){
     dlXLSX('sales_by_credit_customers.xlsx','신용등급',aoa); return;
   }
   const ec=cols.filter(c=>c.k!=='_bar');
-  const header=ec.map(c=>c.t.replace(/\(.*?\)/g,'').trim()||c.t);
+  const header=ec.map(c=>String(c.t).replace(/<br\s*\/?>/gi,' ').replace(/<[^>]+>/g,'').replace(/\(.*?\)/g,'').replace(/\s+/g,' ').trim()||String(c.t));
   const aoa=[header];
   data.forEach((o,i)=>{ const nm=(o.label!=null?o.label:o.key); const cells=ec.map(c=>{ let v=o[c.k];
-    if(c.k==='rank')v=i+1;
+    if(c.k==='rank'||(title==='📉 거래처 증감분석'&&c.k==='risk'))v=i+1;
+    else if(c.k.indexOf('mcol:')===0&&c.sortVal)v=c.sortVal(o);
     else if(c.k==='_s')v=mgrS(nm)||'미배정';
     else if(c.k==='_t')v=mgrT(nm)||'미배정';
     else if(c.k==='grade')v=gradeRec(o.key).grade||'';
@@ -5715,7 +5959,7 @@ function exportCSV(){
     aoa.push(cells); });
   const fnmap={'거래처 매출순위':'rank_customer','제품(품번·규격) 매출순위':'rank_product','품목군(품명) 매출순위':'rank_productgroup',
     '레이저 품목군 (L) 매출순위':'laser_productgroup','레이저 규격별 (L) 매출순위':'laser_spec','품목규격화 대상 (비규격 레이저/임가공)':'laser_standardize_target',
-    '거래처별 마지막 출고일':'last_shipment_customer','제품별 마지막 출고일':'last_shipment_product','거래유지 점검':'retention_check'};
+    '거래처별 마지막 출고일':'last_shipment_customer','제품별 마지막 출고일':'last_shipment_product','거래유지 점검':'retention_check','📉 거래처 증감분석':'customer_sales_delta'};
   let fnbase=fnmap[title];
   if(!fnbase){ if(/업체분류별/.test(title))fnbase='sales_by_classification'; else if(/지역별 매출/.test(title))fnbase='sales_by_region'; else if(/신용등급별/.test(title))fnbase='sales_by_credit'; else if(/거래처별 매출/.test(title))fnbase='customers'; else if(/품목·규격별/.test(title))fnbase='products'; }
   dlXLSX((fnbase||'export')+'.xlsx','Sheet1',aoa);
