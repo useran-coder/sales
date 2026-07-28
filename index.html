@@ -458,7 +458,10 @@
   .wr-issue-row-actions button:hover{background:#f1f5f9}
   .wr-issue-carry-row td{background:#fff}
   .wr-issue-carry-row:hover td{background:#f8fafc!important}
-  .wr-issue-carry-note{display:inline-flex;align-items:center;margin-top:5px;padding:2px 6px;border:1px solid #fcd34d;border-radius:999px;background:#fef3c7;color:#92400e;font-size:9px;font-weight:900}
+  .wr-issue-carry-note{display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:2px 6px;border:1px solid #fcd34d;border-radius:999px;background:#fef3c7;color:#92400e;font-size:9px;font-weight:900}
+  .wr-issue-carry-tonext{display:inline-block;margin-top:6px;border:1px solid #0d9488;background:#0d9488;color:#fff;border-radius:7px;padding:3px 9px;font:900 10px/1.3 inherit;cursor:pointer;white-space:nowrap}
+  .wr-issue-carry-tonext:hover{background:#0f766e;border-color:#0f766e}
+  .wr-issue-th-date{margin-top:3px;font-size:9px;font-weight:800;color:#475569;letter-spacing:-.2px}
   .wr-issue-carry-banner{grid-column:1/-1;padding:8px 10px;border:1px solid #fcd34d;border-radius:8px;background:#fffbeb;color:#92400e;font-size:11px;font-weight:800}
   .wr-issue-carry-open{border-color:#f59e0b!important;background:#fffbeb!important;color:#92400e!important}
   .wr-issue-carry-open:hover{background:#fef3c7!important}
@@ -2138,6 +2141,51 @@ function wrToast(msg,ok){
   clearTimeout(t._tmr);t._tmr=setTimeout(()=>t.classList.remove('show'),2400);
 }
 function wrIssueFmtTime(v){ if(!v)return '-'; const d=new Date(v); if(isNaN(d))return '-'; const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function wrIssueAuditText(pi,c,action,prevPlan,actual,nextPlan){
+  const text=v=>String(v||'').trim()||'(비움)';
+  return `${pi.label} · ${c||'업체 미지정'} ${action}\n이전계획: ${text(prevPlan)}\n실적: ${text(actual)}\n차주계획: ${text(nextPlan)}`;
+}
+function wrIssueOpenHistory(raw){
+  const r=wrIssueNormalize(raw),items=Array.isArray(r.history)?r.history:[];
+  const ex=document.getElementById('wrIssueHistoryOvl');if(ex)ex.remove();
+  const rows=items.length?items.slice().reverse().map(h=>`<tr><td style="white-space:nowrap">${esc(wrIssueFmtTime(h.at))}</td><td><b>${esc(h.by||'-')}</b></td><td>${esc(h.action||'저장')}</td><td style="white-space:pre-wrap;line-height:1.55">이전계획: ${esc(h.prevPlan||'(비움)')}\n실적: ${esc(h.actual||'(비움)')}\n차주계획: ${esc(h.nextPlan||'(비움)')}</td></tr>`).join(''):`<tr><td colspan="4" style="padding:18px;text-align:center;color:#94a3b8">상세 이력은 이번 업데이트 이후 저장·수정한 항목부터 기록됩니다.</td></tr>`;
+  const ov=document.createElement('div');ov.id='wrIssueHistoryOvl';ov.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="width:min(1120px,96vw);max-height:84vh;display:flex;flex-direction:column;background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.3)"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px"><div><b style="font-size:15px">🕘 주간이슈 상세 이력</b><div style="font-size:11px;color:#64748b;margin-top:3px">${esc(r.periodLabel||'')} · ${esc(r.cust||'업체 미지정')}</div></div><button type="button" id="wrIssueHistoryClose" style="border:1px solid #cbd5e1;background:#fff;border-radius:7px;padding:5px 14px;font:800 12px inherit;cursor:pointer">닫기</button></div><div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th>일시</th><th>작성자</th><th>구분</th><th>저장 내용</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  document.body.appendChild(ov);const close=()=>ov.remove();ov.addEventListener('click',e=>{if(e.target===ov)close();});ov.querySelector('#wrIssueHistoryClose').onclick=close;
+}
+function wrIssueOpenEdit(periodKey,raw){
+  const r=wrIssueNormalize(raw),p=String(periodKey||r.periodKey||'').split('|');
+  if(p[0]==='W'){
+    state.weekly.periodMode='week';state.weekly.periodModes={1:'week',2:'month',3:'week',...(state.weekly.periodModes||{}),3:'week'};
+    state.weekly.rangeStart='';state.weekly.rangeEnd='';state.weekly.year=+p[1];state.weekly.month=+p[2];state.weekly.week=+p[3];
+  }else if(p[0]==='R'){
+    state.weekly.periodMode='custom';state.weekly.periodModes={1:'week',2:'month',3:'week',...(state.weekly.periodModes||{}),3:'custom'};
+    state.weekly.rangeStart=p[1]||r.periodStart||'';state.weekly.rangeEnd=p[2]||r.periodEnd||'';const d=wrParseDate(state.weekly.rangeStart);if(d)state.weekly.year=d.getFullYear();
+  }else{return false;}
+  state.weekly.issueEditId=r.id;
+  state.weekly.issueDraft={periodKey:periodKey||r.periodKey||'',author:r.author||'',cust:r.cust||'',contact:r.contact||'',salesManager:r.salesManager||'',prevPlan:r.prevPlan||'',actual:r.actual||'',nextPlan:r.nextPlan||'',carryFromPeriodKey:r.carryFromPeriodKey||'',carryFromId:r.carryFromId||'',carrySourceLabel:r.carrySourceLabel||''};
+  state.weekly.issueScope='current';state.weekly.issueFormOpen=true;weeklyReport(3);return true;
+}
+function wrRowModelFromPeriod(r){
+  const ps=wrParseDate(r.periodStart),pe=wrParseDate(r.periodEnd);if(!ps||!pe)return null;
+  const pk=String(r.periodKey||'');
+  if(pk.startsWith('W|')){const p=pk.split('|');return {periodMode:'week',isCustom:false,y:+p[1],m:+p[2],w:+p[3],rangeStart:ps,rangeEnd:pe};}
+  return {periodMode:'custom',isCustom:true,y:ps.getFullYear(),m:ps.getMonth()+1,w:0,rangeStart:ps,rangeEnd:pe};
+}
+function wrRowStageDates(r){
+  const ps=wrParseDate(r.periodStart),pe=wrParseDate(r.periodEnd);
+  const actual=(ps&&pe)?`${wrDateText(ps)}~${wrDateText(pe)}`:'-';
+  let prevTxt='-',nextTxt='-';
+  if(r.nextPeriodStart&&r.nextPeriodEnd){const ns=wrParseDate(r.nextPeriodStart),ne=wrParseDate(r.nextPeriodEnd);if(ns&&ne)nextTxt=`${wrDateText(ns)}~${wrDateText(ne)}`;}
+  if(ps&&pe){
+    const m=wrRowModelFromPeriod(r);
+    if(m){
+      const prev=wrIssueAdjacentPeriod(m,-1);if(prev)prevTxt=`${wrDateText(prev.startDate)}~${wrDateText(prev.endDate)}`;
+      if(nextTxt==='-'){const nx=wrIssueAdjacentPeriod(m,1);if(nx)nextTxt=`${wrDateText(nx.startDate)}~${wrDateText(nx.endDate)}`;}
+    }
+  }
+  return {prev:prevTxt,actual,next:nextTxt};
+}
 function wrPage3(model){
   const pi=wrIssuePeriodInfo(model),draft=wrIssueDraft(model),view=wrIssueView(model),custs=wrIssueCusts(),prevPi=wrIssueAdjacentPeriod(model,-1),nextPi=wrIssueAdjacentPeriod(model,1),todayPi=wrIssueTodayPeriod(),isTodayPeriod=!!(todayPi&&todayPi.key===wrIssuePeriodKey(model));
   const newRows=wrAutoNewCustomerRows(model),common=wrCommonPlan(model);
@@ -2159,9 +2207,10 @@ function wrPage3(model){
     const r=wrIssueNormalize(raw),isCarry=!!r.isCarry,snap={grade:r.creditGrade||'-',status:r.creditStatus||'-',pay:r.creditPay||'-',annualActual:r.annualActual||0,annualTarget:r.annualTarget||0,annualRate:r.annualRate,annualRank:r.annualRank,annualRankTotal:r.annualRankTotal,monthActual:r.monthActual||0,monthTarget:r.monthTarget||0,monthRate:r.monthRate,weekActual:r.weekActual||0};
     const search=[r.author,r.cust,r.contact,r.salesManager,r.prevPlan,r.actual,r.nextPlan,r.periodLabel,r.creditGrade,r.creditStatus,r.creditPay,r.carrySourceLabel].join(' ').toLowerCase();
     const carryNote=isCarry?`<div class="wr-issue-carry-note">↪ ${esc(r.carrySourceLabel||'전 회차')} 차주계획 자동 이월</div>`:'';
-    const actions=isCarry?`<button type="button" class="wr-issue-source-open" data-source-pk="${esc(r.carryFromPeriodKey||'')}" title="원본 차주계획이 저장된 이전 주차로 이동">이전주 이동</button><button type="button" class="wr-issue-carry-open" data-source-pk="${esc(r.carryFromPeriodKey||'')}" data-source-id="${esc(r.carryFromId||'')}">작성</button>`:`<button type="button" class="wr-issue-edit" data-pk="${esc(r.periodKey||'')}" data-id="${esc(r.id||'')}">수정</button><button type="button" class="wr-issue-del" data-pk="${esc(r.periodKey||'')}" data-id="${esc(r.id||'')}">삭제</button>`;
+    const carryBtn=isCarry?`<button type="button" class="wr-issue-carry-tonext" data-source-pk="${esc(r.carryFromPeriodKey||'')}" data-source-id="${esc(r.carryFromId||'')}" title="이 내용을 현재 주차의 차주계획으로 옮겨 작성">→ 차주계획으로</button>`:'';
+    const actions=isCarry?`<button type="button" class="wr-issue-source-open" data-source-pk="${esc(r.carryFromPeriodKey||'')}" title="원본 차주계획이 저장된 이전 주차로 이동">이전<br>주<br>이동</button><button type="button" class="wr-issue-carry-open" data-source-pk="${esc(r.carryFromPeriodKey||'')}" data-source-id="${esc(r.carryFromId||'')}">작성</button>`:`<button type="button" class="wr-issue-history" data-pk="${esc(r.periodKey||'')}" data-id="${esc(r.id||'')}">이력</button><button type="button" class="wr-issue-edit" data-pk="${esc(r.periodKey||'')}" data-id="${esc(r.id||'')}">수정</button><button type="button" class="wr-issue-del" data-pk="${esc(r.periodKey||'')}" data-id="${esc(r.id||'')}">삭제</button>`;
     const type=r.type||(isCarry?'자동이월':'주간현황');
-    return `<tr class="wr-issue-row ${isCarry?'wr-issue-carry-row':''}" data-search="${esc(search)}" data-issue-kind="${esc(type)}"><td class="num wr-no">${i+1}</td><td class="wr-issue-kind">${esc(type)}</td><td><b>${esc(r.periodLabel||'-')}</b><div class="sub2" style="font-size:9.5px">${esc((r.periodStart||'')+(r.periodEnd?' ~ '+r.periodEnd:''))}</div>${isCarry?'<div class="wr-issue-carry-note">자동 이월</div>':''}</td><td><div class="wr-issue-cust">${esc(r.cust||'업체 미지정')}</div>${r.cust?wrIssueCreditHtml(r.cust,snap,model):'<span class="sub2">-</span>'}<div class="sub2" style="margin-top:4px">${esc(r.salesManager||'')}</div></td><td><div class="wr-issue-contact-cell">${r.cust?wrIssueCategoryIcons(r.cust):''}<span>${esc(r.contact||'-')}</span></div></td><td><b>${esc(r.author||'-')}</b></td><td><div class="wr-issue-text">${esc(r.prevPlan||'')}</div>${carryNote}</td><td><div class="wr-issue-text">${esc(r.actual||'')}</div></td><td><div class="wr-issue-text">${esc(r.nextPlan||'')}</div></td><td class="when">${wrIssueFmtTime(r.updatedAt||r.createdAt)}</td><td><div class="wr-issue-row-actions">${actions}</div></td></tr>`;
+    return `<tr class="wr-issue-row ${isCarry?'wr-issue-carry-row':''}" data-search="${esc(search)}" data-issue-kind="${esc(type)}"><td class="num wr-no">${i+1}</td><td class="wr-issue-kind">${esc(type)}</td><td><b>${esc(r.periodLabel||'-')}</b><div class="sub2" style="font-size:9.5px">${esc((r.periodStart||'')+(r.periodEnd?' ~ '+r.periodEnd:''))}</div>${isCarry?'<div class="wr-issue-carry-note">자동 이월</div>':''}</td><td><div class="wr-issue-cust">${esc(r.cust||'업체 미지정')}</div>${r.cust?wrIssueCreditHtml(r.cust,snap,model):'<span class="sub2">-</span>'}<div class="sub2" style="margin-top:4px">${esc(r.salesManager||'')}</div></td><td><div class="wr-issue-contact-cell">${r.cust?wrIssueCategoryIcons(r.cust):''}<span>${esc(r.contact||'-')}</span></div></td><td><b>${esc(r.author||'-')}</b></td><td><div class="wr-issue-text">${esc(r.prevPlan||'')}</div>${carryNote}${carryBtn}</td><td><div class="wr-issue-text">${esc(r.actual||'')}</div></td><td><div class="wr-issue-text">${esc(r.nextPlan||'')}</div></td><td class="when">${wrIssueFmtTime(r.updatedAt||r.createdAt)}</td><td><div class="wr-issue-row-actions">${actions}</div></td></tr>`;
   }).join('');
   const managerValue=draft.salesManager!=null&&String(draft.salesManager).trim()?draft.salesManager:(draft.cust?wrIssueInternalManager(draft.cust):''),currentCount=(model.periodMode==='month'?wrIssueMonthRows(model):wrIssueCurrentRows(model)).length;
   const carryBanner=draft.carryFromId?`<div class="wr-issue-carry-banner">↪ ${esc(draft.carrySourceLabel||'전 회차')}의 차주계획을 이전계획으로 불러왔습니다. 실적 또는 새 차주계획을 입력한 뒤 저장하세요.</div>`:'';
@@ -2174,7 +2223,8 @@ function wrPage3(model){
   <div class="wr-newcust-panel"><div class="wr-newcust-head"><div class="wr-newcust-title">✨ 신규업체 현황 <small>매출 데이터에서 선택 기간 내 첫 거래 업체를 자동 표시</small></div><span class="wr-rankstat">현재 기간 ${won(newRows.length)}건</span></div><div class="wr-newcust-help">기준: 전체 매출 이력에서 거래처별 최초 매출일이 선택 기간에 포함된 업체입니다. 제품·품목은 첫 거래일 기준이며, 매출액은 선택 기간의 누적 매출입니다.</div>
     <div class="wr-tablewrap"><table class="wr-table wr-newcust-table"><thead><tr><th class="wr-no" style="width:3%">NO</th><th style="width:13%">신규업체</th><th style="width:8%">첫거래일</th><th style="width:30%">제품·품목</th><th style="width:7%">매출액</th><th style="width:10%">지역</th><th style="width:9%">담당자</th><th style="width:20%">비고</th></tr></thead><tbody>${newCustomerRows||'<tr><td colspan="8" class="wr-issue-empty">선택 기간에 첫 거래가 발생한 신규업체가 없습니다.</td></tr>'}</tbody></table></div>
   </div>
-  <div class="wr-common-plan wr-no-print"><div class="wr-common-head"><div class="wr-common-title">${commonTitle} <small>전 업체에 공통 적용되는 영업 활동과 관리 현황</small></div><span id="wrCommonSaveStatus">${commonStatus}</span>${commonCarry}</div><div class="wr-common-guide">방문계획 · 샘플제시 · 개발협업 · 제품제안 · 단가조정 · 견적제출 · 수금관리 · 납기조율 · 품질개선 · 계약·인증 · 전시회·홍보 등 공통 추진사항을 기록하세요.</div><div class="wr-issue-triplet"><div class="wr-issue-stage prev"><label for="wrCommonPrevPlan">① 이전계획 <span>(${esc(prevStagePeriod)})</span><button type="button" class="wr-common-field-del" data-field="prevPlan" title="이전계획 내용 삭제">내용 삭제</button></label><textarea id="wrCommonPrevPlan" placeholder="예: 주요 거래처 방문, 샘플 제시, 견적 제출, 개발 협의 등">${esc(common.prevPlan||'')}</textarea></div><div class="wr-issue-stage actual"><label for="wrCommonActual">② 실적 <span>(${esc(actualStagePeriod)})</span><button type="button" class="wr-common-field-del" data-field="actual" title="실적 내용 삭제">내용 삭제</button></label><textarea id="wrCommonActual" placeholder="예: 방문·미팅 결과, 수주·매출, 샘플 승인, 단가 협의 결과 등">${esc(common.actual||'')}</textarea></div><div class="wr-issue-stage next"><label for="wrCommonNextPlan">③ 차주계획 <span>(${esc(nextStagePeriod)})</span><button type="button" class="wr-common-field-del" data-field="nextPlan" title="차주계획 내용 삭제">내용 삭제</button></label><textarea id="wrCommonNextPlan" placeholder="예: 후속 방문, 개발 일정, 제품 제안, 수금·납기·품질 조치 등">${esc(common.nextPlan||'')}</textarea></div></div><div class="wr-issue-actions"><button class="btn" type="button" id="wrCommonPlanSave">영업계획·실적 저장</button>${hasCommonSaved?'<button class="btn ghost wr-common-del-btn" type="button" id="wrCommonPlanDel">🗑 전체 삭제</button>':''}<span class="sub2">차주계획은 다음 주·다음 회차의 이전계획으로 자동 표시됩니다.</span></div></div>${commonHistory}
+  <div class="wr-issue-headline wr-no-print" style="margin-top:2px"><button type="button" id="wrCommonPlanToggle" class="wr-issue-form-toggle" aria-expanded="${state.weekly.commonPlanOpen===true}">${commonTitle} <small>전 업체에 공통 적용되는 영업 활동과 관리 현황</small> <span class="wr-toggle-caret">${state.weekly.commonPlanOpen===true?'▾ 접기':'▸ 펼쳐서 작성'}</span></button><span id="wrCommonSaveStatus" style="margin-left:8px">${commonStatus}</span>${commonCarry}</div>
+  <div class="wr-common-plan wr-no-print" id="wrCommonPlanWrap" style="display:${state.weekly.commonPlanOpen===true?'':'none'}"><div class="wr-common-guide">방문계획 · 샘플제시 · 개발협업 · 제품제안 · 단가조정 · 견적제출 · 수금관리 · 납기조율 · 품질개선 · 계약·인증 · 전시회·홍보 등 공통 추진사항을 기록하세요.</div><div class="wr-issue-triplet"><div class="wr-issue-stage prev"><label for="wrCommonPrevPlan">① 이전계획 <span>(${esc(prevStagePeriod)})</span><button type="button" class="wr-common-field-del" data-field="prevPlan" title="이전계획 내용 삭제">내용 삭제</button></label><textarea id="wrCommonPrevPlan" placeholder="예: 주요 거래처 방문, 샘플 제시, 견적 제출, 개발 협의 등">${esc(common.prevPlan||'')}</textarea></div><div class="wr-issue-stage actual"><label for="wrCommonActual">② 실적 <span>(${esc(actualStagePeriod)})</span><button type="button" class="wr-common-field-del" data-field="actual" title="실적 내용 삭제">내용 삭제</button></label><textarea id="wrCommonActual" placeholder="예: 방문·미팅 결과, 수주·매출, 샘플 승인, 단가 협의 결과 등">${esc(common.actual||'')}</textarea></div><div class="wr-issue-stage next"><label for="wrCommonNextPlan">③ 차주계획 <span>(${esc(nextStagePeriod)})</span><button type="button" class="wr-common-field-del" data-field="nextPlan" title="차주계획 내용 삭제">내용 삭제</button></label><textarea id="wrCommonNextPlan" placeholder="예: 후속 방문, 개발 일정, 제품 제안, 수금·납기·품질 조치 등">${esc(common.nextPlan||'')}</textarea></div></div><div class="wr-issue-actions"><button class="btn" type="button" id="wrCommonPlanSave">영업계획·실적 저장</button>${hasCommonSaved?'<button class="btn ghost wr-common-del-btn" type="button" id="wrCommonPlanDel">🗑 전체 삭제</button>':''}<span class="sub2">차주계획은 다음 주·다음 회차의 이전계획으로 자동 표시됩니다.</span></div></div>${commonHistory}
   <div class="wr-issue-headline wr-no-print" style="margin-top:2px"><button type="button" id="wrIssueFormToggle" class="wr-issue-form-toggle" aria-expanded="${state.weekly.issueFormOpen===true}">🏢 업체별 이슈내용 <small>개별 업체별 영업 활동 및 후속조치</small> <span class="wr-toggle-caret">${state.weekly.issueFormOpen===true?'▾ 접기':'▸ 펼쳐서 작성'}</span></button></div>
   <div class="wr-issue-form wr-no-print" id="wrIssueFormWrap" style="display:${state.weekly.issueFormOpen===true?'':'none'}"><div class="wr-issue-grid">
     <div class="wr-issue-field"><label for="wrIssueAuthor">작성자</label><input id="wrIssueAuthor" value="${esc(draft.author||'')}" placeholder="작성자 이름"></div>
@@ -2186,7 +2236,7 @@ function wrPage3(model){
     <div class="wr-issue-triplet"><div class="wr-issue-stage prev"><label for="wrIssuePrevPlan">① 이전계획 <span>(${esc(prevStagePeriod)})</span></label><textarea id="wrIssuePrevPlan" placeholder="지난 기간에 계획했던 내용과 진행 예정사항을 입력하세요.">${esc(draft.prevPlan||'')}</textarea></div><div class="wr-issue-stage actual"><label for="wrIssueActual">② 실적 <span>(${esc(actualStagePeriod)})</span></label><textarea id="wrIssueActual" placeholder="선택 기간의 진행 결과와 실적을 입력하세요.">${esc(draft.actual||'')}</textarea></div><div class="wr-issue-stage next"><label for="wrIssueNextPlan">③ 차주계획 <span>(${esc(nextStagePeriod)})</span></label><textarea id="wrIssueNextPlan" placeholder="다음 기간의 추진계획과 후속조치를 입력하세요.">${esc(draft.nextPlan||'')}</textarea></div></div>
   </div><div class="wr-issue-actions"><button class="btn" type="button" id="wrIssueSave">${edit?'수정 저장':'주간현황 저장'}</button>${edit?'<button class="btn ghost" type="button" id="wrIssueCancel">수정 취소</button>':''}<span class="sub2">차주계획이 있는 항목만 다음 주·다음 회차의 이전계획으로 자동 표시됩니다.</span></div></div>
   <div class="wr-issue-search wr-no-print"><b style="font-size:11px;color:#334155">🔍 찾기</b><input id="wrIssueSearch" value="${esc(state.weekly.issueSearch||'')}" placeholder="이전계획·실적·차주계획·업체·작성자·업체담당자 검색"><div class="wr-issue-scope"><button type="button" data-v="current" class="${view.scope==='current'?'on':''}">현재기간</button><button type="button" data-v="all" class="${view.scope==='all'?'on':''}">전체기간</button></div><button type="button" class="btn ghost" id="wrIssueSearchClear" style="font-size:11px;padding:5px 9px">초기화</button><span class="sub2" id="wrIssueCount">검색 ${won(view.arr.length)}건</span></div>
-  <div class="wr-tablewrap"><table class="wr-table wr-issue-table" id="wrIssueTable"><thead><tr><th class="wr-no" style="width:3%">NO</th><th class="wr-center" style="width:5%" aria-sort="${issueSortDir==='asc'?'ascending':issueSortDir==='desc'?'descending':'none'}"><button type="button" id="wrIssueKindSort" class="wr-issue-kind-sort ${issueSortDir?'active':''}" title="클릭하여 구분 정렬">구분<span class="wr-sort-arrow">${issueSortArrow}</span></button></th><th style="width:8%">기간</th><th style="width:19%">업체·신용도·매출현황</th><th style="width:7%">업체담당자</th><th style="width:6%">작성자</th><th style="width:14%">이전계획</th><th style="width:14%">실적</th><th style="width:14%">차주계획</th><th style="width:6%">수정일</th><th style="width:4%">관리</th></tr></thead><tbody id="wrIssueBody">${rows||'<tr><td colspan="11" class="wr-issue-empty">등록되거나 자동 이월된 주간이슈가 없습니다.</td></tr>'}</tbody></table></div><div class="wr-note">차주계획에 내용이 있는 항목만 바로 다음 주 또는 다음 사용자 지정 회차의 이전계획으로 자동 이월됩니다. 자동 이월 행의 <b>이전주 이동</b>을 누르면 원본 차주계획이 저장된 주차로 이동하여 수정·삭제할 수 있고, <b>작성</b>을 누르면 현재 주차의 이전계획으로 이어서 저장할 수 있습니다.</div></div>`;
+  <div class="wr-tablewrap"><table class="wr-table wr-issue-table" id="wrIssueTable"><thead><tr><th class="wr-no" style="width:3%">NO</th><th class="wr-center" style="width:5%" aria-sort="${issueSortDir==='asc'?'ascending':issueSortDir==='desc'?'descending':'none'}"><button type="button" id="wrIssueKindSort" class="wr-issue-kind-sort ${issueSortDir?'active':''}" title="클릭하여 구분 정렬">구분<span class="wr-sort-arrow">${issueSortArrow}</span></button></th><th style="width:8%">기간</th><th style="width:19%">업체·신용도·매출현황</th><th style="width:7%">업체담당자</th><th style="width:6%">작성자</th><th style="width:14%">이전계획<div class="wr-issue-th-date">📅 ${esc(prevStagePeriod)}</div></th><th style="width:14%">실적<div class="wr-issue-th-date">📅 ${esc(actualStagePeriod)}</div></th><th style="width:14%">차주계획<div class="wr-issue-th-date">📅 ${esc(nextStagePeriod)}</div></th><th style="width:6%">수정일</th><th style="width:4%">관리</th></tr></thead><tbody id="wrIssueBody">${rows||'<tr><td colspan="11" class="wr-issue-empty">등록되거나 자동 이월된 주간이슈가 없습니다.</td></tr>'}</tbody></table></div><div class="wr-note">차주계획에 내용이 있는 항목만 바로 다음 주 또는 다음 사용자 지정 회차의 이전계획으로 자동 이월됩니다. 자동 이월 행의 <b>이전주 이동</b>을 누르면 원본 차주계획이 저장된 주차로 이동하여 수정·삭제할 수 있고, <b>작성</b>을 누르면 현재 주차의 이전계획으로 이어서 저장할 수 있습니다.</div></div>`;
 }
 
 function wrBindIssue(model){
@@ -2256,6 +2306,7 @@ function wrBindIssue(model){
     await saveSettings();wrToast(`${fieldLabel} 내용을 삭제했습니다`);weeklyReport(3);
   }));
   const issueFormToggle=$('#wrIssueFormToggle');issueFormToggle&&issueFormToggle.addEventListener('click',()=>{state.weekly.issueFormOpen=!(state.weekly.issueFormOpen===true);weeklyReport(3);});
+  const commonPlanToggle=$('#wrCommonPlanToggle');commonPlanToggle&&commonPlanToggle.addEventListener('click',()=>{state.weekly.commonPlanOpen=!(state.weekly.commonPlanOpen===true);weeklyReport(3);});
   const commonDelBtn=$('#wrCommonPlanDel');commonDelBtn&&commonDelBtn.addEventListener('click',async()=>{
     if(!(state.weekly.commonPlans&&state.weekly.commonPlans[pk])){weeklyReport(3);return;}
     const pi=wrIssuePeriodInfo(model);
@@ -2269,9 +2320,9 @@ function wrBindIssue(model){
     const author=String($('#wrIssueAuthor')&&$('#wrIssueAuthor').value||'').trim(),c=String(cust&&cust.value||'').trim(),ct=String(contact&&contact.value||'').trim(),mgr=String(manager&&manager.value||'').trim(),prevPlan=String($('#wrIssuePrevPlan')&&$('#wrIssuePrevPlan').value||'').trim(),actual=String($('#wrIssueActual')&&$('#wrIssueActual').value||'').trim(),nextPlan=String($('#wrIssueNextPlan')&&$('#wrIssueNextPlan').value||'').trim();
     if(!author){alert('작성자를 입력해 주세요.');$('#wrIssueAuthor')&&$('#wrIssueAuthor').focus();return;}
     if(!prevPlan&&!actual&&!nextPlan){alert('이전계획, 실적, 차주계획 중 하나 이상 입력해 주세요.');$('#wrIssueActual')&&$('#wrIssueActual').focus();return;}
-    const pi=wrIssuePeriodInfo(model),nextPi=wrIssueAdjacentPeriod(model,1),bucket=wrIssueBucket(model,true),id=state.weekly.issueEditId||('wi_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)),old=bucket[id]||{},draftMeta=(state.weekly.issueDraft&&state.weekly.issueDraft.periodKey===pk)?state.weekly.issueDraft:{},cd=wrIssueCreditData(c,model),now=new Date().toISOString();
-    bucket[id]={...old,id,periodKey:pk,periodLabel:pi.label,periodStart:pi.start,periodEnd:pi.end,type:'주간현황',author,cust:c,contact:ct,salesManager:mgr||cd.manager,creditGrade:cd.grade,creditStatus:cd.status,creditPay:cd.pay,annualActual:cd.annualActual,annualTarget:cd.annualTarget,annualRate:cd.annualRate,annualRank:cd.annualRank,annualRankTotal:cd.annualRankTotal,monthActual:cd.monthActual,monthTarget:cd.monthTarget,monthRate:cd.monthRate,weekActual:cd.weekActual,prevPlan,actual,nextPlan,content:actual,carryFromPeriodKey:old.carryFromPeriodKey||draftMeta.carryFromPeriodKey||'',carryFromId:old.carryFromId||draftMeta.carryFromId||'',carrySourceLabel:old.carrySourceLabel||draftMeta.carrySourceLabel||'',nextPeriodKey:nextPi?nextPi.key:'',nextPeriodStart:nextPi?nextPi.start:'',nextPeriodEnd:nextPi?nextPi.end:'',createdAt:old.createdAt||now,updatedAt:now};
-    state.weekly.issueAuthor=author;state.weekly.issueDraft=null;state.weekly.issueEditId=null;if(typeof logEdit==='function')logEdit('주간이슈',`${pi.label} · ${c||'업체 미지정'} ${old.id?'수정':'등록'}`);await saveSettings();wrToast('✓ 주간현황이 저장되었습니다');weeklyReport(3);
+    const pi=wrIssuePeriodInfo(model),nextPi=wrIssueAdjacentPeriod(model,1),bucket=wrIssueBucket(model,true),id=state.weekly.issueEditId||('wi_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)),old=bucket[id]||{},draftMeta=(state.weekly.issueDraft&&state.weekly.issueDraft.periodKey===pk)?state.weekly.issueDraft:{},cd=wrIssueCreditData(c,model),now=new Date().toISOString(),action=old.id?'수정':'등록',history=[...(Array.isArray(old.history)?old.history:[]),{at:now,by:author,action,prevPlan,actual,nextPlan}].slice(-30),auditText=wrIssueAuditText(pi,c,action,prevPlan,actual,nextPlan);
+    bucket[id]={...old,id,periodKey:pk,periodLabel:pi.label,periodStart:pi.start,periodEnd:pi.end,type:'주간현황',author,cust:c,contact:ct,salesManager:mgr||cd.manager,creditGrade:cd.grade,creditStatus:cd.status,creditPay:cd.pay,annualActual:cd.annualActual,annualTarget:cd.annualTarget,annualRate:cd.annualRate,annualRank:cd.annualRank,annualRankTotal:cd.annualRankTotal,monthActual:cd.monthActual,monthTarget:cd.monthTarget,monthRate:cd.monthRate,weekActual:cd.weekActual,prevPlan,actual,nextPlan,content:actual,carryFromPeriodKey:old.carryFromPeriodKey||draftMeta.carryFromPeriodKey||'',carryFromId:old.carryFromId||draftMeta.carryFromId||'',carrySourceLabel:old.carrySourceLabel||draftMeta.carrySourceLabel||'',nextPeriodKey:nextPi?nextPi.key:'',nextPeriodStart:nextPi?nextPi.start:'',nextPeriodEnd:nextPi?nextPi.end:'',createdAt:old.createdAt||now,updatedAt:now,history};
+    state.weekly.issueAuthor=author;state.weekly.issueDraft={periodKey:pk,author,cust:'',contact:'',salesManager:'',prevPlan:'',actual:'',nextPlan:''};state.weekly.issueEditId=null;if(typeof logEdit==='function')logEdit('주간이슈',auditText);await saveSettings();wrToast('✓ 주간현황이 저장되었습니다');weeklyReport(3);
   };
   const sb=$('#wrIssueSave');sb&&sb.addEventListener('click',save);
   const cb=$('#wrIssueCancel');cb&&cb.addEventListener('click',()=>{state.weekly.issueDraft=null;state.weekly.issueEditId=null;weeklyReport(3);});
@@ -2280,11 +2331,25 @@ function wrBindIssue(model){
     const r=wrIssueNormalize(raw);if(!String(r.nextPlan||'').trim()){weeklyReport(3);return;}
     state.weekly.issueEditId=null;state.weekly.issueDraft={periodKey:pk,author:r.author||state.weekly.issueAuthor||'',cust:r.cust||'',contact:r.contact||'',salesManager:r.salesManager||'',prevPlan:String(r.nextPlan||'').trim(),actual:'',nextPlan:'',carryFromPeriodKey:sourcePk,carryFromId:r.id||sourceId,carrySourceLabel:r.periodLabel||''};state.weekly.issueFormOpen=true;weeklyReport(3);
   }));
-  root.querySelectorAll('.wr-issue-edit').forEach(b=>b.addEventListener('click',()=>{const bp=(state.weekly.issues||{})[b.dataset.pk]||{},raw=bp[b.dataset.id];if(!raw)return;const r=wrIssueNormalize(raw);state.weekly.issueEditId=r.id;state.weekly.issueDraft={periodKey:pk,author:r.author||'',cust:r.cust||'',contact:r.contact||'',salesManager:r.salesManager||'',prevPlan:r.prevPlan||'',actual:r.actual||'',nextPlan:r.nextPlan||'',carryFromPeriodKey:r.carryFromPeriodKey||'',carryFromId:r.carryFromId||'',carrySourceLabel:r.carrySourceLabel||''};if(b.dataset.pk!==pk){alert('해당 이슈가 저장된 기간으로 이동한 후 수정해 주세요. 전체기간 찾기에서는 과거 이슈를 확인할 수 있습니다.');state.weekly.issueEditId=null;state.weekly.issueDraft=null;return;}state.weekly.issueFormOpen=true;weeklyReport(3);}));
+  root.querySelectorAll('.wr-issue-carry-tonext').forEach(b=>b.addEventListener('click',()=>{
+    const sourcePk=b.dataset.sourcePk,sourceId=b.dataset.sourceId,bp=(state.weekly.issues||{})[sourcePk]||{},raw=bp[sourceId];if(!raw)return;
+    const r=wrIssueNormalize(raw),txt=String(r.nextPlan||'').trim();if(!txt){weeklyReport(3);return;}
+    state.weekly.issueEditId=null;state.weekly.issueDraft={periodKey:pk,author:r.author||state.weekly.issueAuthor||'',cust:r.cust||'',contact:r.contact||'',salesManager:r.salesManager||'',prevPlan:'',actual:'',nextPlan:txt,carryFromPeriodKey:sourcePk,carryFromId:r.id||sourceId,carrySourceLabel:r.periodLabel||''};state.weekly.issueFormOpen=true;weeklyReport(3);
+  }));
+  root.querySelectorAll('.wr-issue-history').forEach(b=>b.addEventListener('click',()=>{const bp=(state.weekly.issues||{})[b.dataset.pk]||{},raw=bp[b.dataset.id];if(raw)wrIssueOpenHistory(raw);}));
+root.querySelectorAll('.wr-issue-edit').forEach(b=>b.addEventListener('click',()=>{
+  const issuePk=b.dataset.pk||'',bp=(state.weekly.issues||{})[issuePk]||{},raw=bp[b.dataset.id];
+  if(raw)wrIssueOpenEdit(issuePk,raw);
+}));
   root.querySelectorAll('.wr-issue-del').forEach(b=>b.addEventListener('click',async()=>{const bp=(state.weekly.issues||{})[b.dataset.pk]||{},r=bp[b.dataset.id];if(!r)return;if(!await uiConfirm(`주간이슈를 삭제할까요?\n${r.cust||'업체 미지정'}`))return;delete bp[b.dataset.id];if(!Object.keys(bp).length)delete state.weekly.issues[b.dataset.pk];if(typeof logEdit==='function')logEdit('주간이슈',`${r.periodLabel||''} · ${r.cust||'업체 미지정'} 삭제`);await saveSettings();weeklyReport(3);}));
   const search=$('#wrIssueSearch');if(search)search.addEventListener('input',()=>{state.weekly.issueSearch=search.value;const q=search.value.trim().toLowerCase();let n=0;root.querySelectorAll('.wr-issue-row').forEach(tr=>{const on=!q||(tr.dataset.search||'').includes(q);tr.style.display=on?'':'none';if(on)n++;});const cnt=$('#wrIssueCount');if(cnt)cnt.textContent='검색 '+won(n)+'건';});
   root.querySelectorAll('.wr-issue-scope button').forEach(b=>b.addEventListener('click',()=>{state.weekly.issueScope=b.dataset.v==='all'?'all':'current';weeklyReport(3);}));
   const clr=$('#wrIssueSearchClear');clr&&clr.addEventListener('click',()=>{state.weekly.issueSearch='';weeklyReport(3);});
+  // 현재 기간 밖에 등록된 다른 작성자의 이슈도 놓치지 않도록 전체기간 바로가기를 표시한다.
+  if(state.weekly.issueScope!=='all'){
+    const allCount=wrIssueAll().length,currentCount=wrIssueView(model).arr.length,bar=root.querySelector('.wr-issue-search');
+    if(bar&&allCount>currentCount){const btn=document.createElement('button');btn.type='button';btn.className='btn ghost';btn.style.cssText='font-size:10.5px;padding:5px 9px;color:#1d4ed8;border-color:#93c5fd';btn.textContent=`다른 기간 등록 ${won(allCount-currentCount)}건 보기`;btn.addEventListener('click',()=>{state.weekly.issueScope='all';weeklyReport(3);});bar.appendChild(btn);}
+  }
 }
 
 function wrExport3(model){
@@ -3398,7 +3463,7 @@ function homeTrendSVG(){
   const ys=dataYears(); const CY=ys[ys.length-1]; const pyByMonth={}; rowsF.forEach(r=>{ if(+r.y===CY-1)pyByMonth[monthOf(r)]=(pyByMonth[monthOf(r)]||0)+amtOf(r); });
   let lastIdx=-1; for(let i=0;i<N;i++) if(ser[i]>0) lastIdx=i;
   const tgt=new Array(N).fill(null); for(let i=lastIdx+1;i<N;i++){ const [by,bm]=buckets[i].split('-').map(Number); if(by===CY){ const pv=pyByMonth[bm]||0; const pct=(state.fc.pct[bm]!=null&&state.fc.pct[bm]!=='')?+state.fc.pct[bm]:0; if(pv>0)tgt[i]=pv*(1+pct/100); } }
-  const W=960,H=306,padL=20,padR=20,padT=46,padB=80; const iw=W-padL-padR,ih=H-padT-padB;
+  const W=960,H=332,padL=20,padR=20,padT=46,padB=54; const iw=W-padL-padR,ih=H-padT-padB;
   let max=1; ser.forEach(v=>max=Math.max(max,v)); tgt.forEach(v=>{if(v!=null)max=Math.max(max,v);});
   const x=i=>N>1?padL+iw*i/(N-1):padL+iw/2, y=v=>padT+ih-(v/max*ih);
   const nzVals=ser.filter(v=>v>0); const mx=Math.max(...nzVals,0); const mn=nzVals.length?Math.min(...nzVals):0; const avg=nzVals.length?nzVals.reduce((a,b)=>a+b,0)/nzVals.length:0;
@@ -3418,9 +3483,8 @@ function homeTrendSVG(){
   const avgLab=avg>0?`<rect x="${(W-padR-96).toFixed(1)}" y="${(y(avg)-14).toFixed(1)}" width="94" height="15" rx="3" fill="#ffffff" fill-opacity="0.88" stroke="#e2e8f0"/><text x="${(W-padR-6).toFixed(1)}" y="${(y(avg)-3).toFixed(1)}" font-size="10" fill="#64748b" font-weight="700" text-anchor="end">평균 ${shortAmt(avg)}</text>`:'';
   const fs=N>16?9:(N>12?10:11); let xlab=''; buckets.forEach((b,i)=>{ xlab+=`<text x="${x(i).toFixed(1)}" y="${(padT+ih+15).toFixed(1)}" font-size="${fs}" fill="#94a3b8" text-anchor="middle">${b.slice(2)}</text>`; });
   let manLab=''; buckets.forEach((b,i)=>{ const _hc=(state.headMonthly&&state.headMonthly[b])||(state.headYearDefault&&state.headYearDefault[+String(b).slice(0,4)])||state.headcount||0; if(_hc)manLab+=`<text x="${x(i).toFixed(1)}" y="${(padT+ih+31).toFixed(1)}" font-size="${fs}" fill="#6366f1" font-weight="700" text-anchor="middle">${_hc}</text>`; });
-  const ly=H-9;
-  const legend=`<g font-size="12" font-weight="700"><line x1="${padL}" y1="${ly-3}" x2="${padL+20}" y2="${ly-3}" stroke="#1e3a5f" stroke-width="2.6"/><text x="${padL+25}" y="${ly}" fill="#475569">실적</text><line x1="${padL+62}" y1="${ly-3}" x2="${padL+82}" y2="${ly-3}" stroke="#f59e0b" stroke-width="2.6" stroke-dasharray="5 3"/><text x="${padL+87}" y="${ly}" fill="#b45309">목표</text><text x="${padL+128}" y="${ly}" fill="#6366f1" font-weight="800">■ 인원(명)</text><text x="${padL+222}" y="${ly}" fill="#16a34a" font-weight="800">▲ 최고 ${shortAmt(mx)}</text><text x="${padL+350}" y="${ly}" fill="#b45309" font-weight="800">▼ 최저 ${shortAmt(mn)}</text><text x="${padL+478}" y="${ly}" fill="#64748b" font-weight="800">● 평균 ${shortAmt(avg)}</text><text x="${padL+600}" y="${ly}" fill="#7c3aed" font-weight="800">◆ 남은월평균목표 ${shortAmt(remAvg)}</text></g>`;
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:300px"><line x1="${padL}" y1="${padT}" x2="${W-padR}" y2="${padT}" stroke="#eef2f7"/>${ylines}${avgLine}${bepLine}${nowLine}<path d="${tPath}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 4"/><path d="${aPath}" fill="none" stroke="#1e3a5f" stroke-width="2.4"/>${dots}${mm}${avgLab}${vlab}${xlab}${manLab}${legend}</svg>`;
+  const legend=`<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 15px;margin-top:3px;padding-top:6px;border-top:1px solid #eef2f7;font-size:11px;font-weight:800;line-height:1.35"><span style="color:#475569"><i style="display:inline-block;width:18px;border-top:3px solid #1e3a5f;vertical-align:middle;margin-right:4px"></i>실적</span><span style="color:#b45309"><i style="display:inline-block;width:18px;border-top:3px dashed #f59e0b;vertical-align:middle;margin-right:4px"></i>목표</span><span style="color:#6366f1">■ 인원(명)</span><span style="color:#16a34a">▲ 최고 ${shortAmt(mx)}</span><span style="color:#b45309">▼ 최저 ${shortAmt(mn)}</span><span style="color:#64748b">● 평균 ${shortAmt(avg)}</span><span style="color:#7c3aed">◆ 남은월평균목표 ${shortAmt(remAvg)}</span></div>`;
+  return `<div style="display:flex;flex-direction:column;height:100%"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:330px;display:block"><line x1="${padL}" y1="${padT}" x2="${W-padR}" y2="${padT}" stroke="#eef2f7"/>${ylines}${avgLine}${bepLine}${nowLine}<path d="${tPath}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 4"/><path d="${aPath}" fill="none" stroke="#1e3a5f" stroke-width="2.4"/>${dots}${mm}${avgLab}${vlab}${xlab}${manLab}</svg>${legend}</div>`;
 }
 function homeAnnualBar(actual,target,pct,CY){
   const W=170,H=240,base=182,top=30,zeroY=top+base,bw=62,bx=(W-bw)/2;
@@ -4626,6 +4690,7 @@ function keyVendorChurn(){
   const MIXCATS=['전용품','공용품','레이저','내부보강','유통/OEM','기타'];
   if(!kv.mix||(kv.mix!=='전체'&&!MIXCATS.includes(kv.mix))) kv.mix='전체';
   if(kv.groupCust==null) kv.groupCust=false;
+  if(kv.monthlyView==null) kv.monthlyView=false;
   if(kv.exclMode==null) kv.exclMode=false;
   state.sortKey=state.sortKey||null;
   const PVERD={'신규판매':['#2563eb','#fff',3],'판매회복':['#0d9488','#fff',4],'무매출3개월+':['#dc2626','#fff',8],'무매출2개월':['#ea580c','#fff',7],'무매출1개월':['#d97706','#fff',6],'급감':['#be123c','#fff',5],'증가':['#16a34a','#fff',2],'유지':['#64748b','#fff',1]};
@@ -4777,6 +4842,19 @@ function keyVendorChurn(){
     {k:'riskMonthly',t:`<span title="무매출: 마지막 정상판매 직전 3개월 평균 / 급감: 직전·최근 3개월 월평균 감소">${riskLab}</span>`,w:'92px',cell:o=>o.riskMonthly>0?`<b style="color:#be123c">${valTxt(o.riskMonthly)}</b>`:'-'},
     {k:'last',t:'마지막 출고',w:'82px',cell:o=>o.last?fmtD(o.last):'-',sortVal:o=>o.last?+o.last:0}
   ];
+  // 월별보기는 현재월을 포함한 최근 12개월을 같은 지표(기본 수량 / 금액 선택 시 매출액)로 표시한다.
+  const monthlyKeys=[]; for(let i=11;i>=0;i--)monthlyKeys.push(ymShift(currentYm,-i));
+  const monthlyLabel=ym=>{ const p=String(ym).split('-').map(Number); return `${p[0]}<br><span style="font-size:9px;color:#64748b">${p[1]}월</span>`; };
+  const monthlyCols=[
+    // 월별보기에서도 제외선택 모드일 때는 제품별 제외 체크칸을 동일하게 표시한다.
+    ...exclCol,
+    {k:'rank',t:'순위',cls:'rank',w:'46px',cell:(o,i)=>i+1,sortVal:o=>(o.prio||0)*1e15+(o.riskMonthly||0)},
+    {k:'verdict',t:'판정',cls:'l',w:'96px',cell:verdCell,sortVal:o=>o.prio||0},
+    ...custCol,
+    {k:'name',t:'품명',cls:'l',w:'160px',cell:o=>esc(o.name||''),sortVal:o=>o.name||''},
+    {k:'spec',t:'규격',cls:'l',w:'150px',cell:o=>esc(o.spec||'(규격없음)'),sortVal:o=>o.spec||''},
+    ...monthlyKeys.map(ym=>({k:'mon_'+ym,t:monthlyLabel(ym),w:'78px',cell:o=>valCell((o.mon||{})[ym]||0),sortVal:o=>(o.mon||{})[ym]||0}))
+  ];
   const kpi=(lab,val,sub,bg,tx)=>`<div style="border:1px solid #e2e8f0;border-radius:10px;padding:9px 12px;background:${bg};min-width:140px;flex:1 1 140px"><div style="font-size:10.5px;color:#64748b;font-weight:800">${lab}</div><div style="font-size:20px;font-weight:900;color:${tx};margin-top:2px">${val}</div><div style="font-size:9.5px;color:#64748b;margin-top:1px">${sub}</div></div>`;
   const monthOpts=selectableYm.slice(-24).reverse().map(k=>`<option value="${k}" ${k===baseYm?'selected':''}>${ymText(k)}${k===currentYm?' (현재월·참조)':''}</option>`).join('');
   const unitSeg=`<div class="seg" id="kvUnit">${[['combo','거래처×제품'],['prod','제품(규격)'],['group','품목군']].map(([v,l])=>`<button data-v="${v}" class="${unit===v?'on':''}" style="${unit===v?'background:#0d9488;color:#fff;border-color:#0d9488':'background:#f0fdfa;color:#0d9488;border-color:#99f6e4'}">${l}</button>`).join('')}</div>`;
@@ -4794,6 +4872,7 @@ function keyVendorChurn(){
     ${exclChips}
   </div>` : '';
   const groupBtn = unit==='combo' ? `<button id="kvGroupBtn" type="button" title="거래처별로 묶어 품목 종류 수로 봅니다. 거래처 클릭 시 품목 리스트가 펼쳐집니다." style="border:1px solid ${kv.groupCust?'#0d9488':'#cbd5e1'};background:${kv.groupCust?'#0d9488':'#fff'};color:${kv.groupCust?'#fff':'#475569'};border-radius:7px;padding:4px 9px;font:800 10.5px/1.2 inherit;white-space:nowrap">거래처 묶어보기${kv.groupCust?' ✓':''}</button>` : '';
+  const monthBtn = unit==='combo' ? `<button id="kvMonthBtn" type="button" title="현재월 기준 최근 12개월을 표시합니다" style="border:1px solid ${kv.monthlyView?'#2563eb':'#cbd5e1'};background:${kv.monthlyView?'#2563eb':'#fff'};color:${kv.monthlyView?'#fff':'#475569'};border-radius:7px;padding:4px 9px;font:800 10.5px/1.2 inherit;white-space:nowrap">월별보기${kv.monthlyView?' ✓':''}</button>` : '';
   const openExcludeProducts=()=>{
     document.getElementById('kvExclModal')?.remove();
     const draft=new Set(prodCatalog.filter(p=>kvExcl[p.key]).map(p=>p.key));
@@ -4820,8 +4899,22 @@ function keyVendorChurn(){
     <span class="cl" style="font-size:11px;font-weight:800;color:#475569">업체 비중 상위 누적 <input type="number" id="kvTh" value="${th}" min="1" max="100" step="5" style="width:56px;padding:3px 5px"> % 업체</span>
     <b style="font-size:12px">집계</b> ${unitSeg}
     <b style="font-size:12px">표기</b> ${metricSeg}
-    ${codeBtn} ${excludeBtn} ${groupBtn}
+    ${codeBtn} ${excludeBtn} ${groupBtn} ${monthBtn}
   </div>`+mixSeg+exclPanel;
+  const bindKvControls=()=>{
+      const bs=$('#kvBase'); bs&&bs.addEventListener('change',e=>{kv.baseYm=e.target.value;keyVendorChurn();});
+      const ti=$('#kvTh'); if(ti){ let _t; const apply=()=>{ let vv=parseFloat(ti.value); if(isNaN(vv))vv=80; vv=Math.min(100,Math.max(1,vv)); kv.th=vv; keyVendorChurn(); }; ti.addEventListener('input',()=>{ clearTimeout(_t); _t=setTimeout(apply,500); }); ti.addEventListener('change',()=>{ clearTimeout(_t); apply(); }); }
+      $('#result').querySelectorAll('#kvUnit button').forEach(b=>b.addEventListener('click',()=>{ kv.unit=b.dataset.v; state.sortKey=null; keyVendorChurn(); }));
+      $('#result').querySelectorAll('#kvMetric button').forEach(b=>b.addEventListener('click',()=>{ kv.metric=b.dataset.v; state.sortKey=null; keyVendorChurn(); }));
+      const cb=$('#kvCodeBtn'); cb&&cb.addEventListener('click',()=>{ kv.showCode=!kv.showCode; keyVendorChurn(); });
+      const eb=$('#kvExcludeBtn'); eb&&eb.addEventListener('click',()=>{ kv.exclMode=!kv.exclMode; if(kv.exclMode)kv.groupCust=false; state.sortKey=null; keyVendorChurn(); });
+      $('#result').querySelectorAll('.kvExclChip').forEach(b=>b.addEventListener('click',async()=>{ const k=decodeURIComponent(b.dataset.k||''); delete state.kvcExclProd[k]; await saveSettings(); keyVendorChurn(); }));
+      const clrAll=$('#kvExclClearAll'); clrAll&&clrAll.addEventListener('click',async()=>{ state.kvcExclProd={}; await saveSettings(); state.sortKey=null; keyVendorChurn(); });
+      const gb=$('#kvGroupBtn'); gb&&gb.addEventListener('click',()=>{ kv.groupCust=!kv.groupCust; state.sortKey=null; keyVendorChurn(); });
+      const mb=$('#kvMonthBtn'); mb&&mb.addEventListener('click',()=>{ kv.monthlyView=!kv.monthlyView; state.sortKey=null; keyVendorChurn(); });
+      $('#result').querySelectorAll('.kvmix').forEach(b=>b.addEventListener('click',()=>{ kv.mix=b.dataset.v; keyVendorChurn(); }));
+      $('#result').querySelectorAll('.kvfilter').forEach(b=>b.addEventListener('click',()=>{ kv.filter=b.dataset.v; keyVendorChurn(); }));
+  };
   const drillMonthly=o=>{
     state.sortKey=null; state._search='';
     const keys=[]; for(let i=12;i>=0;i--)keys.push(ymShift(baseYm,-i));
@@ -4848,18 +4941,20 @@ function keyVendorChurn(){
       `${isCurr?ymText(baseYm)+' 현재월 참조 · 판정 '+ymText(judgeYm)+' 기준':ymText(baseYm)+' 기준'} · 품목 ${grp.kinds.toLocaleString()}종 · 점검대상 ${grp.riskCnt.toLocaleString()}건 · ${mixLab} · 표기 ${isQty?'수량':'금액'}`,
       items, icols, 'rank',
       `<b>${esc(grp.cust)}</b>의 핵심업체 제품감소 품목 리스트입니다. <b>행 클릭</b> 시 최근 13개월 월별 추이를 봅니다. 좌측 <b>← 거래처 목록으로</b>로 돌아갑니다.`,
-      {drill:{custom:drillMonthly}, back:{label:'← 거래처 목록으로', fn:()=>{state.act='kv-churn';state.sortKey=null;keyVendorChurn();}}});
+      {controlsHtml:controls, drill:{custom:drillMonthly}, onMount:bindKvControls, back:{label:'← 거래처 목록으로', fn:()=>{state.act='kv-churn';state.sortKey=null;keyVendorChurn();}}});
   };
-  let renderRows=view, renderCols=cols, renderSortKey='rank', renderDrill={custom:drillMonthly};
+  let renderRows=view, renderCols=kv.monthlyView?monthlyCols:cols, renderSortKey='rank', renderDrill={custom:drillMonthly};
   if(kv.groupCust && unit==='combo' && !kv.exclMode){
     const gmap=new Map();
     view.forEach(o=>{ let g=gmap.get(o.cust);
-      if(!g){ g={cust:o.cust,kinds:0,riskCnt:0,m2:0,m1:0,m0:0,recent3:0,prior3:0,delta:0,riskMonthly:0,last:null,_items:[]}; gmap.set(o.cust,g); }
+      if(!g){ g={cust:o.cust,kinds:0,riskCnt:0,m2:0,m1:0,m0:0,recent3:0,prior3:0,delta:0,riskMonthly:0,last:null,mon:{},_top:null,_items:[]}; gmap.set(o.cust,g); }
       g.kinds++; if(isDrop(o))g.riskCnt++; g.m2+=o.m2; g.m1+=o.m1; g.m0+=o.m0; g.recent3+=o.recent3; g.prior3+=o.prior3; g.delta+=o.delta; g.riskMonthly+=o.riskMonthly;
+      Object.entries(o.mon||{}).forEach(([ym,v])=>{g.mon[ym]=(g.mon[ym]||0)+(+v||0);});
+      if(!g._top||o.prio>g._top.prio||(o.prio===g._top.prio&&o.riskMonthly>g._top.riskMonthly))g._top=o;
       if(o.last&&(!g.last||o.last>g.last))g.last=o.last; g._items.push(o);
     });
     const grows=[...gmap.values()];
-    grows.forEach(g=>{ g.pct=g.prior3>0?g.delta/g.prior3*100:(g.recent3>0?100:0); g._search=g.cust; });
+    grows.forEach(g=>{ const top=g._top||{}; g.pct=g.prior3>0?g.delta/g.prior3*100:(g.recent3>0?100:0); g.verdict=top.verdict||'유지'; g.prio=top.prio||0; g.vcBg=top.vcBg||'#64748b'; g.vcTx=top.vcTx||'#fff'; g.name=`${g.kinds.toLocaleString()}종 품목`; g.spec='거래처 합계'; g._search=g.cust+' '+g.name+' '+g.verdict; });
     grows.sort((a,b)=>b.riskCnt-a.riskCnt||b.riskMonthly-a.riskMonthly||b.prior3-a.prior3);
     const gcols=[
       {k:'rank',t:'순위',cls:'rank',w:'46px',cell:(o,i)=>i+1,sortVal:o=>o.riskCnt*1e15+o.riskMonthly},
@@ -4876,14 +4971,14 @@ function keyVendorChurn(){
       {k:'riskMonthly',t:`<span title="점검대상 품목의 월 위험 ${isQty?'수량':'매출'} 합계">${riskLab}</span>`,w:'92px',cell:o=>o.riskMonthly>0?`<b style="color:#be123c">${valTxt(o.riskMonthly)}</b>`:'-'},
       {k:'last',t:'마지막 출고',w:'82px',cell:o=>o.last?fmtD(o.last):'-',sortVal:o=>o.last?+o.last:0}
     ];
-    renderRows=grows; renderCols=gcols; renderSortKey='rank'; renderDrill={custom:groupDrill};
+    renderRows=grows; renderCols=kv.monthlyView?monthlyCols:gcols; renderSortKey='rank'; renderDrill={custom:groupDrill};
   }
   const mixLab=kv.mix==='전체'?'전체 제품구분':kv.mix;
   const groupNote=(kv.groupCust&&unit==='combo'&&!kv.exclMode)?` · <b style="color:#0d9488">거래처 묶어보기</b> ${renderRows.length.toLocaleString()}개사(품목 ${view.length.toLocaleString()}건)`:'';
   render('🚨 핵심업체 제품감소',
     `${isCurr?ymText(baseYm)+' 현재월 참조 · 판정 '+ymText(judgeYm)+' 기준':ymText(baseYm)+' 기준'} · 비중 상위 ${th}% 핵심업체 ${coreCount}개사 · ${unit==='combo'?'거래처×제품':unit==='prod'?'제품(규격)':'품목군'} · ${mixLab} · 표기 ${isQty?'수량':'금액'} · 제외제품 ${excludedCount.toLocaleString()}개 · 표시 ${view.length.toLocaleString()}건 / 전체 ${arr.length.toLocaleString()}건${groupNote}`,
     renderRows, renderCols, renderSortKey,
-    `<b>이 화면은</b> 최근 12개월 <b>매출 누적비중 상위 ${th}%</b>에 드는 <b>핵심 거래처(${coreCount}개사)</b>에서, 팔리던 제품이 <b>무매출(1·2·3개월)</b>이 되거나 <b>급감(직전 3개월 대비 50%↓)</b>한 것을 찾습니다. 표기값은 상단 <b>표기</b>에서 수량/금액으로 바꿀 수 있고(핵심업체 비중은 항상 매출액 기준), <b>품번보기</b>로 품번 열을, <b>제외제품</b> 버튼을 누르면 표 왼쪽에 <b>제외</b> 체크칸이 생겨 현재 표에서 직접 체크해 간헐·일회성 발주 제품을 즉시 분석에서 뺄 수 있고(칩 클릭으로 되돌림), <b>제품구분</b>으로 전용·공용·레이저·내부보강·유통/OEM·기타를 걸러볼 수 있습니다. <b>거래처 묶어보기</b>(거래처×제품 집계에서만)를 켜면 거래처별로 묶어 <b>품목 종류 수</b>를 보고, 거래처 행을 클릭하면 그 거래처의 <b>품목 리스트</b>가 펼쳐집니다. 현재월은 참조로만 표시하고 판정에는 넣지 않습니다. <b>행 클릭</b> 시 최근 13개월 월별 추이를 봅니다.`,
+    `<b>이 화면은</b> 최근 12개월 <b>매출 누적비중 상위 ${th}%</b>에 드는 <b>핵심 거래처(${coreCount}개사)</b>에서, 팔리던 제품이 <b>무매출(1·2·3개월)</b>이 되거나 <b>급감(직전 3개월 대비 50%↓)</b>한 것을 찾습니다. 표기값은 상단 <b>표기</b>에서 수량/금액으로 바꿀 수 있고(핵심업체 비중은 항상 매출액 기준), <b>월별보기</b>를 켜면 현재월 기준 최근 12개월을 표시합니다. <b>품번보기</b>로 품번 열을, <b>제외제품</b> 버튼을 누르면 표 왼쪽에 <b>제외</b> 체크칸이 생겨 현재 표에서 직접 체크해 간헐·일회성 발주 제품을 즉시 분석에서 뺄 수 있고(칩 클릭으로 되돌림), <b>제품구분</b>으로 전용·공용·레이저·내부보강·유통/OEM·기타를 걸러볼 수 있습니다. <b>거래처 묶어보기</b>(거래처×제품 집계에서만)를 켜면 거래처별로 묶어 <b>품목 종류 수</b>를 보고, 거래처 행을 클릭하면 그 거래처의 <b>품목 리스트</b>가 펼쳐집니다. 현재월은 참조로만 표시하고 판정에는 넣지 않습니다. <b>행 클릭</b> 시 최근 13개월 월별 추이를 봅니다.`,
     {controlsHtml:controls, drill:renderDrill, afterDraw:()=>{
       $('#tbl').querySelectorAll('.kvExclChk').forEach(ch=>{
         ch.addEventListener('click',e=>e.stopPropagation());
@@ -4891,19 +4986,7 @@ function keyVendorChurn(){
           if(ch.checked)keys.forEach(k=>{state.kvcExclProd[k]=true;}); else keys.forEach(k=>{delete state.kvcExclProd[k];});
           await saveSettings(); keyVendorChurn(); });
       });
-    }, onMount:()=>{
-      const bs=$('#kvBase'); bs&&bs.addEventListener('change',e=>{kv.baseYm=e.target.value;keyVendorChurn();});
-      const ti=$('#kvTh'); if(ti){ let _t; const apply=()=>{ let vv=parseFloat(ti.value); if(isNaN(vv))vv=80; vv=Math.min(100,Math.max(1,vv)); kv.th=vv; keyVendorChurn(); }; ti.addEventListener('input',()=>{ clearTimeout(_t); _t=setTimeout(apply,500); }); ti.addEventListener('change',()=>{ clearTimeout(_t); apply(); }); }
-      $('#result').querySelectorAll('#kvUnit button').forEach(b=>b.addEventListener('click',()=>{ kv.unit=b.dataset.v; state.sortKey=null; keyVendorChurn(); }));
-      $('#result').querySelectorAll('#kvMetric button').forEach(b=>b.addEventListener('click',()=>{ kv.metric=b.dataset.v; state.sortKey=null; keyVendorChurn(); }));
-      const cb=$('#kvCodeBtn'); cb&&cb.addEventListener('click',()=>{ kv.showCode=!kv.showCode; keyVendorChurn(); });
-      const eb=$('#kvExcludeBtn'); eb&&eb.addEventListener('click',()=>{ kv.exclMode=!kv.exclMode; if(kv.exclMode)kv.groupCust=false; state.sortKey=null; keyVendorChurn(); });
-      $('#result').querySelectorAll('.kvExclChip').forEach(b=>b.addEventListener('click',async()=>{ const k=decodeURIComponent(b.dataset.k||''); delete state.kvcExclProd[k]; await saveSettings(); keyVendorChurn(); }));
-      const clrAll=$('#kvExclClearAll'); clrAll&&clrAll.addEventListener('click',async()=>{ state.kvcExclProd={}; await saveSettings(); state.sortKey=null; keyVendorChurn(); });
-      const gb=$('#kvGroupBtn'); gb&&gb.addEventListener('click',()=>{ kv.groupCust=!kv.groupCust; state.sortKey=null; keyVendorChurn(); });
-      $('#result').querySelectorAll('.kvmix').forEach(b=>b.addEventListener('click',()=>{ kv.mix=b.dataset.v; keyVendorChurn(); }));
-      $('#result').querySelectorAll('.kvfilter').forEach(b=>b.addEventListener('click',()=>{ kv.filter=b.dataset.v; keyVendorChurn(); }));
-    }});
+    }, onMount:bindKvControls});
 }
 function pareto(){
   const dim=state.pareto.dim; let th=parseFloat(state.pareto.threshold); if(isNaN(th))th=80;
@@ -6558,7 +6641,25 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
   var target=id('app')||document.body;if(typeof MutationObserver!=='undefined'&&target)new MutationObserver(function(){removeHistoryDuplicates();updateHistoryBtn()}).observe(target,{childList:true,subtree:true});
 })();
 </script>
-
+<script id="weekly-issue-sync-audit-v1">
+/* 주간이슈 동기화·상세 수정이력 보완 */
+(function(){
+  const escText=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  window.openEditLog=function(){
+    const log=state.editLog||[],old=document.getElementById('elogOvl');if(old)old.remove();
+    const time=v=>{const d=new Date(v);if(isNaN(d))return '-';const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;};
+    const rows=log.length?log.map(e=>{const search=[time(e.t),e.u,e.c,e.d].join(' ').toLowerCase();return `<tr class="elog-row" data-search="${escText(search)}"><td style="white-space:nowrap;color:#64748b">${time(e.t)}</td><td style="white-space:nowrap"><b>${escText(e.u||'-')}</b></td><td style="text-align:center"><span style="display:inline-block;padding:2px 7px;border-radius:7px;background:#eef2f8;color:#1e3a5f;font-size:10.5px;font-weight:700">${escText(e.c||'')}</span></td><td style="text-align:left;white-space:pre-wrap;word-break:break-word;line-height:1.55;min-width:520px">${escText(e.d||'')}</td></tr>`;}).join(''):'<tr><td colspan="4" style="text-align:center;padding:18px;color:#94a3b8">수정 이력이 없습니다.</td></tr>';
+    const ov=document.createElement('div');ov.id='elogOvl';ov.style.cssText='position:fixed;inset:0;z-index:100001;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center';
+    ov.innerHTML=`<div style="background:#fff;border-radius:14px;width:min(1180px,96vw);max-height:84vh;display:flex;flex-direction:column;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.3)"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px"><div style="font-weight:800;font-size:15px">🕘 수정 이력 <span id="elogTotal" style="font-size:11px;color:#64748b">(${log.length}건 · 주간이슈는 입력 내용까지 표시)</span></div><div style="display:flex;gap:8px"><button id="elogClear" type="button" style="border:1px solid #fca5a5;background:#fef2f2;color:#dc2626;border-radius:7px;cursor:pointer;font-size:12px;padding:5px 12px">전체 지우기</button><button id="elogClose" type="button" style="border:1px solid #cbd5e1;background:#fff;border-radius:7px;cursor:pointer;font-size:12px;padding:5px 14px">닫기</button></div></div><div style="display:flex;align-items:center;gap:7px;margin-bottom:10px"><span style="font-size:12px;font-weight:700;color:#475569">검색</span><input id="elogSearch" type="search" placeholder="일시 · 작성자 · 구분 · 수정 내용 검색" style="flex:1;min-width:180px;border:1px solid #cbd5e1;border-radius:7px;padding:7px 10px;font:inherit;font-size:12px;outline:none"><button id="elogSearchClear" type="button" style="border:1px solid #cbd5e1;background:#fff;border-radius:7px;cursor:pointer;font-size:12px;padding:6px 10px">초기화</button></div><div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th>일시</th><th>작성자</th><th style="text-align:center">구분</th><th style="text-align:left">수정 내용</th></tr></thead><tbody>${rows}<tr id="elogNoResult" style="display:none"><td colspan="4" style="text-align:center;padding:18px;color:#94a3b8">검색 결과가 없습니다.</td></tr></tbody></table></div></div>`;
+    document.body.appendChild(ov);const close=()=>ov.remove();ov.addEventListener('click',e=>{if(e.target===ov)close();});ov.querySelector('#elogClose').onclick=close;ov.querySelector('#elogClear').onclick=async()=>{if(!await uiConfirm('수정 이력을 전체 삭제할까요?'))return;state.editLog=[];await saveSettings();close();};
+    const search=ov.querySelector('#elogSearch'),clear=ov.querySelector('#elogSearchClear'),none=ov.querySelector('#elogNoResult'),total=ov.querySelector('#elogTotal');
+    const applySearch=()=>{const q=String(search&&search.value||'').trim().toLowerCase();let n=0;ov.querySelectorAll('.elog-row').forEach(row=>{const show=!q||(row.dataset.search||'').includes(q);row.style.display=show?'':'none';if(show)n++;});if(none)none.style.display=log.length&&n===0?'':'none';if(total)total.textContent=q?`(검색 ${n}건 / 전체 ${log.length}건 · 주간이슈는 입력 내용까지 표시)`:`(${log.length}건 · 주간이슈는 입력 내용까지 표시)`;};
+    search&&search.addEventListener('input',applySearch);clear&&clear.addEventListener('click',()=>{if(search){search.value='';search.focus();}applySearch();});
+  };
+  const nativeLoad=window.gsLoad;
+  if(typeof nativeLoad==='function')window.gsLoad=async function(silent){const ok=await nativeLoad(silent);if(ok){const issues=state.weekly&&state.weekly.issues||{},count=Object.values(issues).reduce((n,b)=>n+(b&&typeof b==='object'?Object.keys(b).length:0),0),st=document.getElementById('gsStatus');if(st&&st.style.color!=='rgb(220, 38, 38)')st.textContent+=` · 주간이슈 ${count}건`; }return ok;};
+})();
+</script>
 
 </body>
 </html>
