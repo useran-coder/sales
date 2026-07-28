@@ -737,7 +737,7 @@ header .appver{margin-left:0!important}
   </form>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)" style="align-self:center;font-size:11px;color:#dc2626;font-weight:800;white-space:nowrap;padding:3px 7px;border:1px solid #fecaca;border-radius:6px;background:#fff1f2">버전 v37 · 업체 매출순위 표시</span>
+  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)" style="align-self:center;height:36px;box-sizing:border-box;display:inline-flex;align-items:center;font-size:11px;color:#dc2626;font-weight:800;white-space:nowrap;padding:0 10px;border:1px solid #fecaca;border-radius:9px;background:#fff1f2">버전 v37 · 업체 매출순위 표시</span>
 </header>
 
 <div class="wrap">
@@ -2322,7 +2322,7 @@ function wrBindIssue(model){
     if(!prevPlan&&!actual&&!nextPlan){alert('이전계획, 실적, 차주계획 중 하나 이상 입력해 주세요.');$('#wrIssueActual')&&$('#wrIssueActual').focus();return;}
     const pi=wrIssuePeriodInfo(model),nextPi=wrIssueAdjacentPeriod(model,1),bucket=wrIssueBucket(model,true),id=state.weekly.issueEditId||('wi_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)),old=bucket[id]||{},draftMeta=(state.weekly.issueDraft&&state.weekly.issueDraft.periodKey===pk)?state.weekly.issueDraft:{},cd=wrIssueCreditData(c,model),now=new Date().toISOString(),action=old.id?'수정':'등록',history=[...(Array.isArray(old.history)?old.history:[]),{at:now,by:author,action,prevPlan,actual,nextPlan}].slice(-30),auditText=wrIssueAuditText(pi,c,action,prevPlan,actual,nextPlan);
     bucket[id]={...old,id,periodKey:pk,periodLabel:pi.label,periodStart:pi.start,periodEnd:pi.end,type:'주간현황',author,cust:c,contact:ct,salesManager:mgr||cd.manager,creditGrade:cd.grade,creditStatus:cd.status,creditPay:cd.pay,annualActual:cd.annualActual,annualTarget:cd.annualTarget,annualRate:cd.annualRate,annualRank:cd.annualRank,annualRankTotal:cd.annualRankTotal,monthActual:cd.monthActual,monthTarget:cd.monthTarget,monthRate:cd.monthRate,weekActual:cd.weekActual,prevPlan,actual,nextPlan,content:actual,carryFromPeriodKey:old.carryFromPeriodKey||draftMeta.carryFromPeriodKey||'',carryFromId:old.carryFromId||draftMeta.carryFromId||'',carrySourceLabel:old.carrySourceLabel||draftMeta.carrySourceLabel||'',nextPeriodKey:nextPi?nextPi.key:'',nextPeriodStart:nextPi?nextPi.start:'',nextPeriodEnd:nextPi?nextPi.end:'',createdAt:old.createdAt||now,updatedAt:now,history};
-    state.weekly.issueAuthor=author;state.weekly.issueDraft={periodKey:pk,author,cust:'',contact:'',salesManager:'',prevPlan:'',actual:'',nextPlan:''};state.weekly.issueEditId=null;if(typeof logEdit==='function')logEdit('주간이슈',auditText);await saveSettings();wrToast('✓ 주간현황이 저장되었습니다');weeklyReport(3);
+    state.weekly.issueAuthor=author;state.weekly.issueDraft={periodKey:pk,author,cust:'',contact:'',salesManager:'',prevPlan:'',actual:'',nextPlan:''};state.weekly.issueEditId=null;state.weekly.issueFormOpen=false;if(typeof logEdit==='function')logEdit('주간이슈',auditText);await saveSettings();wrToast('✓ 주간현황이 저장되었습니다');weeklyReport(3);
   };
   const sb=$('#wrIssueSave');sb&&sb.addEventListener('click',save);
   const cb=$('#wrIssueCancel');cb&&cb.addEventListener('click',()=>{state.weekly.issueDraft=null;state.weekly.issueEditId=null;weeklyReport(3);});
@@ -2997,7 +2997,7 @@ function runAct(){ const a=state.act; if(!a||!CUR.length) return; state._inDrill
   else if(a==='pricemake'){ state.price.mode='set'; priceTable(); }
   else if(a==='weekly1') weeklyReport(1);
   else if(a==='weekly2') weeklyReport(2);
-  else if(a==='weekly3') weeklyReport(3);
+  else if(a==='weekly3'){ (state.weekly=state.weekly||{}).issueFormOpen=false; weeklyReport(3); }
   else if(a==='scrap') scrapSales();
   else if(a==='retain') retain();
   else if(a==='pdelta') productDelta();
