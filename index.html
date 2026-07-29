@@ -1847,7 +1847,9 @@ function wrPage1(model){
     return `<tr class="${isRest?'wr-rest':''}"><td class="wr-no">${isRest?'-':i+1}</td><td data-sort-v="${esc(r.cust)}" style="text-align:left">${isRest?'<b>':''}${esc(r.cust)}${isRest?'</b>':''}</td><td data-sort-v="${esc(mgrName)}" style="text-align:center">${isRest?wrMgrBadge('-'):wrMgrBadge(mgrName)}</td><td data-sort-v="${+r.annual||0}">${wrAmt(r.annual)}</td><td data-sort-v="${+r.before||0}">${wrAmt(r.before)}</td><td data-sort-v="${r.annualRate==null?-1:+r.annualRate}" class="${(r.annualRate||0)>=50?'wr-rate-good':'wr-rate-bad'}">${wrPct(r.annualRate)}</td><td data-sort-v="${+r.remaining||0}">${wrAmt(r.remaining)}</td><td data-sort-v="${+r.monthTarget||0}">${wrAmt(r.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${r.remainingWeekAvg?won(r.remainingWeekAvg)+'원':'-'}</b></div></td>${weekTds}<td data-sort-v="${+r.monthActual||0}"><b>${wrAmt(r.monthActual)}</b></td><td data-sort-v="${r.monthRate==null?-1:+r.monthRate}" class="${(r.monthRate||0)>=100?'wr-rate-good':'wr-rate-bad'}">${wrPct(r.monthRate)}</td><td style="text-align:left"><input class="wr-memo" type="text" data-k="${esc(nk)}" data-cust="${esc(r.cust)}" value="${esc(memo)}" placeholder="비고 직접 입력"></td></tr>`;
   }).join('');
   const total=wrAggregateRows(tableRows,'합계');
-  const totalRow=`<tr class="wr-sum"><td class="wr-no"></td><td>합계</td><td></td><td>${wrAmt(total.annual)}</td><td>${wrAmt(total.before)}</td><td>${wrPct(total.annualRate)}</td><td>${wrAmt(total.remaining)}</td><td>${wrAmt(total.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${total.remainingWeekAvg?won(total.remainingWeekAvg)+'원':'-'}</b></div></td>${total.weeks.slice(0,model.ranges.length).map((v,idx)=>`<td class="${idx===currentWeekIdx?'wr-current-date':''}">${model.isCustom||idx<model.w?wrAmt(v):'-'}</td>`).join('')}<td>${wrAmt(total.monthActual)}</td><td>${wrPct(total.monthRate)}</td><td></td></tr>`;
+  // 이슈 필터 결과가 비어도 헤더와 같은 수의 주차 셀을 유지한다.
+  // 기존에는 빈 결과에서 total.weeks가 빈 배열이 되어 합계 행 오른쪽 테두리가 끊어졌다.
+  const totalRow=`<tr class="wr-sum"><td class="wr-no"></td><td>합계</td><td></td><td>${wrAmt(total.annual)}</td><td>${wrAmt(total.before)}</td><td>${wrPct(total.annualRate)}</td><td>${wrAmt(total.remaining)}</td><td>${wrAmt(total.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${total.remainingWeekAvg?won(total.remainingWeekAvg)+'원':'-'}</b></div></td>${Array.from({length:model.ranges.length},(_,idx)=>`<td class="${idx===currentWeekIdx?'wr-current-date':''}">${model.isCustom||idx<model.w?wrAmt((total.weeks||[])[idx]||0):'-'}</td>`).join('')}<td>${wrAmt(total.monthActual)}</td><td>${wrPct(total.monthRate)}</td><td></td></tr>`;
   const beforeEnd=new Date(model.rangeStart);beforeEnd.setDate(beforeEnd.getDate()-1);const beforeLab=model.isCustom?`${model.y}.1.1~${wrDateText(beforeEnd)}`:(model.m>1?`1~${model.m-1}월`:'전월'); const selectedLab=model.isCustom?'기간':' '+model.m+'월',monthActualCol=8+model.ranges.length,monthRateCol=9+model.ranges.length;
   return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 목표액=월별 목표 합계 · 목표수정액=목표추이 올해 연매출 목표와 동일 · 실적=거래처 담당자 월매출 합계 기준)</span></div><div class="wr-tablewrap"><table class="wr-table"><thead><tr><th style="width:82px">구분</th><th style="width:112px">합계액</th>${Array.from({length:12},(_,i)=>`<th class="${i+1===currentMonthNo?'wr-current-date':''}">${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
     <div class="wr-pace-stack">${wrYearPacingSection(model)}${wrMonthPacingSection(model)}</div>
@@ -3312,7 +3314,15 @@ function crossSell(){
   const base=(cx.base||'').trim(); const baseSpec=(cx.baseSpec||'').trim();
   const targets=cx.targets.map(t=>(t||'').trim()).filter(Boolean);
   const baseKw=norm(base), bSpecKw=norm(baseSpec);
-  const baseMatch=r=> baseKw && !isL(r.name||'') && norm((r.code||'')+(r.name||'')).includes(baseKw) && (!bSpecKw || norm(r.spec).includes(bSpecKw));
+  // 입력값이 실제 품명·품번과 정확히 일치하면 부분 일치 제품을 제외한다.
+  // 예: "2단경첩" 선택 시 "2단경첩보강대"는 기준제품에 포함하지 않는다.
+  const baseExact=baseKw&&cat.some(p=>norm(p.name)===baseKw||norm(p.code)===baseKw);
+  const baseMatch=r=>{
+    if(!baseKw||isL(r.name||''))return false;
+    const exact=norm(r.name)===baseKw||norm(r.code)===baseKw;
+    const matched=baseExact?exact:norm((r.code||'')+(r.name||'')).includes(baseKw);
+    return matched&&(!bSpecKw||norm(r.spec).includes(bSpecKw));
+  };
   const tMatch=(r,kw)=>{ kw=norm(kw); if(!kw)return false; if(isL(r.name||''))return false; return norm((r.code||'')+(r.name||'')+(r.spec||'')).includes(kw); };
   if(!base){
     render('제품 판매유도 (크로스셀)', '기준 제품을 산 거래처 중, 세트 구성품(대상)을 아직 안 산 거래처 찾기', [],
@@ -3322,33 +3332,40 @@ function crossSell(){
     return;
   }
   const baseMap=new Map();
-  rows.forEach(r=>{ if(baseMatch(r)){ let o=baseMap.get(r.cust); if(!o){o={qty:0,amt:0,last:r.d};baseMap.set(r.cust,o);} o.qty+=r.qty; o.amt+=amtOf(r); if(r.d>o.last)o.last=r.d; } });
+  rows.forEach(r=>{ if(baseMatch(r)){ let o=baseMap.get(r.cust); if(!o){o={qty:0,amt:0,last:r.d,names:new Set(),specs:new Set()};baseMap.set(r.cust,o);} o.qty+=r.qty; o.amt+=amtOf(r); if(r.d>o.last)o.last=r.d; if(r.name)o.names.add(r.name); if(r.spec)o.specs.add(r.spec); } });
   const tgtSets=targets.map(t=>{ const s=new Set(); rows.forEach(r=>{ if(tMatch(r,t))s.add(r.cust); }); return s; });
-  let arr=[...baseMap.keys()].map(c=>{ const b=baseMap.get(c); const has=targets.map((t,i)=>tgtSets[i].has(c)); const missing=targets.map((t,i)=>has[i]?null:t).filter(Boolean); return {key:c,label:c,baseQty:b.qty,baseAmt:b.amt,baseLast:b.last,has,missing,missN:missing.length,allHave:missing.length===0}; });
+  let arr=[...baseMap.keys()].map(c=>{ const b=baseMap.get(c); const has=targets.map((t,i)=>tgtSets[i].has(c)); const missing=targets.map((t,i)=>has[i]?null:t).filter(Boolean); return {key:c,label:c,baseQty:b.qty,baseAmt:b.amt,baseLast:b.last,baseName:[...b.names].join(', '),baseSpec:bSpecKw?[...b.specs].join(', '):'',has,missing,missN:missing.length,allHave:missing.length===0}; });
   const totBase=arr.length; const fullN=arr.filter(o=>o.allHave).length; const missAnyN=totBase-fullN;
   arr.sort((a,b)=>b.missN-a.missN||b.baseAmt-a.baseAmt);
   const fcur=cx.filter||'all';
   const chipHtml=`<div class="ctrlbar" style="gap:5px;flex-wrap:wrap"><b style="font-size:12px">보기</b>`+
     `<button class="cxChip" data-f="all" style="${fcur==='all'?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':''}">전체 ${totBase}</button>`+
     `<button class="cxChip" data-f="miss" style="${fcur==='miss'?'background:#dc2626;color:#fff;border-color:#dc2626':'color:#dc2626;border-color:#f3c0c0'}">🎯 유도대상(미판매) ${missAnyN}</button>`+
-    `<button class="cxChip" data-f="full" style="${fcur==='full'?'background:#16a34a;color:#fff;border-color:#16a34a':'color:#16a34a;border-color:#bbf7d0'}">✅ 전량 보유 ${fullN}</button></div>`;
+    `<button class="cxChip" data-f="full" style="${fcur==='full'?'background:#16a34a;color:#fff;border-color:#16a34a':'color:#16a34a;border-color:#bbf7d0'}">✅ 전량 보유 ${fullN}</button>`+
+    `<span style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></span>`+
+    `<button class="btn ghost" id="cxMgrToggle" style="font-size:12px;padding:5px 12px;${cx.showMgr?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':'color:#1e3a5f;border-color:#c7d6e8'}" title="${cx.showMgr?'담당자를 숨기고 기준제품 품명·규격을 표시':'영업관리·기술영업 담당자 표시'}">👤 영업담당자 ${cx.showMgr?'숨기기':'보기'}</button></div>`;
   let view=fcur==='miss'?arr.filter(o=>!o.allHave):fcur==='full'?arr.filter(o=>o.allHave):arr;
-  const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
-    {k:'label',t:'거래처',cls:'l',cell:o=>esc(o.label)+' '+catChip(o.key)},
-    {k:'_s',t:'영업관리',cls:'mgr',cell:o=>mgrBadge(mgrS(o.key)),sortVal:o=>mgrS(o.key)},
-    {k:'_t',t:'기술영업',cls:'mgr',cell:o=>mgrBadge(mgrT(o.key)),sortVal:o=>mgrT(o.key)},
-    {k:'baseAmt',t:`기준매출(${unitLabel()})`,cell:o=>disp(o.baseAmt),sortVal:o=>o.baseAmt},
-    {k:'baseQty',t:'기준 출고수량',cell:o=>won(o.baseQty),sortVal:o=>o.baseQty},
-    {k:'baseLast',t:'마지막 출고일',cell:o=>fmtD(o.baseLast),sortVal:o=>+o.baseLast},
-    ...targets.map((t,i)=>({k:'t'+i,t:esc(t),cell:o=>o.has[i]?'<span class="badge b-green">판매</span>':'<span class="badge b-red">미판매</span>',sortVal:o=>o.has[i]?1:0})),
-    {k:'missN',t:'미판매수',cell:o=>o.missN>0?`<b style="color:#dc2626">${o.missN}</b>`:'<span style="color:#16a34a">0</span>',sortVal:o=>o.missN},
-    {k:'_lead',t:'유도필요 제품',cls:'l',nosort:true,cell:o=>o.missing.length?o.missing.map(m=>`<span style="display:inline-block;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:700;background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe">${esc(m)}</span>`).join(' '):'<span style="color:#16a34a">— 전량 보유</span>'} ];
+  const mgrCols = cx.showMgr
+    ? [{k:'baseName',t:'기준제품 품명',cls:'l',w:'165px',cell:o=>esc(o.baseName||'-'),sortVal:o=>o.baseName||''},
+       {k:'_s',t:'영업관리',cls:'mgr',w:'138px',cell:o=>mgrBadge(mgrS(o.key)),sortVal:o=>mgrS(o.key)},
+       {k:'_t',t:'기술영업',cls:'mgr',w:'137px',cell:o=>mgrBadge(mgrT(o.key)),sortVal:o=>mgrT(o.key)}]
+    : [{k:'baseName',t:'기준제품 품명',cls:'l',w:'165px',cell:o=>esc(o.baseName||'-'),sortVal:o=>o.baseName||''},
+       {k:'baseSpec',t:'규격',cls:'l',w:'275px',cell:o=>esc(o.baseSpec||''),sortVal:o=>o.baseSpec||''}];
+  const cols=[ {k:'rank',t:'순위',cls:'rank',w:'32px',cell:(o,i)=>i+1},
+    {k:'label',t:'거래처',cls:'l',w:'286px',cell:o=>esc(o.label)+' '+catChip(o.key)},
+    ...mgrCols,
+    {k:'baseAmt',t:`기준매출(${unitLabel()})`,w:'92px',cell:o=>disp(o.baseAmt),sortVal:o=>o.baseAmt},
+    {k:'baseQty',t:'기준 출고수량',w:'78px',cell:o=>won(o.baseQty),sortVal:o=>o.baseQty},
+    {k:'baseLast',t:'마지막 출고일',w:'88px',cell:o=>fmtD(o.baseLast),sortVal:o=>+o.baseLast},
+    ...targets.map((t,i)=>({k:'t'+i,t:`<span title="${esc(t)}" style="display:block;white-space:normal;line-height:1.2">${esc(t)}</span>`,w:'68px',cell:o=>o.has[i]?'<span class="badge b-green">판매</span>':'<span class="badge b-red">미판매</span>',sortVal:o=>o.has[i]?1:0})),
+    {k:'missN',t:'미판매수',w:'38px',cell:o=>o.missN>0?`<b style="color:#dc2626">${o.missN}</b>`:'<span style="color:#16a34a">0</span>',sortVal:o=>o.missN},
+    {k:'_lead',t:'유도필요 제품',cls:'l',w:'165px',nosort:true,cell:o=>o.missing.length?o.missing.map(m=>`<span style="display:inline-block;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:700;background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe">${esc(m)}</span>`).join(' '):'<span style="color:#16a34a">— 전량 보유</span>'} ];
   const baseLbl=esc(base)+(baseSpec?(' / 규격 '+esc(baseSpec)):'');
   const note=`<b>${baseLbl}</b> 구매 거래처 <b>${totBase}곳</b> 중 · 🎯 대상 미판매(유도대상) <b style="color:#dc2626">${missAnyN}곳</b> · ✅ 전량 보유 <b style="color:#16a34a">${fullN}곳</b>. 대상: ${targets.map(t=>esc(t)).join(', ')}. <b>행 클릭</b> → 그 거래처 품목·규격별 매출. 상단 검색창에 거래처명을 넣으면 필터됩니다.`;
   render('제품 판매유도 (크로스셀)', `${periodLabel()} · 기준 "${baseLbl}"`, view, cols, 'missN', note,
     {controlsHtml:controls+chipHtml,
-     onMount:()=>{ bindControls(); $('#result').querySelectorAll('.cxChip').forEach(b=>b.addEventListener('click',()=>{ grab(); cx.filter=b.dataset.f; crossSell(); })); },
-     fullCsv:{label:'📥 엑셀(현재 표)',fn:()=>{ const aoa=[['거래처','영업관리','기술영업','기준매출','기준출고수량','마지막출고일',...targets,'미판매수','유도필요제품']]; view.forEach(o=>aoa.push([o.key,mgrS(o.key),mgrT(o.key),Math.round(o.baseAmt),o.baseQty,fmtD(o.baseLast),...o.has.map(h=>h?'판매':'미판매'),o.missN,o.missing.join(' / ')])); dlXLSX('cross_sell.xlsx','판매유도',aoa); }},
+     onMount:()=>{ bindControls(); $('#result').querySelectorAll('.cxChip').forEach(b=>b.addEventListener('click',()=>{ grab(); cx.filter=b.dataset.f; crossSell(); })); const _mt=$('#cxMgrToggle'); _mt&&_mt.addEventListener('click',()=>{ grab(); cx.showMgr=!cx.showMgr; saveSettings(); crossSell(); }); },
+     fullCsv:{label:'📥 엑셀(현재 표)',fn:()=>{ const aoa=[['거래처','기준제품 품명','규격','영업관리','기술영업','기준매출','기준출고수량','마지막출고일',...targets,'미판매수','유도필요제품']]; view.forEach(o=>aoa.push([o.key,o.baseName||'',o.baseSpec||'',mgrS(o.key),mgrT(o.key),Math.round(o.baseAmt),o.baseQty,fmtD(o.baseLast),...o.has.map(h=>h?'판매':'미판매'),o.missN,o.missing.join(' / ')])); dlXLSX('cross_sell.xlsx','판매유도',aoa); }},
      drill:{custom:row=>custProdDrill(row.label, periodRows().filter(r=>r.cust===row.key), ()=>crossSell(), {kw:base,specKw:baseSpec})}});
 }
 
@@ -4641,6 +4658,8 @@ function productDelta(){
   if(![3,6,9,12].includes(pd.win)) pd.win=3;
   if(!['name','codespec','cust'].includes(pd.by)) pd.by='name';
   if(!['amt','qty'].includes(pd.metric)) pd.metric='amt';
+  const PDELTA_MIX=['전용품','공용품','레이저','내부보강','유통/OEM','기타'];
+  if(!pd.mix||!['전체',...PDELTA_MIX].includes(pd.mix)) pd.mix='전체';
   if(pd.scopeCust===undefined) pd.scopeCust=null;
   if(pd.scopeProd===undefined) pd.scopeProd=null;
   // 기간: 현재일 기준 win개월 전을 기준일로, 동일 길이 이전/이후 비교
@@ -4662,6 +4681,7 @@ function productDelta(){
   let src=MF().filter(r=>{ const t=+r.d; return t>=beforeT && t<=afterEndT; });
   if(pd.scopeCust) src=src.filter(r=>r.cust===pd.scopeCust);
   if(pd.scopeProd){ if(pd.scopeProd.dim==='name') src=src.filter(r=>(r.name||'(미상)')===pd.scopeProd.key); else src=src.filter(r=>((r.code||'(미상)')+'│'+(r.spec||''))===pd.scopeProd.key); }
+  if(pd.mix!=='전체') src=src.filter(r=>mixCatKey(r)===pd.mix);
   const val=r=> pd.metric==='qty' ? (r.qty>0?r.qty:0) : amtOf(r);
   const keyOf= eff==='cust'?(r=>r.cust): eff==='name'?(r=>r.name||'(미상)'): (r=>(r.code||'(미상)')+'│'+(r.spec||''));
   const labelOf= eff==='cust'?(r=>r.cust): eff==='name'?(r=>r.name||'(미상)'): (r=>(r.code||'(미상)')+' '+(r.name||'')+(r.spec?' / '+r.spec:''));
@@ -4691,9 +4711,11 @@ function productDelta(){
     {k:'pct',t:'증감%',cell:o=>{const c=o.pct>0?'#16a34a':o.pct<0?'#dc2626':'#64748b';return `<span style="color:${c};font-weight:600">${o.pct>0?'+':''}${o.pct.toFixed(1)}%</span>`;},sortVal:o=>o.pct} ];
   const winSeg=`<div class="seg" id="pdWin">${[[3,'최근 3개월'],[6,'최근 6개월'],[9,'최근 9개월'],[12,'최근 1년']].map(([v,l])=>`<button data-v="${v}" class="${pd.win===v?'on':''}" style="${pd.win===v?'background:#b45309;color:#fff;border-color:#b45309':'background:#fff7ed;color:#b45309;border-color:#fed7aa'}">${l}</button>`).join('')}</div>`;
   const bySeg=`<div class="seg" id="pdBy">${[['name','품목군'],['codespec','제품/규격'],['cust','거래처']].map(([v,l])=>`<button data-v="${v}" class="${pd.by===v?'on':''}" style="${pd.by===v?'background:#0d9488;color:#fff;border-color:#0d9488':'background:#f0fdfa;color:#0d9488;border-color:#99f6e4'}">${l}</button>`).join('')}</div>`;
+  const mixColors={'전용품':'#2563eb','공용품':'#059669','레이저':'#ea580c','내부보강':'#7c3aed','유통/OEM':'#0891b2','기타':'#64748b'};
+  const mixSeg=`<div class="seg" id="pdMix">${['전체',...PDELTA_MIX].map(v=>{const on=pd.mix===v,co=mixColors[v]||'#1e3a5f';return `<button data-v="${v}" class="${on?'on':''}" style="${on?'background:'+co+';color:#fff;border-color:'+co:'background:#fff;color:'+co+';border-color:'+co+'55'}">${v}</button>`;}).join('')}</div>`;
   const mSeg=`<div class="seg" id="pdM">${[['amt','매출액'],['qty','수량']].map(([v,l])=>`<button data-v="${v}" class="${pd.metric===v?'on':''}" style="${pd.metric===v?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':'background:#eef2f8;color:#1e3a5f;border-color:#c7d2fe'}">${l}</button>`).join('')}</div>`;
   const inScope=!!(pd.scopeCust||pd.scopeProd);
-  const controls=`<div class="ctrlbar" style="flex-wrap:wrap;gap:8px"><b style="font-size:12px">기간</b> ${winSeg}${inScope?'':` <b style="font-size:12px;margin-left:4px">기준</b> ${bySeg}`} <b style="font-size:12px;margin-left:4px">보기</b> ${mSeg}<span class="sub2">기준일 <b style="color:#b45309">${splitLabel}</b> · 이전 ${winLabel}(<span style="color:#dc2626">빨강</span>) vs 이후 ${winLabel}(<span style="color:#2563eb">파랑</span>)</span></div>`;
+  const controls=`<div class="ctrlbar" style="flex-wrap:wrap;gap:8px"><b style="font-size:12px">기간</b> ${winSeg}${inScope?'':` <b style="font-size:12px;margin-left:4px">기준</b> ${bySeg}`} <b style="font-size:12px;margin-left:4px">품목구분</b> ${mixSeg} <b style="font-size:12px;margin-left:4px">보기</b> ${mSeg}<span class="sub2">기준일 <b style="color:#b45309">${splitLabel}</b> · 이전 ${winLabel}(<span style="color:#dc2626">빨강</span>) vs 이후 ${winLabel}(<span style="color:#2563eb">파랑</span>)</span></div>`;
   const totB=arr.reduce((a,o)=>a+o.before,0), totA=arr.reduce((a,o)=>a+o.after,0);
   const hint = inScope
     ? `<b>${esc(scopeLabel)}</b> 의 ${eff==='cust'?'거래처별':'제품/규격별'} 증감입니다. 행 클릭으로 목록 복귀하려면 좌측 상단 ← 버튼을 누르세요.`
@@ -4707,6 +4729,7 @@ function productDelta(){
     (()=>{ const _o={controlsHtml:controls,onMount:()=>{
       $('#result').querySelectorAll('#pdWin button').forEach(b=>b.addEventListener('click',()=>{ pd.win=+b.dataset.v; productDelta(); }));
       $('#result').querySelectorAll('#pdBy button').forEach(b=>b.addEventListener('click',()=>{ pd.by=b.dataset.v; pd.scopeCust=null; pd.scopeProd=null; productDelta(); }));
+      $('#result').querySelectorAll('#pdMix button').forEach(b=>b.addEventListener('click',()=>{ pd.mix=b.dataset.v; productDelta(); }));
       $('#result').querySelectorAll('#pdM button').forEach(b=>b.addEventListener('click',()=>{ pd.metric=b.dataset.v; productDelta(); }));
     }};
       if(!inScope){ if(eff==='cust'){ _o.drill={custom:row=>{ pd.scopeCust=row.key; productDelta(); }}; } else { _o.drill={custom:row=>{ pd.scopeProd={dim:eff, key:row.key, label:row.label}; productDelta(); }}; } }
