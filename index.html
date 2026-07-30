@@ -3453,10 +3453,12 @@ function scrapSales(){
   state.sortKey=null; state._search='';
   const rows=periodRows().filter(isScrap);
   const m=new Map(); rows.forEach(r=>{ m.set(r.ym,(m.get(r.ym)||0)+rawAmtOf(r)); });
-  const arr=[...m.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([ym,amt])=>({key:ym,label:ym,ym,amt,divi:amt*SCRAP_FIRE_RATE,pd:amt*SCRAP_PD_RATE}));
+  const priceByYm=lastScrapSalePrices(rows);
+  const arr=[...m.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([ym,amt])=>({key:ym,label:ym,ym,amt,price:(priceByYm.get(ym)||{}).value||0,divi:amt*SCRAP_FIRE_RATE,pd:amt*SCRAP_PD_RATE}));
   const tot=arr.reduce((a,o)=>a+o.amt,0);
   const cols=[ {k:'label',t:'월',cls:'l',cell:o=>o.ym},
     {k:'amt',t:`고철 매출(${unitLabel()})`,cell:o=>disp(o.amt),sortVal:o=>o.amt},
+    {k:'price',t:'고철단가',cell:o=>`고철 ${won(o.price||0)}원/kg`,sortVal:o=>o.price||0},
     {k:'divi',t:'방화문부자재 80%',cell:o=>`<b style="color:var(--navy)">${disp(o.divi)}</b>`,sortVal:o=>o.divi},
     {k:'pd',t:'PD사업부 20%',cell:o=>`<b style="color:#7c3aed">${disp(o.pd)}</b>`,sortVal:o=>o.pd} ];
   render('부산물(고철) 월별 판매', `${periodLabel()} · ${won(arr.length)}개월 · 고철 원매출 ${won(tot)}원 → 방화문부자재 적용 ${won(Math.round(tot*SCRAP_FIRE_RATE))} / PD 배분 ${won(Math.round(tot*SCRAP_PD_RATE))}`, arr, cols, 'label',
@@ -3464,6 +3466,15 @@ function scrapSales(){
     {total:{label:'합 계',amt:tot,cells:{divi:disp(tot*SCRAP_FIRE_RATE),pd:disp(tot*SCRAP_PD_RATE)}}});
 }
 function unitPrice(r){ return r.price>0? r.price : (r.qty? r.supply/r.qty : 0); }
+function lastScrapSalePrices(rows){
+  const out=new Map();
+  (rows||[]).forEach(r=>{
+    if(!isScrapSale(r)||!r.ym)return;
+    const ts=r.d instanceof Date?r.d.getTime():new Date(r.d).getTime(), old=out.get(r.ym);
+    if(!old||ts>=old.ts)out.set(r.ym,{value:Math.max(0,unitPrice(r)||0),vendor:String(r.cust||''),ts});
+  });
+  return out;
+}
 function modeOf(ps){ const fr={}; let mode=0,mc=0; ps.forEach(p=>{ const k=Math.round(p); if(k<=0)return; fr[k]=(fr[k]||0)+1; if(fr[k]>mc||(fr[k]===mc&&k>mode)){mc=fr[k];mode=k;} }); return {mode,mc}; }
 function prodCatalog(){ const m=new Map(); CUR.forEach(r=>{ const pk=(r.code||'(미상)')+'│'+(r.spec||''); let o=m.get(pk); if(!o){o={pk,code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',prices:[]};m.set(pk,o);} const up=unitPrice(r); if(up>0)o.prices.push(up); if(!o.name&&r.name)o.name=r.name; }); return [...m.values()].map(o=>{ const {mode}=modeOf(o.prices); return {pk:o.pk,code:o.code,name:o.name,spec:o.spec,price:mode,label:o.code+' '+o.name+(o.spec?' / '+o.spec:'')}; }).sort((a,b)=>a.label.localeCompare(b.label,'ko')); }
 function custCatalog(){ return [...new Set(CUR.map(r=>r.cust))].sort((a,b)=>a.localeCompare(b,'ko')); }
@@ -6010,7 +6021,7 @@ function dlCSV(fn,header,rows){ dlXLSX(fn.replace(/\.csv$/i,'.xlsx'),'Sheet1',[h
 
 function dlXLSX(fn,sheet,aoa){ const ws=XLSX.utils.aoa_to_sheet(aoa); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,sheet); XLSX.writeFile(wb,fn); }
 function importXLSX(cb){ const inp=document.createElement('input'); inp.type='file'; inp.accept='.xlsx,.xls'; inp.onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ const wb=XLSX.read(new Uint8Array(r.result),{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]]; cb(XLSX.utils.sheet_to_json(ws,{header:1,defval:''})); }catch(err){ console.error(err); uiConfirm('파일을 읽지 못했습니다: '+(err.message||err)); } }; r.readAsArrayBuffer(f); }; inp.click(); }
-function fullBackupExport(){ const data={headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,workdays:state.workdays,bep:state.bep,fcNewCusts:state.fc.newCusts,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,syncLog:state.syncLog,retainMemo:state.retainMemo,retainMemoAt:state.retainMemoAt,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,inv:state.inv,pd:state.pd,kvcExclProd:state.kvcExclProd,gsync:state.gsync,weekly:state.weekly,_exportedAt:new Date().toISOString()}; const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='settings_backup.json'; a.click(); URL.revokeObjectURL(a.href); }
+function fullBackupExport(){ const data={headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,workdays:state.workdays,bep:state.bep,fcNewCusts:state.fc.newCusts,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,syncLog:state.syncLog,retainMemo:state.retainMemo,retainMemoAt:state.retainMemoAt,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,inv:state.inv,pd:state.pd,kvcExclProd:state.kvcExclProd,materialDB:state.materialDB,materialBase:state.materialBase,gsync:state.gsync,weekly:state.weekly,_exportedAt:new Date().toISOString()}; const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='settings_backup.json'; a.click(); URL.revokeObjectURL(a.href); }
 function fullBackupImport(){ importJSON(d=>{ if(d.headcount!=null)state.headcount=d.headcount; if(d.headMonthly)state.headMonthly=d.headMonthly; if(d.headYearDefault)state.headYearDefault=d.headYearDefault; if(d.cmgrPrimary)state.cmgrPrimary=d.cmgrPrimary; if(d.cmgrKey)state.cmgrKey=d.cmgrKey; if(d.mgrOverride)state.mgrOverride=d.mgrOverride; if(d.fcPctAt)state.fc.pctAt=d.fcPctAt; if(d.fcOverrideAt)state.fc.overrideAt=d.fcOverrideAt; if(d.fcAddPctAt)state.fc.addPctAt=d.fcAddPctAt; if(d.monthIssueAt)state.monthIssueAt=d.monthIssueAt; if(d.fcPct)state.fc.pct=d.fcPct; if(d.fcOverride)state.fc.override=d.fcOverride; if(d.fcAddPct)state.fc.addPct=d.fcAddPct; if(d.workdays)state.workdays=d.workdays; if(d.bep!=null)state.bep=d.bep; if(d.fcNewCusts)state.fc.newCusts=d.fcNewCusts; if(d.clsOverride)state.clsOverride=d.clsOverride; if(d.gradeOverride)state.gradeOverride=d.gradeOverride; if(d.gbunOverride)state.gbunOverride=d.gbunOverride; if(d.priceSets)state.priceSets=mergePriceSets(state.priceSets||[], d.priceSets); if(d.comp)state.comp=d.comp; if(d.editLog)state.editLog=d.editLog; if(d.custProdOverride)state.fc.custProdOverride=d.custProdOverride; if(d.fcProdOverride)state.fc.prodOverride=d.fcProdOverride; if(d.fcProdAddPct)state.fc.prodAddPct=d.fcProdAddPct; if(d.fcNewProds)state.fc.newProds=d.fcNewProds; if(d.fcNewLines)state.fc.newLines=d.fcNewLines; if(d.fcCustMemo)state.fc.custMemo=d.fcCustMemo; if(d.fcProdMemo)state.fc.prodMemo=d.fcProdMemo; if(d.fcNotesHtml!=null)state.fc.notesHtml=d.fcNotesHtml; if(d.fcNotesSales!=null)state.fc.notesSales=d.fcNotesSales; if(d.fcNotesTech!=null)state.fc.notesTech=d.fcNotesTech; if(d.fcNotesMeta)state.fc.notesMeta={...state.fc.notesMeta,...d.fcNotesMeta}; if(d.fcExclCust)state.fc.exclCust=d.fcExclCust; if(d.fcTargetExclCust)state.fc.targetExclCust=d.fcTargetExclCust; if(d.fcExclProd)state.fc.exclProd=d.fcExclProd; if(d.fcShowExclRows!=null)state.fc.showExclRows=!!d.fcShowExclRows; if(d.fcAnnualHist)state.fc.annualHist={...state.fc.annualHist,...d.fcAnnualHist}; if(d.inv)state.inv={...state.inv,...d.inv}; if(d.syncLog)state.syncLog={...state.syncLog,...d.syncLog}; if(d.pd)state.pd={...state.pd,...d.pd}; if(d.kvcExclProd)state.kvcExclProd=d.kvcExclProd; if(d.retainMemo)state.retainMemo=d.retainMemo; if(d.retainMemoAt)state.retainMemoAt=d.retainMemoAt; if(d.retainExcl)state.retainExcl=d.retainExcl; if(d.retainVisit)state.retainVisit=d.retainVisit; if(d.cmgrExcl)state.cmgrExcl=d.cmgrExcl; if(d.custInfo)state.custInfo=d.custInfo; if(d.monthIssue)state.monthIssue=d.monthIssue; if(d.weekly&&typeof d.weekly==='object'){ state.weekly=state.weekly||{}; ['issues','notes','commonPlans','newCustomerNotes'].forEach(function(kk){ var w=d.weekly[kk]; if(w&&typeof w==='object'){ state.weekly[kk]=state.weekly[kk]||{}; for(var pk in w){ if(state.weekly[kk][pk]&&typeof state.weekly[kk][pk]==='object'&&w[pk]&&typeof w[pk]==='object'){ Object.assign(state.weekly[kk][pk], w[pk]); } else { state.weekly[kk][pk]=w[pk]; } } } }); if(d.weekly.issueAuthor&&!state.weekly.issueAuthor)state.weekly.issueAuthor=d.weekly.issueAuthor; } if(d.gsync){ state.gsync=state.gsync||{}; for(const _k in d.gsync){ if(_k!=='user'&&_k!=='url') state.gsync[_k]=d.gsync[_k]; } } if(typeof buildHeadMonthly==='function')buildHeadMonthly(); saveSettings(); state._mgrCountsCache=null; if(typeof buildSummary==='function')buildSummary(); if(state.act&&CUR.length)runAct(); const gu=$('#gsUrl');if(gu&&state.gsync)gu.value=state.gsync.url||''; const gk=$('#gsKey');if(gk&&state.gsync)gk.value=state.gsync.key||''; const bx=$('#baseInfoBox'); if(bx&&bx.classList.contains('open')&&typeof baseInfo==='function')baseInfo(); uiConfirm('전체 설정 백업을 복원했습니다.'); }); }
 
 function gsMerge(d,skipRender){ if(!d)return;
@@ -6614,12 +6625,45 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
   }
   function getUrl(c){return c.url+(c.url.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(c.key)+'&_t='+Date.now()}
   function responseData(d){
-    if(hasOwn(d,'data'))return d.data&&typeof d.data==='object'?d.data:{};
-    var out=clone(d)||{};['ok','error','serverTime','jsonChars','revision','schema','retryable','retryAfterMs','requestId','mgrOverride','gradeOverride','clsOverride'].forEach(function(k){if(k!=='mgrOverride'&&k!=='gradeOverride'&&k!=='clsOverride')delete out[k]});return out;
+    var out;
+    if(hasOwn(d,'data'))out=d.data&&typeof d.data==='object'?clone(d.data):{};
+    else{out=clone(d)||{};['ok','error','serverTime','jsonChars','revision','schema','retryable','retryAfterMs','requestId','mgrOverride','gradeOverride','clsOverride'].forEach(function(k){if(k!=='mgrOverride'&&k!=='gradeOverride'&&k!=='clsOverride')delete out[k]});}
+    /* The manufacturing-cost app stores the shared material area below bomCostV1. */
+    var root=out&&out.bomCostV1;
+    if(root&&typeof root==='object'){
+      if(root.materialDB!==undefined)out.materialDB=clone(root.materialDB);
+      if(root.base&&typeof root.base==='object'&&root.base.materialPrices!==undefined){
+        out.materialBase=out.materialBase&&typeof out.materialBase==='object'?out.materialBase:{};
+        out.materialBase.materialPrices=clone(root.base.materialPrices);
+        if(root.base.scrapPrice!==undefined)out.materialBase.scrapPrice=clone(root.base.scrapPrice);
+      }
+    }
+    return out||{};
   }
   async function getRemote(c){var d=await requestJson(getUrl(c),{method:'GET'},35000,4);return {data:responseData(d),meta:d}}
   async function postPatch(c,payload,tag){
-    var body={action:'save',key:c.key,data:payload,clientId:String(state.gsync.user||'사용자'),clientVersion:APP_VERSION,requestId:(tag||'save')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)};
+    var bodyPayload=clone(payload)||{};
+    /* Preserve the full shared root before writing the material-only change. */
+    if(hasOwn(bodyPayload,'materialDB')||hasOwn(bodyPayload,'materialBase')){
+      var rootPatch={};
+      try{
+        var rootResp=await requestJson(getUrl(c),{method:'GET'},35000,2),rootData=responseData(rootResp);
+        if(rootData&&rootData.bomCostV1&&typeof rootData.bomCostV1==='object')rootPatch=clone(rootData.bomCostV1)||{};
+      }catch(_){ }
+      if(hasOwn(bodyPayload,'materialDB')){
+        var rootMaterial=rootPatch.materialDB&&typeof rootPatch.materialDB==='object'?rootPatch.materialDB:{};
+        if(typeof window.mergeMaterialSyncV98==='function')rootMaterial=window.mergeMaterialSyncV98(rootMaterial,bodyPayload.materialDB);else if(typeof gsApplyPatch==='function')gsApplyPatch(rootMaterial,bodyPayload.materialDB);else rootMaterial=clone(bodyPayload.materialDB);
+        rootPatch.materialDB=rootMaterial;
+      }
+      if(hasOwn(bodyPayload,'materialBase')){
+        var mb=bodyPayload.materialBase&&typeof bodyPayload.materialBase==='object'?bodyPayload.materialBase:{};
+        var rootBase=rootPatch.base&&typeof rootPatch.base==='object'?rootPatch.base:{};
+        if(typeof gsApplyPatch==='function')gsApplyPatch(rootBase,mb);else{rootBase.materialPrices=clone(mb.materialPrices||{});if(hasOwn(mb,'scrapPrice'))rootBase.scrapPrice=clone(mb.scrapPrice)}
+        rootPatch.base=rootBase;
+      }
+      bodyPayload.bomCostV1=rootPatch;
+    }
+    var body={action:'save',key:c.key,data:bodyPayload,clientId:String(state.gsync.user||'사용자'),clientVersion:APP_VERSION,requestId:(tag||'save')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)};
     var d=await requestJson(c.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)},50000,4);return {data:responseData(d),meta:d};
   }
   function patchSatisfied(full,patch){
@@ -6723,6 +6767,413 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
   };
   const nativeLoad=window.gsLoad;
   if(typeof nativeLoad==='function')window.gsLoad=async function(silent){const ok=await nativeLoad(silent);if(ok){const issues=state.weekly&&state.weekly.issues||{},count=Object.values(issues).reduce((n,b)=>n+(b&&typeof b==='object'?Object.keys(b).length:0),0),st=document.getElementById('gsStatus');if(st&&st.style.color!=='rgb(220, 38, 38)')st.textContent+=` · 주간이슈 ${count}건`; }return ok;};
+})();
+</script>
+
+<!--<style id="sales-material-price-v97-style">
+#view-matprice{width:100%;max-width:1680px;margin:0 auto}
+#view-matprice>.note{margin:0 0 10px;padding:10px 12px;background:#f5f9ff;border-left:4px solid #2f6fb0;border-radius:7px;color:#5f6f85;font-size:11px;line-height:1.5}
+#view-matprice>.card{margin:0 0 14px;border:1px solid #dbe2ec;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 1px 4px rgba(20,40,74,.05)}
+#view-matprice .ch{display:flex;align-items:center;gap:8px;padding:11px 13px;background:#fff;color:#16284a;border-bottom:1px solid #e1e7f0;font-size:13px;font-weight:900}
+#view-matprice .cb{padding:12px}
+#view-matprice .material-price-tools{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:11px 12px;background:#f7f9fc;border:1px solid #e2e8f1;border-radius:12px}
+#view-matprice .mp-year-picker{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+#view-matprice .mp-year-picker>span{font-size:11.5px;font-weight:800;color:#5c6b7f;white-space:nowrap}
+#view-matprice .mp-year-picker select{height:38px;min-width:104px;padding:0 32px 0 12px;border:1px solid #cfd8e6;border-radius:9px;background:#fff;color:#16284a;font-size:13px;font-weight:800}
+#view-matprice .mp-tool-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-left:auto}
+#view-matprice .mp-btn{height:38px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:9px;padding:0 13px;border:1px solid transparent;font-size:12px;font-weight:900;white-space:nowrap;box-shadow:0 1px 3px rgba(20,40,74,.08);cursor:pointer;transition:.15s}
+#view-matprice .mp-btn:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(20,40,74,.12)}
+#view-matprice .mp-btn .mp-ico{font-size:14px;font-weight:900;line-height:1}
+#view-matprice .mp-btn-primary{background:linear-gradient(135deg,#245f9d,#183d70);color:#fff;border-color:#183d70}
+#view-matprice .mp-btn-market{background:linear-gradient(135deg,#fff5dd,#ffe7aa);color:#7d4d00;border-color:#ebc66f}
+#view-matprice .mp-btn-export{background:#fff;color:#167544;border-color:#9fcfb5}
+#view-matprice .mp-btn-import{background:#fff;color:#245f9d;border-color:#acc5e2}
+#view-matprice .material-price-box{border:0;background:#fff;overflow:visible}
+#view-matprice .mp-grade-stack{display:flex;flex-direction:column;gap:14px}
+#view-matprice .mp-grade-card{border:1px solid #dbe2ec;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 1px 4px rgba(20,40,74,.05)}
+#view-matprice .mp-grade-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 13px;background:#f8fafc;border-bottom:1px solid #e1e7f0}
+#view-matprice .mp-grade-head .mp-grade-name{font-size:15px;font-weight:900;color:#16284a}
+#view-matprice .mp-grade-head .mp-grade-desc{font-size:11px;color:#6b7890;font-weight:700}
+#view-matprice .mp-grade-head .mp-grade-current{font-size:11.5px;color:#8b6a6a;font-weight:700;background:#fff8f8;border:1px solid #f3dede;border-radius:7px;padding:5px 8px}
+#view-matprice .mp-grade-head .mp-grade-current b{color:#a23d3d;font-size:13px}
+#view-matprice .mp-grade-actions{margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#view-matprice .mp-grade-actions input{width:92px;border:1px solid #e3c882;border-radius:7px;padding:6px 7px;text-align:right;background:#fffaf0;font-weight:900;color:#855600}
+#view-matprice .mp-grade-actions button{border:1px solid #b8c9de;border-radius:7px;padding:6px 9px;background:#fff;color:#234e85;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer}
+#view-matprice .mp-grade-actions button.apply{border-color:#a8d6bc;background:#eaf7ef;color:#0b7a43}
+#view-matprice .mp-grade-actions button:hover{background:#2f6fb0;color:#fff;border-color:#2f6fb0}
+#view-matprice .mp-grade-actions button.apply:hover{background:#1e9e5a;border-color:#1e9e5a;color:#fff}
+#view-matprice .mp-grade-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#view-matprice .mp-grade-table{width:100%;min-width:1120px;border-collapse:collapse;table-layout:fixed}
+#view-matprice .mp-grade-table th{position:static;background:#4b5563;color:#fff;padding:7px 5px;border-right:1px solid #677180;font-size:10.5px;text-align:center;white-space:nowrap}
+#view-matprice .mp-grade-table th:first-child{width:210px;text-align:left;padding-left:10px}
+#view-matprice .mp-grade-table th:last-child{width:38px}
+#view-matprice .mp-grade-table td{padding:4px;border-right:1px solid #e4e9f0;border-bottom:1px solid #edf1f6;background:#fff;height:36px}
+#view-matprice .mp-grade-table input{width:100%;height:29px;border:1px solid #dce3ec;border-radius:5px;padding:5px 6px;text-align:right;font-size:11.5px;background:#fff;color:#1b2435;font-family:inherit}
+#view-matprice .mp-grade-table input.mp-vendor{text-align:left;font-weight:700;color:#25354d}
+#view-matprice .mp-grade-table td.mp-month-min{background:#fff5c7}
+#view-matprice .mp-grade-table td.mp-month-min input{background:#fff1a8;border-color:#e1b936;color:#745000;font-weight:900;box-shadow:inset 0 0 0 1px rgba(225,185,54,.15)}
+#view-matprice .mp-vendor-inline{display:flex;align-items:center;gap:4px;width:100%}
+#view-matprice .mp-vendor-inline .mp-vendor{min-width:0;flex:1 1 auto;width:auto;height:33px}
+#view-matprice .mp-row-icon,#view-matprice .mp-apply-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;padding:0;border-radius:7px;font-family:inherit;font-weight:900;line-height:1;box-shadow:none}
+#view-matprice .mp-row-icon{width:29px;height:29px;border:1px solid #b9cbe0;background:#fff;color:#245f9d;font-size:17px;cursor:pointer}
+#view-matprice .mp-row-add:hover{background:#245f9d;color:#fff}
+#view-matprice .mp-row-del{border-color:#efc8c8;color:#b42323;font-size:16px}
+#view-matprice .mp-row-del:hover{background:#b42323;color:#fff}
+#view-matprice .mp-card-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 11px;border-top:1px solid #e4e9f0;background:#fbfcfe}
+#view-matprice .mp-card-foot .mp-card-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#view-matprice .mp-card-foot .mp-low-legend{margin-left:auto}
+#view-matprice .mp-trend-wrap[hidden]{display:none}
+#view-matprice .mp-trend-toggle{border:1px solid #a9c0df;border-radius:7px;background:#f5f9ff;color:#245f9d;padding:7px 11px;font-weight:900;font-size:11.5px;cursor:pointer}
+#view-matprice .mp-trend-toggle:hover{background:#245f9d;color:#fff;border-color:#245f9d}
+#view-matprice .mp-card-foot .mp-add-vendor{border:1px dashed #9bb9db;border-radius:7px;background:#fff;color:#245f9d;padding:7px 12px;font-weight:900;font-size:11.5px;cursor:pointer}
+#view-matprice .mp-card-foot .mp-low-legend{font-size:10.5px;color:#796018;background:#fff3bd;border:1px solid #ead16e;border-radius:6px;padding:4px 8px;font-weight:800}
+#view-matprice .mp-trend{margin:9px 11px 11px;padding:9px 10px;background:#fafbfd;border:1px solid #e8edf4;border-radius:9px}
+#view-matprice .mp-trend-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-size:10.5px;color:#6b7890;margin-bottom:3px}
+#view-matprice .mp-trend-head b{font-size:12px;color:#16284a}
+#view-matprice .mp-trend svg{display:block;width:100%;height:auto}
+#view-matprice .mp-no-trend{margin:9px 11px 11px;padding:14px;text-align:center;background:#fafbfd;border:1px dashed #dbe2ec;border-radius:9px;color:#7b8798;font-size:11px}
+#view-matprice .mp-special-card .mp-grade-head{background:#fffaf0}
+#view-matprice .mp-special-card.scrap .mp-grade-name{color:#8a5a00}
+#view-matprice .mp-extra-toggle{width:100%;display:flex;align-items:center;gap:10px;padding:11px 13px;border:0;border-bottom:1px solid #e1e7f0;background:#fffaf0;color:inherit;text-align:left;font-family:inherit;cursor:pointer}
+#view-matprice .mp-extra-toggle:hover{background:#fff7e6}
+#view-matprice .mp-extra-toggle .mp-grade-name{font-size:15px;font-weight:900;color:#16284a}
+#view-matprice .mp-extra-toggle .mp-grade-desc{font-size:11px;color:#6b7890;font-weight:700}
+#view-matprice .mp-extra-toggle-note{margin-left:auto;font-size:10.5px;color:#8a5a00;font-weight:800}
+#view-matprice .mp-extra-arrow{font-size:16px;color:#8a5a00;font-weight:900;line-height:1}
+#view-matprice .mp-extra-body[hidden]{display:none}
+#view-matprice .mp-extra-table{width:100%;border-collapse:collapse;table-layout:fixed}
+#view-matprice .mp-extra-table th{background:#4b5563;color:#fff;padding:8px;text-align:left;font-size:11px}
+#view-matprice .mp-extra-table th:nth-child(1){width:180px}#view-matprice .mp-extra-table th:nth-child(2){width:150px}#view-matprice .mp-extra-table th:nth-child(4){width:46px;text-align:center}
+#view-matprice .mp-extra-table td{padding:6px 8px;border-bottom:1px solid #edf1f6}
+#view-matprice .mp-extra-table input{width:100%;border:1px solid #dce3ec;border-radius:6px;padding:7px 8px;font-family:inherit;font-size:12px}
+#view-matprice .mp-extra-table input.mp-extra-amount{text-align:right;font-weight:900;color:#1b4d80}
+#view-matprice .mp-one-line,#view-matprice .mp-market-one-line{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;white-space:nowrap}
+#view-matprice .mp-one-line b{font-size:12.5px;color:#16284a;font-variant-numeric:tabular-nums}
+#view-matprice .mp-market-one-line input{width:82px!important;min-width:0;height:33px!important;text-align:right!important}
+#view-matprice .mp-apply-icon{width:29px;height:29px;border:1px solid #92c7ab;background:#edf8f2;color:#167544;font-size:15px;cursor:pointer}
+#view-matprice .mp-apply-icon:hover{background:#1e9e5a;color:#fff;border-color:#1e9e5a}
+#view-matprice .mp-apply-icon.is-applied{background:#168a4f;color:#fff;border-color:#168a4f;box-shadow:0 0 0 3px rgba(22,138,79,.15)}
+#view-matprice .market-apply.is-applied{background:#c77b00;color:#fff;border-color:#c77b00}
+@media(max-width:900px){#view-matprice .mp-grade-actions{margin-left:0;width:100%}#view-matprice .mp-grade-table{min-width:1050px}#view-matprice .material-price-tools{align-items:stretch}#view-matprice .mp-tool-actions{margin-left:0}}
+</style>
+<script id="sales-material-price-v97-script">
+(function(){
+  'use strict';
+  var MAT_KEY='dbfastec_material_price_history_v1';
+  var MATERIALS=[
+    {k:'EGI',n:'EGI',desc:'?꾧린?꾩뿰?꾧툑媛뺥뙋',p:1100},
+    {k:'HGI',n:'HGI',desc:'?⑹쑖?꾩뿰?꾧툑媛뺥뙋',p:1100},
+    {k:'PO',n:'PO',desc:'?곗꽭媛뺥뙋',p:1030},
+    {k:'CR',n:'CR',desc:'?됱뿰媛뺥뙋',p:1300},
+    {k:'STS201',n:'STS201',desc:'?ㅽ뀒?몃━??201',p:1400},
+    {k:'STS304',n:'STS304',desc:'?ㅽ뀒?몃━??304',p:3800},
+    {k:'STS430',n:'STS430',desc:'?ㅽ뀒?몃━??430',p:1600}
+  ];
+  var EXTRA_DEFAULTS=[{name:'誘몃땲??媛怨?,amount:'',note:''},{name:'?뚰룺媛怨?,amount:'',note:''},{name:'?먯옱 ?뚮웾',amount:'',note:''}];
+  function copy(v){try{return JSON.parse(JSON.stringify(v))}catch(_){return v}}
+  function escM(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function numM(v){var n=Number(String(v==null?'':v).replace(/[, ]/g,''));return isFinite(n)?n:0}
+  function wonM(v){return Math.round(numM(v)).toLocaleString('ko-KR')}
+  function nowText(){var d=new Date(),p=function(n){return String(n).padStart(2,'0')};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())}
+  function hashM(s){s=String(s||'');var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
+  function rowId(y,k,r,i){return String(r&&r._id||('mr_'+hashM(y+'|'+k+'|'+i+'|'+String(r&&r.vendor||''))))}
+  function extraId(r,i){return String(r&&r._id||('ex_'+hashM(String(r&&r.name||'')+'|'+i)))}
+  function plain(v){return v&&typeof v==='object'&&!Array.isArray(v)}
+  function readLocal(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(_){return null}}
+  function ensureState(){
+    if(!state.materialDB||!plain(state.materialDB)||!plain(state.materialDB.years)){
+      var d=readLocal(MAT_KEY);state.materialDB=d&&plain(d)&&plain(d.years)?d:{years:{},marketPrices:{},updated:'',_cellUpdated:{},_rowDeleted:{},_scrapManual:{},_scrapManualVendor:{},_scrapAutoDeleted:{}};
+    }
+    if(!state.materialBase||!plain(state.materialBase)){
+      var b=readLocal('dbfastec_cost_base_v2')||{};state.materialBase={materialPrices:copy(b.materialPrices||{}),scrapPrice:b.scrapPrice==null?400:b.scrapPrice};
+    }
+    var db=state.materialDB;
+    if(!plain(db.years))db.years={};if(!plain(db.marketPrices))db.marketPrices={};
+    if(!plain(db._cellUpdated))db._cellUpdated={};if(!plain(db._rowDeleted))db._rowDeleted={};
+    if(!plain(db._extraUpdated))db._extraUpdated={};if(!plain(db._extraDeleted))db._extraDeleted={};if(!plain(db._scrapManual))db._scrapManual={};if(!plain(db._scrapManualVendor))db._scrapManualVendor={};if(!plain(db._scrapAutoDeleted))db._scrapAutoDeleted={};
+    if(!Array.isArray(db.egiExtras))db.egiExtras=copy(EXTRA_DEFAULTS);
+    db.egiExtras.forEach(function(r,i){if(!plain(r))r=db.egiExtras[i]={};if(!r._id)r._id=extraId(r,i);if(r.name==null)r.name='';if(r.amount==null)r.amount='';if(r.note==null)r.note='';});
+    Object.keys(db.years).forEach(function(y){var gy=db.years[y];if(!plain(gy))gy=db.years[y]={};Object.keys(gy).forEach(function(k){var rows=Array.isArray(gy[k])?gy[k]:[];gy[k]=rows;rows.forEach(function(r,i){if(!plain(r))r=rows[i]={};if(!r._id)r._id=rowId(y,k,r,i);if(!Array.isArray(r.m))r.m=[];r.m=r.m.slice(0,12);while(r.m.length<12)r.m.push('');if(r.vendor==null)r.vendor='';});});
+    });
+    state.materialBase.materialPrices=plain(state.materialBase.materialPrices)?state.materialBase.materialPrices:{};
+    return db;
+  }
+  function basePrice(k){ensureState();var p=state.materialBase.materialPrices[k];return p!==undefined&&p!==''?numM(p):(MATERIALS.find(function(x){return x.k===k})||{}).p||0}
+  function saveBaseState(){
+    ensureState();var raw=readLocal('dbfastec_cost_base_v2')||{};raw.materialPrices=copy(state.materialBase.materialPrices||{});raw.scrapPrice=numM(state.materialBase.scrapPrice||0);
+    try{localStorage.setItem('dbfastec_cost_base_v2',JSON.stringify(raw))}catch(_){ }if(typeof saveSettings==='function')saveSettings();
+  }
+  function touch(db,y,k,row,field){db._cellUpdated[String(y)+'|'+String(k)+'|'+String(row&&row._id||'')+'|'+field]=Date.now()}
+  function saveMat(stamp){
+    var db=ensureState();if(stamp)db.updated=nowText();try{localStorage.setItem(MAT_KEY,JSON.stringify(db))}catch(_){ }
+    state.materialDB=db;if(typeof saveSettings==='function')saveSettings();try{window.dispatchEvent(new CustomEvent('materialPriceChanged'))}catch(_){ }
+  }
+  function year(){var e=document.getElementById('mp-year');return String(e&&e.value||new Date().getFullYear())}
+  function avg(rows,mi){var a=(rows||[]).map(function(r){return numM(r.m&&r.m[mi])}).filter(function(v){return v>0});return a.length?a.reduce(function(x,v){return x+v},0)/a.length:null}
+  function latest(k,y){var db=ensureState(),rows=((db.years||{})[String(y)]||{})[k]||[];for(var mi=11;mi>=0;mi--){var v=avg(rows,mi);if(v!=null)return{month:mi+1,value:v}}return null}
+  function mins(rows){return Array.from({length:12},function(_,mi){var a=(rows||[]).map(function(r){return numM(r.m&&r.m[mi])}).filter(function(v){return v>0});return a.length>=2?Math.min.apply(Math,a):null})}
+  function market(k,y){var db=ensureState(),v=db.marketPrices[y]&&db.marketPrices[y][k];if(v!==undefined&&v!==''&&numM(v)>0)return Math.round(numM(v));var li=latest(k,y);return Math.round((li?li.value:basePrice(k))+100)}
+  function setMarket(k,y,v){var db=ensureState();if(!db.marketPrices[y])db.marketPrices[y]={};if(v===''||numM(v)<=0)delete db.marketPrices[y][k];else db.marketPrices[y][k]=Math.round(numM(v))}
+  function ensureRows(y){var db=ensureState();if(!db.years[y])db.years[y]={};MATERIALS.concat([{k:'怨좎쿋'}]).forEach(function(m){if(!Array.isArray(db.years[y][m.k])||!db.years[y][m.k].length){var r={vendor:'',m:Array(12).fill('')};r._id=rowId(y,m.k,r,0);db.years[y][m.k]=[r]}});return db}
+  function trend(k,y){
+    var db=ensureState(),rows=((db.years||{})[String(y)]||{})[k]||[],series=Array.from({length:12},function(_,i){return avg(rows,i)}),vals=series.filter(function(v){return v!=null});
+    if(vals.length<2)return '<div class="mp-no-trend">???④?媛 2媛쒖썡 ?댁긽 ?낅젰?섎㈃ 異붿씠 洹몃옒?꾧? ?쒖떆?⑸땲??</div>';
+    var mn=Math.min.apply(Math,vals),mx=Math.max.apply(Math,vals),W=980,H=170,pL=24,pR=18,pT=43,pB=25,iW=W-pL-pR,iH=H-pT-pB,X=function(i){return pL+iW*(i/11)},Y=function(v){return pT+iH*(1-(v-mn)/Math.max(1,mx-mn))};
+    var pts=series.map(function(v,i){return v==null?null:{i:i,v:v,x:X(i),y:Y(v)}}).filter(Boolean),poly=pts.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' '),prev=String(+y-1),prevDec=avg((((db.years||{})[prev]||{})[k]||[]),11);
+    var dots=pts.map(function(p){return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="2.6" fill="#2f6fb0"/>'}).join('');
+    var labs=pts.map(function(p){var pv=p.i>0?series[p.i-1]:prevDec,delta=pv!=null?Math.round(p.v-pv):null,chg=delta!=null?'<text x="'+p.x.toFixed(1)+'" y="'+(p.y-17).toFixed(1)+'" text-anchor="middle" font-size="9" fill="'+(delta>0?'#d23b3b':delta<0?'#2563eb':'#929cab')+'">'+(delta>0?'??:delta<0?'??:'竊?)+(delta?wonM(Math.abs(delta)):'')+'</text>':'';return '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-6).toFixed(1)+'" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1f2937">'+wonM(p.v)+'</text>'+chg}).join('');
+    var ml=Array.from({length:12},function(_,i){return '<text x="'+X(i).toFixed(1)+'" y="'+(H-7)+'" text-anchor="middle" font-size="9" fill="#8a96a8">'+(i+1)+'??/text>'}).join('');
+    return '<div class="mp-trend"><div class="mp-trend-head"><b>'+escM(y)+'??'+escM(k)+' ?뷀룊洹??④? 異붿씠</b><span>理쒖? '+wonM(mn)+' 쨌 理쒓퀬 '+wonM(mx)+' ??kg</span></div><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet"><line x1="'+pL+'" y1="'+(pT+iH)+'" x2="'+(W-pR)+'" y2="'+(pT+iH)+'" stroke="#e5eaf1"/><polyline points="'+poly+'" fill="none" stroke="#2f6fb0" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'+dots+labs+ml+'</svg></div>';
+  }
+  function vendorRows(k,y){var db=ensureState(),rows=db.years[y][k]||[],low=mins(rows);return rows.map(function(r,ri){return '<tr><td><div class="mp-vendor-inline"><input class="mp-vendor" data-y="'+escM(y)+'" data-k="'+escM(k)+'" data-ri="'+ri+'" value="'+escM(r.vendor||'')+'" placeholder="?낆껜紐??낅젰"><button type="button" class="mp-row-icon mp-row-add" title="?낆껜 異붽?" onclick="addMaterialVendorV97(\''+escM(k)+'\')">竊?/button></div></td>'+Array.from({length:12},function(_,mi){var v=r.m&&r.m[mi]||'',isMin=low[mi]!=null&&numM(v)>0&&numM(v)===low[mi];return '<td class="'+(isMin?'mp-month-min':'')+'"><input class="mp-month" data-y="'+escM(y)+'" data-k="'+escM(k)+'" data-ri="'+ri+'" data-mi="'+mi+'" value="'+escM(v)+'" inputmode="decimal"></td>'}).join('')+'<td>'+(rows.length>1?'<button type="button" class="mp-row-icon mp-row-del" title="?낆껜 ????젣" onclick="deleteMaterialVendorV97(\''+escM(k)+'\','+ri+')">횞</button>':'')+'</td></tr>'}).join('')}
+  function gradeCard(m,y){var db=ensureState(),rows=db.years[y][m.k]||[],li=latest(m.k,y),mp=market(m.k,y),ap=Math.round(basePrice(m.k)),la=!!(li&&ap===Math.round(li.value)),ma=ap===Math.round(mp);return '<section class="mp-grade-card"><div class="mp-grade-head"><span class="mp-grade-name">'+escM(m.n)+'</span><span class="mp-grade-desc">'+escM(m.desc)+'</span><span class="mp-grade-current">?곸슜 湲곗? <b>'+wonM(ap)+'</b>??kg'+(li?' 쨌 理쒓렐 '+li.month+'???됯퇏 '+wonM(li.value)+'??:'')+'</span><div class="mp-grade-actions"><span style="font-size:10.5px;color:#7b8798;font-weight:700">?쒖옣?④?</span><input class="mp-market" data-y="'+escM(y)+'" data-k="'+escM(m.k)+'" value="'+escM(mp)+'" inputmode="decimal"><button type="button" onclick="applyLatestMaterialV97(\''+escM(m.k)+'\')">理쒓렐?④? ?곸슜</button><button type="button" class="apply" onclick="applyMarketMaterialV97(\''+escM(m.k)+'\')">?쒖옣?④? ?곸슜</button></div></div><div class="mp-grade-scroll"><table class="mp-grade-table"><thead><tr><th>?낆껜紐?/th>'+Array.from({length:12},function(_,i){return '<th>'+(i+1)+'??/th>'}).join('')+'<th></th></tr></thead><tbody>'+vendorRows(m.k,y)+'</tbody></table></div>'+trend(m.k,y)+'<div class="mp-card-foot"><button type="button" class="mp-add-vendor" onclick="addMaterialVendorV97(\''+escM(m.k)+'\')">竊?'+escM(m.n)+' ?낆껜 異붽?</button><span class="mp-low-legend">?몃???= ?대떦 ??理쒖??④?</span></div></section>'}
+  function scrapCard(y){var db=ensureState(),k='怨좎쿋',rows=db.years[y][k]||[],li=latest(k,y);return '<section class="mp-grade-card mp-special-card scrap"><div class="mp-grade-head"><span class="mp-grade-name">?뵫 怨좎쿋?④?</span><span class="mp-grade-desc">?ㅽ겕???뚯닔?④? 愿由?/span><span class="mp-grade-current">?꾩옱 ?곸슜 <b>'+wonM(state.materialBase.scrapPrice||0)+'</b>??kg'+(li?' 쨌 理쒓렐 '+li.month+'???됯퇏 '+wonM(li.value)+'??:'')+'</span><div class="mp-grade-actions"><button type="button" class="apply" onclick="applyLatestScrapPriceV97()">理쒓렐 怨좎쿋?④? ?곸슜</button></div></div><div class="mp-grade-scroll"><table class="mp-grade-table"><thead><tr><th>援щ텇/?낆껜</th>'+Array.from({length:12},function(_,i){return '<th>'+(i+1)+'??/th>'}).join('')+'<th></th></tr></thead><tbody>'+vendorRows(k,y)+'</tbody></table></div>'+trend(k,y)+'<div class="mp-card-foot"><button type="button" class="mp-add-vendor" onclick="addMaterialVendorV97(\'怨좎쿋\')">竊?怨좎쿋 ?낆껜 異붽?</button><span class="mp-low-legend">怨좎쿋?④????먮룞 ??Β룸룞湲고솕</span></div></section>'}
+  function extraCard(){var db=ensureState();return '<section class="mp-grade-card mp-special-card"><div class="mp-grade-head"><span class="mp-grade-name">EGI 異붽? 湲덉븸</span><span class="mp-grade-desc">誘몃땲??媛怨돠룹냼???怨돠룻뙋???뚮웾 異붽?鍮꾩슜</span></div><table class="mp-extra-table"><thead><tr><th>??ぉ</th><th>異붽? 湲덉븸</th><th>鍮꾧퀬</th></tr></thead><tbody>'+db.egiExtras.map(function(r,i){return '<tr><td><input value="'+escM(r.name||'')+'" readonly></td><td><input class="mp-extra-amount" data-i="'+i+'" value="'+escM(r.amount||'')+'" inputmode="decimal" placeholder="0"></td><td><input class="mp-extra-note" data-i="'+i+'" value="'+escM(r.note||'')+'" placeholder="鍮꾧퀬 ?낅젰"></td></tr>'}).join('')+'</tbody></table></section>'}
+  function notice(msg){var old=document.getElementById('materialToastV97');if(old)old.remove();var e=document.createElement('div');e.id='materialToastV97';e.textContent=msg;e.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:100002;background:#1e3a5f;color:#fff;padding:10px 16px;border-radius:9px;font-size:12px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.25)';document.body.appendChild(e);setTimeout(function(){if(e.parentNode)e.remove()},2200)}
+  function bind(root){
+    root.oninput=function(e){var t=e.target,db=ensureState();if(t.classList.contains('mp-vendor')){var r=db.years[t.dataset.y][t.dataset.k][+t.dataset.ri];if(r){r.vendor=t.value;touch(db,t.dataset.y,t.dataset.k,r,'vendor');saveMat(true)}}else if(t.classList.contains('mp-month')){var r2=db.years[t.dataset.y][t.dataset.k][+t.dataset.ri];if(r2){r2.m[+t.dataset.mi]=String(t.value).replace(/,/g,'');touch(db,t.dataset.y,t.dataset.k,r2,'m'+t.dataset.mi);saveMat(true)}}else if(t.classList.contains('mp-extra-name')||t.classList.contains('mp-extra-amount')||t.classList.contains('mp-extra-note')){var x=db.egiExtras[+t.dataset.i];if(x){var fld=t.classList.contains('mp-extra-name')?'name':(t.classList.contains('mp-extra-amount')?'amount':'note');x[fld]=fld==='amount'?String(t.value).replace(/,/g,''):t.value;db._extraUpdated[x._id+'|'+fld]=Date.now();saveMat(true)}}};
+    root.onchange=function(e){if(e.target.classList.contains('mp-month'))renderMaterialPricePage()};
+  }
+  window.renderMaterialPricePage=function(){
+    var root=document.getElementById('view-matprice');if(!root)return;var db=ensureState(),cy=String(new Date().getFullYear()),ys=Object.keys(db.years||{});for(var d=-2;d<=2;d++){var yy=String(+cy+d);if(ys.indexOf(yy)<0)ys.push(yy)}Object.keys(db.marketPrices||{}).forEach(function(yy){if(ys.indexOf(yy)<0)ys.push(yy)});ys.sort();var sel=root.querySelector('#mp-year'),saved=sel&&sel.value||cy;if(sel){sel.innerHTML=ys.map(function(y){return '<option>'+escM(y)+'</option>'}).join('');sel.value=ys.indexOf(saved)>=0?saved:cy}var y=year();ensureRows(y);var box=root.querySelector('.material-price-box');if(box)box.innerHTML='<div class="mp-grade-stack">'+scrapCard(y)+extraCard()+MATERIALS.map(function(m){return gradeCard(m,y)}).join('')+'</div>';var up=root.querySelector('#mp-updated');if(up)up.textContent='理쒖쥌 ?낅뜲?댄듃: '+(db.updated||'-');bind(root);
+  };
+  window.materialPricePage=function(){var r=document.getElementById('result');if(!r)return;if(!document.getElementById('view-matprice'))r.innerHTML='<div id="view-matprice"><div class="note"><b>?먯옄???④? 愿由?/b> ???낆껜蹂???留ㅼ엯?④?, ?붾퀎 理쒖?媛, 媛뺤쥌蹂??됯퇏?④? 異붿씠瑜????붾㈃?먯꽌 愿由ы빀?덈떎. ?낅젰媛믪? ?먮룞 ??Β룸룞湲고솕?⑸땲??</div><div class="card"><div class="ch">?뮥 ?먯옄???붾퀎 留ㅼ엯?④? <span id="mp-updated" style="margin-left:auto;font-size:11px;font-weight:600;color:#64748b"></span></div><div class="cb"><div class="material-price-tools"><div class="mp-year-picker"><span>湲곗??곕룄</span><select id="mp-year"></select></div><div class="mp-tool-actions"><button type="button" class="mp-btn mp-btn-primary" onclick="applyAllLatestMaterialsV97()"><span class="mp-ico">??/span><span>理쒓렐?④? ?꾩껜 ?곸슜</span></button><button type="button" class="mp-btn mp-btn-market" onclick="applyAllMarketMaterialsV97()"><span class="mp-ico">??/span><span>?쒖옣?④? ?꾩껜 ?곸슜</span></button><button type="button" class="mp-btn mp-btn-export" onclick="exportMaterialPricesV97()"><span class="mp-ico">??/span><span>?묒? ?대낫?닿린</span></button><button type="button" class="mp-btn mp-btn-import" onclick="document.getElementById(\'mp-import-v97\').click()"><span class="mp-ico">??/span><span>?묒? 遺덈윭?ㅺ린</span></button></div><input accept=".xlsx,.xls" class="hidden" id="mp-import-v97" type="file"></div><div class="material-price-box"></div><div class="note" style="margin:12px 0 0">?곸슜 諛⑹떇: 理쒓렐?④????대떦 媛뺤쥌??媛??理쒓렐 ???낆껜 ?됯퇏?낅땲?? ?쒖옣?④???湲곕낯?곸쑝濡?<b>理쒓렐?④? + 100??kg</b>?대ŉ 吏곸젒 ?섏젙?????덉뒿?덈떎.</div></div></div></div>';var inp=document.getElementById('mp-import-v97'),yr=document.getElementById('mp-year');if(yr&&!yr._bound){yr._bound=true;yr.onchange=function(){window.renderMaterialPricePage()}}if(inp&&!inp._bound){inp._bound=true;inp.onchange=function(e){importMaterialPricesV97(e)}}window.renderMaterialPricePage()};
+  function addVendor(k){var db=ensureState(),y=year();if(!db.years[y])db.years[y]={};if(!db.years[y][k])db.years[y][k]=[];var r={vendor:'',m:Array(12).fill('')};r._id=rowId(y,k,r,db.years[y][k].length);db.years[y][k].push(r);touch(db,y,k,r,'vendor');saveMat(true);renderMaterialPricePage();setTimeout(function(){var a=document.querySelectorAll('.mp-vendor[data-y="'+y+'"][data-k="'+k+'"]');if(a.length)a[a.length-1].focus()},20)}
+  window.addMaterialVendorV97=addVendor;
+  window.deleteMaterialVendorV97=function(k,ri){var db=ensureState(),y=year(),rows=db.years[y]&&db.years[y][k]||[];if(rows.length<=1)return;if(!confirm('???낆껜 ?④? ?됱쓣 ??젣?좉퉴??'))return;var r=rows[ri];if(r&&r._id)db._rowDeleted[r._id]=Date.now();rows.splice(ri,1);saveMat(true);renderMaterialPricePage()};
+  function applyLatest(k){var li=latest(k,year());if(!li){notice(k+' 理쒓렐?④?媛 ?놁뒿?덈떎');return}ensureState();state.materialBase.materialPrices[k]=Math.round(li.value);saveBaseState();renderMaterialPricePage();notice(k+' '+li.month+'???됯퇏 '+wonM(li.value)+'??kg ?곸슜')}
+  window.applyLatestMaterialV97=applyLatest;
+  window.applyAllLatestMaterialsV97=function(){var n=0;MATERIALS.forEach(function(m){var li=latest(m.k,year());if(li){state.materialBase.materialPrices[m.k]=Math.round(li.value);n++}});saveBaseState();renderMaterialPricePage();notice('理쒓렐?④? '+n+'媛?媛뺤쥌??湲곗????곸슜?덉뒿?덈떎')};
+  function applyMarket(k){var p=market(k,year());if(p<=0){notice(k+' ?쒖옣?④?瑜??낅젰?섏꽭??);return}ensureState();state.materialBase.materialPrices[k]=Math.round(p);saveBaseState();renderMaterialPricePage();notice(k+' ?쒖옣?④? '+wonM(p)+'??kg ?곸슜')}
+  window.applyMarketMaterialV97=applyMarket;
+  window.applyAllMarketMaterialsV97=function(){var n=0;MATERIALS.forEach(function(m){var p=market(m.k,year());if(p>0){state.materialBase.materialPrices[m.k]=Math.round(p);n++}});saveBaseState();renderMaterialPricePage();notice('?쒖옣?④? '+n+'媛?媛뺤쥌??湲곗????곸슜?덉뒿?덈떎')};
+  window.applyLatestScrapPriceV97=function(){var li=latest('怨좎쿋',year());if(!li){notice('怨좎쿋 理쒓렐?④?媛 ?놁뒿?덈떎');return}ensureState();state.materialBase.scrapPrice=Math.round(li.value);saveBaseState();renderMaterialPricePage();notice('怨좎쿋 '+li.month+'???됯퇏 '+wonM(li.value)+'??kg ?곸슜')};
+  window.exportMaterialPricesV97=function(){var db=ensureState(),rows=[['?곕룄','媛뺤쥌','?낆껜紐?,'1??,'2??,'3??,'4??,'5??,'6??,'7??,'8??,'9??,'10??,'11??,'12??,'?쒖옣?④?']];Object.keys(db.years||{}).sort().forEach(function(y){['怨좎쿋'].concat(MATERIALS.map(function(m){return m.k})).forEach(function(k){(db.years[y][k]||[]).forEach(function(r){rows.push([y,k,r.vendor||''].concat((r.m||[]).map(function(v){return numM(v)||''}),[k==='怨좎쿋'?'':market(k,y)]))})})});var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'?먯옄?щ떒媛');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['??ぉ','異붽?湲덉븸','鍮꾧퀬']].concat(db.egiExtras.map(function(r){return[r.name||'',numM(r.amount)||'',r.note||'']}))),'EGI異붽?湲덉븸');XLSX.writeFile(wb,'?먯옄?щ떒媛_'+new Date().toISOString().slice(0,10)+'.xlsx');notice('?먯옄???④?瑜??묒?濡???ν뻽?듬땲??)};
+  window.importMaterialPricesV97=function(ev){var f=ev.target.files&&ev.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{var wb=XLSX.read(new Uint8Array(rd.result),{type:'array'}),arr=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''}),db={years:{},marketPrices:{},updated:'',_cellUpdated:{},_rowDeleted:{},egiExtras:copy(EXTRA_DEFAULTS)},stamp=Date.now();arr.slice(1).forEach(function(r){var y=String(r[0]||'').trim(),k=String(r[1]||'').trim().toUpperCase();if(!y||(!MATERIALS.some(function(m){return m.k===k})&&k!=='怨좎쿋'))return;if(!db.years[y])db.years[y]={};if(!db.years[y][k])db.years[y][k]=[];var row={vendor:String(r[2]||''),m:Array.from({length:12},function(_,i){return r[i+3]||''})};row._id=rowId(y,k,row,db.years[y][k].length);db.years[y][k].push(row);db._cellUpdated[y+'|'+k+'|'+row._id+'|vendor']=stamp;row.m.forEach(function(_,mi){db._cellUpdated[y+'|'+k+'|'+row._id+'|m'+mi]=stamp});var mp=numM(r[15]);if(mp>0&&k!=='怨좎쿋'){if(!db.marketPrices[y])db.marketPrices[y]={};db.marketPrices[y][k]=mp;db._cellUpdated[y+'|'+k+'|market']=stamp}});state.materialDB=db;saveMat(true);renderMaterialPricePage();notice('?먯옄???④?瑜?遺덈윭?붿뒿?덈떎')}catch(e){notice('?먯옄???④? ?뚯씪 ?뺤떇???뺤씤?섏꽭??)}ev.target.value=''};rd.readAsArrayBuffer(f)};
+  function installMenu(){var price=document.querySelector('#topMenu [data-act="price"]');if(!price||document.querySelector('#topMenu [data-act="matprice"]'))return;var wrap=price.parentElement;wrap.insertAdjacentHTML('beforeend','<button class="tm-item" data-act="matprice"><span class="ic">?㎟</span>?먯옄???④?</button>');var b=wrap.querySelector('[data-act="matprice"]');b.addEventListener('click',function(e){e.stopPropagation();if(typeof closeFilePanel==='function')closeFilePanel();document.querySelectorAll('.tile,.tm-item').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('[data-act="matprice"]').forEach(function(x){x.classList.add('active')});state.act='matprice';state.sortKey=null;state._drill=false;state._parent=null;window.runAct()})}
+  function installRunAct(){var nativeRun=window.runAct;if(typeof nativeRun!=='function'||nativeRun.__materialV97)return;var wrapped=function(){if(state.act==='matprice'){var summary=document.getElementById('summary'),sumTop=document.getElementById('sumTop'),mgr=document.getElementById('mgrFilterBar'),set=document.getElementById('setPanel');if(summary)summary.style.display='none';if(sumTop)sumTop.style.display='none';if(mgr)mgr.style.display='none';if(set)set.style.display='none';state._lastAct='matprice';window.materialPricePage();return}return nativeRun.apply(this,arguments)};wrapped.__materialV97=true;window.runAct=wrapped}
+  function addSyncFields(){var native=window.gsFields;if(typeof native!=='function'||native.__materialV97)return;var wrapped=function(){var a=native.apply(this,arguments);if(!a.some(function(x){return x[0]==='materialDB'})){a.push(['materialDB',state,'materialDB'],['materialBase',state,'materialBase'])}return a};wrapped.__materialV97=true;window.gsFields=wrapped}
+  function wrapSaveSettings(){var native=window.saveSettings;if(typeof native!=='function'||native.__materialV97)return;var wrapped=async function(){var r=await native.apply(this,arguments);try{var s=await idbGet('settings')||{};s.materialDB=copy(state.materialDB);s.materialBase=copy(state.materialBase);await idbSet('settings',s)}catch(_){ }return r};wrapped.__materialV97=true;window.saveSettings=wrapped}
+  async function restoreMaterialSettings(){try{var s=await idbGet('settings');if(s&&s.materialDB)state.materialDB=s.materialDB;if(s&&s.materialBase)state.materialBase=s.materialBase;ensureState()}catch(_){ensureState()}}
+  function wrapSyncRefresh(){['gsLoad','gsSave'].forEach(function(name){var native=window[name];if(typeof native!=='function'||native.__materialV97)return;var wrapped=async function(){var ok=await native.apply(this,arguments);if(ok&&state.act==='matprice')window.renderMaterialPricePage();return ok};wrapped.__materialV97=true;window[name]=wrapped})}
+  function install(){ensureState();installMenu();installRunAct();addSyncFields();wrapSaveSettings();wrapSyncRefresh();var r=document.getElementById('mp-import-v97');if(r&&!r._bound)r.onchange=function(e){window.importMaterialPricesV97(e)};}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){install();restoreMaterialSettings()},{once:true});else{install();restoreMaterialSettings()}
+  setTimeout(install,400);setTimeout(install,1600);
+})();
+</script>
+
+
+</script>-->
+<style id="sales-material-price-v97-style">
+#view-matprice{width:100%;max-width:1680px;margin:0 auto}
+#view-matprice .mp-grade-table tr.mp-scrap-auto-row input.mp-month{background:#fff!important;border-color:#dce3ec!important;color:#1b2435!important}
+#view-matprice .mp-grade-head .mp-grade-current{font-size:11.5px;color:#8b6a6a!important;background:#fff8f8!important;border:1px solid #f3dede!important;border-radius:7px;padding:5px 8px}
+#view-matprice .mp-grade-head .mp-grade-current b{color:#a23d3d!important;font-size:13px}
+#view-matprice .mp-card-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 11px;border-top:1px solid #e4e9f0;background:#fbfcfe}
+#view-matprice .mp-card-foot .mp-card-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#view-matprice .mp-card-foot .mp-low-legend{margin-left:auto}
+#view-matprice .mp-trend-wrap[hidden]{display:none}
+#view-matprice .mp-trend-toggle{border:1px solid #a9c0df;border-radius:7px;background:#f5f9ff;color:#245f9d;padding:7px 11px;font-weight:900;font-size:11.5px;cursor:pointer}
+#view-matprice .mp-trend-toggle:hover{background:#245f9d;color:#fff;border-color:#245f9d}
+#view-matprice .mp-extra-table th:nth-child(4){width:46px;text-align:center}
+#view-matprice>.note{margin:0 0 10px;padding:10px 12px;background:#f5f9ff;border-left:4px solid #2f6fb0;border-radius:7px;color:#5f6f85;font-size:11px;line-height:1.5}
+#view-matprice>.card{margin:0 0 14px;border:1px solid #dbe2ec;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 1px 4px rgba(20,40,74,.05)}
+#view-matprice .ch{display:flex;align-items:center;gap:8px;padding:11px 13px;background:#fff;color:#16284a;border-bottom:1px solid #e1e7f0;font-size:13px;font-weight:900}
+#view-matprice .cb{padding:12px}
+#view-matprice .material-price-tools{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:11px 12px;background:#f7f9fc;border:1px solid #e2e8f1;border-radius:12px}
+#view-matprice .mp-year-picker{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+#view-matprice .mp-year-picker>span{font-size:11.5px;font-weight:800;color:#5c6b7f;white-space:nowrap}
+#view-matprice .mp-year-picker select{height:38px;min-width:104px;padding:0 32px 0 12px;border:1px solid #cfd8e6;border-radius:9px;background:#fff;color:#16284a;font-size:13px;font-weight:800}
+#view-matprice .mp-tool-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-left:auto}
+#view-matprice .mp-btn{height:38px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:9px;padding:0 13px;border:1px solid transparent;font-size:12px;font-weight:900;white-space:nowrap;box-shadow:0 1px 3px rgba(20,40,74,.08);cursor:pointer;transition:.15s}
+#view-matprice .mp-btn:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(20,40,74,.12)}
+#view-matprice .mp-btn .mp-ico{font-size:14px;font-weight:900;line-height:1}
+#view-matprice .mp-btn-primary{background:linear-gradient(135deg,#245f9d,#183d70);color:#fff;border-color:#183d70}
+#view-matprice .mp-btn-market{background:linear-gradient(135deg,#fff5dd,#ffe7aa);color:#7d4d00;border-color:#ebc66f}
+#view-matprice .mp-btn-export{background:#fff;color:#167544;border-color:#9fcfb5}
+#view-matprice .mp-btn-import{background:#fff;color:#245f9d;border-color:#acc5e2}
+#view-matprice .material-price-box{border:0;background:#fff;overflow:visible}
+#view-matprice .mp-grade-stack{display:flex;flex-direction:column;gap:14px}
+#view-matprice .mp-grade-card{border:1px solid #dbe2ec;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 1px 4px rgba(20,40,74,.05)}
+#view-matprice .mp-grade-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 13px;background:#f8fafc;border-bottom:1px solid #e1e7f0}
+#view-matprice .mp-grade-head .mp-grade-name{font-size:15px;font-weight:900;color:#16284a}
+#view-matprice .mp-grade-head .mp-grade-desc{font-size:11px;color:#6b7890;font-weight:700}
+#view-matprice .mp-grade-head .mp-grade-current{font-size:11.5px;color:#59677d;font-weight:700}
+#view-matprice .mp-grade-head .mp-grade-current b{color:#0b5e34;font-size:13px}
+#view-matprice .mp-grade-actions{margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#view-matprice .mp-grade-actions input{width:92px;border:1px solid #e3c882;border-radius:7px;padding:6px 7px;text-align:right;background:#fffaf0;font-weight:900;color:#855600}
+#view-matprice .mp-grade-actions button{border:1px solid #b8c9de;border-radius:7px;padding:6px 9px;background:#fff;color:#234e85;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer}
+#view-matprice .mp-grade-actions button.apply{border-color:#a8d6bc;background:#eaf7ef;color:#0b7a43}
+#view-matprice .mp-grade-actions button:hover{background:#2f6fb0;color:#fff;border-color:#2f6fb0}
+#view-matprice .mp-grade-actions button.apply:hover{background:#1e9e5a;border-color:#1e9e5a;color:#fff}
+#view-matprice .mp-grade-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#view-matprice .mp-grade-table{width:100%;min-width:1120px;border-collapse:collapse;table-layout:fixed}
+#view-matprice .mp-grade-table th{position:static;background:#4b5563;color:#fff;padding:7px 5px;border-right:1px solid #677180;font-size:10.5px;text-align:center;white-space:nowrap}
+#view-matprice .mp-grade-table th:first-child{width:210px;text-align:left;padding-left:10px}
+#view-matprice .mp-grade-table th:last-child{width:38px}
+#view-matprice .mp-grade-table td{padding:4px;border-right:1px solid #e4e9f0;border-bottom:1px solid #edf1f6;background:#fff;height:36px}
+#view-matprice .mp-grade-table input{width:100%;height:29px;border:1px solid #dce3ec;border-radius:5px;padding:5px 6px;text-align:right;font-size:11.5px;background:#fff;color:#1b2435;font-family:inherit}
+#view-matprice .mp-grade-table input.mp-vendor{text-align:left;font-weight:700;color:#25354d}
+#view-matprice .mp-grade-table td.mp-month-min{background:#fffbe9}
+#view-matprice .mp-grade-table td.mp-month-min input{background:#fff9d9;border-color:#eadf9a;color:#745f16;font-weight:900;box-shadow:inset 0 0 0 1px rgba(234,223,154,.10)}
+#view-matprice .mp-scrap-auto-label{display:inline-flex;align-items:center;flex:0 0 auto;border-radius:5px;padding:3px 5px;background:#fff3bd;color:#8a5a00;font-size:10px;font-weight:900;white-space:nowrap}
+#view-matprice .mp-vendor-inline{display:flex;align-items:center;gap:4px;width:100%}
+#view-matprice .mp-vendor-inline .mp-vendor{min-width:0;flex:1 1 auto;width:auto;height:33px}
+#view-matprice .mp-row-icon,#view-matprice .mp-apply-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;padding:0;border-radius:7px;font-family:inherit;font-weight:900;line-height:1;box-shadow:none}
+#view-matprice .mp-row-icon{width:29px;height:29px;border:1px solid #b9cbe0;background:#fff;color:#245f9d;font-size:17px;cursor:pointer}
+#view-matprice .mp-row-add:hover{background:#245f9d;color:#fff}
+#view-matprice .mp-row-del{border-color:#efc8c8;color:#b42323;font-size:16px}
+#view-matprice .mp-row-del:hover{background:#b42323;color:#fff}
+#view-matprice .mp-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 11px;border-top:1px solid #e4e9f0;background:#fbfcfe}
+#view-matprice .mp-card-foot .mp-add-vendor{border:1px dashed #9bb9db;border-radius:7px;background:#fff;color:#245f9d;padding:7px 12px;font-weight:900;font-size:11.5px;cursor:pointer}
+#view-matprice .mp-card-foot .mp-low-legend{font-size:10.5px;color:#796018;background:#fff3bd;border:1px solid #ead16e;border-radius:6px;padding:4px 8px;font-weight:800}
+#view-matprice .mp-trend{margin:9px 11px 11px;padding:9px 10px;background:#fafbfd;border:1px solid #e8edf4;border-radius:9px}
+#view-matprice .mp-trend-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-size:10.5px;color:#6b7890;margin-bottom:3px}
+#view-matprice .mp-trend-head b{font-size:12px;color:#16284a}
+#view-matprice .mp-trend svg{display:block;width:100%;height:auto}
+#view-matprice .mp-no-trend{margin:9px 11px 11px;padding:14px;text-align:center;background:#fafbfd;border:1px dashed #dbe2ec;border-radius:9px;color:#7b8798;font-size:11px}
+#view-matprice .mp-special-card .mp-grade-head{background:#fffaf0}
+#view-matprice .mp-special-card.scrap .mp-grade-name{color:#8a5a00}
+#view-matprice .mp-extra-toggle{width:100%;display:flex;align-items:center;gap:10px;padding:11px 13px;border:0;border-bottom:1px solid #e1e7f0;background:#fffaf0;color:inherit;text-align:left;font-family:inherit;cursor:pointer}
+#view-matprice .mp-extra-toggle:hover{background:#fff7e6}
+#view-matprice .mp-extra-toggle .mp-grade-name{font-size:15px;font-weight:900;color:#16284a}
+#view-matprice .mp-extra-toggle .mp-grade-desc{font-size:11px;color:#6b7890;font-weight:700}
+#view-matprice .mp-extra-toggle-note{margin-left:auto;font-size:10.5px;color:#8a5a00;font-weight:800}
+#view-matprice .mp-extra-arrow{font-size:16px;color:#8a5a00;font-weight:900;line-height:1}
+#view-matprice .mp-extra-body[hidden]{display:none}
+#view-matprice .mp-extra-table{width:100%;border-collapse:collapse;table-layout:fixed}
+#view-matprice .mp-extra-table th{background:#4b5563;color:#fff;padding:8px;text-align:left;font-size:11px}
+#view-matprice .mp-extra-table th:nth-child(1){width:180px}#view-matprice .mp-extra-table th:nth-child(2){width:150px}
+#view-matprice .mp-extra-table td{padding:6px 8px;border-bottom:1px solid #edf1f6}
+#view-matprice .mp-extra-table input{width:100%;border:1px solid #dce3ec;border-radius:6px;padding:7px 8px;font-family:inherit;font-size:12px}
+#view-matprice .mp-extra-table input.mp-extra-amount{text-align:right;font-weight:900;color:#1b4d80}
+#view-matprice .mp-one-line,#view-matprice .mp-market-one-line{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;white-space:nowrap}
+#view-matprice .mp-one-line b{font-size:12.5px;color:#16284a;font-variant-numeric:tabular-nums}
+#view-matprice .mp-market-one-line input{width:82px!important;min-width:0;height:33px!important;text-align:right!important}
+#view-matprice .mp-apply-icon{width:29px;height:29px;border:1px solid #92c7ab;background:#edf8f2;color:#167544;font-size:15px;cursor:pointer}
+#view-matprice .mp-apply-icon:hover{background:#1e9e5a;color:#fff;border-color:#1e9e5a}
+#view-matprice .mp-apply-icon.is-applied{background:#168a4f;color:#fff;border-color:#168a4f;box-shadow:0 0 0 3px rgba(22,138,79,.15)}
+#view-matprice .market-apply.is-applied{background:#c77b00;color:#fff;border-color:#c77b00}
+@media(max-width:900px){#view-matprice .mp-grade-actions{margin-left:0;width:100%}#view-matprice .mp-grade-table{min-width:1050px}#view-matprice .material-price-tools{align-items:stretch}#view-matprice .mp-tool-actions{margin-left:0}}
+</style>
+<script id="sales-material-price-v97-script">
+(function(){
+  'use strict';
+  var MAT_KEY='dbfastec_material_price_history_v1';
+  var MATERIALS=[
+    {k:'EGI',n:'EGI',desc:'전기아연도금강판',p:1100},
+    {k:'HGI',n:'HGI',desc:'용융아연도금강판',p:1100},
+    {k:'PO',n:'PO',desc:'산세강판',p:1030},
+    {k:'CR',n:'CR',desc:'냉연강판',p:1300},
+    {k:'STS201',n:'STS201',desc:'스테인리스 201',p:1400},
+    {k:'STS304',n:'STS304',desc:'스테인리스 304',p:3800},
+    {k:'STS430',n:'STS430',desc:'스테인리스 430',p:1600}
+  ];
+  var EXTRA_DEFAULTS=[{name:'미니샤 가공',amount:'',note:''},{name:'소폭가공',amount:'',note:''},{name:'판재 소량',amount:'',note:''}];
+  function copy(v){try{return JSON.parse(JSON.stringify(v))}catch(_){return v}}
+  function escM(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function numM(v){var n=Number(String(v==null?'':v).replace(/[, ]/g,''));return isFinite(n)?n:0}
+  function wonM(v){return Math.round(numM(v)).toLocaleString('ko-KR')}
+  function nowText(){var d=new Date(),p=function(n){return String(n).padStart(2,'0')};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())}
+  function hashM(s){s=String(s||'');var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
+  function rowId(y,k,r,i){return String(r&&r._id||('mr_'+hashM(y+'|'+k+'|'+i+'|'+String(r&&r.vendor||''))))}
+  function extraId(r,i){return String(r&&r._id||('ex_'+hashM(String(r&&r.name||'')+'|'+i)))}
+  function plain(v){return v&&typeof v==='object'&&!Array.isArray(v)}
+  function readLocal(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(_){return null}}
+  function ensureState(){
+    if(!state.materialDB||!plain(state.materialDB)||!plain(state.materialDB.years)){
+      var d=readLocal(MAT_KEY);state.materialDB=d&&plain(d)&&plain(d.years)?d:{years:{},marketPrices:{},updated:'',_cellUpdated:{},_rowDeleted:{},_scrapManual:{},_scrapManualVendor:{},_scrapAutoDeleted:{}};
+    }
+    if(!state.materialBase||!plain(state.materialBase)){
+      var b=readLocal('dbfastec_cost_base_v2')||{};state.materialBase={materialPrices:copy(b.materialPrices||{}),scrapPrice:b.scrapPrice==null?400:b.scrapPrice};
+    }
+    var db=state.materialDB;
+    if(!plain(db.years))db.years={};if(!plain(db.marketPrices))db.marketPrices={};
+    if(!plain(db._cellUpdated))db._cellUpdated={};if(!plain(db._rowDeleted))db._rowDeleted={};
+    if(!plain(db._extraUpdated))db._extraUpdated={};if(!plain(db._extraDeleted))db._extraDeleted={};if(!plain(db._scrapManual))db._scrapManual={};if(!plain(db._scrapManualVendor))db._scrapManualVendor={};if(!plain(db._scrapAutoDeleted))db._scrapAutoDeleted={};
+    if(!Array.isArray(db.egiExtras))db.egiExtras=copy(EXTRA_DEFAULTS);
+    db.egiExtras.forEach(function(r,i){if(!plain(r))r=db.egiExtras[i]={};if(!r._id)r._id=extraId(r,i);if(r.name==null)r.name='';if(r.amount==null)r.amount='';if(r.note==null)r.note='';});
+    Object.keys(db.years).forEach(function(y){var gy=db.years[y];if(!plain(gy))gy=db.years[y]={};Object.keys(gy).forEach(function(k){var rows=Array.isArray(gy[k])?gy[k]:[];gy[k]=rows;rows.forEach(function(r,i){if(!plain(r))r=rows[i]={};if(!r._id)r._id=rowId(y,k,r,i);if(!Array.isArray(r.m))r.m=[];r.m=r.m.slice(0,12);while(r.m.length<12)r.m.push('');if(r.vendor==null)r.vendor='';});});
+    });
+    state.materialBase.materialPrices=plain(state.materialBase.materialPrices)?state.materialBase.materialPrices:{};
+    return db;
+  }
+  function basePrice(k){ensureState();var p=state.materialBase.materialPrices[k];return p!==undefined&&p!==''?numM(p):(MATERIALS.find(function(x){return x.k===k})||{}).p||0}
+  function saveBaseState(){
+    ensureState();var raw=readLocal('dbfastec_cost_base_v2')||{};raw.materialPrices=copy(state.materialBase.materialPrices||{});raw.scrapPrice=numM(state.materialBase.scrapPrice||0);
+    try{localStorage.setItem('dbfastec_cost_base_v2',JSON.stringify(raw))}catch(_){ }if(typeof saveSettings==='function')saveSettings();
+  }
+  function touch(db,y,k,row,field){db._cellUpdated[String(y)+'|'+String(k)+'|'+String(row&&row._id||'')+'|'+field]=Date.now()}
+  function saveMat(stamp){
+    var db=ensureState();if(stamp)db.updated=nowText();try{localStorage.setItem(MAT_KEY,JSON.stringify(db))}catch(_){ }
+    state.materialDB=db;if(typeof saveSettings==='function')saveSettings();try{window.dispatchEvent(new CustomEvent('materialPriceChanged'))}catch(_){ }
+  }
+  function year(){var e=document.getElementById('mp-year');return String(e&&e.value||new Date().getFullYear())}
+  function avg(rows,mi){var a=(rows||[]).map(function(r){return numM(r.m&&r.m[mi])}).filter(function(v){return v>0});return a.length?a.reduce(function(x,v){return x+v},0)/a.length:null}
+  function latest(k,y){var db=ensureState(),rows=((db.years||{})[String(y)]||{})[k]||[];for(var mi=11;mi>=0;mi--){var v=avg(rows,mi);if(v!=null)return{month:mi+1,value:v}}return null}
+  function mins(rows){return Array.from({length:12},function(_,mi){var a=(rows||[]).map(function(r){return numM(r.m&&r.m[mi])}).filter(function(v){return v>0});return a.length>=2?Math.min.apply(Math,a):null})}
+  function market(k,y){var db=ensureState(),v=db.marketPrices[y]&&db.marketPrices[y][k];if(v!==undefined&&v!==''&&numM(v)>0)return Math.round(numM(v));var li=latest(k,y);return Math.round((li?li.value:basePrice(k))+100)}
+  function setMarket(k,y,v){var db=ensureState();if(!db.marketPrices[y])db.marketPrices[y]={};if(v===''||numM(v)<=0)delete db.marketPrices[y][k];else db.marketPrices[y][k]=Math.round(numM(v))}
+  function isAutoScrapRow(r){return !!(r&&r.autoScrap===true)}
+  function scrapSalesByVendor(y){var out={};try{(typeof CUR!=='undefined'?CUR:[]).forEach(function(r){if(!isScrapSale(r)||String(r.ym||'').slice(0,4)!==String(y))return;var vendor=String(r.cust||'').trim();if(!vendor)return;var mi=Number(String(r.ym).slice(5,7))-1;if(mi<0||mi>11)return;var ts=r.d instanceof Date?r.d.getTime():new Date(r.d).getTime(),old=out[vendor]||(out[vendor]={m:Array(12).fill(null)}),prev=old.m[mi];if(!prev||ts>=prev.ts)old.m[mi]={value:Math.max(0,unitPrice(r)||0),ts:ts}})}catch(_){}return out}
+  function syncScrapSales(y){var db=ensureState(),rows=db.years[y]&&db.years[y]['고철']||[],byVendor=scrapSalesByVendor(y),changed=false;Object.keys(byVendor).forEach(function(source){var delKey=String(y)+'|'+source;if(db._scrapAutoDeleted[delKey])return;var r=rows.find(function(x){return x&&x.autoScrap&&x.autoSource===source});if(!r){r={vendor:source,m:Array(12).fill(''),autoScrap:true,autoSource:source};r._id=rowId(y,'고철',r,rows.length);rows.push(r);touch(db,y,'고철',r,'vendor');changed=true}for(var mi=0;mi<12;mi++){var manualKey=String(y)+'|'+r._id+'|'+mi,p=byVendor[source].m[mi],next=p?String(Math.round(p.value||0)):'';if(!db._scrapManual[manualKey]&&String(r.m[mi]||'')!==next){r.m[mi]=next;touch(db,y,'고철',r,'m'+mi);changed=true}}var vendorKey=String(y)+'|'+r._id;if(!db._scrapManualVendor[vendorKey]&&String(r.vendor||'')!==source){r.vendor=source;touch(db,y,'고철',r,'vendor');changed=true}});if(changed)saveMat(true)}
+  function ensureRows(y){var db=ensureState();if(!db.years[y])db.years[y]={};MATERIALS.forEach(function(m){if(!Array.isArray(db.years[y][m.k])||!db.years[y][m.k].length){var r={vendor:'',m:Array(12).fill('')};r._id=rowId(y,m.k,r,0);db.years[y][m.k]=[r]}});var scrapRows=Array.isArray(db.years[y]['고철'])?db.years[y]['고철']:[],clean=scrapRows.filter(function(r){var v=String(r&&r.vendor||'').trim();return v!=='기준단가'&&v!=='고철시세'&&!(r&&r.autoScrap&&!r.autoSource)});db.years[y]['고철']=clean;if(clean.length!==scrapRows.length)saveMat(true);return db}
+  function trend(k,y){
+    var db=ensureState(),rows=((db.years||{})[String(y)]||{})[k]||[],series=Array.from({length:12},function(_,i){return avg(rows,i)}),vals=series.filter(function(v){return v!=null});
+    if(vals.length<2)return '<div class="mp-no-trend">월 단가가 2개월 이상 입력되면 추이 그래프가 표시됩니다.</div>';
+    var mn=Math.min.apply(Math,vals),mx=Math.max.apply(Math,vals),W=980,H=170,pL=24,pR=18,pT=43,pB=25,iW=W-pL-pR,iH=H-pT-pB,X=function(i){return pL+iW*(i/11)},Y=function(v){return pT+iH*(1-(v-mn)/Math.max(1,mx-mn))};
+    var pts=series.map(function(v,i){return v==null?null:{i:i,v:v,x:X(i),y:Y(v)}}).filter(Boolean),poly=pts.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' '),prev=String(+y-1),prevDec=avg((((db.years||{})[prev]||{})[k]||[]),11);
+    var dots=pts.map(function(p){return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="2.6" fill="#2f6fb0"/>'}).join('');
+    var labs=pts.map(function(p){var pv=p.i>0?series[p.i-1]:prevDec,delta=pv!=null?Math.round(p.v-pv):null,chg=delta!=null?'<text x="'+p.x.toFixed(1)+'" y="'+(p.y-17).toFixed(1)+'" text-anchor="middle" font-size="9" fill="'+(delta>0?'#d23b3b':delta<0?'#2563eb':'#929cab')+'">'+(delta>0?'▲':delta<0?'▼':'－')+(delta?wonM(Math.abs(delta)):'')+'</text>':'';return '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-6).toFixed(1)+'" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1f2937">'+wonM(p.v)+'</text>'+chg}).join('');
+    var ml=Array.from({length:12},function(_,i){return '<text x="'+X(i).toFixed(1)+'" y="'+(H-7)+'" text-anchor="middle" font-size="9" fill="#8a96a8">'+(i+1)+'월</text>'}).join('');
+    return '<div class="mp-trend"><div class="mp-trend-head"><b>'+escM(y)+'년 '+escM(k)+' 월평균 단가 추이</b><span>최저 '+wonM(mn)+' · 최고 '+wonM(mx)+' 원/kg</span></div><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet"><line x1="'+pL+'" y1="'+(pT+iH)+'" x2="'+(W-pR)+'" y2="'+(pT+iH)+'" stroke="#e5eaf1"/><polyline points="'+poly+'" fill="none" stroke="#2f6fb0" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'+dots+labs+ml+'</svg></div>';
+  }
+  function vendorRows(k,y){var db=ensureState(),rows=db.years[y][k]||[],low=mins(rows);return rows.map(function(r,ri){var auto=k==='고철'&&isAutoScrapRow(r);return '<tr><td><div class="mp-vendor-inline"><input class="mp-vendor" data-y="'+escM(y)+'" data-k="'+escM(k)+'" data-ri="'+ri+'" value="'+escM(r.vendor||'')+'" placeholder="'+(auto?'고철 납품 거래처명 자동입력 · 수정 가능':'업체명 입력')+'"><button type="button" class="mp-row-icon mp-row-add" title="업체 추가" onclick="addMaterialVendorV97(\''+escM(k)+'\')">＋</button></div></td>'+Array.from({length:12},function(_,mi){var v=r.m&&r.m[mi]||'',isMin=low[mi]!=null&&numM(v)>0&&numM(v)===low[mi];return '<td class="'+(isMin?'mp-month-min':'')+'"><input class="mp-month" data-y="'+escM(y)+'" data-k="'+escM(k)+'" data-ri="'+ri+'" data-mi="'+mi+'" value="'+escM(v)+'" inputmode="decimal"></td>'}).join('')+'<td><button type="button" class="mp-row-icon mp-row-del" title="업체 행 삭제" onclick="deleteMaterialVendorV97(\''+escM(k)+'\','+ri+')">×</button></td></tr>'}).join('')}
+  function extremes(rows){var vals=[];(rows||[]).forEach(function(r){(r.m||[]).forEach(function(v){var n=numM(v);if(n>0)vals.push(n)})});return{max:vals.length?Math.max.apply(Math,vals):0,min:vals.length?Math.min.apply(Math,vals):0}}
+  function gradeCard(m,y){var db=ensureState(),rows=db.years[y][m.k]||[],ex=extremes(rows);return '<section class="mp-grade-card"><div class="mp-grade-head"><span class="mp-grade-name">'+escM(m.n)+'</span><span class="mp-grade-desc">'+escM(m.desc)+'</span><span class="mp-grade-current">최고단가 <b>'+wonM(ex.max)+'</b>원/kg · 최저단가 <b>'+wonM(ex.min)+'</b>원/kg</span></div><div class="mp-grade-scroll"><table class="mp-grade-table"><thead><tr><th>업체명</th>'+Array.from({length:12},function(_,i){return '<th>'+(i+1)+'월</th>'}).join('')+'<th></th></tr></thead><tbody>'+vendorRows(m.k,y)+'</tbody></table></div><div class="mp-trend-wrap" hidden>'+trend(m.k,y)+'</div><div class="mp-card-foot"><div class="mp-card-actions"><button type="button" class="mp-add-vendor" onclick="addMaterialVendorV97(\''+escM(m.k)+'\')">＋ '+escM(m.n)+' 업체 추가</button><button type="button" class="mp-trend-toggle" onclick="toggleMaterialTrendV97(this)">단가추이 그래프보기</button></div><span class="mp-low-legend">노란색 = 해당 월 최저단가</span></div></section>'}
+  function scrapCard(y){var db=ensureState(),k='고철',rows=db.years[y][k]||[],ex=extremes(rows);return '<section class="mp-grade-card mp-special-card scrap"><div class="mp-grade-head"><span class="mp-grade-name">🔩 고철단가</span><span class="mp-grade-desc">고철 납품 거래처명과 월별 마지막 매출단가 자동 입력 · 직접 수정 가능</span><span class="mp-grade-current">최고단가 <b>'+wonM(ex.max)+'</b>원/kg · 최저단가 <b>'+wonM(ex.min)+'</b>원/kg</span></div><div class="mp-grade-scroll"><table class="mp-grade-table"><thead><tr><th>고철 거래처명</th>'+Array.from({length:12},function(_,i){return '<th>'+(i+1)+'월</th>'}).join('')+'<th></th></tr></thead><tbody>'+vendorRows(k,y)+'</tbody></table></div><div class="mp-trend-wrap" hidden>'+trend(k,y)+'</div><div class="mp-card-foot"><div class="mp-card-actions"><button type="button" class="mp-add-vendor" onclick="addMaterialVendorV97(\'고철\')">＋ 고철 업체 추가</button><button type="button" class="mp-trend-toggle" onclick="toggleMaterialTrendV97(this)">단가추이 그래프보기</button></div><span class="mp-low-legend">고철 납품 거래처와 해당 월 매출이 있는 단가만 자동 표시합니다. 빈 월은 빈칸으로 유지됩니다.</span></div></section>'}
+  function extraCard(){var db=ensureState();return '<section class="mp-grade-card mp-special-card mp-extra-card"><button type="button" class="mp-extra-toggle" onclick="toggleMaterialExtrasV97(this)"><span class="mp-grade-name">EGI 추가 금액</span><span class="mp-grade-desc">미니샤 가공·소폭가공·판재 소량 추가비용</span><span class="mp-extra-toggle-note">클릭하여 펼치기</span><span class="mp-extra-arrow">▸</span></button><div class="mp-extra-body" hidden><table class="mp-extra-table"><thead><tr><th>항목</th><th>추가 금액</th><th>비고</th><th></th></tr></thead><tbody>'+db.egiExtras.map(function(r,i){return '<tr><td><input class="mp-extra-name" data-i="'+i+'" value="'+escM(r.name||'')+'" placeholder="항목명 입력"></td><td><input class="mp-extra-amount" data-i="'+i+'" value="'+escM(r.amount||'')+'" inputmode="decimal" placeholder="0"></td><td><input class="mp-extra-note" data-i="'+i+'" value="'+escM(r.note||'')+'" placeholder="비고 입력"></td><td style="text-align:center"><button type="button" class="mp-row-icon mp-row-del" title="항목 삭제" onclick="deleteMaterialExtraV97('+i+')">×</button></td></tr>'}).join('')+'</tbody></table><div class="mp-card-foot"><button type="button" class="mp-add-vendor" onclick="addMaterialExtraV97()">＋ 항목 추가</button><span class="mp-low-legend">항목명·추가 금액·비고를 직접 입력할 수 있습니다.</span></div></div></section>'}
+  function notice(msg){var old=document.getElementById('materialToastV97');if(old)old.remove();var e=document.createElement('div');e.id='materialToastV97';e.textContent=msg;e.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:100002;background:#1e3a5f;color:#fff;padding:10px 16px;border-radius:9px;font-size:12px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.25)';document.body.appendChild(e);setTimeout(function(){if(e.parentNode)e.remove()},2200)}
+  function bind(root){
+    root.oninput=function(e){var t=e.target,db=ensureState();if(t.classList.contains('mp-vendor')){var r=db.years[t.dataset.y][t.dataset.k][+t.dataset.ri];if(r){if(t.dataset.k==='고철'&&isAutoScrapRow(r))db._scrapManualVendor[String(t.dataset.y)+'|'+r._id]=true;r.vendor=t.value;touch(db,t.dataset.y,t.dataset.k,r,'vendor');saveMat(true)}}else if(t.classList.contains('mp-month')){var r2=db.years[t.dataset.y][t.dataset.k][+t.dataset.ri];if(r2){if(t.dataset.k==='고철'&&isAutoScrapRow(r2))db._scrapManual[String(t.dataset.y)+'|'+r2._id+'|'+(+t.dataset.mi)]=true;r2.m[+t.dataset.mi]=String(t.value).replace(/,/g,'');touch(db,t.dataset.y,t.dataset.k,r2,'m'+t.dataset.mi);saveMat(true)}}else if(t.classList.contains('mp-extra-name')||t.classList.contains('mp-extra-amount')||t.classList.contains('mp-extra-note')){var x=db.egiExtras[+t.dataset.i];if(x){var fld=t.classList.contains('mp-extra-name')?'name':(t.classList.contains('mp-extra-amount')?'amount':'note');x[fld]=fld==='amount'?String(t.value).replace(/,/g,''):t.value;db._extraUpdated[x._id+'|'+fld]=Date.now();saveMat(true)}}};
+    root.onchange=function(e){if(e.target.classList.contains('mp-month'))renderMaterialPricePage()};
+  }
+  window.renderMaterialPricePage=function(){
+    var root=document.getElementById('view-matprice');if(!root)return;var db=ensureState(),cy=String(new Date().getFullYear()),ys=Object.keys(db.years||{});for(var d=-2;d<=2;d++){var yy=String(+cy+d);if(ys.indexOf(yy)<0)ys.push(yy)}Object.keys(db.marketPrices||{}).forEach(function(yy){if(ys.indexOf(yy)<0)ys.push(yy)});ys.sort();var sel=root.querySelector('#mp-year'),saved=sel&&sel.value||cy;if(sel){sel.innerHTML=ys.map(function(y){return '<option>'+escM(y)+'</option>'}).join('');sel.value=ys.indexOf(saved)>=0?saved:cy}var y=year();ensureRows(y);try{syncScrapSales(y)}catch(e){try{console.warn('고철시세 자동입력 건너뜀',e)}catch(_){}}var box=root.querySelector('.material-price-box');if(box)box.innerHTML='<div class="mp-grade-stack">'+scrapCard(y)+extraCard()+MATERIALS.map(function(m){return gradeCard(m,y)}).join('')+'</div>';var up=root.querySelector('#mp-updated');if(up)up.textContent='최종 업데이트: '+(db.updated||'-');bind(root);
+  };
+  window.materialPricePage=function(){var r=document.getElementById('result');if(!r)return;if(!document.getElementById('view-matprice'))r.innerHTML='<div id="view-matprice"><div class="card"><div class="ch">💰 원자재 월별 매입단가 <span id="mp-updated" style="margin-left:auto;font-size:11px;font-weight:600;color:#64748b"></span></div><div class="cb"><div class="material-price-tools"><div class="mp-year-picker"><span>기준연도</span><select id="mp-year"></select></div><div class="mp-tool-actions"><button type="button" class="mp-btn mp-btn-export" onclick="exportMaterialPricesV97()"><span class="mp-ico">⇩</span><span>엑셀 내보내기</span></button><button type="button" class="mp-btn mp-btn-import" onclick="document.getElementById(\'mp-import-v97\').click()"><span class="mp-ico">⇧</span><span>엑셀 불러오기</span></button></div><input accept=".xlsx,.xls" class="hidden" id="mp-import-v97" type="file"></div><div class="material-price-box"></div><div class="note" style="margin:12px 0 0">입력값은 자동 저장·동기화됩니다.</div></div></div></div>';var inp=document.getElementById('mp-import-v97'),yr=document.getElementById('mp-year');if(yr&&!yr._bound){yr._bound=true;yr.onchange=function(){window.renderMaterialPricePage()}}if(inp&&!inp._bound){inp._bound=true;inp.onchange=function(e){importMaterialPricesV97(e)}}window.renderMaterialPricePage()};
+  function addVendor(k){var db=ensureState(),y=year();if(!db.years[y])db.years[y]={};if(!db.years[y][k])db.years[y][k]=[];var r={vendor:'',m:Array(12).fill('')};r._id=rowId(y,k,r,db.years[y][k].length);db.years[y][k].push(r);touch(db,y,k,r,'vendor');saveMat(true);renderMaterialPricePage();setTimeout(function(){var a=document.querySelectorAll('.mp-vendor[data-y="'+y+'"][data-k="'+k+'"]');if(a.length)a[a.length-1].focus()},20)}
+  window.addMaterialVendorV97=addVendor;
+  window.deleteMaterialVendorV97=function(k,ri){var db=ensureState(),y=year(),rows=db.years[y]&&db.years[y][k]||[];if(!confirm('이 업체 단가 행을 삭제할까요?'))return;var r=rows[ri];if(!r)return;if(k==='고철'&&r.autoScrap&&r.autoSource)db._scrapAutoDeleted[String(y)+'|'+r.autoSource]=Date.now();if(r._id)db._rowDeleted[r._id]=Date.now();rows.splice(ri,1);saveMat(true);renderMaterialPricePage()};
+  function addExtra(){var db=ensureState(),r={_id:'ex_'+hashM(Date.now()+'|'+Math.random()),name:'',amount:'',note:''};db.egiExtras.push(r);db._extraUpdated[r._id+'|name']=Date.now();saveMat(true);renderMaterialPricePage();setTimeout(function(){var a=document.querySelector('.mp-extra-name[data-i="'+(db.egiExtras.length-1)+'"]');if(a)a.focus()},20)}
+  window.addMaterialExtraV97=addExtra;
+  window.deleteMaterialExtraV97=function(i){var db=ensureState(),r=db.egiExtras[i];if(!r)return;if(!confirm('이 EGI 추가 금액 항목을 삭제할까요?'))return;if(r._id)db._extraDeleted[r._id]=Date.now();db.egiExtras.splice(i,1);saveMat(true);renderMaterialPricePage()};
+  window.toggleMaterialTrendV97=function(btn){var card=btn&&btn.closest?btn.closest('.mp-grade-card'):null,wrap=card&&card.querySelector('.mp-trend-wrap');if(!wrap)return;var show=wrap.hasAttribute('hidden');if(show)wrap.removeAttribute('hidden');else wrap.setAttribute('hidden','');btn.textContent=show?'단가추이 그래프 닫기':'단가추이 그래프보기'};
+  window.toggleMaterialExtrasV97=function(btn){var card=btn&&btn.closest?btn.closest('.mp-extra-card'):null,body=card&&card.querySelector('.mp-extra-body');if(!body)return;var show=body.hasAttribute('hidden');if(show)body.removeAttribute('hidden');else body.setAttribute('hidden','');var note=btn.querySelector('.mp-extra-toggle-note'),arrow=btn.querySelector('.mp-extra-arrow');if(note)note.textContent=show?'클릭하여 접기':'클릭하여 펼치기';if(arrow)arrow.textContent=show?'▾':'▸'};
+  function applyLatest(k){var li=latest(k,year());if(!li){notice(k+' 최근단가가 없습니다');return}ensureState();state.materialBase.materialPrices[k]=Math.round(li.value);saveBaseState();renderMaterialPricePage();notice(k+' '+li.month+'월 평균 '+wonM(li.value)+'원/kg 적용')}
+  window.applyLatestMaterialV97=applyLatest;
+  window.applyAllLatestMaterialsV97=function(){var n=0;MATERIALS.forEach(function(m){var li=latest(m.k,year());if(li){state.materialBase.materialPrices[m.k]=Math.round(li.value);n++}});saveBaseState();renderMaterialPricePage();notice('최근단가 '+n+'개 강종을 기준에 적용했습니다')};
+  function applyMarket(k){var p=market(k,year());if(p<=0){notice(k+' 시장단가를 입력하세요');return}ensureState();state.materialBase.materialPrices[k]=Math.round(p);saveBaseState();renderMaterialPricePage();notice(k+' 시장단가 '+wonM(p)+'원/kg 적용')}
+  window.applyMarketMaterialV97=applyMarket;
+  window.applyAllMarketMaterialsV97=function(){var n=0;MATERIALS.forEach(function(m){var p=market(m.k,year());if(p>0){state.materialBase.materialPrices[m.k]=Math.round(p);n++}});saveBaseState();renderMaterialPricePage();notice('시장단가 '+n+'개 강종을 기준에 적용했습니다')};
+  window.applyLatestScrapPriceV97=function(){var li=latest('고철',year());if(!li){notice('고철 최근단가가 없습니다');return}ensureState();state.materialBase.scrapPrice=Math.round(li.value);saveBaseState();renderMaterialPricePage();notice('고철 '+li.month+'월 평균 '+wonM(li.value)+'원/kg 적용')};
+  window.exportMaterialPricesV97=function(){var db=ensureState(),rows=[['연도','강종','업체명','1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월']];Object.keys(db.years||{}).sort().forEach(function(y){['고철'].concat(MATERIALS.map(function(m){return m.k})).forEach(function(k){(db.years[y][k]||[]).forEach(function(r){rows.push([y,k,r.vendor||''].concat((r.m||[]).map(function(v){return numM(v)||''})))})})});var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'원자재단가');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['항목','추가금액','비고']].concat(db.egiExtras.map(function(r){return[r.name||'',numM(r.amount)||'',r.note||'']}))),'EGI추가금액');XLSX.writeFile(wb,'원자재단가_'+new Date().toISOString().slice(0,10)+'.xlsx');notice('원자재 단가를 엑셀로 저장했습니다')};
+  window.importMaterialPricesV97=function(ev){var f=ev.target.files&&ev.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{var wb=XLSX.read(new Uint8Array(rd.result),{type:'array'}),arr=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''}),db={years:{},marketPrices:{},updated:'',_cellUpdated:{},_rowDeleted:{},_scrapManual:{},_scrapManualVendor:{},egiExtras:copy(EXTRA_DEFAULTS)},stamp=Date.now();arr.slice(1).forEach(function(r){var y=String(r[0]||'').trim(),k=String(r[1]||'').trim().toUpperCase();if(!y||(!MATERIALS.some(function(m){return m.k===k})&&k!=='고철'))return;if(!db.years[y])db.years[y]={};if(!db.years[y][k])db.years[y][k]=[];var row={vendor:String(r[2]||''),m:Array.from({length:12},function(_,i){return r[i+3]||''})};row._id=rowId(y,k,row,db.years[y][k].length);db.years[y][k].push(row);db._cellUpdated[y+'|'+k+'|'+row._id+'|vendor']=stamp;row.m.forEach(function(_,mi){db._cellUpdated[y+'|'+k+'|'+row._id+'|m'+mi]=stamp});var mp=numM(r[15]);if(mp>0&&k!=='고철'){if(!db.marketPrices[y])db.marketPrices[y]={};db.marketPrices[y][k]=mp;db._cellUpdated[y+'|'+k+'|market']=stamp}});state.materialDB=db;saveMat(true);renderMaterialPricePage();notice('원자재 단가를 불러왔습니다')}catch(e){notice('원자재 단가 파일 형식을 확인하세요')}ev.target.value=''};rd.readAsArrayBuffer(f)};
+  function materialTimestamp(v){v=Number(v||0);return isFinite(v)?v:0}
+  function materialRows(db,y,k){return db&&db.years&&db.years[y]&&Array.isArray(db.years[y][k])?db.years[y][k]:[]}
+  function materialRow(db,y,k,id){return materialRows(db,y,k).find(function(r){return r&&String(r._id||'')===String(id||'')})}
+  function materialEnsureRow(db,y,k,src){if(!db.years)db.years={};if(!db.years[y])db.years[y]={};if(!Array.isArray(db.years[y][k]))db.years[y][k]=[];var r=materialRow(db,y,k,src&&src._id);if(!r&&src){r=copy(src);db.years[y][k].push(r)}return r}
+  window.mergeMaterialSyncV98=function(remote,patch){var out=copy(remote)||{},src=plain(patch)?patch:{};if(!plain(out))out={};if(!plain(out.years))out.years={};if(!plain(out._cellUpdated))out._cellUpdated={};if(!plain(out._rowDeleted))out._rowDeleted={};var skip={years:1,egiExtras:1,_cellUpdated:1,_rowDeleted:1,_extraUpdated:1,_extraDeleted:1};Object.keys(src).forEach(function(k){if(skip[k])return;var v=src[k];if(plain(v)){if(!plain(out[k]))out[k]={};Object.keys(v).forEach(function(a){out[k][a]=copy(v[a])})}else if(v!==undefined)out[k]=copy(v)});var upd=src._cellUpdated||{},local=src;Object.keys(upd).sort(function(a,b){return materialTimestamp(upd[a])-materialTimestamp(upd[b])}).forEach(function(key){var p=String(key).split('|'),y=p[0],k=p[1],id=p[2],field=p.slice(3).join('|'),stamp=materialTimestamp(upd[key]),old=materialTimestamp(out._cellUpdated[key]),from=materialRow(local,y,k,id)||materialRow(state.materialDB,y,k,id);if(!from||stamp<old)return;var to=materialEnsureRow(out,y,k,from);if(!to)return;if(field==='vendor')to.vendor=from.vendor;else if(/^m\d+$/.test(field)){var mi=+field.slice(1);to.m=Array.isArray(to.m)?to.m:[];to.m[mi]=(from.m||[])[mi]||''}else if(field==='auto'){Object.assign(to,copy(from))}out._cellUpdated[key]=stamp});var dels=src._rowDeleted||{};Object.keys(dels).forEach(function(id){var stamp=materialTimestamp(dels[id]);if(stamp<materialTimestamp(out._rowDeleted[id]))return;Object.keys(out.years).forEach(function(y){Object.keys(out.years[y]||{}).forEach(function(k){var rows=materialRows(out,y,k),r=materialRow(out,y,k,id),newest=0;if(r)Object.keys(out._cellUpdated).forEach(function(q){if(q.indexOf('|'+k+'|'+id+'|')>=0)newest=Math.max(newest,materialTimestamp(out._cellUpdated[q]))});if(r&&stamp>=newest)out.years[y][k]=rows.filter(function(x){return x!==r})})});out._rowDeleted[id]=stamp});var exUpd=src._extraUpdated||{};if(!Array.isArray(out.egiExtras))out.egiExtras=[];Object.keys(exUpd).forEach(function(key){var p=String(key).split('|'),id=p[0],field=p[1],stamp=materialTimestamp(exUpd[key]),old=materialTimestamp((out._extraUpdated||{})[key]),from=(src.egiExtras||state.materialDB.egiExtras||[]).find(function(x){return x&&String(x._id||'')===id});if(!from||stamp<old)return;var to=out.egiExtras.find(function(x){return x&&String(x._id||'')===id});if(!to){to=copy(from);out.egiExtras.push(to)}else to[field]=from[field];out._extraUpdated=out._extraUpdated||{};out._extraUpdated[key]=stamp});var exDel=src._extraDeleted||{};Object.keys(exDel).forEach(function(id){var stamp=materialTimestamp(exDel[id]);if(stamp>=materialTimestamp((out._extraDeleted||{})[id])){out.egiExtras=out.egiExtras.filter(function(x){return String(x&&x._id||'')!==id});out._extraDeleted=out._extraDeleted||{};out._extraDeleted[id]=stamp}});return out}
+  function installMaterialSyncMerge(){var native=window.gsApplyField;if(typeof native!=='function'||native.__materialMergeV98)return;var merged=function(n,p,k,v){if(n==='materialDB'){p[k]=window.mergeMaterialSyncV98(p[k],v);return}return native.apply(this,arguments)};merged.__materialMergeV98=true;window.gsApplyField=merged;try{gsApplyField=merged}catch(_){}}
+  function installMenu(){var price=document.querySelector('#topMenu [data-act="price"]');if(!price||document.querySelector('#topMenu [data-act="matprice"]'))return;var wrap=price.parentElement;wrap.insertAdjacentHTML('beforeend','<button class="tm-item" data-act="matprice"><span class="ic">🧱</span>원자재 단가</button>');var b=wrap.querySelector('[data-act="matprice"]');b.addEventListener('click',function(e){e.stopPropagation();if(typeof closeFilePanel==='function')closeFilePanel();document.querySelectorAll('.tm-top.open').forEach(function(t){t.classList.remove('open');if(t.nextElementSibling)t.nextElementSibling.classList.remove('open')});document.querySelectorAll('.tile,.tm-item').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('[data-act="matprice"]').forEach(function(x){x.classList.add('active')});state.act='matprice';state.sortKey=null;state._drill=false;state._parent=null;try{window.runAct()}catch(err){try{window.materialPricePage()}catch(_){var result=document.getElementById('result');if(result)result.innerHTML='<div class="card"><div class="cb">원자재 단가 화면을 열지 못했습니다. 다시 선택해 주세요.</div></div>'}}})}
+  function installRunAct(){var nativeRun=window.runAct;if(typeof nativeRun!=='function'||nativeRun.__materialV97)return;var wrapped=function(){if(state.act==='matprice'){var summary=document.getElementById('summary'),sumTop=document.getElementById('sumTop'),mgr=document.getElementById('mgrFilterBar'),set=document.getElementById('setPanel');if(summary)summary.style.display='none';if(sumTop)sumTop.style.display='none';if(mgr)mgr.style.display='none';if(set)set.style.display='none';state._lastAct='matprice';window.materialPricePage();return}return nativeRun.apply(this,arguments)};wrapped.__materialV97=true;window.runAct=wrapped}
+  function addSyncFields(){var native=window.gsFields;if(typeof native!=='function'||native.__materialV97)return;var wrapped=function(){var a=native.apply(this,arguments);if(!a.some(function(x){return x[0]==='materialDB'})){a.push(['materialDB',state,'materialDB'],['materialBase',state,'materialBase'])}return a};wrapped.__materialV97=true;window.gsFields=wrapped}
+  function wrapSaveSettings(){var native=window.saveSettings;if(typeof native!=='function'||native.__materialV97)return;var wrapped=async function(){var r=await native.apply(this,arguments);try{var s=await idbGet('settings')||{};s.materialDB=copy(state.materialDB);s.materialBase=copy(state.materialBase);await idbSet('settings',s)}catch(_){ }return r};wrapped.__materialV97=true;window.saveSettings=wrapped}
+  async function restoreMaterialSettings(){try{var s=await idbGet('settings');if(s&&s.materialDB)state.materialDB=s.materialDB;if(s&&s.materialBase)state.materialBase=s.materialBase;ensureState()}catch(_){ensureState()}}
+  function wrapSyncRefresh(){['gsLoad','gsSave'].forEach(function(name){var native=window[name];if(typeof native!=='function'||native.__materialV97)return;var wrapped=async function(){var ok=await native.apply(this,arguments);if(ok&&state.act==='matprice')window.renderMaterialPricePage();return ok};wrapped.__materialV97=true;window[name]=wrapped})}
+  function install(){ensureState();installMenu();installRunAct();addSyncFields();installMaterialSyncMerge();wrapSaveSettings();wrapSyncRefresh();var r=document.getElementById('mp-import-v97');if(r&&!r._bound)r.onchange=function(e){window.importMaterialPricesV97(e)};}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){install();restoreMaterialSettings()},{once:true});else{install();restoreMaterialSettings()}
+  setTimeout(install,400);setTimeout(install,1600);
 })();
 </script>
 
