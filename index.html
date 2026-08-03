@@ -983,6 +983,20 @@ svg text{
 #result .app-product-icon{
   font-size:12px!important;
 }
+#result .price-class-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:20px;
+  height:20px;
+  margin:1px 3px 1px 0;
+  padding:0;
+  border-radius:50%;
+  font-size:12px;
+  line-height:1;
+  vertical-align:middle;
+  cursor:help;
+}
 #result:has(#cmpAdd) #tbl tbody td:nth-child(2),
 #result:has(#cmpAdd) #tbl tbody td:nth-child(2) b{
   font-size:13px!important;
@@ -3405,7 +3419,8 @@ const CLS_CATS=[
  {k:'일반업체',kw:['일반업체'],ic:'🏬'} ];
 const CLS_COLORS={'건설사':'#1d4ed8','단종/전문건설':'#0e7490','대리점':'#b45309','공업사':'#15803d','인테리어/리모델링':'#9333ea','특수문':'#be123c','방음문':'#7c3aed','문틀가공':'#475569','스텐/상업용도어':'#0891b2','고급현관문':'#a21caf','하드웨어':'#a16207','부자재가공':'#4d7c0f','콘테이너':'#0d9488','일반업체':'#64748b','미분류':'#94a3b8'};
 function catsOf(cust){ const o=state.clsOverride,k=_nm(cust); const ov=o&&(o[cust]||o[k]),renameCat=v=>v==='스텐창호'?'스텐/상업용도어':v; if(Array.isArray(ov))return [...new Set(ov.filter(Boolean).map(renameCat))].slice(0,4); const src=clsOf(cust)||''; const cats=[]; for(const c of CLS_CATS){ if(c.kw.some(kw=>src.includes(kw)))cats.push(c.k); } if(cats.length)return [...new Set(cats)].slice(0,4); return (src&&src!=='미분류')?['일반업체']:['미분류']; }
- function catBadge(kk){ const cc=CLS_CATS.find(c=>c.k===kk); const ic=cc?cc.ic:''; const col=CLS_COLORS[kk]||'#64748b'; return `<span class="app-class-icon" style="display:inline-block;margin:1px 3px 1px 0;padding:1px 7px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col}1a;color:${col};border:1px solid ${col}55;white-space:nowrap">${ic} ${esc(kk)}</span>`; }
+function catBadge(kk){ const cc=CLS_CATS.find(c=>c.k===kk); const ic=cc?cc.ic:''; const col=CLS_COLORS[kk]||'#64748b'; return `<span class="app-class-icon" style="display:inline-block;margin:1px 3px 1px 0;padding:1px 7px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col}1a;color:${col};border:1px solid ${col}55;white-space:nowrap">${ic} ${esc(kk)}</span>`; }
+function catsIcons(cust){ const cs=catsOf(cust); return cs.map(kk=>{ const cc=CLS_CATS.find(c=>c.k===kk); const ic=cc?cc.ic:'🏷️'; const col=CLS_COLORS[kk]||'#64748b'; return `<span class="price-class-icon" title="${esc(kk)}" aria-label="${esc(kk)}" style="background:${col}1a;color:${col};border:1px solid ${col}55">${ic}</span>`; }).join(''); }
 function catsBadges(cust){ const cs=catsOf(cust); return cs.length?cs.map(catBadge).join(''):'<span class="sub2">미분류</span>'; }
 function creditVendorSearch(rows){
   const {arr}=aggBy(rows,'cust'); const max=Math.max(1,...arr.map(o=>o.amt));
@@ -4259,7 +4274,7 @@ function prodPriceList(prodLabel, rows, back){
   arr.forEach(o=>{ o.isMax=(o.lastPrice===gMax&&gMax>0); o.isMin=(o.lastPrice===gMin&&gMin>0&&gMax!==gMin); });
   arr.sort((a,b)=>b.lastPrice-a.lastPrice);
   const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
-    {k:'label',t:'거래처',cls:'l',cell:o=>esc(o.label)+(o.isMax?' <span style="background:#fee2e2;color:var(--red);font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">최고</span>':'')+(o.isMin?' <span style="background:#dbeafe;color:#2563eb;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">최저</span>':'')},
+    {k:'label',t:'거래처',cls:'l',cell:o=>esc(o.label)+' '+catsBadges(o.cust)+(o.isMax?' <span style="background:#fee2e2;color:var(--red);font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">최고</span>':'')+(o.isMin?' <span style="background:#dbeafe;color:#2563eb;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">최저</span>':'')},
     {k:'_s',t:'영업관리',cls:'mgr',cell:o=>mgrBadge(mgrS(o.label)),sortVal:o=>mgrS(o.label)},
     {k:'_t',t:'기술영업',cls:'mgr',cell:o=>mgrBadge(mgrT(o.label)),sortVal:o=>mgrT(o.label)},
     {k:'lastPrice',t:'마지막 출고단가(원)',cell:o=>`<b style="color:${o.isMax?'var(--red)':o.isMin?'#2563eb':'var(--navy)'}">${won(Math.round(o.lastPrice))}</b>`,sortVal:o=>o.lastPrice},
@@ -4273,7 +4288,13 @@ function prodPriceList(prodLabel, rows, back){
 function priceHistory(cust, rows, label, back){
   state.sortKey=null; state._search='';
   const ym=state.price.histMode||'all';
-  const ctrl=`<div class="ctrlbar"><b style="font-size:12px">이력 보기</b> <div class="seg" id="phSeg"><button data-v="all" class="${ym==='all'?'on':''}">전체(출고별)</button><button data-v="year" class="${ym==='year'?'on':''}">연도별</button></div></div>`;
+  const histKey=rows.length?((rows[0].code||'(미상)')+'│'+(rows[0].spec||'')):'';
+  const histPm=histKey?lastPriceByProdCust(priceRows()).get(histKey):null;
+  const histOthers=histPm?[...histPm.entries()].filter(([c,v])=>c!==cust&&v.lastPrice>0):[];
+  let histMax=0,histMin=0,histMaxC='',histMinC='';
+  histOthers.forEach(([c,v])=>{ if(v.lastPrice>histMax){histMax=v.lastPrice;histMaxC=c;} if(!histMin||v.lastPrice<histMin){histMin=v.lastPrice;histMinC=c;} });
+  const histSummary=`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin:0 0 8px;padding:9px 12px;border:1px solid #dbe4ee;border-radius:9px;background:#f8fafc;font-size:13px"><b style="color:#334155">타사 단가 비교</b><span style="color:var(--red)">타사 최고 <b>${histMax?won(Math.round(histMax)):'-'}</b>${histMaxC?` <span class="sub2" style="font-size:13px">(${esc(histMaxC)})</span>`:''}</span><span style="color:#2563eb">타사 최저 <b>${histMin?won(Math.round(histMin)):'-'}</b>${histMinC?` <span class="sub2" style="font-size:13px">(${esc(histMinC)})</span>`:''}</span><span class="sub2" style="font-size:13px">동일 제품의 타사 최신 출고단가 기준</span></div>`;
+  const ctrl=`<div class="ctrlbar"><b style="font-size:12px">이력 보기</b> <div class="seg" id="phSeg"><button data-v="all" class="${ym==='all'?'on':''}">전체(출고별)</button><button data-v="year" class="${ym==='year'?'on':''}">연도별</button></div></div>${histSummary}`;
   const bind=()=>{ $('#result').querySelectorAll('#phSeg button').forEach(b=>b.addEventListener('click',()=>{state.price.histMode=b.dataset.v;priceHistory(cust,rows,label,back);})); };
   if(ym==='year'){
     const m=new Map();
