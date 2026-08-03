@@ -6576,7 +6576,7 @@ async function gsTest(){ const u=(state.gsync&&state.gsync.url)||'', k=(state.gs
   if(!hasData){ if(st){st.style.color='#b45309';st.textContent='④ 연결은 되지만 구버전 .gs 입니다. 새 .gs로 교체 후 \'새 버전\'으로 재배포해야 메모·전체설정이 동기화됩니다.';} return; }
   const notes=(data.fcNotesHtml||data.fcNotesSales||data.fcNotesTech)?'있음':'없음'; const empty=(ck(data.mgrOverride)===0&&ck(data.clsOverride)===0&&ck(data.fcCustMemo)===0&&notes==='없음');
   if(st){ st.style.color=empty?'#b45309':'#0f766e'; st.textContent=(empty?'✓ 연결 성공 — 다만 시트가 비어 있음(보내는 쪽에서 ⬆ 저장 필요)':'✓ 연결 성공! 시트 데이터 — 담당자 '+ck(data.mgrOverride)+'·분류 '+ck(data.clsOverride)+'·메모 '+(ck(data.fcCustMemo)+ck(data.fcProdMemo))+'·주요사항 '+notes); } }
-function gsStartPoll(){ if(_gsPollT)clearInterval(_gsPollT); _gsPollT=setInterval(()=>{ if(!state.gsync||!state.gsync.auto||!state.gsync.url)return; if(_gsBusy||_gsPendingPush)return; if(document.hidden)return; const a=document.activeElement; if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable))return; gsLoad(true); }, 60000); }
+function gsStartPoll(){ if(_gsPollT)clearInterval(_gsPollT); _gsPollT=setInterval(()=>{ if(!state.gsync||!state.gsync.auto||!state.gsync.url)return; if(_gsBusy||_gsPendingPush)return; if(document.hidden)return; const a=document.activeElement; if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable))return; gsLoad(true); }, 180000); }
 
 
 /* 영업팀 실적보고 > 1. 목표대비 달성의 '실적' 행과 동일한 월매출 집계입니다. */
@@ -7005,7 +7005,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
   var APP_VERSION='v40 · 제외메뉴·방문필요';
   var BASE_KEY='sales_gsync_base_stable_v1';
   var OLD_BASE_KEYS=['sales_gsync_base_v02','sales_gsync_base_v01'];
-  var AUTO_DELAY=5000, BUSY_RETRY=1300, MAX_AUTO_RETRY=5;
+  var AUTO_DELAY=15000, BUSY_RETRY=1500, MAX_AUTO_RETRY=6;
   var internalPersist=false, baseReadyPromise=null, autoRetry=0;
   var uiMode='idle', uiLabel='', lastTransient='';
 
@@ -7245,7 +7245,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
     finally{_gsBusy=false;gsUpdateBtn()}
   };
 
-  window.gsStartPoll=gsStartPoll=function(){if(_gsPollT)clearInterval(_gsPollT);_gsPollT=setInterval(function(){if(!state.gsync||!state.gsync.auto||!state.gsync.url||!state.gsync.key||_gsBusy||_gsPendingPush||document.hidden)return;var a=document.activeElement;if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable))return;gsLoad(true)},60000)};
+  window.gsStartPoll=gsStartPoll=function(){if(_gsPollT)clearInterval(_gsPollT);_gsPollT=setInterval(function(){if(!state.gsync||!state.gsync.auto||!state.gsync.url||!state.gsync.key||_gsBusy||_gsPendingPush||document.hidden)return;var a=document.activeElement;if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable))return;gsLoad(true)},180000)};
 
   function removeHistoryDuplicates(){['elogBtn','cmElog','fcElogBtn','ciElog'].forEach(function(x){var e=id(x);if(e)e.remove()})}
   function updateHistoryBtn(){var b=id('headerElogBtn');if(!b)return;var n=typeof elogUnseen==='function'?elogUnseen():0;b.textContent='🕘 수정이력'+(n?' ('+n+'건)':'');b.classList.toggle('has-unseen',n>0)}
