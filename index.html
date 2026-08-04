@@ -3834,6 +3834,23 @@ function homeTrendSVG(){
   if(state.period==='all'||!state.period){ const endYM=allYM[allYM.length-1]; const [ey,em]=endYM.split('-').map(Number); const NN=18; buckets=[]; for(let i=NN-1;i>=0;i--){ let tt=ey*12+(em-1)-i; buckets.push(Math.floor(tt/12)+'-'+String(tt%12+1).padStart(2,'0')); } }
   else { let Y; if(state.period==='year') Y=+state.periodKey||state.periodYear; else if(state.periodKey&&/^\d{4}/.test(String(state.periodKey))) Y=+String(state.periodKey).slice(0,4); else if(state.period==='range'&&state.rangeEnd) Y=state.rangeEnd.getFullYear(); else Y=+allYM[allYM.length-1].slice(0,4); buckets=[]; for(let mo=1;mo<=12;mo++) buckets.push(Y+'-'+String(mo).padStart(2,'0')); }
   const N=buckets.length; const bIdx={}; buckets.forEach((b,i)=>bIdx[b]=i); const ser=new Array(N).fill(0); rowsF.forEach(r=>{ const bi=bIdx[r.ym]; if(bi!=null)ser[bi]+=amtOf(r); }); const purchaseSeries=buckets.map(b=>+purchaseSync[b]||0); const hasPurchase=purchaseSeries.some(v=>v>0);
+  /* [v102 동기화 정합성 수정] 매입비율(%)의 분모.
+     실적선 ser[]은 담당자·업체분류·상태 필터(MF)를 타지만, 동기화된 매입액은 전사 합계라
+     필터를 걸면 분모만 줄어 비율이 실제보다 크게 나왔습니다. 또 ser[]에는 목표합산 제외
+     거래처가 포함되어, 매입분석도구의 💹 매출대비 매입비율 표(분모=확정실적)와도 달랐습니다.
+     → 분모를 wrCmgrMonthlyActuals() 기준(= 매입분석도구로 보내는 salesMonthlySync와 동일)으로
+       고정해 두 화면의 비율이 항상 일치하도록 합니다. */
+  const _ratioSales={}; (function(){
+    const syncMap=state.salesMonthlySync||{};
+    [...new Set(buckets.map(b=>b.slice(0,4)))].forEach(y=>{
+      const a=(typeof wrCmgrMonthlyActuals==='function')?wrCmgrMonthlyActuals(+y):null;
+      for(let m=1;m<=12;m++){ const k=y+'-'+String(m).padStart(2,'0');
+        _ratioSales[k]=(a&&a[m]!=null)?(+a[m]||0):(+syncMap[k]||0); }
+    });
+  })();
+  const ratioBase=buckets.map(b=>+_ratioSales[b]||0);
+  const _pMeta=(purchaseSync&&purchaseSync._meta)||null;
+  const _basisWarn=!!(_pMeta&&_pMeta.basis&&_pMeta.basis!==(state.basis==='공급가'?'supply':'total'));
   const ys=dataYears(); const CY=ys[ys.length-1]; const pyByMonth={}; rowsF.forEach(r=>{ if(+r.y===CY-1)pyByMonth[monthOf(r)]=(pyByMonth[monthOf(r)]||0)+amtOf(r); });
   let lastIdx=-1; for(let i=0;i<N;i++) if(ser[i]>0) lastIdx=i;
   const tgt=new Array(N).fill(null); for(let i=lastIdx+1;i<N;i++){ const [by,bm]=buckets[i].split('-').map(Number); if(by===CY){ const pv=pyByMonth[bm]||0; const pct=(state.fc.pct[bm]!=null&&state.fc.pct[bm]!=='')?+state.fc.pct[bm]:0; if(pv>0)tgt[i]=pv*(1+pct/100); } }
@@ -3856,11 +3873,15 @@ function homeTrendSVG(){
   for(let i=0;i<N;i++){ if(purchaseSeries[i]>0)dots+=`<circle cx="${x(i).toFixed(1)}" cy="${y(purchaseSeries[i]).toFixed(1)}" r="2.8" fill="#fff" stroke="#7c3aed" stroke-width="1.7"/>`; }
   let vlab=''; for(let i=0;i<=lastIdx;i++){ if(ser[i]<=0)continue; if(i===imax||i===imin)continue; vlab+=`<text x="${x(i).toFixed(1)}" y="${(y(ser[i])-7).toFixed(1)}" font-size="${i===lastIdx?11:10}" fill="${i===lastIdx?'#e5202a':'#334155'}" font-weight="${i===lastIdx?'800':'600'}" text-anchor="middle">${shortAmt(ser[i])}</text>`; }
   for(let i=lastIdx+1;i<N;i++){ if(tgt[i]!=null)vlab+=`<text x="${x(i).toFixed(1)}" y="${(y(tgt[i])-7).toFixed(1)}" font-size="9.5" fill="#b45309" font-weight="600" text-anchor="middle">${shortAmt(tgt[i])}</text>`; }
-  for(let i=0;i<N;i++){ if(purchaseSeries[i]>0){ const share=ser[i]>0?(purchaseSeries[i]/ser[i]*100).toFixed(1)+'%':'—'; const px=x(i).toFixed(1); const py=(y(purchaseSeries[i])-18).toFixed(1); vlab+=`<text x="${px}" y="${py}" font-size="8.5" fill="#7c3aed" font-weight="400" text-anchor="middle"><tspan x="${px}" dy="0">${shortAmt(purchaseSeries[i])}</tspan><tspan x="${px}" dy="11">(${share})</tspan></text>`; } }
+  for(let i=0;i<N;i++){ if(purchaseSeries[i]>0){ const share=ratioBase[i]>0?(purchaseSeries[i]/ratioBase[i]*100).toFixed(1)+'%':'—'; const px=x(i).toFixed(1); const py=(y(purchaseSeries[i])-18).toFixed(1); vlab+=`<text x="${px}" y="${py}" font-size="8.5" fill="#7c3aed" font-weight="400" text-anchor="middle"><tspan x="${px}" dy="0">${shortAmt(purchaseSeries[i])}</tspan><tspan x="${px}" dy="11">(${share})</tspan></text>`; } }
   const avgLab=avg>0?`<rect x="${(W-padR-96).toFixed(1)}" y="${(y(avg)-14).toFixed(1)}" width="94" height="15" rx="3" fill="#ffffff" fill-opacity="0.88" stroke="#e2e8f0"/><text x="${(W-padR-6).toFixed(1)}" y="${(y(avg)-3).toFixed(1)}" font-size="10" fill="#64748b" font-weight="700" text-anchor="end">평균 ${shortAmt(avg)}</text>`:'';
   const fs=N>16?9:(N>12?10:11); let xlab=''; buckets.forEach((b,i)=>{ xlab+=`<text x="${x(i).toFixed(1)}" y="${(padT+ih+15).toFixed(1)}" font-size="${fs}" fill="#94a3b8" text-anchor="middle">${b.slice(2)}</text>`; });
   let manLab=''; buckets.forEach((b,i)=>{ const _hc=(state.headMonthly&&state.headMonthly[b])||(state.headYearDefault&&state.headYearDefault[+String(b).slice(0,4)])||state.headcount||0; if(_hc)manLab+=`<text x="${x(i).toFixed(1)}" y="${(padT+ih+31).toFixed(1)}" font-size="${fs}" fill="#6366f1" font-weight="700" text-anchor="middle">${_hc}</text>`; });
-  const purchaseLegend=hasPurchase?`<span style="color:#7c3aed"><i style="display:inline-block;width:18px;border-top:3px solid #7c3aed;vertical-align:middle;margin-right:4px"></i>매입(동기화)</span>`:'';
+  // v102: 매입선·비율은 필터와 무관한 전사 기준임을 범례에 명시하고, 금액기준(공급가/합계)이
+  // 매입분석도구와 다르면 비율이 왜곡되므로 경고를 함께 표시합니다.
+  const _pNote=hasPurchase?(gActive()?' <span style="color:#64748b;font-weight:700">(비율=전사 확정실적 기준·필터 미적용)</span>':' <span style="color:#64748b;font-weight:700">(비율=확정실적 기준)</span>'):'';
+  const _pWarn=(hasPurchase&&_basisWarn)?`<span style="color:#dc2626">⚠ 금액기준 불일치(매입분석: ${_pMeta.basis==='supply'?'공급가':'합계액'} / 매출: ${state.basis==='공급가'?'공급가':'합계액'})</span>`:'';
+  const purchaseLegend=hasPurchase?`<span style="color:#7c3aed"><i style="display:inline-block;width:18px;border-top:3px solid #7c3aed;vertical-align:middle;margin-right:4px"></i>매입(동기화)</span>${_pNote}${_pWarn}`:'';
   const legend=`<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 15px;margin-top:3px;padding-top:6px;border-top:1px solid #eef2f7;font-size:11px;font-weight:800;line-height:1.35">${purchaseLegend}<span style="color:#475569"><i style="display:inline-block;width:18px;border-top:3px solid #1e3a5f;vertical-align:middle;margin-right:4px"></i>실적</span><span style="color:#b45309"><i style="display:inline-block;width:18px;border-top:3px dashed #f59e0b;vertical-align:middle;margin-right:4px"></i>목표</span><span style="color:#6366f1">■ 인원(명)</span><span style="color:#16a34a">▲ 최고 ${shortAmt(mx)}</span><span style="color:#b45309">▼ 최저 ${shortAmt(mn)}</span><span style="color:#64748b">● 평균 ${shortAmt(avg)}</span><span style="color:#7c3aed">◆ 남은월평균목표 ${shortAmt(remAvg)}</span></div>`;
   return `<div style="display:flex;flex-direction:column;height:100%"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:330px;display:block"><line x1="${padL}" y1="${padT}" x2="${W-padR}" y2="${padT}" stroke="#eef2f7"/>${ylines}${avgLine}${bepLine}${nowLine}<path d="${tPath}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 4"/><path d="${aPath}" fill="none" stroke="#1e3a5f" stroke-width="2.4"/>${hasPurchase?`<path d="${purchasePath}" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`:''}${dots}${mm}${avgLab}${vlab}${xlab}${manLab}</svg>${legend}</div>`;
 }
