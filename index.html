@@ -289,6 +289,16 @@
   .wr-year-pace-toggle .wr-toggle-caret{flex:0 0 auto;min-width:31px;text-align:center}
   .wr-year-pace-toggle .wr-year-pace-desc{font-size:11px;color:#64748b;font-weight:600}
   .wr-year-pace-head .wr-ytgl{margin-left:auto;flex:0 0 auto}
+  .wr-year-pace-head .wr-ytgl-btn{font-size:14px;padding:5px 13px}
+  /* PD 사업부 임가공비 표: 마이너스 데이터는 붉은색 */
+  .pd-neg{color:#dc2626!important;font-weight:700}
+  input.pdin.pd-neg{color:#dc2626!important;font-weight:700}
+  /* 주간보고 PD임가공 행 링크 */
+  .wr-pd-link{color:#111827;cursor:pointer;text-decoration:none}
+  .wr-pd-link:hover{color:#1d4ed8}
+  .wr-pd-ratio td{color:#111827}
+  /* 연 목표대비 달성 표: 구분열 확대 + 월 열 균등 */
+  .wr-annual-table td:first-child,.wr-annual-table th:first-child{white-space:nowrap;overflow:visible}
   @media(max-width:760px){.wr-mpace-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .wr-memo{width:100%;min-width:150px;padding:5px 7px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-family:inherit;font-size:11px;color:#1f2937}
   .wr-memo:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.12)}
@@ -1839,7 +1849,12 @@ function wrModel(){
   // PD사업부 임가공비는 매출·목표와 구분해 월별 원금액을 별도 표시한다.
   const pdVals=Array(13).fill(0);
   for(let mm=1;mm<=12;mm++)pdVals[mm]=pdMonth(mm);
-  annualRows.push({label:'PD임가공',vals:pdVals,total:pdVals.reduce((a,v)=>a+(v||0),0)});
+  const pdTotal=pdVals.reduce((a,v)=>a+(v||0),0);
+  annualRows.push({label:'PD임가공',vals:pdVals,total:pdTotal,pdLink:true});
+  // PD임가공 금액 아래줄: 실적 대비 비중(%)
+  const pdShare=Array(13).fill(null);
+  for(let mm=1;mm<=12;mm++){ const act=annualRows[2].vals[mm]; pdShare[mm]=act?pdVals[mm]/act*100:null; }
+  annualRows.push({label:'실적대비 PD임가공',vals:pdShare,total:annualRows[2].total?pdTotal/annualRows[2].total*100:null,isPct:true,pdRatio:true});
   const customers=new Set([...plan.annual.keys(),...cutoffRows.map(r=>r.cust)]), rows=[];
   const customTarget=(c)=>{
     if(!s.isCustom)return plan.revised[m].get(c)||0;
@@ -2134,7 +2149,12 @@ function wrP2Forecast(model){
 
 function wrPage1(model){
   const today=wrTodayDate(),currentMonthNo=+model.y===today.getFullYear()?today.getMonth()+1:0,currentWeekIdx=model.ranges.findIndex(r=>today>=r.sDate&&today<=r.eDate);
-  const arows=model.annualRows.map((r,i)=>`<tr><td><b>${r.label}</b></td><td class="wr-total-col">${i===3?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${[(r.label==='목표수정액'&&mi<SALES_ACTUAL_CUTOFF_MONTH)||(r.label==='실적'&&mi<SALES_ACTUAL_CUTOFF_MONTH)?'wr-fixed-actual':'',mi+1===currentMonthNo?'wr-current-date':''].filter(Boolean).join(' ')}">${i===3?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`).join('');
+  const pdJump="event.stopPropagation();state.act='trend';state.trend.pdOpen=true;runAct();setTimeout(function(){var e=document.getElementById('pdToggle');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});},150);";
+  const arows=model.annualRows.map((r,i)=>{
+    const asPct=(i===3)||r.isPct;
+    const lab=r.pdLink?`<b class="wr-pd-link" onclick="${pdJump}" title="🏭 PD 사업부 임가공비로 이동">${r.label} ▸</b>`:`<b>${r.label}</b>`;
+    return `<tr class="${r.pdRatio?'wr-pd-ratio':''}"><td>${lab}</td><td class="wr-total-col">${asPct?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${[(r.label==='목표수정액'&&mi<SALES_ACTUAL_CUTOFF_MONTH)||(r.label==='실적'&&mi<SALES_ACTUAL_CUTOFF_MONTH)?'wr-fixed-actual':'',mi+1===currentMonthNo?'wr-current-date':''].filter(Boolean).join(' ')}">${asPct?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`;
+  }).join('');
   const rangeCount=Math.max(1,model.ranges.length),memoWidth=model.periodMode==='month'?'24%':model.periodMode==='year'?'8%':model.periodMode==='week'?'8%':'16%',memoPct=parseFloat(memoWidth),rangeWidth=Math.max(.8,(100-67.4-memoPct)/rangeCount).toFixed(2)+'%';
   const wkHead=model.ranges.map((r,idx)=>`<th class="wr-sortable ${idx===currentWeekIdx?'wr-current-date':''}" data-sort-col="${8+idx}" data-sort-type="num" style="width:${rangeWidth}" title="클릭하여 정렬">${model.isCustom?wrDateText(r.sDate).slice(5):r.n+'주'}<br><span style="font-weight:500">(${model.isCustom?wrDateText(r.sDate).slice(5)+'~'+wrDateText(r.eDate).slice(5):r.s+'~'+r.e})</span><span class="wr-sort-arrow">↕</span></th>`).join('');
   const issueMode=['current','future'].includes(state.weekly&&state.weekly.issueTableFilter)?state.weekly.issueTableFilter:'all';
@@ -2153,7 +2173,7 @@ function wrPage1(model){
   // 기존에는 빈 결과에서 total.weeks가 빈 배열이 되어 합계 행 오른쪽 테두리가 끊어졌다.
   const totalRow=`<tr class="wr-sum"><td class="wr-no"></td><td>합계</td><td></td><td>${wrAmt(total.annual)}</td><td>${wrAmt(total.before)}</td><td>${wrPct(total.annualRate)}</td><td>${wrAmt(total.remaining)}</td><td>${wrAmt(total.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${total.remainingWeekAvg?won(total.remainingWeekAvg)+'원':'-'}</b></div></td>${Array.from({length:model.ranges.length},(_,idx)=>`<td class="${idx===currentWeekIdx?'wr-current-date':''}">${model.isCustom||idx<model.w?wrAmt((total.weeks||[])[idx]||0):'-'}</td>`).join('')}<td>${wrAmt(total.monthActual)}</td><td>${wrPct(total.monthRate)}</td><td></td></tr>`;
   const beforeEnd=new Date(model.rangeStart);beforeEnd.setDate(beforeEnd.getDate()-1);const beforeLab=model.isCustom?`${model.y}.1.1~${wrDateText(beforeEnd)}`:(model.m>1?`1~${model.m-1}월`:'전월'); const selectedLab=model.isCustom?'기간':' '+model.m+'월',monthActualCol=8+model.ranges.length,monthRateCol=9+model.ranges.length;
-  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 목표액=월별 목표 합계 · 목표수정액=목표추이 올해 연매출 목표와 동일 · 실적=거래처 담당자 월매출 합계 기준)</span></div><div class="wr-tablewrap"><table class="wr-table"><thead><tr><th style="width:82px">구분</th><th style="width:112px">합계액</th>${Array.from({length:12},(_,i)=>`<th class="${i+1===currentMonthNo?'wr-current-date':''}">${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
+  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 목표액=월별 목표 합계 · 목표수정액=목표추이 올해 연매출 목표와 동일 · 실적=거래처 담당자 월매출 합계 기준)</span></div><div class="wr-tablewrap"><table class="wr-table wr-annual-table"><thead><tr><th style="width:14%">구분</th><th style="width:9%">합계액</th>${Array.from({length:12},(_,i)=>`<th class="${i+1===currentMonthNo?'wr-current-date':''}" style="width:6.41%">${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
     <div class="wr-pace-stack">${wrYearPacingSection(model)}${wrMonthPacingSection(model)}</div>
     <div class="wr-section">▶ 업체별 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">· ${model.isCustom?wrDateText(model.rangeStart)+' ~ '+wrDateText(model.rangeEnd):model.y+'년 '+model.m+'월 '+model.w+'주차'} 기준 · 단위: 원 · 정렬할 항목의 헤더를 클릭</span></div>${wrRankBar('업체',model.custRankInfo,issueFilterActions)}<div class="wr-tablewrap wr-cust-target-wrap"><table class="wr-table wr-cust-target-fit ${model.periodMode==='week'?'wr-cust-target-week':''} ${model.periodMode==='month'?'wr-cust-target-note-wide':''}" id="wrCustTargetTable"><thead><tr><th class="wr-no" rowspan="2" style="width:2.6%">NO</th><th class="wr-sortable" data-sort-col="1" data-sort-type="text" rowspan="2" style="width:9%" title="업체명 정렬">업체<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="2" data-sort-type="text" rowspan="2" style="width:6%" title="영업관리 구분 정렬">영업관리<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="3" data-sort-type="num" rowspan="2" style="width:8.5%" title="목표액 정렬">${model.y}년도<br>목표액<span class="wr-sort-arrow">↕</span></th><th colspan="3">매출 실적</th><th class="wr-sortable" data-sort-col="7" data-sort-type="num" rowspan="2" style="width:8.5%" title="기간 목표 정렬">${model.isCustom?'기간':' '+model.m+'월'}<br>목표<br><span style="font-size:7px;color:#64748b">${model.isCustom?'일할 계산':'남은주간 평균'}</span><span class="wr-sort-arrow">↕</span></th><th colspan="${model.ranges.length}">${selectedLab} 구간</th><th class="wr-sortable" data-sort-col="${monthActualCol}" data-sort-type="num" rowspan="2" style="width:8.5%" title="달성금액 정렬">달성금액<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="${monthRateCol}" data-sort-type="num" rowspan="2" style="width:3.7%" title="달성률 정렬">${model.isCustom?'기간 달성률':'월 달성률'}<span class="wr-sort-arrow">↕</span></th><th rowspan="2" style="width:${memoWidth}">비고</th></tr><tr><th class="wr-center wr-sortable" data-sort-col="4" data-sort-type="num" style="width:8.5%" title="이전 실적 정렬">${beforeLab}<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="5" data-sort-type="num" style="width:3.6%" title="연 달성률 정렬">달성율<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="6" data-sort-type="num" style="width:8.5%" title="잔여 목표액 정렬">잔여 목표액<span class="wr-sort-arrow">↕</span></th>${wkHead}</tr></thead><tbody>${body}${totalRow}</tbody></table></div><div class="wr-note">${model.isCustom?'기간 목표는 해당 월 목표를 일수 기준으로 계산합니다.':'월목표 아래 남은주간 평균은 ‘남은 월목표액 ÷ 선택 주차 이후 남은 주차 수’입니다.'} 현재 날짜가 포함된 월·주차에도 이슈가 있으면 금액 아래 📝 아이콘이 표시됩니다.</div></div>`;
 }
@@ -2803,7 +2823,7 @@ function weeklyReport(page){
 }
 function wrExport1(model){
   const wb=XLSX.utils.book_new(), h1=[['구분','합계액',...Array.from({length:12},(_,i)=>i+1+'월')]];
-  model.annualRows.forEach((r,i)=>h1.push([r.label,i===3?r.total/100:r.total,...r.vals.slice(1).map(v=>i===3?(v==null?'':v/100):Math.round(v||0))]));
+  model.annualRows.forEach((r,i)=>{ const asPct=(i===3)||r.isPct; h1.push([r.label,asPct?(r.total==null?'':r.total/100):r.total,...r.vals.slice(1).map(v=>asPct?(v==null?'':v/100):Math.round(v||0))]); });
   const beforeEnd=new Date(model.rangeStart);beforeEnd.setDate(beforeEnd.getDate()-1);
   const wh=['NO','업체','영업관리',`${model.y}년도 목표액`,model.isCustom?`이전 실적(~${wrDateText(beforeEnd)})`:(model.m>1?`1~${model.m-1}월 실적`:'전월 실적'),'연 달성율%','잔여 목표액',model.isCustom?'기간 목표':`${model.m}월 목표`,...model.ranges.map(r=>model.isCustom?`${wrDateText(r.sDate)}~${wrDateText(r.eDate)}`:`${r.n}주(${r.s}~${r.e})`),'달성금액',model.isCustom?'기간 달성률%':'월 달성률%','비고'];
   const h2=[wh,...model.custRows.map((r,i)=>{const rest=/^상위 .+외 업체$/.test(r.cust);return[rest?'':i+1,r.cust,rest?'':(mgrS(r.cust)||'미배정'),Math.round(r.annual),Math.round(r.before),r.annualRate==null?'':+r.annualRate.toFixed(1),Math.round(r.remaining),Math.round(r.monthTarget),...r.weeks.map(v=>Math.round(v)),Math.round(r.monthActual),r.monthRate==null?'':+r.monthRate.toFixed(1),wrMemo(model,r)]})];
@@ -5901,6 +5921,9 @@ function pdMonth(m){ const pd=state.pd; if(!pd)return 0; const L=pd.useLabor?pdC
 function pdYearTotal(){ let s=0; for(let m=1;m<=12;m++)s+=pdMonth(m); return s; }
 function pdPanelHTML(cyRaw,lastAct,tgtArr){
   const pd=state.pd; const open=!!state.trend.pdOpen; const won2=v=>v?Math.round(v).toLocaleString():'-'; const fmtIn=v=>v?(+v).toLocaleString():'';
+  // 마이너스(-) 금액은 붉은색으로 표시한다.
+  const negc=v=>(+v<0)?'#dc2626':null;
+  const won2r=v=>{ const t=won2(v); return (+v<0)?`<span class="pd-neg">${t}</span>`:t; };
   let body='',tL=0,tP=0,tI=0,tSum=0;
   for(let m=1;m<=12;m++){
     const isAct = m<=5 || !!(pd.actual&&pd.actual[m]);
@@ -5909,20 +5932,20 @@ function pdPanelHTML(cyRaw,lastAct,tgtArr){
     const sum=Lv+Pv+Iv; tL+=L;tP+=P;tI+=I;tSum+=sum;
     const isFut=m>lastAct; const saleRef = isFut ? Math.max(0,(tgtArr?tgtArr[m]:0)-pdMonth(m)) : (cyRaw[m]||0); const ratio=saleRef>0?(sum/saleRef*100):null;
     const estM = m>=6 && !isAct && pd.estimate;
-    const inp=(cat,val,w)=>`<input type="text" inputmode="${cat==='indirect'?'text':'numeric'}" class="pdin" data-cat="${cat}" data-m="${m}" value="${fmtIn(val)}" placeholder="${estM?fmtIn(pdAvg(cat)):'0'}" title="${cat==='indirect'?'인력 지원 시 +, 인력 지원받을 시 - 금액 입력':'금액 입력'}" style="width:${w}px;text-align:right;font-size:12px${cat==='indirect'&&val<0?';color:#2563eb;font-weight:700':''}${estM&&!val?';color:#9333ea;font-style:italic':''}">`;
+    const inp=(cat,val,w)=>`<input type="text" inputmode="${cat==='indirect'?'text':'numeric'}" class="pdin${val<0?' pd-neg':''}" data-cat="${cat}" data-m="${m}" value="${fmtIn(val)}" placeholder="${estM?fmtIn(pdAvg(cat)):'0'}" title="${cat==='indirect'?'인력 지원 시 +, 인력 지원받을 시 - 금액 입력':'금액 입력'}" style="width:${w}px;text-align:right;font-size:12px${val<0?';color:#dc2626;font-weight:700':''}${estM&&!val?';color:#9333ea;font-style:italic':''}">`;
     body+=`<tr><td class="l">${m}월 ${m>=6?`<label style="font-size:10px;font-weight:400;color:#475569;cursor:pointer"><input type="checkbox" class="pdact" data-m="${m}" ${isAct?'checked':''}> 실적</label> <span class="tag ${isAct?'a':'f'}" style="font-size:9px">${isAct?'실적':'목표'}</span>`:`<span class="tag a" style="font-size:9px">실적</span>`}</td>`
       +`<td style="text-align:right">${inp('labor',L,108)}</td>`
       +`<td style="text-align:right">${inp('process',P,108)}</td>`
       +`<td style="text-align:right">${inp('indirect',I,100)}</td>`
-      +`<td style="font-weight:700;color:${isAct?'#dc2626':'#2563eb'}">${won2(sum)}${estM?' <span class="sub2" style="color:#9333ea">예상</span>':''}</td>`
-      +`<td>${saleRef>0?`<span style="color:${isFut?'#2563eb':'inherit'}">${won2(saleRef)}${isFut?' <span class="sub2" style="color:#2563eb">목표</span>':''}</span>`:'-'}</td>`
-      +`<td>${ratio==null?'-':`<b style="color:${ratio>=20?'#dc2626':'#0284c7'}">${ratio.toFixed(1)}%</b>`}</td></tr>`;
+      +`<td style="font-weight:700;color:${sum<0?'#dc2626':(isAct?'#dc2626':'#2563eb')}">${won2(sum)}${estM?' <span class="sub2" style="color:#9333ea">예상</span>':''}</td>`
+      +`<td>${saleRef!==0?`<span style="color:${saleRef<0?'#dc2626':(isFut?'#2563eb':'inherit')};${saleRef<0?'font-weight:700':''}">${won2(saleRef)}${isFut?' <span class="sub2" style="color:#2563eb">목표</span>':''}</span>`:'-'}</td>`
+      +`<td>${ratio==null?'-':`<b style="color:${ratio<0?'#dc2626':(ratio>=20?'#dc2626':'#0284c7')}">${ratio.toFixed(1)}%</b>`}</td></tr>`;
   }
   let tSale=0; for(let m=1;m<=lastAct;m++) tSale+=(cyRaw[m]||0);
-  const totRow=`<tr class="total-row"><td class="l">총합계</td><td style="text-align:right">${won2(tL)}</td><td style="text-align:right">${won2(tP)}</td><td style="text-align:right">${won2(tI)}</td><td style="font-weight:800;color:#dc2626">${won2(tSum)}</td><td>${won2(tSale)}</td><td>${tSale>0?(tSum/tSale*100).toFixed(1)+'%':'-'}</td></tr>`;
+  const totRow=`<tr class="total-row"><td class="l">총합계</td><td style="text-align:right">${won2r(tL)}</td><td style="text-align:right">${won2r(tP)}</td><td style="text-align:right">${won2r(tI)}</td><td style="font-weight:800;color:#dc2626">${won2(tSum)}</td><td>${won2r(tSale)}</td><td>${tSale>0?`<span${(tSum/tSale)<0?' class="pd-neg"':''}>${(tSum/tSale*100).toFixed(1)}%</span>`:'-'}</td></tr>`;
   const ck=(k,lab)=>`<label style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;cursor:pointer;color:#374151"><input type="checkbox" class="pdck" data-k="${k}" ${pd[k]?'checked':''}> ${lab}</label>`;
   return `<div style="margin-top:4px;border:1px solid var(--line);border-radius:12px;overflow:hidden">
-    <button id="pdToggle" type="button" style="width:100%;text-align:left;border:none;cursor:pointer;background:#fff;color:#334155;font-weight:800;font-size:13px;padding:12px 15px;font-family:inherit"><span style="background:#d97706;color:#fff;padding:4px 11px;border-radius:7px">🏭 PD 사업부 임가공비 ${open?'▾':'▸'}</span> <span class="sub2" style="color:#92400e;font-weight:600">· 체크 항목만 매출 가산 · 연 ${won2(pdYearTotal())}원 · 2026년</span></button>
+    <button id="pdToggle" type="button" style="width:100%;text-align:left;border:none;cursor:pointer;background:#fff;color:#334155;font-weight:800;font-size:13px;padding:12px 15px;font-family:inherit"><span style="background:#d97706;color:#fff;padding:4px 11px;border-radius:7px">🏭 PD 사업부 임가공비 ${open?'▾':'▸'}</span> <span class="sub2" style="color:#92400e;font-weight:600">· 체크 항목만 매출 가산 · 연 ${won2r(pdYearTotal())}원 · 2026년</span></button>
     <div id="pdWrap" style="display:${open?'block':'none'};padding:13px 15px">
       <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:11px;padding:9px 12px;background:#f8fafc;border:1px solid var(--line);border-radius:9px">${ck('useLabor','✅ PD생산 노무비')} ${ck('useProcess','✅ PD생산 공정비')} ${ck('useIndirect','✅ PD지원 인건비')} <span style="border-left:1px solid var(--line);padding-left:14px"><label style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;cursor:pointer;color:#7c3aed"><input type="checkbox" id="pdEst" ${pd.estimate?'checked':''}> 🔮 목표예상 자동(6~12월=1~5월 평균)</label></span></div>
       <div class="tablewrap"><table><thead><tr><th class="l">구분</th><th>PD생산 노무비</th><th>PD생산 공정비</th><th>PD지원 인건비<br><span class="sub2" style="font-size:9px;font-weight:600;color:#64748b">지원 + / 지원받음 -</span></th><th>합계</th><th>월 매출</th><th>비중%</th></tr></thead><tbody>${body}${totRow}</tbody></table></div>
@@ -6049,7 +6072,7 @@ function monthlyTrend(){
     const pt=$('#pdToggle'); pt&&pt.addEventListener('click',()=>{ state.trend.pdOpen=!state.trend.pdOpen; monthlyTrend(); });
     const st2=$('#scrapToggle'); st2&&st2.addEventListener('click',()=>{ state.trend=state.trend||{}; state.trend.scrapOpen=!state.trend.scrapOpen; monthlyTrend(); });
     if(typeof populateScrapDatalist==='function')populateScrapDatalist();
-    $('#result').querySelectorAll('.pdin').forEach(inp=>{ inp.addEventListener('input',e=>{ const allowNegative=e.target.dataset.cat==='indirect'; const txt=(e.target.value||'').replace(/,/g,'').trim(); const negative=allowNegative&&txt.startsWith('-'); const digits=txt.replace(/[^\d]/g,''); e.target.value=digits?((negative?'-':'')+(+digits).toLocaleString()):(negative?'-':''); }); inp.addEventListener('change',e=>{ const cat=e.target.dataset.cat,m=+e.target.dataset.m; const v=parseFloat((e.target.value||'').replace(/,/g,''))||0; if(v)state.pd[cat][m]=v; else delete state.pd[cat][m]; if(typeof logEdit==='function')logEdit('PD',cat+' '+m+' 매출 변경'); saveSettings(); monthlyTrend(); }); });
+    $('#result').querySelectorAll('.pdin').forEach(inp=>{ inp.addEventListener('input',e=>{ const allowNegative=e.target.dataset.cat==='indirect'; const txt=(e.target.value||'').replace(/,/g,'').trim(); const negative=allowNegative&&txt.startsWith('-'); const digits=txt.replace(/[^\d]/g,''); e.target.value=digits?((negative?'-':'')+(+digits).toLocaleString()):(negative?'-':''); const isNeg=negative&&!!digits; e.target.classList.toggle('pd-neg',isNeg); e.target.style.color=isNeg?'#dc2626':''; e.target.style.fontWeight=isNeg?'700':''; }); inp.addEventListener('change',e=>{ const cat=e.target.dataset.cat,m=+e.target.dataset.m; const v=parseFloat((e.target.value||'').replace(/,/g,''))||0; if(v)state.pd[cat][m]=v; else delete state.pd[cat][m]; if(typeof logEdit==='function')logEdit('PD',cat+' '+m+' 매출 변경'); saveSettings(); monthlyTrend(); }); });
     const pe=$('#pdEst'); pe&&pe.addEventListener('change',e=>{ state.pd.estimate=e.target.checked; if(typeof logEdit==='function')logEdit('PD','추정 '+(e.target.checked?'설정':'해제')); saveSettings(); monthlyTrend(); });
     $('#result').querySelectorAll('.pdact').forEach(c=>c.addEventListener('change',e=>{ const m=+e.target.dataset.m; if(!state.pd.actual)state.pd.actual={}; if(e.target.checked)state.pd.actual[m]=true; else delete state.pd.actual[m]; if(typeof logEdit==='function')logEdit('PD',m+' 실적확정 '+(e.target.checked?'설정':'해제')); saveSettings(); monthlyTrend(); }));
     $('#result').querySelectorAll('.pdck').forEach(c=>c.addEventListener('change',e=>{ state.pd[e.target.dataset.k]=e.target.checked; saveSettings(); monthlyTrend(); }));
