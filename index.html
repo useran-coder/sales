@@ -7732,5 +7732,324 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
 })();
 </script>
 
+
+<!-- ===== V10.5: 원자재 단가 3중 저장소 병합 복구 · 유실 원인 차단 ===== -->
+<style id="v105-style">
+#v105Btn{position:fixed;right:18px;bottom:18px;z-index:100050;background:#b91c1c;color:#fff;border:0;
+  border-radius:999px;padding:11px 17px;font-size:13px;font-weight:800;cursor:pointer;
+  box-shadow:0 6px 18px rgba(185,28,28,.35);font-family:inherit}
+#v105Btn:hover{background:#991b1b}
+#v105Overlay{position:fixed;inset:0;z-index:100051;background:rgba(9,20,39,.62);display:flex;
+  align-items:center;justify-content:center;padding:20px}
+#v105Overlay.hidden{display:none}
+#v105Box{width:min(720px,96vw);max-height:88vh;overflow:auto;background:#fff;border-radius:14px;
+  padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.3);font-family:inherit;color:#0f172a}
+#v105Box h3{margin:0 0 8px;font-size:19px;font-weight:800}
+#v105Box .v105-msg{font-size:13.5px;line-height:1.65;background:#fff7ed;border:1px solid #fed7aa;
+  color:#9a3412;border-radius:9px;padding:11px 13px;margin:10px 0 14px;white-space:pre-line;font-weight:600}
+#v105Box .v105-msg.ok{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+#v105Box table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 16px}
+#v105Box th,#v105Box td{border:1px solid #e2e8f0;padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums}
+#v105Box th{background:#f8fafc;font-weight:700;text-align:center}
+#v105Box td:first-child,#v105Box th:first-child{text-align:left}
+#v105Box .v105-acts{display:flex;flex-direction:column;gap:9px}
+#v105Box .v105-acts button{padding:12px 14px;border-radius:9px;border:1px solid #cbd5e1;background:#f8fafc;
+  font-size:14px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit}
+#v105Box .v105-acts button:hover{background:#eef2ff;border-color:#818cf8}
+#v105Box .v105-acts button.primary{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+#v105Box .v105-acts button.primary:hover{background:#1e40af}
+#v105Box .v105-note{font-size:12px;color:#64748b;margin-top:14px;line-height:1.6}
+</style>
+<script id="v105-material-recover">
+(function(){
+'use strict';
+if(window.__v105)return; window.__v105=true;
+
+var MAT_KEY='dbfastec_material_price_history_v1';
+var GRADES=['EGI','HGI','PO','CR','STS201','STS304','STS430','고철'];
+
+function cp(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
+function po(v){return v&&typeof v==='object'&&!Array.isArray(v)}
+function txt(v){return String(v==null?'':v).trim()}
+function n0(v){var n=Number(txt(v).replace(/,/g,''));return isFinite(n)?n:0}
+function hashM(s){s=String(s||'');var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
+function blank(){return {years:{},marketPrices:{},updated:'',_cellUpdated:{},_rowDeleted:{},_extraUpdated:{},_extraDeleted:{},_scrapManual:{},_scrapManualVendor:{},_scrapAutoDeleted:{}}}
+
+/* ---------------------------------------------------------------
+   [원인 A] 동기화·병합 과정에서 행 배열이 {0:{},1:{}} 객체로 바뀌면
+   ensureState() 가 "배열이 아니면 빈 배열"로 갈아엎어 통째로 날린다.
+   → 객체 형태를 배열로 되살린다.
+   --------------------------------------------------------------- */
+function toRows(v){
+  if(Array.isArray(v))return v;
+  if(!po(v))return [];
+  var keys=Object.keys(v).filter(function(k){return /^\d+$/.test(k)}).sort(function(a,b){return a-b});
+  if(!keys.length)return [];
+  return keys.map(function(k){return v[k]});
+}
+function normalize(db){
+  if(!po(db))return blank();
+  var out=cp(db);
+  if(!po(out.years))out.years=po(out.years)?out.years:{};
+  if(!po(out.years))out.years={};
+  Object.keys(out.years).forEach(function(y){
+    var gy=out.years[y];if(!po(gy)){out.years[y]={};return}
+    Object.keys(gy).forEach(function(k){
+      var rows=toRows(gy[k]);
+      rows=rows.filter(po);
+      rows.forEach(function(r,i){
+        if(!Array.isArray(r.m))r.m=toRows(r.m);
+        r.m=(r.m||[]).slice(0,12);
+        while(r.m.length<12)r.m.push('');
+        if(r.vendor==null)r.vendor='';
+        if(!r._id)r._id='mr_'+hashM(y+'|'+k+'|'+i+'|'+txt(r.vendor));
+      });
+      gy[k]=rows;
+    });
+  });
+  ['marketPrices','_cellUpdated','_rowDeleted','_extraUpdated','_extraDeleted','_scrapManual','_scrapManualVendor','_scrapAutoDeleted'].forEach(function(k){
+    if(!po(out[k]))out[k]={};
+  });
+  if(!Array.isArray(out.egiExtras))out.egiExtras=toRows(out.egiExtras);
+  return out;
+}
+function rowScore(r){var n=0;(r&&r.m||[]).forEach(function(v){if(n0(v)>0)n++});return n}
+function dbScore(db){var n=0;Object.keys((db&&db.years)||{}).forEach(function(y){Object.keys(db.years[y]||{}).forEach(function(k){(db.years[y][k]||[]).forEach(function(r){n+=rowScore(r)})})});return n}
+function rowCount(db,y,k){try{return (db.years[y]||{})[k].length}catch(e){return 0}}
+
+/* ---------------------------------------------------------------
+   합집합 병합 — 어느 쪽에도 있는 값은 절대 버리지 않는다
+   --------------------------------------------------------------- */
+function stampOf(db,y,k,id,field){return Number(((db||{})._cellUpdated||{})[y+'|'+k+'|'+id+'|'+field]||0)}
+function unionDb(base,add){
+  var out=normalize(base),src=normalize(add);
+  Object.keys(src.years).forEach(function(y){
+    if(!out.years[y])out.years[y]={};
+    Object.keys(src.years[y]).forEach(function(k){
+      if(!Array.isArray(out.years[y][k]))out.years[y][k]=[];
+      var dst=out.years[y][k];
+      src.years[y][k].forEach(function(r){
+        var vn=txt(r.vendor),id=txt(r._id);
+        if(!vn&&rowScore(r)===0)return;                       /* 완전 빈 행은 무시 */
+        var ex=(id&&dst.find(function(x){return txt(x._id)===id}))
+             ||(vn&&dst.find(function(x){return txt(x.vendor)===vn}));
+        if(!ex){dst.push(cp(r));return}
+        for(var mi=0;mi<12;mi++){
+          var a=txt(ex.m[mi]),b=txt(r.m[mi]);
+          if(b==='')continue;
+          if(a===''){ex.m[mi]=r.m[mi];continue}
+          if(a===b)continue;
+          if(stampOf(src,y,k,id,'m'+mi)>stampOf(out,y,k,txt(ex._id),'m'+mi))ex.m[mi]=r.m[mi];
+        }
+        if(!txt(ex.vendor)&&vn)ex.vendor=vn;
+      });
+    });
+  });
+  Object.keys(src.marketPrices).forEach(function(y){
+    if(!po(out.marketPrices[y]))out.marketPrices[y]={};
+    Object.keys(src.marketPrices[y]||{}).forEach(function(k){
+      if(out.marketPrices[y][k]==null||txt(out.marketPrices[y][k])==='')out.marketPrices[y][k]=src.marketPrices[y][k];
+    });
+  });
+  ['_cellUpdated','_extraUpdated'].forEach(function(f){
+    Object.keys(src[f]||{}).forEach(function(q){
+      if(Number(src[f][q]||0)>Number(out[f][q]||0))out[f][q]=src[f][q];
+    });
+  });
+  if(!out.egiExtras.length&&src.egiExtras.length)out.egiExtras=cp(src.egiExtras);
+  return out;
+}
+
+/* ---------------------------------------------------------------
+   3개 저장소 읽기
+   [원인 B] 부팅 때 restoreMaterialSettings() 가 IndexedDB 사본을
+   무조건 메모리에 덮어쓴다 → IndexedDB가 비어 있으면 localStorage
+   데이터가 화면에서 사라지고, 이후 저장 시 그 상태가 굳어버린다.
+   --------------------------------------------------------------- */
+function readLs(){try{return normalize(JSON.parse(localStorage.getItem(MAT_KEY)||'null'))}catch(e){return blank()}}
+function readMem(){try{return normalize(state.materialDB)}catch(e){return blank()}}
+async function readIdb(){
+  try{
+    if(typeof idbGet!=='function')return blank();
+    var s=await idbGet('settings');
+    return normalize(s&&s.materialDB);
+  }catch(e){return blank()}
+}
+async function writeAll(db){
+  db=normalize(db);
+  db.updated=new Date().toLocaleString('ko-KR');
+  db._sourceApp='v105_recover';db._sourceUpdatedAt=Date.now();
+  try{localStorage.setItem(MAT_KEY,JSON.stringify(db))}catch(e){}
+  try{state.materialDB=db}catch(e){}
+  try{window.state&&(window.state.materialDB=db)}catch(e){}
+  try{
+    if(typeof idbGet==='function'&&typeof idbSet==='function'){
+      var s=await idbGet('settings')||{};s.materialDB=cp(db);await idbSet('settings',s);
+    }
+  }catch(e){}
+  try{window.dispatchEvent(new CustomEvent('materialPriceChanged'))}catch(e){}
+  try{if(typeof renderMaterialPricePage==='function')renderMaterialPricePage()}catch(e){}
+  return db;
+}
+
+/* ---------------------------------------------------------------
+   [원인 C] 엑셀 가져오기가 db 를 통째로 새로 만든다 → 병합으로 교체
+   --------------------------------------------------------------- */
+function wrapImport(){
+  var orig=window.importMaterialPricesV97;
+  if(typeof orig!=='function'||orig.__v105)return;
+  var wrapped=function(ev){
+    var before=readLs();
+    var r=orig.apply(this,arguments);
+    setTimeout(function(){
+      var after=readLs();
+      if(dbScore(after)<dbScore(before)){
+        var merged=unionDb(after,before);
+        writeAll(merged);
+        try{alert('엑셀 가져오기로 기존 단가가 줄어들어 자동 병합했습니다.')}catch(e){}
+      }
+    },600);
+    return r;
+  };
+  wrapped.__v105=true;window.importMaterialPricesV97=wrapped;
+}
+
+/* ---------------------------------------------------------------
+   EGI 스냅샷 (2026-08-05 화면 기준)
+   --------------------------------------------------------------- */
+var EGI=[
+  {vendor:'기준단가',              m:['','','','','','',1100,'','','','','']},
+  {vendor:'대창스틸',              m:[880,880,886,950,1050,1060,'','','','','','']},
+  {vendor:'에스에이(영진)',        m:['','','','','','','','','','','','']},
+  {vendor:'한신칼라',              m:['','','','','','','','','','','','']},
+  {vendor:'아이에스스틸',          m:[880,'','','','','','','','','','','']},
+  {vendor:'신라철강',              m:['','','','','','','','','','','','']},
+  {vendor:'기보스틸',              m:['','','','','','','','','','','','']},
+  {vendor:'아주스틸 (가공비+25원)',m:[890,890,895,935,985,1005,'','','','','','']},
+  {vendor:'대신스틸 (레이저용)',   m:['','','','','','','','','','','','']}
+];
+function curYear(){var e=document.getElementById('mp-year');return String((e&&e.value)||new Date().getFullYear())}
+function applyEgi(db,y,overwrite){
+  db=normalize(db);var now=Date.now(),written=0,added=0;
+  if(!db.years[y])db.years[y]={};
+  if(!Array.isArray(db.years[y]['EGI']))db.years[y]['EGI']=[];
+  var rows=db.years[y]['EGI'];
+  /* 완전히 빈 자동생성 행 제거 */
+  for(var i=rows.length-1;i>=0;i--){if(!txt(rows[i].vendor)&&rowScore(rows[i])===0)rows.splice(i,1)}
+  EGI.forEach(function(s,si){
+    var vn=txt(s.vendor),r=rows.find(function(x){return txt(x.vendor)===vn});
+    if(!r){
+      r={vendor:vn,m:Array(12).fill(''),_id:'mr_'+hashM(y+'|EGI|'+si+'|'+vn)};
+      rows.push(r);added++;
+      db._cellUpdated[y+'|EGI|'+r._id+'|vendor']=now;
+    }
+    if(db._rowDeleted[r._id])delete db._rowDeleted[r._id];
+    s.m.forEach(function(v,mi){
+      if(txt(v)==='')return;
+      var cur=txt(r.m[mi]);
+      if(cur!==''&&!overwrite)return;
+      if(cur===String(v))return;
+      r.m[mi]=String(v);db._cellUpdated[y+'|EGI|'+r._id+'|m'+mi]=now;written++;
+    });
+  });
+  /* 스냅샷 순서대로 정렬 */
+  var order={};EGI.forEach(function(s,i){order[txt(s.vendor)]=i});
+  rows.sort(function(a,b){
+    var ia=order[txt(a.vendor)],ib=order[txt(b.vendor)];
+    if(ia==null&&ib==null)return 0;if(ia==null)return 1;if(ib==null)return -1;return ia-ib;
+  });
+  return {db:db,written:written,added:added};
+}
+
+/* ---------------------------------------------------------------
+   화면
+   --------------------------------------------------------------- */
+function ensureUi(){
+  if(document.getElementById('v105Btn'))return;
+  var b=document.createElement('button');
+  b.id='v105Btn';b.type='button';b.textContent='🔧 원자재 단가 복구';
+  b.onclick=function(){openPanel()};
+  document.body.appendChild(b);
+  var ov=document.createElement('div');
+  ov.id='v105Overlay';ov.className='hidden';ov.innerHTML='<div id="v105Box"></div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.add('hidden')});
+  document.body.appendChild(ov);
+}
+async function openPanel(){
+  ensureUi();
+  var ov=document.getElementById('v105Overlay'),box=document.getElementById('v105Box');
+  box.innerHTML='<h3>원자재 단가 진단</h3><div class="v105-msg">확인 중…</div>';
+  ov.classList.remove('hidden');
+
+  var y=curYear(),ls=readLs(),mm=readMem(),ib=await readIdb();
+  var merged=unionDb(unionDb(unionDb(blank(),ls),ib),mm);
+  var rows=[
+    ['화면(메모리)',dbScore(mm),rowCount(mm,y,'EGI')],
+    ['localStorage',dbScore(ls),rowCount(ls,y,'EGI')],
+    ['IndexedDB',dbScore(ib),rowCount(ib,y,'EGI')],
+    ['3개 합친 결과',dbScore(merged),rowCount(merged,y,'EGI')]
+  ];
+  var gain=dbScore(merged)-dbScore(mm);
+  var msg,ok=false;
+  if(gain>0) msg='다른 저장소에 남아 있는 단가 '+gain+'칸을 되살릴 수 있습니다.\n아래 ①번을 누르세요.';
+  else if(dbScore(merged)===0) msg='세 저장소 모두 단가가 비어 있습니다. 남아 있는 데이터가 없습니다.\n②번으로 EGI 값을 직접 넣으세요.';
+  else if(rowCount(merged,y,'EGI')<EGI.length) msg=y+'년 EGI 업체행이 '+rowCount(merged,y,'EGI')+'개뿐입니다 (정상 '+EGI.length+'개).\n②번으로 빠진 행을 채우세요.';
+  else {ok=true;msg=y+'년 EGI 업체행 '+rowCount(merged,y,'EGI')+'개 · 전체 단가 '+dbScore(merged)+'칸 — 정상입니다.';}
+
+  box.innerHTML='<h3>원자재 단가 진단 · 복구 ('+y+'년)</h3>'+
+    '<div class="v105-msg'+(ok?' ok':'')+'">'+msg+'</div>'+
+    '<table><thead><tr><th>저장소</th><th>단가 칸수(전체)</th><th>EGI 업체행</th></tr></thead><tbody>'+
+      rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+r[1].toLocaleString()+'</td><td>'+r[2]+'</td></tr>'}).join('')+
+    '</tbody></table>'+
+    '<div class="v105-acts">'+
+      '<button type="button" class="primary" id="v105A1">① 3개 저장소 합쳐서 복구'+(gain>0?' (+'+gain+'칸)':'')+'</button>'+
+      '<button type="button" id="v105A2">② EGI 표 빈 칸 채우기 (기존값 보존)</button>'+
+      '<button type="button" id="v105A3">③ EGI 표 통째로 덮어쓰기</button>'+
+      '<button type="button" id="v105A0">닫기</button>'+
+    '</div>'+
+    '<div class="v105-note">※ ① → ② 순서로 진행하세요.<br>'+
+    '※ 복구본은 localStorage · IndexedDB · 화면 메모리 세 곳에 동시에 저장됩니다.<br>'+
+    '※ 복구가 끝난 뒤에 [동기화]를 누르면 다른 PC에도 반영됩니다. 그 전에는 누르지 마세요.<br>'+
+    '※ 기준연도가 '+y+'년이 맞는지 확인하세요.</div>';
+
+  document.getElementById('v105A0').onclick=function(){ov.classList.add('hidden')};
+  document.getElementById('v105A1').onclick=async function(){
+    var d=await writeAll(merged);ov.classList.add('hidden');
+    alert('복구 완료 — 단가 '+dbScore(d)+'칸 / '+y+'년 EGI 업체행 '+rowCount(d,y,'EGI')+'개');
+  };
+  document.getElementById('v105A2').onclick=async function(){
+    var r=applyEgi(merged,y,false);await writeAll(r.db);ov.classList.add('hidden');
+    alert('EGI 복구 완료 — 업체행 '+r.added+'개 추가 · 단가 '+r.written+'칸 입력');
+  };
+  document.getElementById('v105A3').onclick=async function(){
+    if(!confirm(y+'년 EGI 값을 스냅샷 내용으로 덮어씁니다. 진행할까요?'))return;
+    var r=applyEgi(merged,y,true);await writeAll(r.db);ov.classList.add('hidden');
+    alert('덮어쓰기 완료 — 단가 '+r.written+'칸 입력');
+  };
+}
+window.openMaterialRecoverV105=openPanel;
+
+/* ---------------------------------------------------------------
+   자동 보호 — 부팅 직후 세 저장소를 합쳐 메모리 손실을 되돌린다
+   --------------------------------------------------------------- */
+async function autoReconcile(){
+  try{
+    var ls=readLs(),mm=readMem(),ib=await readIdb();
+    var merged=unionDb(unionDb(unionDb(blank(),ls),ib),mm);
+    if(dbScore(merged)>dbScore(mm)||dbScore(merged)>dbScore(ls)){
+      await writeAll(merged);
+      console.log('[V10.5] 원자재 단가 자동 병합 복구: '+dbScore(mm)+'칸 → '+dbScore(merged)+'칸');
+    }
+  }catch(e){console.warn('[V10.5] 자동 병합 실패',e)}
+}
+function boot(){ensureUi();wrapImport()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.addEventListener('load',function(){boot();setTimeout(autoReconcile,1800)},{once:true});
+[1000,3000,8000].forEach(function(ms){setTimeout(boot,ms)});
+setTimeout(autoReconcile,2600);
+})();
+</script>
+<!-- ===== /V10.5 ===== -->
+
 </body>
 </html>
