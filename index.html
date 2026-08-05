@@ -293,10 +293,13 @@
   /* PD 사업부 임가공비 표: 마이너스 데이터는 붉은색 */
   .pd-neg{color:#dc2626!important;font-weight:700}
   input.pdin.pd-neg{color:#dc2626!important;font-weight:700}
-  /* 주간보고 PD임가공 행 링크 */
+  /* 주간보고 PD임가공 행 */
   .wr-pd-link{color:#111827;cursor:pointer;text-decoration:none}
   .wr-pd-link:hover{color:#1d4ed8}
   .wr-pd-ratio td{color:#111827}
+  /* 연 목표대비 달성 표: 실적 행 붉은색 */
+  .wr-annual-actual td{color:#dc2626!important;font-weight:800}
+  .wr-annual-actual td .wr-zero{color:#f1a5a5!important}
   /* 연 목표대비 달성 표: 구분열 확대 + 월 열 균등 */
   .wr-annual-table td:first-child,.wr-annual-table th:first-child{white-space:nowrap;overflow:visible}
   @media(max-width:760px){.wr-mpace-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -2153,7 +2156,8 @@ function wrPage1(model){
   const arows=model.annualRows.map((r,i)=>{
     const asPct=(i===3)||r.isPct;
     const lab=r.pdLink?`<b class="wr-pd-link" onclick="${pdJump}" title="🏭 PD 사업부 임가공비로 이동">${r.label} ▸</b>`:`<b>${r.label}</b>`;
-    return `<tr class="${r.pdRatio?'wr-pd-ratio':''}"><td>${lab}</td><td class="wr-total-col">${asPct?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${[(r.label==='목표수정액'&&mi<SALES_ACTUAL_CUTOFF_MONTH)||(r.label==='실적'&&mi<SALES_ACTUAL_CUTOFF_MONTH)?'wr-fixed-actual':'',mi+1===currentMonthNo?'wr-current-date':''].filter(Boolean).join(' ')}">${asPct?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`;
+    const rowCls=[r.pdRatio?'wr-pd-ratio':'',r.label==='실적'?'wr-annual-actual':''].filter(Boolean).join(' ');
+    return `<tr class="${rowCls}"><td>${lab}</td><td class="wr-total-col">${asPct?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${[(r.label==='목표수정액'&&mi<SALES_ACTUAL_CUTOFF_MONTH)||(r.label==='실적'&&mi<SALES_ACTUAL_CUTOFF_MONTH)?'wr-fixed-actual':'',mi+1===currentMonthNo?'wr-current-date':''].filter(Boolean).join(' ')}">${asPct?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`;
   }).join('');
   const rangeCount=Math.max(1,model.ranges.length),memoWidth=model.periodMode==='month'?'24%':model.periodMode==='year'?'8%':model.periodMode==='week'?'8%':'16%',memoPct=parseFloat(memoWidth),rangeWidth=Math.max(.8,(100-67.4-memoPct)/rangeCount).toFixed(2)+'%';
   const wkHead=model.ranges.map((r,idx)=>`<th class="wr-sortable ${idx===currentWeekIdx?'wr-current-date':''}" data-sort-col="${8+idx}" data-sort-type="num" style="width:${rangeWidth}" title="클릭하여 정렬">${model.isCustom?wrDateText(r.sDate).slice(5):r.n+'주'}<br><span style="font-weight:500">(${model.isCustom?wrDateText(r.sDate).slice(5)+'~'+wrDateText(r.eDate).slice(5):r.s+'~'+r.e})</span><span class="wr-sort-arrow">↕</span></th>`).join('');
@@ -5922,7 +5926,6 @@ function pdYearTotal(){ let s=0; for(let m=1;m<=12;m++)s+=pdMonth(m); return s; 
 function pdPanelHTML(cyRaw,lastAct,tgtArr){
   const pd=state.pd; const open=!!state.trend.pdOpen; const won2=v=>v?Math.round(v).toLocaleString():'-'; const fmtIn=v=>v?(+v).toLocaleString():'';
   // 마이너스(-) 금액은 붉은색으로 표시한다.
-  const negc=v=>(+v<0)?'#dc2626':null;
   const won2r=v=>{ const t=won2(v); return (+v<0)?`<span class="pd-neg">${t}</span>`:t; };
   let body='',tL=0,tP=0,tI=0,tSum=0;
   for(let m=1;m<=12;m++){
