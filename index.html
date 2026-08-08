@@ -1075,6 +1075,16 @@ svg text{
 #tbl.mix-sales-table thead th{font-size:13px!important}
 #tbl.mix-sales-month-table{table-layout:fixed;min-width:1500px}
 #tbl.mix-sales-month-table .monthly-subline{font-size:12px!important}
+.mix-top10-wrap{margin-top:14px}
+.mix-top10-title{margin-bottom:6px;font-size:12px;font-weight:800;color:#334155}
+.mix-top10-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+.mix-top10-table{width:100%;min-width:900px;table-layout:fixed;border-collapse:collapse;font-size:12px}
+.mix-top10-table thead th{position:static!important;top:auto!important;width:16.6667%;padding:8px 10px!important;font-size:12px!important;text-align:left!important;background:#eef2f8;border-right:1px solid var(--line);border-bottom:2px solid #d4ddea;cursor:default}
+.mix-top10-table tbody td{padding:6px 10px;font-size:12px;text-align:left;border-right:1px solid var(--line);border-bottom:1px solid #e8edf4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mix-top10-table th:last-child,.mix-top10-table td:last-child{border-right:0}
+.mix-top10-table tbody tr:last-child td{border-bottom:0}
+.mix-special-top10-wrap .mix-top10-scroll{width:50%;min-width:450px}
+.mix-special-top10-table{width:100%;min-width:450px}
 </style>
 
 </head>
@@ -1918,7 +1928,7 @@ function wrModel(){
   const eligibleRows=CUR.filter(r=>!fcIsExcludedCust(r.cust));
   const reportRows=eligibleRows.filter(r=>+r.y===y);
   const actualMon=wrCmgrMonthlyActuals(y), cutoffRows=reportRows.filter(r=>r.d<=asOf);
-  const annualRows=['목표액','목표수정액','실적','달성율'].map(label=>({label,vals:Array(13).fill(0),total:0}));
+  const annualRows=['목표액','목표수정액','매출실적','목표대비 달성률'].map(label=>({label,vals:Array(13).fill(0),total:0}));
   for(let mm=1;mm<=12;mm++){
     let b=0,rv=0; plan.base[mm].forEach(v=>b+=v); plan.revised[mm].forEach(v=>rv+=v);
     annualRows[0].vals[mm]=b;annualRows[1].vals[mm]=rv;annualRows[2].vals[mm]=actualMon[mm];
@@ -2335,8 +2345,8 @@ function wrPage1(model){
   const arows=model.annualRows.map((r,i)=>{
     const asPct=(i===3)||r.isPct;
     const lab=r.pdLink?`<b class="wr-pd-link" onclick="${pdJump}" title="🏭 PD 사업부 임가공비로 이동">${r.label} ▸</b>`:`<b>${r.label}</b>`;
-    const rowCls=[r.pdRatio?'wr-pd-ratio':'',r.label==='실적'?'wr-annual-actual':''].filter(Boolean).join(' ');
-    return `<tr class="${rowCls}"><td>${lab}</td><td class="wr-total-col">${asPct?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${[(r.label==='목표수정액'&&mi<SALES_ACTUAL_CUTOFF_MONTH)||(r.label==='실적'&&mi<SALES_ACTUAL_CUTOFF_MONTH)?'wr-fixed-actual':'',mi+1===currentMonthNo?'wr-current-date':''].filter(Boolean).join(' ')}">${asPct?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`;
+    const rowCls=[r.pdRatio?'wr-pd-ratio':'',r.label==='매출실적'?'wr-annual-actual':''].filter(Boolean).join(' ');
+    return `<tr class="${rowCls}"><td>${lab}</td><td class="wr-total-col">${asPct?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${[(r.label==='목표수정액'&&mi<SALES_ACTUAL_CUTOFF_MONTH)||(r.label==='매출실적'&&mi<SALES_ACTUAL_CUTOFF_MONTH)?'wr-fixed-actual':'',mi+1===currentMonthNo?'wr-current-date':''].filter(Boolean).join(' ')}">${asPct?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`;
   }).join('');
   const rangeCount=Math.max(1,model.ranges.length),memoWidth=model.periodMode==='month'?'28.18%':model.periodMode==='year'?'12.18%':model.periodMode==='week'?'12.18%':'20.18%',memoPct=parseFloat(memoWidth),rangeWidth=Math.max(.8,(100-63.22-memoPct)/rangeCount).toFixed(2)+'%';
   const wkHead=model.ranges.map((r,idx)=>`<th class="wr-sortable ${wkColCls(idx)}" data-sort-col="${8+idx}" data-sort-type="num" style="width:${rangeWidth}" title="클릭하여 정렬">${model.isCustom?wrDateText(r.sDate).slice(5):r.n+'주'}<br><span style="font-weight:500">(${model.isCustom?wrDateText(r.sDate).slice(5)+'~'+wrDateText(r.eDate).slice(5):r.s+'~'+r.e})</span><span class="wr-sort-arrow">↕</span></th>`).join('');
@@ -2359,9 +2369,9 @@ function wrPage1(model){
   const totalRow=`<tr class="wr-sum"><td class="wr-no"></td><td class="wr-cust-name-col">합계</td><td></td><td>${wrAmt(total.annual)}</td><td>${wrAmt(total.before)}</td><td>${wrPct(total.annualRate)}</td><td>${wrAmt(total.remaining)}</td><td>${wrAmt(total.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${total.remainingWeekAvg?won(total.remainingWeekAvg)+'원':'-'}</b></div></td>${Array.from({length:model.ranges.length},(_,idx)=>`<td class="${wkColCls(idx)}">${model.isCustom||idx<model.w?wrAmt((total.weeks||[])[idx]||0):'-'}</td>`).join('')}<td class="wr-achieved-col">${wrAmt(total.monthActual)}</td><td>${wrPct(total.monthRate)}</td><td></td></tr>`;
   const productDetail=selectedCust?wrCustProductDetail(model,selectedCust):'';
   const beforeEnd=new Date(model.rangeStart);beforeEnd.setDate(beforeEnd.getDate()-1);const beforeLab=model.isCustom?`${model.y}.1.1~${wrDateText(beforeEnd)}`:(model.m>1?`1~${model.m-1}월`:'전월'); const selectedLab=model.isCustom?'기간':' '+model.m+'월',monthActualCol=8+model.ranges.length,monthRateCol=9+model.ranges.length;
-  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 합계액=1~12월 합계와 일치 · 신규업체·신규라인 목표는 6~12월에 목표비중대로 배분 · 목표수정액=목표추이 올해 연매출 목표와 동일 · 실적=거래처 담당자 월매출 합계 기준)</span></div><div class="wr-tablewrap"><table class="wr-table wr-annual-table"><thead><tr><th style="width:14%">구분</th><th style="width:9%">합계액</th>${Array.from({length:12},(_,i)=>`<th class="${i+1===currentMonthNo?'wr-current-date':''}" style="width:6.41%">${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
+  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 합계액=1~12월 합계와 일치 · 신규업체·신규라인 목표는 6~12월에 목표비중대로 배분 · 목표수정액=목표추이 올해 연매출 목표와 동일 · 매출실적=거래처 담당자 월매출 합계 기준)</span></div><div class="wr-tablewrap"><table class="wr-table wr-annual-table"><thead><tr><th style="width:14%">구분</th><th style="width:9%">합계액</th>${Array.from({length:12},(_,i)=>`<th class="${i+1===currentMonthNo?'wr-current-date':''}" style="width:6.41%">${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
     <div class="wr-pace-stack">${wrYearPacingSection(model)}${wrMonthPacingSection(model)}</div>
-    <div class="wr-section">▶ 업체별 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">· ${model.isCustom?wrDateText(model.rangeStart)+' ~ '+wrDateText(model.rangeEnd):model.y+'년 '+model.m+'월 '+model.w+'주차'} 기준 · 단위: 원 · <b>업체명을 선택하면 제품별 달성 현황 표시</b> · 정렬할 항목의 헤더를 클릭</span><span style="float:right;display:inline-flex;align-items:center;gap:7px">${wrP1NavHtml(model)}<button class="btn ghost" id="wrCustXlsx" type="button" style="font-size:12px;padding:6px 12px;background:#dcfce7;color:#15803d;border-color:#86efac;font-weight:800">📥 엑셀</button></span></div>${wrRankBar('업체',model.custRankInfo,issueFilterActions)}<div class="wr-tablewrap wr-cust-target-wrap"><table class="wr-table wr-cust-target-fit ${model.periodMode==='week'?'wr-cust-target-week':''} ${model.periodMode==='month'?'wr-cust-target-note-wide':''}" id="wrCustTargetTable"><thead><tr><th class="wr-no" rowspan="2" style="width:2.6%">NO</th><th class="wr-sortable wr-cust-name-col" data-sort-col="1" data-sort-type="text" rowspan="2" title="업체명 정렬">업체<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="2" data-sort-type="text" rowspan="2" style="width:6%" title="영업관리 구분 정렬">영업관리<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="3" data-sort-type="num" rowspan="2" style="width:6.41%" title="목표액 정렬">${model.y}년도<br>목표액<span class="wr-sort-arrow">↕</span></th><th colspan="3">매출 실적</th><th class="wr-sortable" data-sort-col="7" data-sort-type="num" rowspan="2" style="width:6.41%" title="기간 목표 정렬">${model.isCustom?'기간':' '+model.m+'월'}<br>목표<br><span style="font-size:7px;color:#64748b">${model.isCustom?'일할 계산':'남은주간 평균'}</span><span class="wr-sort-arrow">↕</span></th><th colspan="${model.ranges.length}">${selectedLab} 구간</th><th class="wr-sortable wr-achieved-col" data-sort-col="${monthActualCol}" data-sort-type="num" rowspan="2" title="달성금액 정렬">달성금액<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="${monthRateCol}" data-sort-type="num" rowspan="2" style="width:4.7625%" title="달성률 정렬">${model.isCustom?'기간 달성률':'월 달성률'}<span class="wr-sort-arrow">↕</span></th><th rowspan="2" style="width:${memoWidth}">비고</th></tr><tr><th class="wr-center wr-sortable" data-sort-col="4" data-sort-type="num" style="width:8.5%" title="이전 실적 정렬">${beforeLab}<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="5" data-sort-type="num" style="width:3.6%" title="연 달성률 정렬">달성율<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="6" data-sort-type="num" style="width:8.5%" title="잔여 목표액 정렬">잔여 목표액<span class="wr-sort-arrow">↕</span></th>${wkHead}</tr></thead><tbody>${body}${totalRow}</tbody></table></div>${productDetail}<div class="wr-note">${model.isCustom?'기간 목표는 해당 월 목표를 일수 기준으로 계산합니다.':'월목표 아래 남은주간 평균은 ‘남은 월목표액 ÷ 선택 주차 이후 남은 주차 수’입니다.'} <b>업체명</b>을 선택하면 조회 단위와 동일한 기간의 제품별 목표·실적·달성률이 아래에 표시됩니다. 현재 날짜가 포함된 월·주차에도 이슈가 있으면 금액 아래 📝 아이콘이 표시됩니다.</div></div>`;
+    <div class="wr-section">▶ 업체별 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">· ${model.isCustom?wrDateText(model.rangeStart)+' ~ '+wrDateText(model.rangeEnd):model.y+'년 '+model.m+'월 '+model.w+'주차'} 기준 · 단위: 원 · <b>업체명을 선택하면 제품별 달성 현황 표시</b> · 정렬할 항목의 헤더를 클릭</span><span style="float:right;display:inline-flex;align-items:center;gap:7px">${wrP1NavHtml(model)}<button class="btn ghost" id="wrCustXlsx" type="button" style="font-size:12px;padding:6px 12px;background:#dcfce7;color:#15803d;border-color:#86efac;font-weight:800">📥 엑셀</button></span></div>${wrRankBar('업체',model.custRankInfo,issueFilterActions)}<div class="wr-tablewrap wr-cust-target-wrap"><table class="wr-table wr-cust-target-fit ${model.periodMode==='week'?'wr-cust-target-week':''} ${model.periodMode==='month'?'wr-cust-target-note-wide':''}" id="wrCustTargetTable"><thead><tr><th class="wr-no" rowspan="2" style="width:2.6%">NO</th><th class="wr-sortable wr-cust-name-col" data-sort-col="1" data-sort-type="text" rowspan="2" title="업체명 정렬">업체<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="2" data-sort-type="text" rowspan="2" style="width:6%" title="영업관리 구분 정렬">영업관리<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="3" data-sort-type="num" rowspan="2" style="width:6.41%" title="목표액 정렬">${model.y}년도<br>목표액<span class="wr-sort-arrow">↕</span></th><th colspan="3">매출 실적</th><th class="wr-sortable" data-sort-col="7" data-sort-type="num" rowspan="2" style="width:6.41%" title="기간 목표 정렬">${model.isCustom?'기간':' '+model.m+'월'}<br>목표<br><span style="font-size:7px;color:#64748b">${model.isCustom?'일할 계산':'남은주간 평균'}</span><span class="wr-sort-arrow">↕</span></th><th colspan="${model.ranges.length}">${selectedLab} 구간</th><th class="wr-sortable wr-achieved-col" data-sort-col="${monthActualCol}" data-sort-type="num" rowspan="2" title="달성금액 정렬">달성금액<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="${monthRateCol}" data-sort-type="num" rowspan="2" style="width:4.7625%" title="달성률 정렬">${model.isCustom?'기간 달성률':'월 달성률'}<span class="wr-sort-arrow">↕</span></th><th rowspan="2" style="width:${memoWidth}">비고</th></tr><tr><th class="wr-center wr-sortable" data-sort-col="4" data-sort-type="num" style="width:8.5%" title="이전 실적 정렬">${beforeLab}<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="5" data-sort-type="num" style="width:3.6%" title="연 달성률 정렬">달성률<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="6" data-sort-type="num" style="width:8.5%" title="잔여 목표액 정렬">잔여 목표액<span class="wr-sort-arrow">↕</span></th>${wkHead}</tr></thead><tbody>${body}${totalRow}</tbody></table></div>${productDetail}<div class="wr-note">${model.isCustom?'기간 목표는 해당 월 목표를 일수 기준으로 계산합니다.':'월목표 아래 남은주간 평균은 ‘남은 월목표액 ÷ 선택 주차 이후 남은 주차 수’입니다.'} <b>업체명</b>을 선택하면 조회 단위와 동일한 기간의 제품별 목표·실적·달성률이 아래에 표시됩니다. 현재 날짜가 포함된 월·주차에도 이슈가 있으면 금액 아래 📝 아이콘이 표시됩니다.</div></div>`;
 }
 
 function wrP2BucketKey(r,per){ const yy=+r.y, mm=monthOf(r); if(per==='year')return String(yy); if(per==='month')return yy+'-'+mm; return yy+'-'+mm+'-'+Math.min(5,Math.ceil(r.d.getDate()/7)); }
@@ -3036,7 +3046,7 @@ function wrExport1(model){
   const wb=XLSX.utils.book_new(), h1=[['구분','합계액',...Array.from({length:12},(_,i)=>i+1+'월')]];
   model.annualRows.forEach((r,i)=>{ const asPct=(i===3)||r.isPct; h1.push([r.label,asPct?(r.total==null?'':r.total/100):r.total,...r.vals.slice(1).map(v=>asPct?(v==null?'':v/100):Math.round(v||0))]); });
   const beforeEnd=new Date(model.rangeStart);beforeEnd.setDate(beforeEnd.getDate()-1);
-  const wh=['NO','업체','영업관리',`${model.y}년도 목표액`,model.isCustom?`이전 실적(~${wrDateText(beforeEnd)})`:(model.m>1?`1~${model.m-1}월 실적`:'전월 실적'),'연 달성율%','잔여 목표액',model.isCustom?'기간 목표':`${model.m}월 목표`,...model.ranges.map(r=>model.isCustom?`${wrDateText(r.sDate)}~${wrDateText(r.eDate)}`:`${r.n}주(${r.s}~${r.e})`),'달성금액',model.isCustom?'기간 달성률%':'월 달성률%','비고'];
+  const wh=['NO','업체','영업관리',`${model.y}년도 목표액`,model.isCustom?`이전 실적(~${wrDateText(beforeEnd)})`:(model.m>1?`1~${model.m-1}월 실적`:'전월 실적'),'연 달성률%','잔여 목표액',model.isCustom?'기간 목표':`${model.m}월 목표`,...model.ranges.map(r=>model.isCustom?`${wrDateText(r.sDate)}~${wrDateText(r.eDate)}`:`${r.n}주(${r.s}~${r.e})`),'달성금액',model.isCustom?'기간 달성률%':'월 달성률%','비고'];
   const h2=[wh,...model.custRows.map((r,i)=>{const rest=/^상위 .+외 업체$/.test(r.cust);return[rest?'':i+1,r.cust,rest?'':(mgrS(r.cust)||'미배정'),Math.round(r.annual),Math.round(r.before),r.annualRate==null?'':+r.annualRate.toFixed(1),Math.round(r.remaining),Math.round(r.monthTarget),...r.weeks.map(v=>Math.round(v)),Math.round(r.monthActual),r.monthRate==null?'':+r.monthRate.toFixed(1),wrMemo(model,r)]})];
   const suffix=model.isCustom?`${wrDateInput(model.rangeStart)}_${wrDateInput(model.rangeEnd)}`:`${model.y}_${String(model.m).padStart(2,'0')}_${model.w}주차`;
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(h1),'연 목표대비');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(h2),'업체별 주간');XLSX.writeFile(wb,`주간보고_${suffix}.xlsx`);
@@ -3044,7 +3054,7 @@ function wrExport1(model){
 // ▶ 업체별 목표대비 달성 표만 엑셀로 내보낸다(표 위 '엑셀' 버튼).
 function wrExportCust(model){
   const beforeEnd=new Date(model.rangeStart);beforeEnd.setDate(beforeEnd.getDate()-1);
-  const wh=['NO','업체','영업관리',`${model.y}년도 목표액`,model.isCustom?`이전 실적(~${wrDateText(beforeEnd)})`:(model.m>1?`1~${model.m-1}월 실적`:'전월 실적'),'연 달성율%','잔여 목표액',model.isCustom?'기간 목표':`${model.m}월 목표`,...model.ranges.map(r=>model.isCustom?`${wrDateText(r.sDate)}~${wrDateText(r.eDate)}`:`${r.n}주(${r.s}~${r.e})`),'달성금액',model.isCustom?'기간 달성률%':'월 달성률%','비고'];
+  const wh=['NO','업체','영업관리',`${model.y}년도 목표액`,model.isCustom?`이전 실적(~${wrDateText(beforeEnd)})`:(model.m>1?`1~${model.m-1}월 실적`:'전월 실적'),'연 달성률%','잔여 목표액',model.isCustom?'기간 목표':`${model.m}월 목표`,...model.ranges.map(r=>model.isCustom?`${wrDateText(r.sDate)}~${wrDateText(r.eDate)}`:`${r.n}주(${r.s}~${r.e})`),'달성금액',model.isCustom?'기간 달성률%':'월 달성률%','비고'];
   const rows=[wh,...model.custRows.map((r,i)=>{const rest=/^상위 .+외 업체$/.test(r.cust);return[rest?'':i+1,r.cust,rest?'':(mgrS(r.cust)||'미배정'),Math.round(r.annual),Math.round(r.before),r.annualRate==null?'':+r.annualRate.toFixed(1),Math.round(r.remaining),Math.round(r.monthTarget),...r.weeks.map(v=>Math.round(v)),Math.round(r.monthActual),r.monthRate==null?'':+r.monthRate.toFixed(1),wrMemo(model,r)]})];
   const t=model.custRows.reduce((a,r)=>{a.an+=r.annual;a.bf+=r.before;a.rm+=r.remaining;a.mt+=r.monthTarget;a.ma+=r.monthActual;(r.weeks||[]).forEach((v,i)=>a.wk[i]=(a.wk[i]||0)+(v||0));return a;},{an:0,bf:0,rm:0,mt:0,ma:0,wk:Array(model.ranges.length).fill(0)});
   rows.push(['','합계','',Math.round(t.an),Math.round(t.bf),t.an?+(t.bf/t.an*100).toFixed(1):'',Math.round(t.rm),Math.round(t.mt),...t.wk.map(v=>Math.round(v)),Math.round(t.ma),t.mt?+(t.ma/t.mt*100).toFixed(1):'','']);
@@ -3760,7 +3770,7 @@ function custDrillView(label, src, backFn, act, extra2){
     $('#result').querySelectorAll('.catedit').forEach(s=>s.addEventListener('change',e=>{ const c=e.target.dataset.c; const cur=state.gradeOverride[c]||gradeRec(c); const v=e.target.value; state.gradeOverride[c]={...cur}; if(v)state.gradeOverride[c].cat=v; else delete state.gradeOverride[c].cat; if(typeof logEdit==='function')logEdit('신용등급',c+' 분류 변경'); saveSettings(); drawTable(); }));
   };
   const yrBtns=monOn?`<span class="seg" id="custProdYrSeg" style="margin-left:6px">${years.map(y=>`<button data-y="${y}" class="${y===yr?'on':''}">${y}</button>`).join('')}</span>`:'';
-  const monthlyCtrl=monthly?`<div class="ctrlbar"><button class="btn ghost" id="custProdMonBtn" style="font-size:13px;padding:5px 12px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별보기${monOn?' 끄기':''}</button>${yrBtns}<span class="sub2">${monOn?`${yr}년 거래처별 1~12월 매출액입니다.`:'선택 제품의 거래처별 월 매출을 펼쳐봅니다.'}</span></div>`:'';
+  const monthlyCtrl=monthly?`<div class="ctrlbar">${extra2.monthlyPrefixHtml||''}<button class="btn ghost" id="custProdMonBtn" style="font-size:13px;padding:5px 12px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별보기${monOn?' 끄기':''}</button>${yrBtns}<span class="sub2">${monOn?`${yr}년 거래처별 1~12월 매출액입니다.`:'선택 제품의 거래처별 월 매출을 펼쳐봅니다.'}</span></div>`:'';
   const onMount=()=>{ extra2.onMount&&extra2.onMount(); const mb=$('#custProdMonBtn'); if(mb)mb.addEventListener('click',()=>{state.prodDrillMonthly=!state.prodDrillMonthly;rerender();}); $('#result').querySelectorAll('#custProdYrSeg button').forEach(b=>b.addEventListener('click',()=>{state.prodDrillYear=+b.dataset.y;rerender();})); };
   const noteEx=(act==='cls')?' <b>업체분류</b> 칸에서 바로 수정·저장됩니다.':(act==='credit'||act==='region')?' <b>신용등급</b> 칸에서 바로 수정·저장됩니다.':'';
   render(`${label} ▸ 거래처별 매출`, `${monOn?yr+'년 · ':''}거래처 ${won(custN)}개 · 합계 ${won(tot)}원`, arr, cols, monOn?'yrTot':'amt',
@@ -3768,9 +3778,10 @@ function custDrillView(label, src, backFn, act, extra2){
     {back:{label:'← 목록으로',fn:backFn}, tableClass:extra2.mixSalesPage?`mix-sales-table${monOn?' mix-sales-month-table':''}`:'', total:{label:'합 계',amt:tot,col:monOn?'yrTot':'amt',cells:monOn?(monthlyTotalCells||{}):{cnt:'',qty:''}}, controlsHtml:monthlyCtrl+(extra2.controlsHtml||''), onMount, afterDraw:bindEdits,
      drill:{custom:row=>(extra2&&extra2.rowDrill)?extra2.rowDrill(row, ()=>custDrillView(label,src,backFn,act,extra2)):custProdDrill(row.label, src.filter(r=>r.cust===row.key), ()=>custDrillView(label,src,backFn,act,extra2))}});
 }
-function custProdDrill(cust, src, backFn, markBase, monthly, mixSalesPage){
+function custProdDrill(cust, src, backFn, markBase, monthly, mixSalesPage, viewOpts){
+  viewOpts=viewOpts||{};
   state.sortKey=null; state._search='';
-  const rerender=()=>custProdDrill(cust,src,backFn,markBase,monthly,mixSalesPage);
+  const rerender=()=>custProdDrill(cust,src,backFn,markBase,monthly,mixSalesPage,viewOpts);
   let {arr,tot}=aggBy(src,'codespec');
   const monOn=!!monthly&&!!state.prodDrillMonthly;
   const years=[...new Set(src.map(r=>+(r.y||(r.d&&r.d.getFullYear()))).filter(Boolean))].sort((a,b)=>a-b);
@@ -3792,11 +3803,11 @@ function custProdDrill(cust, src, backFn, markBase, monthly, mixSalesPage){
   }else cols=drillCols('품목 · 규격',arr,'codespec');
   if(markBase){ const nb=s=>String(s||'').toLowerCase().replace(/\s+/g,''); const bk=nb(markBase.kw),bsk=nb(markBase.specKw||''); const isB=o=>bk&&nb((o.code||'')+(o.name||'')).includes(bk)&&(!bsk||nb(o.spec).includes(bsk)); const nc=cols.find(c=>c.k==='name'); if(nc){ const og=nc.cell; nc.cell=o=>og(o)+(isB(o)?' <span class="badge" style="background:#7c3aed;color:#fff;font-size:9px;padding:1px 6px">기준제품</span>':''); } }
   const yrBtns=monOn?`<span class="seg" id="custItemYrSeg" style="margin-left:6px">${years.map(y=>`<button data-y="${y}" class="${y===yr?'on':''}">${y}</button>`).join('')}</span>`:'';
-  const monthlyCtrl=monthly?`<div class="ctrlbar"><button class="btn ghost" id="custItemMonBtn" type="button" style="font-size:13px;padding:5px 12px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별보기${monOn?' 끄기':''}</button>${yrBtns}<span class="sub2">${monOn?`${yr}년 품목·규격별 1~12월 매출액입니다.`:'선택 업체의 품목·규격별 월 매출을 펼쳐봅니다.'}</span></div>`:'';
-  const onMount=()=>{const mb=$('#custItemMonBtn');if(mb)mb.addEventListener('click',()=>{state.prodDrillMonthly=!state.prodDrillMonthly;rerender();});$('#result').querySelectorAll('#custItemYrSeg button').forEach(b=>b.addEventListener('click',()=>{state.prodDrillYear=+b.dataset.y;rerender();}));};
-  render(`${cust} ▸ 품목·규격별 매출`, `${monOn?yr+'년 · ':''}${arr.length}건 · 합계 ${won(tot)}원`, arr, cols, monOn?'yrTot':'amt',
-    `${esc(cust)}의 품목·규격별 매출입니다. '← 거래처로'로 돌아갑니다.`,
-    {back:{label:'← 거래처로',fn:backFn}, tableClass:mixSalesPage?`mix-sales-table${monOn?' mix-sales-month-table':''}`:'', controlsHtml:monthlyCtrl, onMount, total:{label:'합 계',amt:tot,col:monOn?'yrTot':'amt',cells:monOn?(monthlyTotalCells||{}):{}}});
+  const monthlyCtrl=monthly?`<div class="ctrlbar">${viewOpts.monthlyPrefixHtml||''}<button class="btn ghost" id="custItemMonBtn" type="button" style="font-size:13px;padding:5px 12px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별보기${monOn?' 끄기':''}</button>${yrBtns}<span class="sub2">${monOn?(viewOpts.monthlyOnText||`${yr}년 품목·규격별 1~12월 매출액입니다.`):(viewOpts.monthlyOffText||'선택 업체의 품목·규격별 월 매출을 펼쳐봅니다.')}</span></div>`:'';
+  const onMount=()=>{viewOpts.onMount&&viewOpts.onMount();const mb=$('#custItemMonBtn');if(mb)mb.addEventListener('click',()=>{state.prodDrillMonthly=!state.prodDrillMonthly;rerender();});$('#result').querySelectorAll('#custItemYrSeg button').forEach(b=>b.addEventListener('click',()=>{state.prodDrillYear=+b.dataset.y;rerender();}));};
+  render(viewOpts.title||`${cust} ▸ 품목·규격별 매출`, `${monOn?yr+'년 · ':''}${arr.length}건 · 합계 ${won(tot)}원`, arr, cols, monOn?'yrTot':'amt',
+    viewOpts.note||`${esc(cust)}의 품목·규격별 매출입니다. '← 거래처로'로 돌아갑니다.`,
+    {back:{label:viewOpts.backLabel||'← 거래처로',fn:backFn}, tableClass:mixSalesPage?`mix-sales-table${monOn?' mix-sales-month-table':''}`:'', controlsHtml:monthlyCtrl, onMount, total:{label:'합 계',amt:tot,col:monOn?'yrTot':'amt',cells:monOn?(monthlyTotalCells||{}):{}}});
 }
 function clsFullCsv(){
   const custs=CUR.length?[...new Set(CUR.map(r=>r.cust))].sort((a,b)=>a.localeCompare(b,'ko')):[];
@@ -4272,7 +4283,7 @@ function trendChart(){
   let _lastM=0; CUR.forEach(r=>{ if(+r.y===_CY){ const mo=monthOf(r); if(mo>_lastM)_lastM=mo; } }); const _remM=Math.max(1,12-_lastM);
   const _agOf=o=> o._ym?{ym:o._ym,y:o._y}:(fullAgg.get(o.key)||{ym:{},y:{}});
   function tgtInfo(o){ const ag=_agOf(o); const py=ag.y[_PY]||0; const cyYTD=ag.y[_CY]||0; const ovr=(t.dim==='cust'&&state.fc.override&&state.fc.override[o.key]!=null&&state.fc.override[o.key]!=='')?+state.fc.override[o.key]:0; const tgt=py*(1+ovr/100); const remavg=Math.max(0,tgt-cyYTD)/_remM; const ach=tgt>0?cyYTD/tgt*100:null; return {py,tgt,cyYTD,remavg,ach}; }
-  const tgtRow=o=>{ const ti=tgtInfo(o); return `<div style="display:flex;flex-wrap:wrap;gap:3px 10px;align-items:center;font-size:10.5px;margin-top:1px">${metric('전년매출',won(Math.round(ti.py))+'원')}${metric('목표액',won(Math.round(ti.tgt))+'원','#1d4ed8')}${metric('남은월평균',won(Math.round(ti.remavg))+'원','#0d9488')}${metric('달성율',ti.ach==null?'-':ti.ach.toFixed(1)+'%',ti.ach==null?'#94a3b8':ti.ach>=100?'#16a34a':ti.ach>=70?'#d97706':'#dc2626')}</div>`; };
+  const tgtRow=o=>{ const ti=tgtInfo(o); return `<div style="display:flex;flex-wrap:wrap;gap:3px 10px;align-items:center;font-size:10.5px;margin-top:1px">${metric('전년매출',won(Math.round(ti.py))+'원')}${metric('목표액',won(Math.round(ti.tgt))+'원','#1d4ed8')}${metric('남은월평균',won(Math.round(ti.remavg))+'원','#0d9488')}${metric('달성률',ti.ach==null?'-':ti.ach.toFixed(1)+'%',ti.ach==null?'#94a3b8':ti.ach>=100?'#16a34a':ti.ach>=70?'#d97706':'#dc2626')}</div>`; };
   const miniDonut=(mixAmt,hl)=>{ const {svg,legend}=donutSVG(mixAmt,(hl&&hl!=='전체')?hl:null); return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:100%">${svg}<div style="display:flex;flex-wrap:wrap;gap:3px 10px;justify-content:center;width:100%">${legend}</div></div>`; };
   const infoCell=(o,i)=>{
     if(catView){ return `<div style="display:flex;flex-direction:column;gap:5px;width:100%">
@@ -4617,6 +4628,36 @@ function mixSalesBadge(cat){
   const bg=(typeof MIX_BG!=='undefined'&&MIX_BG[cat])||'#eef2f8',tx=(typeof MIX_TXT!=='undefined'&&MIX_TXT[cat])||'#475569',ic=(typeof MIX_ICON!=='undefined'&&MIX_ICON[cat])||'•';
   return `<span class="mix-sales-badge" style="background:${bg};color:${tx};border:1px solid ${tx}44">${ic} ${esc(cat)}</span>`;
 }
+function productCategoryTop10Html(src,cats){
+  const sums=Object.fromEntries(cats.map(c=>[c,new Map()]));
+  src.forEach(r=>{const c=mixCatOf(r),m=sums[c]||sums['기타'];if(!m)return;const cust=String(r.cust||'').trim();if(!cust)return;m.set(cust,(m.get(cust)||0)+amtOf(r));});
+  const top=Object.fromEntries(cats.map(c=>[c,[...sums[c].entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'ko')).slice(0,10).map(([cust])=>cust)]));
+  const heads=cats.map(c=>{const tx=(typeof MIX_TXT!=='undefined'&&MIX_TXT[c])||'#334155';return `<th style="color:${tx}">${esc(c)} TOP10</th>`;}).join('');
+  const rows=Array.from({length:10},(_,i)=>`<tr>${cats.map(c=>`<td title="${esc(top[c][i]||'')}">${top[c][i]?esc(top[c][i]):'<span class="sub2">-</span>'}</td>`).join('')}</tr>`).join('');
+  return `<div class="mix-top10-wrap"><div class="mix-top10-title">제품구분별 거래처 TOP10 <span class="sub2">(매출액 기준)</span></div><div class="mix-top10-scroll"><table class="mix-top10-table"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+function productSpecialTop10Html(src){
+  const norm=v=>String(v||'').toLowerCase().replace(/\s+/g,'');
+  const defs=[
+    {label:'피봇힌지 TOP10',match:n=>n.includes('피봇힌지')},
+    {label:'2단경첩 TOP10',match:n=>n.includes('2단경첩')},
+    {label:'문틀(후레임바·스텐실) TOP10',match:n=>['후레임','후렘임','프레임','스텐실'].some(k=>n.includes(k))}
+  ];
+  const tops=defs.map(d=>{const m=new Map();src.forEach(r=>{if(!d.match(norm(r.name)))return;const cust=String(r.cust||'').trim();if(!cust)return;m.set(cust,(m.get(cust)||0)+amtOf(r));});return [...m.entries()].filter(([,amt])=>amt>0).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'ko')).slice(0,10).map(([cust])=>cust);});
+  const heads=defs.map(d=>`<th>${esc(d.label)}</th>`).join('');
+  const rows=Array.from({length:10},(_,i)=>`<tr>${tops.map(a=>`<td title="${esc(a[i]||'')}">${a[i]?esc(a[i]):'<span class="sub2">-</span>'}</td>`).join('')}</tr>`).join('');
+  return `<div class="mix-top10-wrap mix-special-top10-wrap"><div class="mix-top10-title">주요 제품별 거래처 판매 순위 <span class="sub2">(매출액 기준)</span></div><div class="mix-top10-scroll"><table class="mix-top10-table mix-special-top10-table"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+function productCategoryDetailToggle(view){
+  return `<span class="seg" id="mixCatDetailSeg" style="margin-right:7px"><button type="button" data-v="cust" class="${view==='cust'?'on':''}" style="font-size:13px">🏢 업체별</button><button type="button" data-v="product" class="${view==='product'?'on':''}" style="font-size:13px">📦 제품별</button></span>`;
+}
+function productCategoryDetail(label,src,backFn,view){
+  view=view==='product'?'product':'cust';
+  const prefix=productCategoryDetailToggle(view);
+  const bind=()=>{$('#result').querySelectorAll('#mixCatDetailSeg button').forEach(b=>b.addEventListener('click',()=>productCategoryDetail(label,src,backFn,b.dataset.v)));};
+  if(view==='product')return custProdDrill(label,src,backFn,null,true,true,{title:`${label} ▸ 제품별 매출`,backLabel:'← 제품구분으로',note:`${esc(label)} 제품구분의 품목·규격별 매출입니다.`,monthlyPrefixHtml:prefix,monthlyOffText:'선택 제품구분의 제품별 월 매출을 펼쳐봅니다.',onMount:bind});
+  return custDrillView(label,src,backFn,'rank-mix',{monthly:true,mixSalesPage:true,monthlyPrefixHtml:prefix,onMount:bind,rowDrill:(crow,backToCust)=>custProdDrill(crow.label,src.filter(r=>r.cust===crow.key),backToCust,null,true,true)});
+}
 function productCategorySales(){
   state.mixSalesView=state.mixSalesView==='cust'?'cust':'category';
   const cats=['전용품','공용품','레이저','내부보강','유통/OEM','기타'];
@@ -4659,7 +4700,7 @@ function productCategorySales(){
   const arr=cats.map(c=>m.get(c)),total=arr.reduce((a,o)=>a+o.amt,0),uniqueCust=new Set(source.map(r=>r.cust)).size,max=Math.max(1,...arr.map(o=>o.amt));
   arr.forEach(o=>{o.share=total?o.amt/total*100:0;o.custN=o.custs.size;o.cnt=o.dates.size;});
   const cols=[{k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},{k:'label',t:'제품구분',cls:'l',cell:o=>mixSalesBadge(o.label)},{k:'custN',t:'거래처수',cell:o=>won(o.custN),sortVal:o=>o.custN},{k:'amt',t:`매출액(${unitLabel()})`,cell:o=>`<b>${disp(o.amt)}</b>`,sortVal:o=>o.amt},{k:'share',t:'매출 비중',cell:o=>`<b style="color:${(MIX_TXT&&MIX_TXT[o.key])||'#1e3a5f'}">${o.share.toFixed(1)}%</b>`,sortVal:o=>o.share},{k:'_bar',t:'비중 그래프',nosort:true,cell:o=>bar(o.amt,max)},{k:'qty',t:'출고수량',cell:o=>won(o.qty),sortVal:o=>o.qty},{k:'cnt',t:'거래일수',cell:o=>won(o.cnt),sortVal:o=>o.cnt}];
-  render('제품구분 매출',`${periodLabel()} · 6개 구분 · 합계 ${won(total)}원`,arr,cols,null,'전용품·공용품·레이저·내부보강·유통/OEM·기타를 고정 순서로 표시하고 전체 매출 대비 <b>매출 비중</b>을 계산합니다. <b>제품구분 행을 클릭</b>하면 해당 구분의 업체별 매출로 이동합니다.',{tableClass:'mix-sales-table',controlsHtml:ctrl,onMount:bind,total:{label:'합 계',amt:total,cells:{custN:won(uniqueCust),share:'100.0%'}},drill:{custom:row=>{const catRows=source.filter(r=>mixCatOf(r)===row.key);return custDrillView(row.label,catRows,()=>productCategorySales(),'rank-mix',{monthly:true,mixSalesPage:true,rowDrill:(crow,backToCust)=>custProdDrill(crow.label,catRows.filter(r=>r.cust===crow.key),backToCust,null,true,true)});}}});
+  render('제품구분 매출',`${periodLabel()} · 6개 구분 · 합계 ${won(total)}원`,arr,cols,null,'전용품·공용품·레이저·내부보강·유통/OEM·기타를 고정 순서로 표시하고 전체 매출 대비 <b>매출 비중</b>을 계산합니다. <b>제품구분 행을 클릭</b>하면 해당 구분의 업체별 매출로 이동합니다.',{tableClass:'mix-sales-table',controlsHtml:ctrl,onMount:bind,afterTableHtml:productCategoryTop10Html(source,cats)+productSpecialTop10Html(source),total:{label:'합 계',amt:total,cells:{custN:won(uniqueCust),share:'100.0%'}},drill:{custom:row=>{const catRows=source.filter(r=>mixCatOf(r)===row.key);return productCategoryDetail(row.label,catRows,()=>productCategorySales(),'cust');}}});
 }
 function rankProduct(){
   state.prodGbun=state.prodGbun||'all'; state.sortKey=null; state._search='';
