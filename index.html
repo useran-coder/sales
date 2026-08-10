@@ -7834,7 +7834,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
   function trend(k,y){
     var db=ensureState(),rows=((db.years||{})[String(y)]||{})[k]||[],series=Array.from({length:12},function(_,i){return avg(rows,i)}),vals=series.filter(function(v){return v!=null});
     if(vals.length<2)return '<div class="mp-no-trend">월 단가가 2개월 이상 입력되면 추이 그래프가 표시됩니다.</div>';
-    var mn=Math.min.apply(Math,vals),mx=Math.max.apply(Math,vals),W=980,H=210,pL=24,pR=18,pT=60,pB=34,iW=W-pL-pR,iH=H-pT-pB,X=function(i){return pL+iW*(i/11)},Y=function(v){return pT+iH*(1-(v-mn)/Math.max(1,mx-mn))};
+    var mn=Math.min.apply(Math,vals),mx=Math.max.apply(Math,vals),W=1600,H=210,pL=34,pR=26,pT=60,pB=34,iW=W-pL-pR,iH=H-pT-pB,X=function(i){return pL+iW*(i/11)},Y=function(v){return pT+iH*(1-(v-mn)/Math.max(1,mx-mn))};
     var pts=series.map(function(v,i){return v==null?null:{i:i,v:v,x:X(i),y:Y(v)}}).filter(Boolean),poly=pts.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' '),prev=String(+y-1),prevDec=avg((((db.years||{})[prev]||{})[k]||[]),11);
     var dots=pts.map(function(p){return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="2.6" fill="#2f6fb0"/>'}).join('');
     var labs=pts.map(function(p){var pv=p.i>0?series[p.i-1]:prevDec,delta=pv!=null?Math.round(p.v-pv):null,chg=delta!=null?'<text class="mp-trend-change-label" data-screen-px="14" x="'+p.x.toFixed(1)+'" y="'+(p.y-30).toFixed(1)+'" text-anchor="middle" font-size="14" style="font-size:14px!important" fill="'+(delta>0?'#d23b3b':delta<0?'#2563eb':'#929cab')+'">'+(delta>0?'▲':delta<0?'▼':'－')+(delta?wonM(Math.abs(delta)):'')+'</text>':'';return '<text class="mp-trend-value-label" data-screen-px="14" x="'+p.x.toFixed(1)+'" y="'+(p.y-6).toFixed(1)+'" text-anchor="middle" font-size="14" style="font-size:14px!important" font-weight="700" fill="#1f2937">'+wonM(p.v)+'</text>'+chg}).join('');
@@ -8675,7 +8675,7 @@ function curYear(){
 function trendSvg(db,k,y){
   var rows=rowsOf(db,y,k),series=Array.from({length:12},function(_,i){return monthAvg(rows,i)}),vals=series.filter(function(v){return v!=null});
   if(vals.length<2)return '<div class="mp-no-trend">월 단가가 2개월 이상 있을 때 추이 그래프가 표시됩니다.</div>';
-  var mn=Math.min.apply(Math,vals),mx=Math.max.apply(Math,vals),W=980,H=210,pL=24,pR=18,pT=60,pB=34,iW=W-pL-pR,iH=H-pT-pB;
+  var mn=Math.min.apply(Math,vals),mx=Math.max.apply(Math,vals),W=1600,H=210,pL=34,pR=26,pT=60,pB=34,iW=W-pL-pR,iH=H-pT-pB;
   var X=function(i){return pL+iW*(i/11)},Y=function(v){return pT+iH*(1-(v-mn)/Math.max(1,mx-mn))};
   var pts=series.map(function(v,i){return v==null?null:{i:i,v:v,x:X(i),y:Y(v)}}).filter(Boolean);
   var poly=pts.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' ');
