@@ -2796,7 +2796,12 @@ function wrBindIssue(model){
       e.preventDefault();cust.value=b.dataset.cust||'';closeCustResults();refreshCust(true);cust.focus();
     }));
   };
-  cust&&cust.addEventListener('input',()=>{refreshCust(true);renderCustResults();});
+  if(cust){
+    let custComposing=false;
+    cust.addEventListener('compositionstart',()=>{custComposing=true;});
+    cust.addEventListener('compositionend',()=>{custComposing=false;refreshCust(true);renderCustResults();});
+    cust.addEventListener('input',e=>{if(e.isComposing||custComposing)return;refreshCust(true);renderCustResults();});
+  }
   cust&&cust.addEventListener('focus',renderCustResults);
   cust&&cust.addEventListener('change',()=>{refreshCust(true);closeCustResults();});
   cust&&cust.addEventListener('keydown',e=>{if(e.key==='Escape')closeCustResults();});
@@ -3474,7 +3479,13 @@ function custManagers(){
   const applySearch=()=>{ const q=($('#cmgrSearch').value||'').toLowerCase().trim(); let n=0; $('#result').querySelectorAll('.cmgr-tbl tbody tr').forEach(tr=>{ const cu=(tr.dataset.cust||'').toLowerCase(); const show=!q||cu.includes(q); tr.style.display=show?'':'none'; if(show)n++; }); const st=$('#cmgrStat'); if(st)st.innerHTML=q?`검색 "<b>${esc(q)}</b>" · <b>${won(n)}</b>개사 표시`:`검색결과 <b>${won(n)}</b>개사 · 매출합계 <b>${fmtK(fa)}</b> · 레이저 <b>${fmtK(fl)}</b>${fa>0?` (${(fl/fa*100).toFixed(1)}%)`:''}`; };
   $('#result').querySelectorAll('.cmgr-card').forEach(b=>b.addEventListener('click',()=>{ const role=b.dataset.role,n=b.dataset.n; if(role==='e')state.cmgr.fe=(state.cmgr.fe===n?'전체':n); else if(role==='s')state.cmgr.fs=(state.cmgr.fs===n?'전체':n); else state.cmgr.ft=(state.cmgr.ft===n?'전체':n); custManagers(); }));
   $('#result').querySelectorAll('.cmgr-yr').forEach(b=>b.addEventListener('click',()=>{ state.cmgr.year=b.dataset.v; custManagers(); }));
-  const sb=$('#cmgrSearch'); if(sb){ sb.addEventListener('input',()=>{ state.cmgr.search=sb.value; if(state.cmgr.infoMode&&typeof cmgrInfoSwap==='function'){ cmgrInfoSwap(); return; } applySearch(); }); }
+  const sb=$('#cmgrSearch'); if(sb){
+    let cmSearchComposing=false, cmSearchTimer=null;
+    const runCmSearch=()=>{ if(cmSearchTimer){clearTimeout(cmSearchTimer);cmSearchTimer=null;} state.cmgr.search=sb.value; if(state.cmgr.infoMode&&typeof cmgrInfoSwap==='function'){ cmgrInfoSwap(); return; } applySearch(); };
+    sb.addEventListener('compositionstart',()=>{cmSearchComposing=true;});
+    sb.addEventListener('compositionend',()=>{cmSearchComposing=false;runCmSearch();});
+    sb.addEventListener('input',e=>{ state.cmgr.search=sb.value; if(e.isComposing||cmSearchComposing)return; if(cmSearchTimer)clearTimeout(cmSearchTimer); cmSearchTimer=setTimeout(runCmSearch,100); });
+  }
   const bm=$('#cmgrM'); bm&&bm.addEventListener('click',()=>{ state.cmgr.mode=(state.cmgr.mode==='m'?'none':'m'); custManagers(); });
   const bl=$('#cmgrL'); bl&&bl.addEventListener('click',()=>{ state.cmgr.mode=(state.cmgr.mode==='l'?'none':'l'); custManagers(); });
   const br=$('#cmgrReset'); br&&br.addEventListener('click',()=>{ state.cmgr={fs:'전체',fe:'전체',ft:'전체',search:'',mode:'none',year:'cy',sortKey:'a',sortDir:-1,editKey:null}; custManagers(); });
@@ -7227,7 +7238,7 @@ function render(title,meta,data,cols,defSortKey,note,opts={}){
   }
   $('#result').innerHTML=`
     <div class="rhead">${opts.back?`<button class="btn ghost" id="backBtn">${esc(opts.back.label)}</button>`:''}<span class="title">${esc(title)}</span><span class="meta">${meta}</span><span class="spacer"></span>
-      <input type="text" id="searchBox" placeholder="검색 (거래처/품명/규격)" value="${esc(state._search||'')}">
+      <input type="text" id="searchBox" placeholder="검색 (거래처/품명/규격)" value="${esc(state._search||'')}" autocomplete="off" spellcheck="false" aria-label="목록 검색">
       ${opts.headExtra||''}<button class="btn ghost" id="exportBtn">엑셀 내보내기</button>${opts.fullCsv?`<button class="btn ghost" id="fullCsvBtn" style="background:#ecfeff;border-color:#67e8f9;color:#0e7490">${esc(opts.fullCsv.label)}</button>`:''}</div>
     ${opts.controlsHtml||''}
     ${chipsHtml}
@@ -7236,7 +7247,35 @@ function render(title,meta,data,cols,defSortKey,note,opts={}){
     ${opts.afterTableHtml||''}
     ${note?`<div class="note">${note}</div>`:''}`;
   if(opts.back) $('#backBtn').addEventListener('click',opts.back.fn);
-  $('#searchBox').addEventListener('input',e=>{state._search=e.target.value; if(state.lastData&&state.lastData.opts&&state.lastData.opts.pageLimit)state._pageShown=state.lastData.opts.pageLimit; drawTable();});
+  { // 공통 검색필드: 한글 IME 조합 중에는 무거운 표 재렌더링을 하지 않아 입력 끊김을 방지한다.
+    const sb=$('#searchBox');
+    if(sb){
+      let composing=false, searchTimer=null;
+      const applySearch=()=>{
+        if(searchTimer){clearTimeout(searchTimer);searchTimer=null;}
+        state._search=sb.value;
+        if(state.lastData&&state.lastData.opts&&state.lastData.opts.pageLimit)state._pageShown=state.lastData.opts.pageLimit;
+        drawTable();
+      };
+      const queueSearch=()=>{
+        state._search=sb.value;
+        if(composing)return;
+        if(searchTimer)clearTimeout(searchTimer);
+        searchTimer=setTimeout(applySearch,120);
+      };
+      sb.addEventListener('compositionstart',()=>{composing=true;});
+      sb.addEventListener('compositionend',()=>{composing=false;applySearch();});
+      sb.addEventListener('input',e=>{if(e.isComposing||composing){state._search=sb.value;return;}queueSearch();});
+      sb.addEventListener('keydown',e=>{
+        if(e.key==='Escape'&&!e.isComposing){
+          e.preventDefault();
+          sb.value='';
+          state._search='';
+          applySearch();
+        }
+      });
+    }
+  }
   if(opts.fullCsv){ const fb=$('#fullCsvBtn'); fb&&fb.addEventListener('click',opts.fullCsv.fn); }
   $('#exportBtn').addEventListener('click',exportCSV);
   if(opts.verdictChips) $('#result').querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{ state.chipVal=c.dataset.v; render(title,meta,data,cols,state.sortKey,note,opts); }));
@@ -7390,7 +7429,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
 <script id="sales-sync-v03-final-patch">
 (function(){
   'use strict';
-  var APP_VERSION='v40 · 제외메뉴·방문필요';
+  var APP_VERSION='v40.1 · 검색입력 한글 IME 수정';
   var BASE_KEY='sales_gsync_base_stable_v1';
   var OLD_BASE_KEYS=['sales_gsync_base_v02','sales_gsync_base_v01'];
   var AUTO_DELAY=15000, BUSY_RETRY=1500, MAX_AUTO_RETRY=6;
