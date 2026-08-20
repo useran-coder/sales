@@ -1464,6 +1464,8 @@ const $ = s => document.querySelector(s);
 {const rankGroupMenu=document.querySelector('.tm-item[data-act="rank-group"]');if(rankGroupMenu&&!document.querySelector('.tm-item[data-act="spec-sales"]'))rankGroupMenu.insertAdjacentHTML('afterend','<button class="tm-item" data-act="spec-sales"><span class="ic">📐</span>규격/비규격 매출</button>');}
 const CL={"이보연":{bg:"#dcfce7",tx:"#14532d",rg:"#22c55e",br:"#16a34a"},"김윤정":{bg:"#fff7ed",tx:"#7c2d12",rg:"#f97316",br:"#ea580c"},"박충선":{bg:"#dbeafe",tx:"#1e3a5f",rg:"#3b82f6",br:"#2563eb"},"임이량":{bg:"#fef9c3",tx:"#713f12",rg:"#eab308",br:"#ca8a04"},"신승환":{bg:"#f3e8ff",tx:"#581c87",rg:"#a855f7",br:"#9333ea"},"신승환/박충선":{bg:"#fce7f3",tx:"#831843",rg:"#ec4899",br:"#db2777"},"미배정":{bg:"#f1f5f9",tx:"#475569",rg:"#94a3b8",br:"#64748b"}};
 function _nm(s){ if(s==null)return ''; return String(s).trim().replace(/（/g,'(').replace(/）/g,')').replace(/　/g,' ').replace(/㈜/g,'(주)').replace(/\s+/g,' '); }
+/* perf: memoize _nm (pure string→string, called thousands of times per render) */
+(function(){var __base=_nm,__cache=new Map();_nm=function(s){var k=(s==null)?'':(typeof s==='string'?s:String(s));var v=__cache.get(k);if(v!==undefined)return v;v=__base(s);if(__cache.size>50000)__cache.clear();__cache.set(k,v);return v;};})();
 function _ln(s){ s=_nm(s).replace(/주식회사/g,'(주)').replace(/유한회사/g,'(유)').replace(/\([^)]*폐업[^)]*\)/g,'').replace(/\([^)]*영업종료[^)]*\)/g,'').replace(/\s+/g,''); return s; }
 const MGR={"(주)경동원": {"s": "이보연", "t": "신승환/박충선"}, "동방노보펌(주) 화성지점": {"s": "이보연", "t": "임이량"}, "(주)제일방화문": {"s": "김윤정", "t": "임이량"}, "성호전자(주)": {"s": "이보연", "t": "임이량"}, "아주엠씨엠(주)": {"s": "김윤정", "t": "임이량"}, "다우도어앤스틸": {"s": "김윤정", "t": "박충선"}, "(주)신원에이스도어": {"s": "김윤정", "t": "임이량"}, "대동방화문(주)(포천)": {"s": "김윤정", "t": "신승환"}, "(주)일조": {"s": "이보연", "t": "박충선"}, "(주)벽두도어": {"s": "김윤정", "t": "임이량"}, "(주)진성산업": {"s": "이보연", "t": "임이량"}, "주식회사 목현도어": {"s": "이보연", "t": "임이량"}, "(주)안전방화문": {"s": "김윤정", "t": "신승환"}, "(주)우창": {"s": "이보연", "t": "박충선"}, "(주)동성산업": {"s": "김윤정", "t": "신승환"}, "다우방화문": {"s": "김윤정", "t": "박충선"}, "(주)무등방화문": {"s": "이보연", "t": "신승환"}, "주식회사 동우이엠씨": {"s": "김윤정", "t": "임이량"}, "신영방화문 주식회사": {"s": "김윤정", "t": "신승환"}, "(주)이지스 FSD": {"s": "이보연", "t": "박충선"}, "주식회사 창진금속": {"s": "이보연", "t": "박충선"}, "(주)한국방화문": {"s": "김윤정", "t": "박충선"}, "주식회사 정일방화문": {"s": "김윤정", "t": "임이량"}, "(주)동원창호": {"s": "김윤정", "t": "신승환"}, "(주)더굿도어": {"s": "이보연", "t": "신승환"}, "(주)동광명품도어 구미지사": {"s": "김윤정", "t": "신승환"}, "국일도어테크(주)": {"s": "김윤정", "t": "박충선"}, "(주)우리에스디테크방화문": {"s": "김윤정", "t": "임이량"}, "주식회사 스마트도어": {"s": "김윤정", "t": "신승환"}, "주식회사 해광방화문": {"s": "김윤정", "t": ""}, "(주)우리도어": {"s": "", "t": "신승환"}, "주식회사 한림도어": {"s": "김윤정", "t": "박충선"}, "주식회사 미건도어": {"s": "이보연", "t": "박충선"}, "(주)태광피앤티": {"s": "김윤정", "t": ""}, "(주)성광특수금속": {"s": "김윤정", "t": "임이량"}, "주식회사 천문": {"s": "김윤정", "t": "박충선"}, "세기에프에스디(주)": {"s": "김윤정", "t": "신승환"}, "건영방화문": {"s": "", "t": ""}, "주식회사 화인엠텍": {"s": "김윤정", "t": "신승환"}, "주식회사 금강방화문": {"s": "이보연", "t": ""}, "광영방화문(장지동)": {"s": "김윤정", "t": ""}, "동원방화문 주식회사": {"s": "김윤정", "t": ""}, "주식회사 와이즈메탈라인": {"s": "김윤정", "t": ""}, "주식회사 서울내장기업": {"s": "이보연", "t": "임이량"}, "회승강건주식회사": {"s": "이보연", "t": "신승환"}, "주식회사 정원산업": {"s": "", "t": ""}, "(주)삼진방화문": {"s": "", "t": "박충선"}, "(주)마메든도어": {"s": "", "t": ""}, "(주)에스에이앤테크": {"s": "", "t": ""}, "주식회사 세한이엔지": {"s": "", "t": "임이량"}, "(주)금강이엠씨": {"s": "이보연", "t": ""}, "정우스틸산업(주)": {"s": "", "t": ""}, "우진방화문(부산)": {"s": "", "t": "박충선"}, "주식회사 무등스텐방화문": {"s": "김윤정", "t": "신승환"}, "태양FSD": {"s": "", "t": "박충선"}, "주식회사 금풍앤에프": {"s": "", "t": ""}, "(주)페럼인프라본사": {"s": "이보연", "t": "박충선"}, "주식회사강남산업": {"s": "김윤정", "t": ""}, "삼삼금속": {"s": "", "t": ""}, "명성금속(명성방화문)": {"s": "", "t": ""}, "진호정밀": {"s": "", "t": ""}, "(주)대동이엔지": {"s": "", "t": ""}, "유한회사 현주산업": {"s": "", "t": "박충선"}, "세종방화문": {"s": "", "t": ""}, "전국방화문": {"s": "이보연", "t": ""}, "(주)아이하드웨어": {"s": "", "t": ""}, "주식회사 태광방화방음문": {"s": "", "t": ""}, "고신ENG": {"s": "", "t": ""}, "(주)메리트현관도어": {"s": "", "t": ""}, "(주)네써쎄리": {"s": "", "t": ""}, "주식회사 우성도어": {"s": "", "t": ""}, "(주)동해공영": {"s": "", "t": ""}, "삼성기업": {"s": "", "t": ""}, "일진방화문(김포공장)": {"s": "", "t": ""}, "갑성산업(주)": {"s": "", "t": ""}, "(주)신흥방화문": {"s": "이보연", "t": ""}, "주식회사 태광아이엔티": {"s": "", "t": ""}, "화성방화문": {"s": "이보연", "t": "박충선"}, "주식회사 솔리드방화문": {"s": "", "t": ""}, "신원테크": {"s": "", "t": ""}, "인성건철": {"s": "", "t": ""}, "(신)고려산업": {"s": "", "t": ""}, "(주)동방테크": {"s": "", "t": "박충선"}, "진영실업": {"s": "", "t": ""}, "(주)금천": {"s": "", "t": ""}, "주식회사 주원방화문": {"s": "", "t": ""}, "성진산업": {"s": "", "t": ""}, "전진샤링": {"s": "", "t": ""}, "대동방화문(대동FSD)": {"s": "", "t": ""}, "주식회사 사운드방음문": {"s": "", "t": ""}, "진양": {"s": "", "t": ""}, "이레방화문": {"s": "", "t": ""}, "(주)형제메탈": {"s": "", "t": ""}, "대건방화문": {"s": "", "t": ""}, "세진하이텍": {"s": "", "t": ""}, "세화테크주식회사": {"s": "", "t": ""}, "고려방화문": {"s": "", "t": ""}, "(주)신생": {"s": "", "t": ""}, "(주)의성방화문": {"s": "", "t": ""}, "우진방화문(광주)": {"s": "", "t": ""}, "태영아이앤디": {"s": "", "t": ""}, "주식회사 웅진방화문": {"s": "", "t": ""}, "경남스텐주식회사": {"s": "", "t": ""}, "(주)유신테크": {"s": "", "t": ""}, "(주)대성하이텍": {"s": "", "t": ""}, "(주) 더어울림": {"s": "", "t": ""}, "(주)이레앤엘피스": {"s": "", "t": ""}, "도스템 주식회사": {"s": "", "t": ""}, "금호스틸방화문": {"s": "", "t": ""}, "(주)도어리안(구 경인에스디)": {"s": "", "t": ""}, "주식회사 세호방화문": {"s": "", "t": ""}, "조스튜디오": {"s": "", "t": ""}, "(주)세광금속": {"s": "", "t": ""}, "한국방화문(광탄)": {"s": "", "t": ""}, "주식회사우노도어하드웨어": {"s": "", "t": ""}, "동방방화문": {"s": "", "t": ""}, "용문방화문": {"s": "", "t": ""}, "(주)은우": {"s": "", "t": ""}, "주식회사 한국부건마메든도어": {"s": "", "t": ""}, "월드시스템": {"s": "", "t": ""}, "(주)한서에프에스디": {"s": "", "t": ""}, "한성FSD": {"s": "", "t": ""}, "경기패션방화문": {"s": "", "t": ""}, "주식회사 신우금속": {"s": "", "t": ""}, "(주)정원이엔지": {"s": "", "t": ""}, "주식회사태영방음": {"s": "", "t": ""}, "창일산업개발(주)": {"s": "", "t": ""}, "(주)벽두엔에이치티 (NHT)": {"s": "", "t": ""}, "대양산업": {"s": "", "t": ""}, "현진스텐": {"s": "", "t": ""}, "진주방화문": {"s": "", "t": ""}, "대림산업": {"s": "", "t": ""}, "주식회사 경원메탈": {"s": "", "t": ""}, "대흥엔지니어링": {"s": "", "t": ""}, "(주)한양금속": {"s": "", "t": ""}, "주원인터내셔널(주)": {"s": "", "t": ""}, "(주)한라에프에스디": {"s": "", "t": ""}, "(주)동영산업": {"s": "", "t": ""}, "(주)동영엔지니어링": {"s": "", "t": ""}, "금강건영(구리,동서울)": {"s": "", "t": ""}, "도랜하우스 코리아": {"s": "", "t": ""}, "대아금속주식회사": {"s": "", "t": ""}, "주식회사 나루금속(구.안전금속)": {"s": "", "t": ""}, "(주)성원기업": {"s": "", "t": ""}, "봉화산업": {"s": "", "t": ""}, "조은현관문(부평)": {"s": "", "t": ""}, "명품방화문(인천)": {"s": "", "t": ""}, "주식회사 유신테크 화원지점": {"s": "", "t": ""}, "굿센하드웨어 주식회사": {"s": "", "t": ""}, "메리트도어": {"s": "", "t": ""}, "주식회사 동서스텐": {"s": "", "t": ""}, "주식회사 예원테크": {"s": "", "t": ""}, "오투메탈": {"s": "", "t": ""}, "주식회사 월드스틸": {"s": "", "t": ""}, "태광방음문": {"s": "", "t": ""}, "우진하우징(주)": {"s": "", "t": ""}, "금강기업(대구)": {"s": "", "t": ""}, "(주)유신테크 지점(구미)": {"s": "", "t": ""}, "대명방화문": {"s": "", "t": ""}, "성석이엔디": {"s": "", "t": ""}, "주식회사 비앤에스산업": {"s": "", "t": ""}, "미래금속": {"s": "", "t": ""}, "금강건철산업(강북)": {"s": "", "t": ""}, "신진DMB": {"s": "", "t": ""}, "주식회사 삼성테크": {"s": "", "t": ""}, "동방강업": {"s": "", "t": ""}, "대동방화문": {"s": "", "t": ""}, "화인텍도어하드웨어(주)": {"s": "", "t": ""}, "뉴딜테크": {"s": "", "t": ""}, "(주)삼화금속": {"s": "", "t": ""}, "선한도어": {"s": "", "t": ""}, "한신부속": {"s": "", "t": ""}, "뚝딱철물장식": {"s": "", "t": ""}, "더 좋은사람 하우징": {"s": "", "t": ""}, "주식회사 신성건설": {"s": "", "t": ""}, "미림내장건설": {"s": "", "t": ""}, "가온금속": {"s": "", "t": ""}, "혜성방음문": {"s": "", "t": ""}, "두리하드웨어(두리 하드웨어)": {"s": "", "t": ""}, "거성산업": {"s": "", "t": ""}, "디와이트레이딩": {"s": "", "t": ""}, "주식회사 코아텍": {"s": "", "t": ""}, "주식회사 우경메탈": {"s": "", "t": ""}, "주식회사 나운자동문": {"s": "", "t": ""}, "(주)대진건업 정선공장": {"s": "", "t": ""}, "주식회사 인텍티에스": {"s": "", "t": ""}, "주식회사 무진인터내셔날": {"s": "", "t": ""}, "이루메탈": {"s": "", "t": ""}, "우진산업": {"s": "", "t": ""}, "엠시스 주식회사": {"s": "", "t": ""}, "(주)신흥이앤씨": {"s": "", "t": ""}, "남서방하우징": {"s": "", "t": ""}, "에이엠테크": {"s": "", "t": ""}, "스카이하드웨어 주식회사": {"s": "", "t": ""}, "주식회사 협성이앤지": {"s": "", "t": ""}, "주식회사 범성": {"s": "", "t": ""}, "코리아산업": {"s": "", "t": ""}, "진원픽스 주식회사": {"s": "", "t": ""}, "진성산업(구.진진산업)": {"s": "", "t": ""}, "(주)화인씨앤씨": {"s": "", "t": ""}, "주식회사 나인인터내셔널": {"s": "", "t": ""}, "에이치엘디앤아이한라 주식회사": {"s": "", "t": ""}, "주식회사 삼신이엔씨": {"s": "", "t": ""}, "(주)예성": {"s": "", "t": ""}, "주식회사하나이엔씨": {"s": "", "t": ""}, "주식회사 현대방음문": {"s": "", "t": ""}, "주식회사 조은이엔디": {"s": "", "t": ""}, "운천방화문": {"s": "", "t": ""}, "주식회사 대성명품도어": {"s": "", "t": ""}, "미성방음테크": {"s": "", "t": ""}, "데시벨산업 주식회사": {"s": "", "t": ""}, "주식회사 대건에프앤씨(서산)": {"s": "", "t": ""}, "에프이에스": {"s": "", "t": ""}, "집수리 A to Z": {"s": "", "t": ""}, "(주)거호산업": {"s": "", "t": ""}, "성산테크": {"s": "", "t": ""}, "디에이치": {"s": "", "t": ""}, "B&P 파트너스": {"s": "", "t": ""}, "골드핸즈": {"s": "", "t": ""}, "(주)에이스시스템": {"s": "", "t": ""}, "주식회사 현주스틸도어": {"s": "", "t": ""}, "주식회사 용금": {"s": "", "t": ""}, "혜성금속": {"s": "", "t": ""}, "주식회사 에이치에스패널": {"s": "", "t": ""}, "스틸앤글라스": {"s": "", "t": ""}, "안성정일방화문": {"s": "", "t": ""}, "(주)엔젤엠엘": {"s": "", "t": ""}, "삼성공사": {"s": "", "t": ""}, "(주)원앤에프기술산업": {"s": "", "t": ""}, "오경상사": {"s": "", "t": ""}, "주식회사 원스": {"s": "", "t": ""}, "지원종합개발": {"s": "", "t": ""}, "광건티앤엠(주)": {"s": "", "t": ""}, "홍은산업개발": {"s": "", "t": ""}, "(주)유림팜스토어": {"s": "", "t": ""}, "아주이엔지(ENG)": {"s": "", "t": ""}, "신광철강 (구 신광ENG)": {"s": "", "t": ""}, "국민도어(구.소리엔 방음)": {"s": "", "t": ""}, "동성건설(주)": {"s": "", "t": ""}, "주식회사 중용방화문": {"s": "", "t": ""}, "동그린&마메든도어": {"s": "", "t": ""}, "현대테크": {"s": "", "t": ""}, "주식회사 영진형제금속": {"s": "", "t": ""}, "주식회사 한국방화문": {"s": "", "t": ""}, "아이언(IRON)": {"s": "", "t": ""}, "(주)진관개발": {"s": "", "t": ""}, "(주)정우": {"s": "", "t": ""}, "한국샷시부속": {"s": "", "t": ""}, "주식회사 두산금속": {"s": "", "t": ""}, "(주)동호엔지니어링": {"s": "", "t": ""}, "(주)야무진": {"s": "", "t": ""}, "손서방 하우징": {"s": "", "t": ""}, "수도": {"s": "", "t": ""}, "주식회사 용금에스티디": {"s": "", "t": ""}, "주식회사 유림축산": {"s": "", "t": ""}, "우리방화문": {"s": "", "t": ""}, "경진방화문": {"s": "", "t": ""}, "나진방화문(서울)": {"s": "", "t": ""}, "범아상사": {"s": "", "t": ""}, "주식회사 페타케이디도어": {"s": "", "t": ""}, "주식회사 동화에스피디": {"s": "", "t": ""}, "금진에스디방화문": {"s": "", "t": ""}, "태송 메탈": {"s": "", "t": ""}, "99클린": {"s": "", "t": ""}, "협동 프라임": {"s": "", "t": ""}, "최서방하우징": {"s": "", "t": ""}, "세종방화문(서주영)": {"s": "", "t": ""}, "주식회사 삼일엠앤디": {"s": "", "t": ""}, "(주)디라인": {"s": "", "t": ""}, "(주)토탈방화문": {"s": "", "t": ""}, "프론트도어(이테크도어)": {"s": "", "t": ""}, "(주)성광": {"s": "", "t": ""}, "리치도어": {"s": "", "t": ""}, "(주)네오플러스엠": {"s": "", "t": ""}, "신광ENG": {"s": "", "t": ""}, "강산금속": {"s": "", "t": ""}, "삼일스텐레이저": {"s": "", "t": ""}, "오케이집수리": {"s": "", "t": ""}, "아줌마공구": {"s": "", "t": ""}, "금진패션방화문": {"s": "", "t": ""}, "(주)아린엠에이치씨": {"s": "", "t": ""}, "금진에스디": {"s": "", "t": ""}, "한라메탈": {"s": "", "t": ""}, "(주)대정엠테크": {"s": "", "t": ""}, "안동방화문": {"s": "", "t": ""}, "대영방화문(구.대영공업사)": {"s": "", "t": ""}, "송광방화문": {"s": "", "t": ""}, "신성부속": {"s": "", "t": ""}, "(주)에이원메탈": {"s": "", "t": ""}, "대림하드웨어": {"s": "", "t": ""}, "일주금속": {"s": "", "t": ""}, "주식회사 더굿스틸": {"s": "", "t": ""}, "동부방음문": {"s": "", "t": ""}, "공간 자동문": {"s": "", "t": ""}, "모세금속": {"s": "", "t": ""}, "주식회사델타이엔지": {"s": "", "t": ""}, "의료법인 승민의료재단(화성초록병원)": {"s": "", "t": ""}, "성실금속": {"s": "", "t": ""}, "에스엠금속": {"s": "", "t": ""}, "미래건업": {"s": "", "t": ""}, "(주)우주도어하드웨어": {"s": "", "t": ""}, "원메탈": {"s": "", "t": ""}, "상일방화문 태양광발전소": {"s": "", "t": ""}, "큐테크금속": {"s": "", "t": ""}, "테라스틸 주식회사(의성산업)": {"s": "", "t": ""}, "(주)선진테크": {"s": "", "t": ""}, "(주)삼선CSA": {"s": "", "t": ""}, "주식회사 데코메탈": {"s": "", "t": ""}, "주식회사 유진메이커스": {"s": "", "t": ""}, "메탈리어": {"s": "", "t": ""}, "(주)대성아트메탈": {"s": "", "t": ""}, "주식회사 서진메탈": {"s": "", "t": ""}, "주식회사 드림테크": {"s": "", "t": ""}, "(주)경남금속": {"s": "", "t": ""}, "을지하드웨어": {"s": "", "t": ""}, "(주)현대정밀하드웨어": {"s": "", "t": ""}, "성보": {"s": "", "t": ""}, "대성산업": {"s": "", "t": ""}, "상계건축철물": {"s": "", "t": ""}, "천하산업": {"s": "", "t": ""}, "태양금속": {"s": "", "t": ""}, "청우산업주식회사": {"s": "", "t": ""}, "대성산업(대구)": {"s": "", "t": ""}, "대광종합건재": {"s": "", "t": ""}, "서안동농업협동조합": {"s": "", "t": ""}, "대덕종합상사": {"s": "", "t": ""}, "일등도어": {"s": "", "t": ""}, "동양강철 중앙대리점": {"s": "", "t": ""}, "거성건철": {"s": "", "t": ""}, "삼백인테리어장식철물": {"s": "", "t": ""}, "공영이엔씨(주)": {"s": "", "t": ""}, "범일방호기술산업": {"s": "", "t": ""}, "화성강건": {"s": "", "t": ""}, "원호개발(주)": {"s": "", "t": ""}, "대덕테크노밸리푸르지오하임입주자대표회의": {"s": "", "t": ""}, "신흥아트": {"s": "", "t": ""}, "한국도어": {"s": "", "t": ""}, "일성종합상사": {"s": "", "t": ""}, "천성산업주식회사": {"s": "", "t": ""}, "금강방화문 천안대리점": {"s": "", "t": ""}, "집수리이웃": {"s": "", "t": ""}, "발해이앤씨 주식회사": {"s": "", "t": ""}, "국제종합상사": {"s": "", "t": ""}, "보화방화문": {"s": "", "t": ""}, "(주)오앤씨테크": {"s": "", "t": ""}, "제이컴퓨터": {"s": "", "t": ""}, "(주)엠투엔 전장사업부": {"s": "", "t": ""}, "알라딘홈케어": {"s": "", "t": ""}, "주식회사 용림엘디디": {"s": "", "t": ""}, "에이케이머티리얼(AK marterial)": {"s": "", "t": ""}, "유하": {"s": "", "t": ""}, "친구도어": {"s": "", "t": ""}, "(주)덕산토건": {"s": "", "t": ""}, "문수리 문앤리코": {"s": "", "t": ""}, "서울티엔에스 주식회사": {"s": "", "t": ""}, "(주)우선산업관리": {"s": "", "t": ""}, "용인행정타운 두산위브1단지 입주자대표회의": {"s": "", "t": ""}, "구일철물 건재 골재": {"s": "", "t": ""}, "주원산업": {"s": "", "t": ""}, "형제금속(김민호)": {"s": "", "t": ""}, "청년부부집 수리": {"s": "", "t": ""}, "(주)사스티에스": {"s": "", "t": ""}, "테크와이드 주식회사": {"s": "", "t": ""}, "전국열쇠 이마트 천호점": {"s": "", "t": ""}, "장원종합상사": {"s": "", "t": ""}, "디자인 해윰": {"s": "", "t": ""}, "(주)제이디메탈": {"s": "", "t": ""}, "오이통상": {"s": "", "t": ""}, "(주)원보건설": {"s": "", "t": ""}, "주식회사 케이에스씨플러스": {"s": "", "t": ""}, "고려하드웨어주식회사": {"s": "", "t": ""}, "덕신건업주식회사": {"s": "", "t": ""}, "한양기업": {"s": "", "t": ""}, "동방강업(부산)": {"s": "", "t": ""}, "PD회계입고(본사내부거래)": {"s": "", "t": ""}, "정원엔지니어링": {"s": "", "t": ""}, "미래도어(구.전통방화문)": {"s": "", "t": ""}, "(주)이화메탈": {"s": "", "t": ""}, "화성산업개발": {"s": "", "t": ""}, "하남 방화문(구.엘피스방화문)": {"s": "", "t": ""}, "태호금속": {"s": "", "t": ""}, "신형공영(주)": {"s": "", "t": ""}, "메탈라인": {"s": "", "t": ""}, "성문종합개발주식회사": {"s": "", "t": ""}, "주식회사 무경 대구지점": {"s": "", "t": ""}, "케이인터내셔널": {"s": "", "t": ""}, "한국메탈 주식회사": {"s": "", "t": ""}, "마산웰메이드시티": {"s": "", "t": ""}, "주식회사 뷰텍이에스": {"s": "", "t": ""}, "케이티엠지": {"s": "", "t": ""}, "일흥상사": {"s": "", "t": ""}, "주식회사 강산금속": {"s": "", "t": ""}, "주식회사 금호노블셔터": {"s": "", "t": ""}, "세움": {"s": "", "t": ""}, "주식회사 성신금속": {"s": "", "t": ""}, "이룸 디엔씨": {"s": "", "t": ""}, "두산건설(주)": {"s": "", "t": ""}, "주식회사 가온스틸": {"s": "", "t": ""}, "아주스틸 주식회사": {"s": "", "t": ""}, "동국씨엠(주) 도성센터": {"s": "", "t": ""}, "(주)예건": {"s": "", "t": ""}, "에스지씨이앤씨 주식회사": {"s": "", "t": ""}, "동방산업주식회사": {"s": "", "t": ""}, "신진철물": {"s": "", "t": ""}};
 function mgrRec(n){ if(n==null)return null; const o=state.mgrOverride,k=_nm(n); if(o){ if(o[n])return o[n]; if(o[k])return o[k]; } return MGR[k]||MGR[String(n).trim()]||MGR_L[_ln(n)]||null; }
@@ -10735,7 +10737,39 @@ function arPct(v,d){return isFinite(v)?(v*100).toFixed(d==null?1:d)+'%':'-';}
 function arDate(v){if(!v)return'';if(v instanceof Date&&!isNaN(v))return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');if(typeof v==='number'&&window.XLSX&&XLSX.SSF){var p=XLSX.SSF.parse_date_code(v);if(p)return p.y+'-'+String(p.m).padStart(2,'0')+'-'+String(p.d).padStart(2,'0');}var s=String(v).trim().replace(/[.\/]/g,'-');var m=s.match(/(20\d{2})-(\d{1,2})-(\d{1,2})/);return m?m[1]+'-'+String(+m[2]).padStart(2,'0')+'-'+String(+m[3]).padStart(2,'0'):'';}
 function arDay(s){var d=new Date((s||'2000-01-01')+'T00:00:00');return isNaN(d)?null:d;}
 function arDays(a,b){var x=arDay(a),y=arDay(b);return x&&y?Math.floor((y-x)/86400000):0;}
-function arCust(s){try{return _nm(String(s||'').trim());}catch(_){return String(s||'').trim();}}
+/*
+ * 수금자료와 매출자료의 법인 표기가 달라도 같은 업체로 대사한다.
+ * 예: 대흥건철 주식회사 ↔ 대흥건철(주), 주식회사 금천 ↔ (주)금천.
+ * 화면에는 현재 매출자료의 업체명을 우선 사용하고, 매출자료가 아직
+ * 로드되지 않은 때에는 거래처 기본정보의 명칭을 사용한다.
+ */
+var arCustAliasCache={cur:null,len:-1,map:new Map()},arCustStaticAliasCache=null;
+function arCustMatchKey(s){
+ var v;try{v=_nm(String(s||'').trim());}catch(_){v=String(s||'').trim();}
+ return v.replace(/주식회사/g,'(주)').replace(/유한회사/g,'(유)').replace(/\s+/g,'');
+}
+/* perf: memoize arCustMatchKey (pure string→string) */
+(function(){var __base=arCustMatchKey,__cache=new Map();arCustMatchKey=function(s){var k=(s==null)?'':(typeof s==='string'?s:String(s));var v=__cache.get(k);if(v!==undefined)return v;v=__base(s);if(__cache.size>50000)__cache.clear();__cache.set(k,v);return v;};})();
+function arCustStaticAliases(){
+ if(arCustStaticAliasCache)return arCustStaticAliasCache;
+ var map=new Map();
+ [typeof GRADE==='object'?GRADE:null,typeof CLS==='object'?CLS:null,typeof MGR==='object'?MGR:null].forEach(function(src){
+  if(!src)return;Object.keys(src).forEach(function(name){var key=arCustMatchKey(name);if(key&&!map.has(key))map.set(key,_nm(name));});
+ });
+ arCustStaticAliasCache=map;return map;
+}
+function arCustSalesAliases(){
+ var rows=typeof CUR!=='undefined'&&Array.isArray(CUR)?CUR:[],len=rows.length;
+ if(arCustAliasCache.cur===rows&&arCustAliasCache.len===len)return arCustAliasCache.map;
+ var groups=new Map(),fallback=arCustStaticAliases();
+ rows.forEach(function(r){var name;try{name=_nm(String(r&&r.cust||'').trim());}catch(_){name=String(r&&r.cust||'').trim();}if(!name)return;var key=arCustMatchKey(name);if(!groups.has(key))groups.set(key,[]);if(groups.get(key).indexOf(name)<0)groups.get(key).push(name);});
+ var map=new Map();groups.forEach(function(names,key){var preferred=fallback.get(key);map.set(key,preferred&&names.indexOf(preferred)>=0?preferred:names[0]);});
+ arCustAliasCache={cur:rows,len:len,map:map};return map;
+}
+function arCust(s){
+ var raw;try{raw=_nm(String(s||'').trim());}catch(_){raw=String(s||'').trim();}
+ if(!raw)return'';var key=arCustMatchKey(raw),sales=arCustSalesAliases();return sales.get(key)||arCustStaticAliases().get(key)||raw;
+}
 function arKey(year,cust){return year+'|'+arCust(cust);}
 function arRiskBadge(s){var c=s==='위험'?'danger':s==='주의'?'watch':s==='관리'?'manage':'normal';return '<span class="ar-risk '+c+'">'+esc(s)+'</span>';}
 function arReceiptKey(r){return[r.no||'',r.line||'',r.date||'',arCust(r.cust),r.amount||0,r.control||''].join('|');}
@@ -11419,6 +11453,112 @@ var arBindV191=arBind;arBind=function(model,allModel){arBindV191(model,allModel)
     document.querySelectorAll('[data-due-gcust]').forEach(function(tr){tr.onclick=function(e){if(e.target.closest('button,select,input,a'))return;var c=tr.getAttribute('data-due-gcust');state.ar.dueGroupExpand=(state.ar.dueGroupExpand===c)?'':c;arRender();};});
     document.querySelectorAll('[data-due-detail-cust]').forEach(function(tr){tr.onclick=function(e){e.stopPropagation();var c=tr.getAttribute('data-due-detail-cust');state.ar.prevTab='duedate';state.ar.selectedCust=c;state.ar.tab='detail';arRender();};});
   };
+})();
+
+/* v223: 미수관리 탭 전환 성능 최적화
+ * - 연도별 원본 모델과 제외/검색 적용 모델을 재사용해 탭마다 전체 자료를 다시 집계하지 않는다.
+ * - 결제일 대비는 매출·수금을 업체별로 한 번만 묶어 FIFO를 계산한다.
+ * - 표 정렬 이벤트는 한 번의 렌더링에 한 번만 연결한다.
+ */
+;(function(){
+ if(typeof arModel!=='function'||typeof arFilterModel!=='function'||typeof arDueRows!=='function'||typeof arRender!=='function')return;
+
+ function arPerfModelKey(year){
+  var end=(year===+(state.ar.asOf||'').slice(0,4)?state.ar.asOf:year+'-12-31');
+  return year+'|'+end+'|'+(CUR||[]).length+'|'+state.ar.receipts.length+'|'+Object.keys(state.ar.opening||{}).length+'|'+Object.keys(state.ar.balances||{}).length+'|'+Object.keys(state.ar.yearEndBills||{}).length+'|'+Object.keys(state.ar.billStatus||{}).length+'|'+Object.keys(state.ar.actualYears||{}).sort().map(function(y){return y+':'+(state.ar.actualYears[y]?1:0);}).join(',');
+ }
+
+ var arModelPerfBase=arModel,arPerfModels=new Map();
+ arModel=function(year){
+  if(arCache===null)arPerfModels.clear();
+  var key=arPerfModelKey(year);
+  if(arPerfModels.has(key)){
+   var cached=arPerfModels.get(key);
+   arCache={key:key,value:cached};
+   return cached;
+  }
+  var model=arModelPerfBase(year);
+  arPerfModels.set(key,model);
+  return model;
+ };
+
+ var arFilterModelPerfBase=arFilterModel,arPerfFiltered=new WeakMap();
+ function arPerfFilterKey(){
+  var excluded=Object.keys(state.ar.excludedCustomers||{}).filter(function(c){return!!state.ar.excludedCustomers[c];}).sort();
+  return JSON.stringify([(state.ar.search||'').trim().toLowerCase(),state.ar.tab==='exclude'?'exclude':'normal',!!state.ar.hideEstimate,excluded]);
+ }
+ arFilterModel=function(model){
+  var key=arPerfFilterKey(),byKey=arPerfFiltered.get(model);
+  if(!byKey){byKey=new Map();arPerfFiltered.set(model,byKey);}
+  if(byKey.has(key))return byKey.get(key);
+  var filtered=arFilterModelPerfBase(model);
+  byKey.set(key,filtered);
+  return filtered;
+ };
+
+ var arPerfDueCache=new WeakMap();
+ arDueRows=function(model){
+  var year=model.year,analysisEnd=state.ar.asOf||arLatestDate()||model.end,confirm=state.ar.dueConfirm||{};
+  var confirmKeys=Object.keys(confirm).filter(function(k){return!!confirm[k];}).sort(),cacheKey=analysisEnd+'|'+JSON.stringify(confirmKeys),byKey=arPerfDueCache.get(model);
+  if(!byKey){byKey=new Map();arPerfDueCache.set(model,byKey);}
+  if(byKey.has(cacheKey))return byKey.get(cacheKey);
+
+  var allowed=new Map((model.customers||[]).map(function(o){return[o.cust,o];})),salesByCust=new Map(),receiptsByCust=new Map();
+  (CUR||[]).forEach(function(r){
+   if(!(r.d instanceof Date)||isNaN(r.d)||r.d.getFullYear()!==year||arDate(r.d)>model.end)return;
+   var cust=arCust(r.cust);if(!allowed.has(cust))return;
+   var month=r.d.getMonth()+1,months=salesByCust.get(cust);if(!months){months=new Map();salesByCust.set(cust,months);}
+   months.set(month,(months.get(month)||0)+arSalesAmount(r));
+  });
+  (state.ar.receipts||[]).forEach(function(r){
+   var date=r.date||'',amount=arN(r.amount),cust=arCust(r.cust);
+   if(!allowed.has(cust)||date<year+'-01-01'||date>analysisEnd||amount<=0)return;
+   var events=receiptsByCust.get(cust);if(!events){events=[];receiptsByCust.set(cust,events);}
+   events.push({date:date,type:'receipt',amount:amount,method:arMethod(r)});
+  });
+
+  var output=[];
+  allowed.forEach(function(o,cust){
+   var raw=(gradeRec(cust)||{}).pay,rawText=raw==null?'':String(raw).trim(),hasPay=/^\d+$/.test(rawText),payDays=hasPay?Math.max(0,+rawText):0,months=salesByCust.get(cust);
+   if(!months||!months.size)return;
+   var buckets=Array.from(months.entries()).filter(function(x){return x[1]>0;}).sort(function(a,b){return a[0]-b[0];}).map(function(x){
+    var month=x[0],monthEnd=arMonthEnd(year,month);return{cust:cust,month:month,monthEnd:monthEnd,dueDate:hasPay?arAddDays(monthEnd,payDays):'',payDays:payDays,hasPay:hasPay,sales:x[1],cash:0,bill:0,onTime:0,late:0,unpaid:x[1],lastReceipt:'',_remain:x[1]};
+   });
+   if(!buckets.length)return;
+   var queue=[],credits=[],opening=Math.max(0,arN(o.opening));
+   if(opening>0)queue.push({_remain:opening,dueDate:year+'-01-01',opening:true});
+   var events=buckets.map(function(b){return{date:b.monthEnd,type:'sale',bucket:b};}).concat(receiptsByCust.get(cust)||[]);
+   events.sort(function(a,b){return a.date.localeCompare(b.date)||(a.type==='sale'?-1:1);});
+   function apply(target,amount,date,method){var take=Math.min(target._remain,amount);target._remain-=take;if(!target.opening){if(method==='받을어음')target.bill+=take;else target.cash+=take;if(!target.hasPay||date<=target.dueDate)target.onTime+=take;else target.late+=take;if(!target.lastReceipt||date>target.lastReceipt)target.lastReceipt=date;}return take;}
+   events.forEach(function(e){
+    if(e.type==='sale'){
+     var bucket=e.bucket;while(credits.length&&bucket._remain>0){var credit=credits[0],usedCredit=apply(bucket,credit.amount,credit.date,credit.method);credit.amount-=usedCredit;if(credit.amount<=0.0001)credits.shift();}
+     if(bucket._remain>0)queue.push(bucket);return;
+    }
+    var amount=e.amount;while(queue.length&&amount>0){var target=queue[0],used=apply(target,amount,e.date,e.method);amount-=used;if(target._remain<=0.0001)queue.shift();}
+    if(amount>0)credits.push({amount:amount,date:e.date,method:e.method});
+   });
+   buckets.forEach(function(bucket){
+    bucket.unpaid=Math.max(0,bucket._remain);bucket.status=arDueStatusLabel(bucket,analysisEnd);bucket.manager=o.manager||'';bucket.grade=o.grade||'';
+    if(confirm[bucket.cust+'|'+bucket.month]){bucket.unpaid=0;bucket.confirmed=true;bucket.status='확인입금';}
+    output.push(bucket);
+   });
+  });
+  byKey.set(cacheKey,output);
+  return output;
+ };
+
+ if(typeof arBindTableSorts==='function'){
+  var arBindTableSortsPerfBase=arBindTableSorts,arPerfDeferSortBind=false;
+  arBindTableSorts=function(){if(arPerfDeferSortBind)return;return arBindTableSortsPerfBase.apply(this,arguments);};
+  var arRenderPerfBase=arRender;
+  arRender=function(){
+   var result;arPerfDeferSortBind=true;
+   try{result=arRenderPerfBase.apply(this,arguments);}finally{arPerfDeferSortBind=false;}
+   if(document.querySelector('.ar-page'))arBindTableSortsPerfBase();
+   return result;
+  };
+ }
 })();
 
 window.receivablesPage=arPage;
