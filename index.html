@@ -3996,7 +3996,7 @@ function cmgrAddrSwap(){
   return r*(sk==='no'?-sd:sd);
  });
  const openNote=state.cmgr.addrNote||'', openInfo=state.cmgr.addrInfo||'';
- const fld='font-family:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;width:100%;box-sizing:border-box';
+ const fld='font-family:inherit;font-size:12px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;width:100%;box-sizing:border-box';
  const star=function(c){ return (state.cmgrKey&&state.cmgrKey[c])?'<span style="color:#f59e0b">★</span> ':''; };
  const dayCol=function(n){ return n==null?'#cbd5e1':n>=365?'#dc2626':n>=180?'#ea580c':n>=90?'#d97706':'#0284c7'; };
  const cCol=(typeof COURSE_COL!=='undefined')?COURSE_COL:{};
@@ -4036,10 +4036,10 @@ function cmgrAddrSwap(){
    '<b class="ca-title">📍 거래처주소정보</b>'+
    '<span class="ca-sub">'+won(data.length)+'개 거래처 · 주소 '+won(filled)+'건 · 비고 '+won(noteCnt)+'건</span>'+
    '<span style="flex:1"></span>'+
-   '<button type="button" class="btn ghost" id="caAmtSort" style="font-size:13px;'+(byAmt?'background:#f59e0b;color:#fff;border-color:#f59e0b':'background:#fffbeb;color:#b45309;border-color:#fde68a')+'" title="매출이 큰 거래처부터 정렬합니다. 다시 누르면 원래 정렬로 돌아갑니다.">💰 매출순으로보기'+(byAmt?' ✓':'')+'</button>'+
-   '<button type="button" class="btn ghost" id="caImport" style="font-size:13px;background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe">📤 엑셀 불러오기</button>'+
-   '<button type="button" class="btn ghost" id="caExport" style="font-size:13px;background:#dcfce7;color:#15803d;border-color:#86efac">📥 엑셀 내보내기</button>'+
-   '<button type="button" class="btn ghost" id="caRenorm" style="font-size:13px" title="입력된 모든 주소를 다시 정규화합니다">🧹 주소 일괄정리</button>'+
+   '<button type="button" class="btn ghost" id="caAmtSort" style="font-size:12px;'+(byAmt?'background:#f59e0b;color:#fff;border-color:#f59e0b':'background:#fffbeb;color:#b45309;border-color:#fde68a')+'" title="매출이 큰 거래처부터 정렬합니다. 다시 누르면 원래 정렬로 돌아갑니다.">💰 매출순으로보기'+(byAmt?' ✓':'')+'</button>'+
+   '<button type="button" class="btn ghost" id="caImport" style="font-size:12px;background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe">📤 엑셀 불러오기</button>'+
+   '<button type="button" class="btn ghost" id="caExport" style="font-size:12px;background:#dcfce7;color:#15803d;border-color:#86efac">📥 엑셀 내보내기</button>'+
+   '<button type="button" class="btn ghost" id="caRenorm" style="font-size:12px" title="입력된 모든 주소를 다시 정규화합니다">🧹 주소 일괄정리</button>'+
   '</div>'+
   '<div class="ca-help">최근거래일·최근일수는 거래처명으로 자동 연동됩니다(회색 칸). <b>헤더 제목을 누르면 그 열 기준으로 정렬</b>되고, <b>비고 칸을 누르면 아래줄에 넓은 입력창</b>, <b>📇 담당정보를 누르면 아래줄에 매출처 담당정보</b>가 열립니다. 불러오기는 <b>업체코드</b>를 먼저 맞추고 코드가 없으면 <b>거래처명</b>으로 맞춥니다. 현재 매출이 있는 거래처만 표시합니다.</div>'+
   '<div class="ca-wrap"><table class="ca-tbl"><thead><tr>'+thead+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
@@ -6049,7 +6049,7 @@ function custPriceList(cust, rows, back, itemQ){
     {k:'qty',t:'총수량',cell:o=>won(o.qty),sortVal:o=>o.qty} ];
   render(`${cust} ▸ 단가표(마지막 출고단가)`, `${_toks.length?won(_hit)+'개 품목 (검색 “'+esc(_iq)+'” 포함 · 전체 '+won(arrF.length)+'개)':won(arrF.length)+'개 품목'}${_pcat!=='all'?' (필터: '+_pcat+')':''} · 품명순 · <b>행 클릭</b> 시 변경이력`, arrF, cols, 'name',
     `${esc(cust)}의 품목·규격별 <b>마지막 출고단가</b>와 <b>타사(다른 거래처) 최고/최저단가</b> 비교입니다. 행을 클릭하면 단가 변경이력이 나옵니다.${_toks.length?` 지금은 <b>품번·품명·규격</b>에 <b>${esc(_iq)}</b>이(가) 모두 포함된 품목만 표시 중입니다. 검색칸을 비우거나 Esc를 누르면 전체가 나옵니다.`:''}`,
-    {back:{label:'← 단가표로',fn:back}, controlsHtml:_ctrl, onMount:_bind, drill:{custom:row=>priceHistory(cust, rows.filter(r=>(r.code||'(미상)')+'│'+(r.spec||'')===row.key), row.label, ()=>custPriceList(cust,rows,back,_iq))}});
+    {back:{label:'← 단가표로',fn:back}, controlsHtml:((typeof custProfileHTML==='function'?custProfileHTML(cust):'')+_ctrl), onMount:_bind, drill:{custom:row=>priceHistory(cust, rows.filter(r=>(r.code||'(미상)')+'│'+(r.spec||'')===row.key), row.label, ()=>custPriceList(cust,rows,back,_iq))}});
 }
 function prodPriceList(prodLabel, rows, back){
   state.sortKey=null; state._search='';
@@ -11448,7 +11448,7 @@ function arBind(model,allModel){
 var arBindV158=arBind;arBind=function(model,allModel){arBindV158(model,allModel);if(state.ar.tab!=='exclude')return;document.querySelectorAll('[data-exclude-cust]').forEach(function(cb){cb.onchange=async function(e){e.stopPropagation();state.ar.excludedCustomers=state.ar.excludedCustomers||{};if(cb.checked)state.ar.excludedCustomers[cb.dataset.excludeCust]=true;else delete state.ar.excludedCustomers[cb.dataset.excludeCust];var tr=cb.closest('tr'),on=cb.checked;if(tr){tr.classList.toggle('ar-excluded-row',on);var statusCell=tr.cells[tr.cells.length-1];if(statusCell)statusCell.innerHTML=on?'<span class="ar-risk manage">집계 제외</span>':'관리 포함';}var visible=(model.customers||[]).filter(function(o){return!!state.ar.excludedCustomers[o.cust]}),chips=document.querySelectorAll('.ar-summary-strip .ar-summary-chip');if(chips[0])chips[0].innerHTML='제외업체 <b>'+visible.length+'</b>개';if(chips[1])chips[1].innerHTML='제외 미수금 <b>'+arMoney(visible.reduce(function(a,o){return a+o.balance},0))+'</b>원';var total=Object.keys(state.ar.excludedCustomers).filter(function(c){return state.ar.excludedCustomers[c]}).length,tab=document.querySelector('[data-ar-tab="exclude"]');if(tab)tab.textContent='🚫 수금관리 제외업체'+(total?' ('+total+')':'');await arSave();};});};
 function arOpenPage(){if(typeof closeFilePanel==='function')closeFilePanel();var p=document.getElementById('dataPanel');if(p)p.classList.remove('open');var ft=document.getElementById('fileToggle');if(ft){ft.classList.remove('open');ft.textContent='📁 파일·관리 ▾';}var r=document.getElementById('result'),s=document.getElementById('summary');if(r)r.style.display='';if(s)s.style.display='';state.act='ar';state.sortKey=null;state._search='';state._drill=false;window.runAct();window.scrollTo({top:0,behavior:'smooth'});}
 function arBindFileManager(){if(typeof arRenderFileList==='function')arRenderFileList();var op=document.getElementById('arFileOpenBtn'),bb=document.getElementById('arFileBalanceBtn'),bi=document.getElementById('arFileBalanceInput'),rb=document.getElementById('arFileReceiptBtn'),ri=document.getElementById('arFileReceiptInput');if(op&&!op.dataset.bound){op.dataset.bound='1';op.onclick=arOpenPage;}if(bb&&bi&&!bb.dataset.bound){bb.dataset.bound='1';bb.onclick=function(){bi.click()};bi.onchange=function(){if(bi.files[0])arImportBalances(bi.files[0]).then(function(){if(typeof arRenderFileList==='function')arRenderFileList();}).catch(function(e){alert(e.message)});bi.value='';};}if(rb&&ri&&!rb.dataset.bound){rb.dataset.bound='1';rb.onclick=function(){ri.click()};ri.onchange=function(){if(ri.files.length)arImportReceipts(Array.from(ri.files)).then(function(){var st=document.getElementById('arFileStatus');if(st)st.textContent='수금내역 반영 완료 · 전체 '+arMoney(state.ar.receipts.length)+'건';if(typeof arRenderFileList==='function')arRenderFileList();}).catch(function(e){alert(e.message)});ri.value='';};}}
-function arInstallMenu(){var menu=document.getElementById('topMenu');if(!menu)return;arBindFileManager();if(document.getElementById('arMenuBtn'))return;var groups=Array.from(menu.querySelectorAll('.tm-grp')),price=groups.find(function(g){return(g.querySelector('.tm-top')||{}).textContent&&g.querySelector('.tm-top').textContent.indexOf('단가표')>=0});var b=document.createElement('button');b.id='arMenuBtn';b.className='tm-direct';b.type='button';b.dataset.act='ar';b.style.cssText='background:#f1f5f9;color:#1e3a5f;border-color:#e2e8f0';b.textContent='💰 미수관리';b.onclick=arOpenPage;if(price)price.after(b);else menu.appendChild(b);var ver=document.getElementById('appVer');if(ver){ver.textContent='버전 v366 · 건설동향·방화문시장';ver.title='2026-08-22 · 거래처주소정보 정리·매출순 정렬 · 목표·추이에 건설동향/방화문시장 분석 추가';}}
+function arInstallMenu(){var menu=document.getElementById('topMenu');if(!menu)return;arBindFileManager();if(document.getElementById('arMenuBtn'))return;var groups=Array.from(menu.querySelectorAll('.tm-grp')),price=groups.find(function(g){return(g.querySelector('.tm-top')||{}).textContent&&g.querySelector('.tm-top').textContent.indexOf('단가표')>=0});var b=document.createElement('button');b.id='arMenuBtn';b.className='tm-direct';b.type='button';b.dataset.act='ar';b.style.cssText='background:#f1f5f9;color:#1e3a5f;border-color:#e2e8f0';b.textContent='💰 미수관리';b.onclick=arOpenPage;if(price)price.after(b);else menu.appendChild(b);var ver=document.getElementById('appVer');if(ver){ver.textContent='버전 v367 · 단가표 거래처정보';ver.title='2026-08-22 · 단가표 상단 거래처 프로필 · 업데이트 이력 누적 · 거래처주소정보 12px';}}
 /* v163: aging month labels + band drilldown; ratio per-customer view */
 var arAgingV163=arAging;arAging=function(model){
  var a={d0:0,d31:0,d61:0,d91:0,d181:0};
@@ -12904,20 +12904,20 @@ table.ar-dm-tbl td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </script>
 
 <style id="cust-addr-v364">
-/* v364: 거래처주소정보 — 13px 통일 · 헤더 클릭 정렬 · 비고/담당정보 펼침(흰 배경) · 주소열 확장 */
+/* v364: 거래처주소정보 — 12px 통일 · 헤더 클릭 정렬 · 비고/담당정보 펼침(흰 배경) · 주소열 확장 */
 .ca-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 8px}
 .ca-title{font-size:15px;color:#0f766e}
-.ca-sub{font-size:13px;color:#64748b}
-.ca-help{font-size:13px;color:#475569;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px 11px;margin-bottom:8px;line-height:1.65}
+.ca-sub{font-size:12px;color:#64748b}
+.ca-help{font-size:12px;color:#475569;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px 11px;margin-bottom:8px;line-height:1.65}
 .ca-wrap{max-height:calc(100vh - 300px);overflow:auto;border:1px solid var(--line);border-radius:10px}
-table.ca-tbl{border-collapse:collapse;font-size:13px;width:100%;min-width:1180px;table-layout:fixed}
-table.ca-tbl th.ca-th,table.ca-tbl th.ca-th-nos{position:sticky;top:0;z-index:2;background:#f1f5f9;font-size:13px;font-weight:700;color:#334155;padding:7px 6px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:center!important}
+table.ca-tbl{border-collapse:collapse;font-size:12px;width:100%;min-width:1180px;table-layout:fixed}
+table.ca-tbl th.ca-th,table.ca-tbl th.ca-th-nos{position:sticky;top:0;z-index:2;background:#f1f5f9;font-size:12px;font-weight:700;color:#334155;padding:7px 6px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:center!important}
 table.ca-tbl th.ca-th{cursor:pointer;user-select:none}
 table.ca-tbl th.ca-th.l{text-align:left!important}
 table.ca-tbl th.ca-th:hover{background:#e2e8f0}
 .ca-ar{font-size:11px;color:#1e3a5f}
 .ca-ar-dim{color:#cbd5e1}
-table.ca-tbl td{font-size:13px;padding:3px 6px;border-bottom:1px solid #eef2f7;vertical-align:middle;text-align:center}
+table.ca-tbl td{font-size:12px;padding:3px 6px;border-bottom:1px solid #eef2f7;vertical-align:middle;text-align:center}
 table.ca-tbl td.l{text-align:left}
 table.ca-tbl td.c{text-align:center}
 table.ca-tbl tr.ca-row:hover td{background:#f8fafc}
@@ -12925,11 +12925,11 @@ table.ca-tbl tr.ca-row.on td{background:#fff;border-bottom-color:#cbd5e1}
 table.ca-tbl td.ca-lk{background:#f8fafc;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 table.ca-tbl tr.ca-row.on td.ca-lk{background:#f1f5f9}
 table.ca-tbl td.ca-name{font-weight:600;color:#1e3a5f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-table.ca-tbl input{background:#fff;font-size:13px}
+table.ca-tbl input{background:#fff;font-size:12px}
 table.ca-tbl input:focus{outline:2px solid #99f6e4;border-color:#0f766e}
-.ca-course{display:inline-block;padding:1px 9px;border-radius:10px;font-size:13px;font-weight:700;border:1px solid;white-space:nowrap}
+.ca-course{display:inline-block;padding:1px 9px;border-radius:10px;font-size:12px;font-weight:700;border:1px solid;white-space:nowrap}
 .ca-code{display:inline-block;margin-left:5px;font-size:11px;font-weight:600;color:#64748b;background:#eef2f7;border-radius:6px;padding:1px 5px}
-.ca-note-btn,.ca-info-btn{width:100%;min-height:26px;font-family:inherit;font-size:13px;text-align:left;padding:4px 7px;border:1px dashed #cbd5e1;background:#fff;color:#94a3b8;border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ca-note-btn,.ca-info-btn{width:100%;min-height:26px;font-family:inherit;font-size:12px;text-align:left;padding:4px 7px;border:1px dashed #cbd5e1;background:#fff;color:#94a3b8;border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ca-note-btn.has,.ca-info-btn.has{border-style:solid;color:#334155}
 .ca-note-btn.on,.ca-info-btn.on{background:#0f766e;border-color:#0f766e;border-style:solid;color:#fff}
 .ca-note-btn:hover,.ca-info-btn:hover{border-color:#0f766e}
@@ -12938,21 +12938,21 @@ table.ca-tbl input:focus{outline:2px solid #99f6e4;border-color:#0f766e}
 tr.ca-noterow td,tr.ca-inforow td{background:#fff!important;border-bottom:2px solid #cbd5e1;text-align:left}
 td.ca-subicon{text-align:center!important;color:#94a3b8;vertical-align:top;padding-top:12px}
 .ca-notebox{display:flex;flex-direction:column;gap:6px;padding:8px 4px 12px;text-align:left}
-.ca-notebox label{font-size:13px;color:#0f766e;font-weight:700}
-.ca-notebox textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:13px;line-height:1.6;padding:8px 10px;border:1px solid rgba(15,118,110,.5);border-radius:8px;resize:vertical;min-height:82px;background:#fff}
+.ca-notebox label{font-size:12px;color:#0f766e;font-weight:700}
+.ca-notebox textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:12px;line-height:1.6;padding:8px 10px;border:1px solid rgba(15,118,110,.5);border-radius:8px;resize:vertical;min-height:82px;background:#fff}
 .ca-noteact{display:flex;gap:6px}
-.ca-noteact .btn,.ca-ci-head .btn{font-size:13px}
+.ca-noteact .btn,.ca-ci-head .btn{font-size:12px}
 /* 담당정보 펼침줄 */
 .ca-infobox{padding:8px 4px 12px;text-align:left}
 .ca-ci-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px}
-.ca-ci-head label{font-size:13px;color:#0f766e;font-weight:700}
+.ca-ci-head label{font-size:12px;color:#0f766e;font-weight:700}
 .ca-ci-chips{display:inline-flex;gap:5px;flex-wrap:wrap}
-.ca-ci-chip{font-size:13px;color:#475569;background:#f1f5f9;border:1px solid var(--line);border-radius:11px;padding:2px 10px;white-space:nowrap}
+.ca-ci-chip{font-size:12px;color:#475569;background:#f1f5f9;border:1px solid var(--line);border-radius:11px;padding:2px 10px;white-space:nowrap}
 .ca-ci-wrap{overflow:auto;border:1px solid var(--line);border-radius:8px}
-table.ca-ci-tbl{border-collapse:collapse;width:100%;font-size:13px;background:#fff}
-table.ca-ci-tbl th{background:#f8fafc;font-size:13px;font-weight:700;color:#334155;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:center}
+table.ca-ci-tbl{border-collapse:collapse;width:100%;font-size:12px;background:#fff}
+table.ca-ci-tbl th{background:#f8fafc;font-size:12px;font-weight:700;color:#334155;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:center}
 table.ca-ci-tbl th.l{text-align:left}
-table.ca-ci-tbl td{font-size:13px;padding:5px 8px;border-bottom:1px solid #eef2f7;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.ca-ci-tbl td{font-size:12px;padding:5px 8px;border-bottom:1px solid #eef2f7;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 table.ca-ci-tbl td.l{text-align:left}
 table.ca-ci-tbl td.ca-ci-role{font-weight:700;color:#0f766e;white-space:nowrap}
 table.ca-ci-tbl td.ca-ci-empty{text-align:center;color:#94a3b8;padding:16px}
@@ -12978,10 +12978,15 @@ table.ca-ci-tbl td.ca-ci-empty{text-align:center;color:#94a3b8;padding:16px}
 .mk-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 4px}
 .mk-title{font-size:16px;font-weight:800;color:#0f172a}
 .mk-sub{font-size:12px;color:#64748b;margin-bottom:10px}
-.mk-updbtn{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;border:1px solid #0f766e;background:#0f766e;color:#fff;border-radius:9px;padding:5px 13px;cursor:pointer;font-family:inherit;line-height:1.25}
-.mk-updbtn:hover{background:#115e59}
-.mk-updbtn .u1{font-size:12.5px;font-weight:800}
-.mk-updbtn .u2{font-size:10.5px;opacity:.85;font-weight:600}
+.mk-updat{display:inline-flex;align-items:center;gap:5px;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;border-radius:9px;padding:3px 11px;font-size:11.5px;font-weight:800;white-space:nowrap}
+.mk-hist{margin-top:9px;border-top:1px dashed #bfdbfe;padding-top:8px}
+.mk-histh{font-size:11.5px;font-weight:800;color:#1d4ed8;margin-bottom:4px}
+.mk-histh span{font-weight:600;color:#64748b}
+.mk-hi{display:flex;gap:7px;align-items:baseline;font-size:11.5px;line-height:1.7;color:#64748b;padding:1px 0}
+.mk-hi .hd{flex:none;font-weight:800;color:#475569;font-variant-numeric:tabular-nums}
+.mk-hi .hb{flex:none;font-size:9.5px;font-weight:800;background:#1d4ed8;color:#fff;border-radius:6px;padding:0 6px}
+.mk-hi.new{color:#1e293b}
+.mk-hi.new .hd{color:#1d4ed8}
 .mk-warn{background:#fef2f2;border:1px solid #fecaca;border-left:4px solid #dc2626;border-radius:9px;padding:9px 13px;font-size:12.5px;color:#7f1d1d;margin-bottom:12px;line-height:1.65}
 .mk-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:12px}
 .mk-h{font-size:13.5px;font-weight:800;color:#0f172a;margin-bottom:9px}
@@ -13060,19 +13065,27 @@ table.mk-tbl td.k{font-weight:800;color:#0f172a;text-align:left;white-space:nowr
 .mk-ins .ih{font-size:13px;font-weight:800;color:#6d28d9;margin-bottom:6px}
 .mk-ins .il{font-size:12.5px;color:#4c1d95;line-height:2}
 .mk-src{font-size:11px;color:#94a3b8;padding:9px 2px 2px;border-top:1px solid #e2e8f0;margin-top:6px;line-height:1.7}
-/* 업데이트 패널 */
-.mk-ovl{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:100003;display:flex;align-items:center;justify-content:center;padding:20px}
-.mk-dlg{background:#fff;border-radius:14px;width:min(980px,96vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.35)}
-.mk-dh{display:flex;align-items:center;gap:9px;padding:14px 18px;border-bottom:1px solid var(--line)}
-.mk-dh b{font-size:15px;color:#0f172a}
-.mk-db{overflow:auto;padding:14px 18px;flex:1}
-.mk-df{display:flex;gap:7px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--line);background:#f8fafc;border-radius:0 0 14px 14px}
-.mk-fld{margin-bottom:12px}
-.mk-fld label{display:block;font-size:12.5px;font-weight:800;color:#0f766e;margin-bottom:3px}
-.mk-fld .hint{font-size:11px;color:#94a3b8;margin-bottom:4px;line-height:1.5}
-.mk-fld input,.mk-fld textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:12.5px;line-height:1.65;padding:7px 9px;border:1px solid rgba(15,118,110,.5);border-radius:8px;background:#fff;resize:vertical}
-.mk-fld textarea{min-height:72px;white-space:pre;overflow-x:auto}
-.mk-fld input:focus,.mk-fld textarea:focus{outline:2px solid #99f6e4;border-color:#0f766e}
+
+/* v366: 단가표 상단 거래처 프로필 스트립 */
+.cp-card{border:1px solid #cbd5e1;border-radius:10px;background:#f8fbff;padding:9px 12px;margin:0 0 8px}
+.cp-row{display:flex;flex-wrap:wrap;gap:5px 7px;align-items:stretch}
+.cp-row+.cp-row{margin-top:6px;padding-top:6px;border-top:1px dashed #dbe4ef}
+.cp-i{display:inline-flex;align-items:baseline;gap:5px;background:#fff;border:1px solid #dbe4ef;border-radius:8px;padding:3px 9px;font-size:12px;max-width:100%}
+.cp-i.w{flex:1 1 320px}
+.cp-l{flex:none;font-size:10.5px;font-weight:800;color:#64748b;white-space:nowrap}
+.cp-v{font-weight:700;color:#1e3a5f;word-break:break-all}
+.cp-v i{color:#cbd5e1;font-style:normal;font-weight:600}
+.cp-h{font-size:10.5px;font-weight:800;color:#0f766e;margin-right:2px;align-self:center;white-space:nowrap}
+.cp-p{display:inline-flex;align-items:baseline;gap:6px;background:#fff;border:1px solid #cfe6e3;border-radius:8px;padding:3px 9px;font-size:12px}
+.cp-p .r{flex:none;font-size:10.5px;font-weight:800;color:#0f766e;white-space:nowrap}
+.cp-p .n{font-weight:800;color:#1e3a5f}
+.cp-p .s{color:#64748b;font-size:11px}
+.cp-p .c{color:#334155;font-weight:700}
+.cp-p .e{color:#1d4ed8;font-size:11px}
+.cp-mgr{display:inline-flex;align-items:baseline;gap:5px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:3px 9px;font-size:12px}
+.cp-mgr .r{font-size:10.5px;font-weight:800;color:#4338ca}
+.cp-mgr .n{font-weight:800;color:#312e81}
+.cp-none{font-size:11.5px;color:#94a3b8;padding:2px 4px}
 </style>
 
 <script id="market-v366-js">
@@ -13088,6 +13101,7 @@ verify:'최신 공표치 2026년 6월분 기준 (산업활동동향·주택통�
 summary:'선행지표는 돌아섰지만 후행지표는 바닥입니다. 2026년 상반기 착공은 +14.4%로 반등한 반면 준공은 -49.5%로 반토막 났습니다. 방화문·부자재는 준공 직전 6~12개월 구간에 투입되는 마감 자재이므로, 착공 반등의 온기는 2028년에야 도달하고 2026년 하반기~2027년이 실질 매출 저점입니다.',
 policy:'CERIK 2026 수정전망(6/18): 건설수주 240.8조원(+8.9%) 상향 · 건설투자 266.1조원(+0.3%) 하향. LH 2026 발주 17.9조원(수도권·3기 신도시 71%), 공공주택 5.2만호 착공. 3기 신도시 첫 입주는 인천계양 2026년 12월.',
 checks:'2026.6 건설기성 전월비 +4.1% (2개월 연속↑) · 전년동월비 -4.0%\n2026.6 건설수주 전년동월비 -28.1% (공공 +13.1% / 민간 -41.1%)\n2026 상반기 누계: 건설수주 +25.8% · 건설기성 -5.3% (건정연)\n2026 상반기 주택 준공 103,735호 -49.5% ← 방화문 납품 직결\n2026 상반기 착공 118,005호 +14.4% · 인허가 116,611호 -15.8%\n2026.6 건설공사비지수 138.22 (+5.5% YoY, 역대 최고)\n2026.6말 미분양 67,464호 · 준공후 미분양 29,786호\n2026.7 건설업 취업자 -5.7만명 (2022년 정점 대비 -26만명)',
+history:'2026-08-22|착공 반등(+14.4%)·준공 -49.5% 확인 → 「후행 절벽」으로 관점 수정. CERIK 6/18 수정전망(수주 240.8조·투자 266.1조), PF 연체율 4.65%, 상반기 폐업 2,092곳, 품질인정기준 2026.2.20 개정 반영\n2026-07-31|국토교통부 주택통계·국가데이터처 산업활동동향 2026년 6월분 공표치로 전 지표 검증\n2026-05-15|건산연·건정연 2025.11 전망 기반 초기 구축 (착공 시차 2~2.5년 모델)',
 srcline:'국가데이터처 산업활동동향(2026.6)·국토교통부 주택통계(2026.6)·한국건설산업연구원 월간건설시장동향 2026.8호·대한건설협회 월간건설경제동향·금융위원회 PF 현황(2026.3말)',
 
 /* ── 건설동향 ── */
@@ -13119,67 +13133,32 @@ fdStrat:'리스크 관리|최우선|부실채권 제로화 최우선;신용등�
 fdIns:'<b>① 착공 반등에 속지 말 것</b> — 2026 상반기 착공 +14.4%는 좋은 뉴스지만 우리 매출과는 2년 시차입니다. 지금 매출을 결정하는 건 <b>준공 -49.5%</b>입니다.\n<b>② 2026 하반기~2027이 진짜 바닥</b> — 준공 반토막의 여파가 온전히 반영되는 구간. 매출 목표는 회복이 아니라 <b>손익분기 방어</b>로 세워야 합니다.\n<b>③ 원가·단가 협공</b> — 철강 인상(톤당 5~10만원)과 단가 인하 압박이 동시에 옵니다. 품목별 한계이익 기준 <b>수주 선별</b>이 필수입니다.\n<b>④ 미수금이 이익보다 중요</b> — 폐업 2,092곳·PF 연체 4.65% 국면에서는 매출 1억보다 미수 1억 회수가 우선입니다.\n<b>⑤ 2028년을 위한 스펙 영업은 지금</b> — 3기 신도시·정비사업은 착공 시점에 자재가 결정됩니다. 납품은 2028년이어도 <b>영업은 2026년에</b> 끝나야 합니다.'
 };
 
-/* ── 편집 항목 정의 (업데이트 패널) ── */
-var MK_FIELDS={
- con:[
-  ['asOf','기준일자','YYYY-MM-DD','input'],
-  ['verify','데이터 검증 기준','한 줄','input'],
-  ['summary','현재 판단(총평)','한 문단','area'],
-  ['checks','확인치 (칩)','한 줄에 하나','area'],
-  ['policy','정책·기회','한 줄','area'],
-  ['conWarn','상단 경고문','HTML 태그 사용 가능','area'],
-  ['chain','건설지표 흐름','지표명 | 성격 | 설명 | 출처','area'],
-  ['chainNote','흐름 하단 강조문','HTML 사용 가능','area'],
-  ['years','연도별 영향 분석','연도 | 라벨 | 지표 | 부가설명 | 항목;항목;항목','area'],
-  ['lhsh','LH·SH 공급 계획','기관 | 규모 | 설명1 | 설명2 | 설명3','area'],
-  ['h1','최신 반기 실적표','구분 | 전국 | 전년동기비 | 수도권 | 전년동기비 | 방화문 시사점','area'],
-  ['trend','연도별 추이·전망표','구분 | 2022 | 2023 | 2024 | 2025 | 2026 | 2027 | 2028 | 전망','area'],
-  ['reno','재개발·재건축·리모델링','한 줄에 하나 (HTML 가능)','area'],
-  ['reg','규제 이슈표','이슈 | 내용 | 시행 | 영향','area'],
-  ['risk','리스크 요인','한 줄에 하나 (HTML 가능)','area'],
-  ['pos','긍정 요인','한 줄에 하나','area'],
-  ['neg','부정 요인','한 줄에 하나','area'],
-  ['srcline','출처 표기','한 줄','area']
- ],
- fd:[
-  ['asOf','기준일자','YYYY-MM-DD','input'],
-  ['verify','데이터 검증 기준','한 줄','input'],
-  ['summary','현재 판단(총평)','한 문단','area'],
-  ['checks','확인치 (칩)','한 줄에 하나','area'],
-  ['fdKw','핵심 키워드 카드','라벨 | 값 | 설명 | 태그 | 색상(#RRGGBB)','area'],
-  ['fdQual','품질인정제도','한 줄에 하나 (HTML 가능)','area'],
-  ['fdReno','내용연수·재개발','한 줄에 하나 (HTML 가능)','area'],
-  ['fdDemand','수요 전망표','기간 | 수요 | 성장률 | 근거','area'],
-  ['fdIdx','핵심 지표 카드','지표명 | 의미 | 최신치','area'],
-  ['fdLink','건설동향 연결표','구분 | 필요한 내용 | 방화문시장과의 연결','area'],
-  ['fdImpact','악화 시 영향표','영향 | 내용 | 심각도(1~3)','area'],
-  ['fdConv','물량 환산','한 줄에 하나 (HTML 가능)','area'],
-  ['fdRegion','지역별 수요','지역 | 착공 동향 | 입주 전망 | 영업 전략','area'],
-  ['fdNews','뉴스·동향','일자 | 긍정·부정·중립 | 분류 | 제목','area'],
-  ['fdStrat','사업 전략','제목 | 우선순위 | 항목;항목;항목','area'],
-  ['fdIns','핵심 인사이트','한 줄에 하나 (HTML 가능)','area'],
-  ['srcline','출처 표기','한 줄','area']
- ]
-};
-
 function mkState(){ state.market=state.market||{}; if(!state.market.d)state.market.d={}; return state.market; }
 function mkGet(k){ var m=mkState(); return (m.d[k]!==undefined&&m.d[k]!==null)?m.d[k]:(MK_DEFAULT[k]||''); }
 function mkRows(k){ return String(mkGet(k)||'').split('\n').map(function(l){return l.trim();}).filter(Boolean).map(function(l){return l.split('|').map(function(c){return c.trim();});}); }
 function mkLines(k){ return String(mkGet(k)||'').split('\n').map(function(l){return l.trim();}).filter(Boolean); }
 function mkPad2(n){ return String(n).padStart(2,'0'); }
 function mkStamp(t){ var d=t?new Date(t):new Date(); if(isNaN(+d))return ''; return d.getFullYear()+'-'+mkPad2(d.getMonth()+1)+'-'+mkPad2(d.getDate())+' '+mkPad2(d.getHours())+':'+mkPad2(d.getMinutes()); }
-function mkUpdatedLabel(page){ var m=mkState(); var t=m['at_'+page]; return t?('최종 업데이트 '+mkStamp(t)):('초기 데이터 '+mkGet('asOf')); }
-function mkUpdBtn(page){ return '<button type="button" class="mk-updbtn" id="mkUpdBtn" data-p="'+page+'" title="지표·문구를 직접 수정하고 업데이트 일시를 기록합니다"><span class="u1">🔄 정보 업데이트</span><span class="u2">'+esc(mkUpdatedLabel(page))+'</span></button>'; }
+function mkUpdBtn(page){ var h=mkHistory(); return '<span class="mk-updat" title="'+esc((h[0]&&h[0][1])||'')+'">🕒 업데이트 '+esc(mkLatestDate())+'</span>'; }
 
-/* 공통 상단 배너 */
+/* 공통 상단 배너 + 업데이트 이력 누적 */
+function mkHistory(){ return mkRows('history').filter(function(r){return r[0];}); }
+function mkLatestDate(){ var h=mkHistory(); return h.length?h[0][0]:mkGet('asOf'); }
 function mkBanner(){
  var chips=mkLines('checks').map(function(t){ return '<span class="mk-chip">'+esc(t)+'</span>'; }).join('');
+ var h=mkHistory();
+ var list=h.map(function(r,i){
+  return '<div class="mk-hi'+(i===0?' new':'')+'"><span class="hd">'+esc(r[0]||'')+'</span>'+
+   (i===0?'<span class="hb">최신</span>':'')+
+   '<span class="ht">'+esc(r[1]||'')+'</span></div>';
+ }).join('');
  return '<div class="mk-banner">'+
-  '<div class="mk-bt">● 최신 업데이트 · '+esc(mkGet('asOf'))+' 기준</div>'+
+  '<div class="mk-bt">● 최신 업데이트 · '+esc(mkLatestDate())+' 기준</div>'+
   '<div class="mk-bl"><b>현재 판단</b> — '+esc(mkGet('summary'))+'</div>'+
   '<div class="mk-chips">'+chips+'</div>'+
   '<div class="mk-bl" style="margin-top:7px"><b>정책·기회</b> — '+esc(mkGet('policy'))+'</div>'+
   '<div style="font-size:10.5px;color:#64748b;margin-top:5px">검증: '+esc(mkGet('verify'))+'</div>'+
+  (h.length?('<div class="mk-hist"><div class="mk-histh">🗂️ 업데이트 이력 <span>· 총 '+h.length+'건 · 최신순</span></div>'+list+'</div>'):'')+
  '</div>';
 }
 function mkSrc(){ return '<div class="mk-src">출처: '+esc(mkGet('srcline'))+' · 수치는 발표기관 공표 기준이며 계열(불변/경상)·모집단 차이로 기관별 증감률이 다를 수 있습니다.</div>'; }
@@ -13240,7 +13219,6 @@ function marketConstruction(){
    '<div class="mk-neg"><div class="ph">📉 부정 요인</div><div class="pl">'+neg+'</div></div></div>'+
   mkSrc()+'</div>';
  var r=document.getElementById('result'); if(r){ r.innerHTML=html; r.style.display=''; }
- mkBind('con');
  window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -13303,61 +13281,37 @@ function marketFiredoor(){
   '<div class="mk-ins"><div class="ih">💡 핵심 인사이트 — "버티는 자의 시장"</div><div class="il">'+ins+'</div></div>'+
   mkSrc()+'</div>';
  var r=document.getElementById('result'); if(r){ r.innerHTML=html; r.style.display=''; }
- mkBind('fd');
  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function mkBind(page){
- var b=document.getElementById('mkUpdBtn');
- if(b)b.onclick=function(){ mkOpenEditor(page); };
-}
 
-/* ═══ 업데이트(수동 입력) 패널 ═══ */
-function mkOpenEditor(page){
- var ex=document.getElementById('mkOvl'); if(ex)ex.remove();
- var flds=MK_FIELDS[page]||[];
- var body=flds.map(function(f){
-  var k=f[0],label=f[1],hint=f[2],type=f[3];
-  var v=String(mkGet(k)||'');
-  var rows=Math.min(14,Math.max(3,v.split('\n').length+1));
-  var ctrl=(type==='input')
-   ? '<input type="text" data-mk="'+k+'" value="'+esc(v)+'">'
-   : '<textarea data-mk="'+k+'" rows="'+rows+'">'+esc(v)+'</textarea>';
-  return '<div class="mk-fld"><label>'+esc(label)+'</label><div class="hint">형식: '+esc(hint)+'</div>'+ctrl+'</div>';
- }).join('');
- var ov=document.createElement('div'); ov.id='mkOvl'; ov.className='mk-ovl';
- ov.innerHTML='<div class="mk-dlg">'+
-  '<div class="mk-dh"><b>🔄 '+(page==='con'?'건설동향':'방화문시장 분석')+' 정보 업데이트</b>'+
-   '<span style="font-size:11.5px;color:#64748b">'+esc(mkUpdatedLabel(page))+'</span>'+
-   '<span style="flex:1"></span><button type="button" class="btn ghost" id="mkReset" style="font-size:12px">기본값 복원</button>'+
-   '<button type="button" class="btn ghost" id="mkX" style="font-size:12px">✕</button></div>'+
-  '<div class="mk-db"><div style="background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-size:11.5px;color:#475569;line-height:1.7;margin-bottom:12px">'+
-   '표 항목은 <b>세로줄( | )</b>로 열을 나누고 <b>줄바꿈</b>으로 행을 나눕니다. 카드 안의 여러 항목은 <b>세미콜론( ; )</b>으로 구분합니다. 저장하면 <b>업데이트 일시</b>가 버튼에 기록되고 브라우저에 보관됩니다.'+
-   '</div>'+body+'</div>'+
-  '<div class="mk-df"><button type="button" class="btn ghost" id="mkCancel">취소</button>'+
-   '<button type="button" class="btn" id="mkSave" style="background:#0f766e;color:#fff;border-color:#0f766e">💾 저장하고 업데이트 일시 기록</button></div>'+
- '</div>';
- document.body.appendChild(ov);
- var close=function(){ ov.remove(); };
- ov.addEventListener('click',function(e){ if(e.target===ov)close(); });
- document.getElementById('mkX').onclick=close;
- document.getElementById('mkCancel').onclick=close;
- document.getElementById('mkReset').onclick=function(){
-  if(!confirm('이 화면의 모든 항목을 초기 기본값으로 되돌립니다. 계속할까요?'))return;
-  var m=mkState(); (MK_FIELDS[page]||[]).forEach(function(f){ delete m.d[f[0]]; }); delete m['at_'+page];
-  if(typeof saveSettings==='function')saveSettings();
-  close(); (page==='con'?marketConstruction:marketFiredoor)();
-  if(typeof caToast==='function')caToast('기본값으로 되돌렸습니다.');
- };
- document.getElementById('mkSave').onclick=function(){
-  var m=mkState();
-  ov.querySelectorAll('[data-mk]').forEach(function(el){ m.d[el.dataset.mk]=el.value; });
-  m['at_'+page]=Date.now();
-  if(typeof logEdit==='function')logEdit(page==='con'?'건설동향':'방화문시장','정보 업데이트');
-  if(typeof saveSettings==='function')saveSettings();
-  close(); (page==='con'?marketConstruction:marketFiredoor)();
-  if(typeof caToast==='function')caToast('업데이트했습니다 · '+mkStamp(m['at_'+page]));
- };
+/* ═══ v366: 단가표 상단 거래처 프로필 (대표자·연락처·주소·화물·담당자) ═══ */
+function custProfileHTML(cust){
+ try{
+  if(!cust)return '';
+  var d={},ci={items:[],tel:'',fax:'',intake:'',staff:''};
+  try{ if(typeof addrLinked==='function')d=addrLinked(cust,0)||{}; }catch(_e1){}
+  try{ if(typeof addrContactInfo==='function')ci=addrContactInfo(cust)||ci; }catch(_e2){}
+  var S=''; var T='';
+  try{ if(typeof mgrS==='function')S=mgrS(cust)||''; }catch(_e3){}
+  try{ if(typeof mgrT==='function')T=mgrT(cust)||''; }catch(_e4){}
+  var it=function(l,v,wide){ return '<div class="cp-i'+(wide?' w':'')+'"><span class="cp-l">'+esc(l)+'</span><span class="cp-v">'+(v?esc(v):'<i>미등록</i>')+'</span></div>'; };
+  var row1=it('대표자',d.ceo)+it('전화',d.tel)+it('팩스',d.fax)+it('주소',d.addr,true)+it('화물업체',d.cargo)+it('화물지점',d.branch);
+  var ppl=(ci.items||[]).map(function(o){
+   var t=o.ct||{};
+   var sub=[t.pos,t.dept].filter(Boolean).join('·');
+   return '<span class="cp-p"><span class="r">'+esc(o.role)+'</span><span class="n">'+esc(t.n||'-')+'</span>'+
+    (sub?'<span class="s">'+esc(sub)+'</span>':'')+
+    (t.p?'<span class="c">'+esc(t.p)+'</span>':'')+
+    (t.email?'<span class="e">'+esc(t.email)+'</span>':'')+'</span>';
+  }).join('');
+  if(!ppl)ppl='<span class="cp-none">등록된 키맨·업체담당자가 없습니다 · 거래처 담당자 ▸ 📇 매출처 담당정보에서 추가</span>';
+  var extra=''+(ci.intake?it('접수방법',ci.intake):'')+(ci.staff?it('직원수',ci.staff+'명'):'');
+  var row2='<span class="cp-h">👤 업체담당</span>'+ppl+extra+
+   '<span class="cp-mgr"><span class="r">영업관리</span><span class="n">'+esc(S||'미배정')+'</span></span>'+
+   '<span class="cp-mgr"><span class="r">기술영업</span><span class="n">'+esc(T||'미배정')+'</span></span>';
+  return '<div class="cp-card"><div class="cp-row">'+row1+'</div><div class="cp-row">'+row2+'</div></div>';
+ }catch(_e){ return ''; }
 }
 </script>
 
