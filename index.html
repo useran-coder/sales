@@ -12956,7 +12956,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 
 <script id="ver-pin-v183">
 (function(){
- function tgt(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return 'v417 · 자동 로그인 (2026-08-23)'+(u?' · '+u:'');}
+ function tgt(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return 'v418 · 관리자 업로드 (2026-08-23)'+(u?' · '+u:'');}
  function enforce(){var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;if(String(el.title||'').indexOf('2026-08-23')<0)el.title='앱 버전 v417 · 로그인 화면 자동 로그인 추가 · 최종수정 2026-08-23';}
  function boot(){var el=document.getElementById('appVer');if(!el){return setTimeout(boot,200);}enforce();try{new MutationObserver(enforce).observe(el,{childList:true,characterData:true,subtree:true});}catch(e){}setInterval(enforce,1500);}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
@@ -14472,6 +14472,15 @@ var DS = { owner:'', auto:false, lastPull:'', lastPush:'', manifest:null, months
 async function dsRestore(){ try{ var v=await idbGet(DS_KEY); if(v&&typeof v==='object')DS=Object.assign(DS,v); }catch(_e){} }
 async function dsPersist(){ try{ await idbSet(DS_KEY,JSON.parse(JSON.stringify(DS))); }catch(_e){} }
 function dsUser(){ return ((state.gsync&&state.gsync.user)||'').trim(); }
+/* v418: 업로드 담당 판정 — 로그인 이름/아이디도 함께 인정하고, 관리자는 항상 올릴 수 있습니다. */
+function dsIsAdmin(){ try{ return (typeof auCan==='function') ? !!auCan('admin') : false; }catch(_e){ return false; } }
+function dsIsOwnerMe(owner){
+  if(!owner)return true;
+  var o=String(owner).trim(); if(o===dsUser())return true;
+  try{ if(typeof AU==='object'&&AU){ if(AU.name&&o===String(AU.name).trim())return true; if(AU.id&&o===String(AU.id).trim())return true; } }catch(_e){}
+  return false;
+}
+function dsCanUpload(owner){ return dsIsOwnerMe(owner)||dsIsAdmin(); }
 /* v416: 로그인과 반드시 같은 서버를 보도록 auUrl() 을 우선 사용합니다.
    (예전에는 구글 동기화 칸에 저장돼 있던 옛 주소로 요청이 나갔습니다) */
 function dsUrl(){ try{ if(typeof auUrl==='function'){ var u=auUrl(); if(u)return u; } }catch(_e){}
@@ -14595,10 +14604,11 @@ function dsRender(){
  var local=dsLocalMonths(), lk=Object.keys(local).sort();
  var rm=(mf&&mf.months)||{}, rk=Object.keys(rm).sort();
  var all=Array.from(new Set(lk.concat(rk))).sort();
+ var _mine=dsIsOwnerMe(owner), _adm=dsIsAdmin();
  var ownTxt = owner
-   ? ('<b style="color:'+(owner===me?'#0f766e':'#b45309')+'">👑 업로드 담당: '+esc(owner)+'</b>'+(owner===me?' <span style="color:#0f766e">(나)</span>':' <span style="color:#b45309">— 나는 받기 전용</span>'))
+   ? ('<b style="color:'+((_mine||_adm)?'#0f766e':'#b45309')+'">👑 업로드 담당: '+esc(owner)+'</b>'+(_mine?' <span style="color:#0f766e">(나)</span>':(_adm?' <span style="color:#0f766e">— 나는 관리자라 올릴 수 있습니다</span>':' <span style="color:#b45309">— 나는 받기 전용</span>')))
    : '<b style="color:#b45309">👑 업로드 담당 미지정</b> <button type="button" id="dsClaimHere" class="btn" style="background:#fef3c7;color:#b45309;border-color:#fcd34d;padding:2px 9px;font-size:11.5px;margin-left:4px">여기를 눌러 나를 담당으로 지정</button>';
- var canEdit=(!owner||owner===me);
+ var canEdit=dsCanUpload(owner);
  var rows=all.map(function(ym){
   var L=local[ym]?local[ym].length:0, R=rm[ym]?(rm[ym].rows||0):0;
   var st = (!R)?['<span style="color:#b45309">올릴 것</span>','#fffbeb']
@@ -14669,7 +14679,7 @@ async function dsPush(){
  var me=dsUser(); if(!me){ dsSet('먼저 「내 이름(작성자)」을 입력하세요.','#dc2626'); return; }
  if(!(datasets&&datasets.length)){ dsSet('올릴 매출자료가 없습니다. 먼저 엑셀을 불러오세요.','#dc2626'); return; }
  var mf=DS.manifest||await dsCheck(true); var owner=(mf&&mf.owner)||'';
- if(owner&&owner!==me){ dsSet('업로드 담당이 「'+owner+'」입니다. 담당자만 올릴 수 있습니다.','#dc2626'); return; }
+ if(!dsCanUpload(owner)){ dsSet('업로드 담당이 「'+owner+'」입니다. 담당자 또는 관리자만 올릴 수 있습니다.','#dc2626'); return; }
  if(!owner){ if(!await uiConfirm('업로드 담당이 지정되어 있지 않습니다.\n「'+me+'」(으)로 담당을 지정하고 올릴까요?'))return;
   var c=await dsCall({action:'dsClaim',by:me}); DS.manifest=c.manifest; mf=c.manifest; }
 
@@ -14716,7 +14726,7 @@ async function dsPush(){
 async function dsPushOne(ym){
  var me=dsUser(); if(!me){ dsSet('먼저 로그인하세요.','#dc2626'); return; }
  var mf=DS.manifest||await dsCheck(true).catch(function(){return null;}) , owner=(mf&&mf.owner)||'';
- if(owner&&owner!==me){ dsSet('업로드 담당이 「'+owner+'」입니다.','#dc2626'); return; }
+ if(!dsCanUpload(owner)){ dsSet('업로드 담당이 「'+owner+'」입니다. 담당자 또는 관리자만 올릴 수 있습니다.','#dc2626'); return; }
  if(!owner){ var c=await dsCall({action:'dsClaim',by:me}); DS.manifest=c.manifest; }
  var local=dsLocalMonths(), rows=local[ym];
  if(!rows||!rows.length){ dsSet(ym+' 자료가 내 PC에 없습니다. 지우기(🗑)를 쓰세요.','#dc2626'); return; }
@@ -14736,7 +14746,7 @@ async function dsPushOne(ym){
 async function dsDelOne(ym){
  var me=dsUser(); if(!me){ dsSet('먼저 로그인하세요.','#dc2626'); return; }
  var mf=DS.manifest||await dsCheck(true).catch(function(){return null;}) , owner=(mf&&mf.owner)||'';
- if(owner&&owner!==me){ dsSet('업로드 담당이 「'+owner+'」입니다. 담당자만 지울 수 있습니다.','#dc2626'); return; }
+ if(!dsCanUpload(owner)){ dsSet('업로드 담당이 「'+owner+'」입니다. 담당자 또는 관리자만 지울 수 있습니다.','#dc2626'); return; }
  var info=((mf&&mf.months)||{})[ym]; if(!info){ dsSet(ym+' 은 서버에 없습니다.','#dc2626'); return; }
  if(!await uiConfirm('서버에서 '+ym+' 자료를 지웁니다.\n\n  · '+(info.rows||0).toLocaleString()+'행 · '+(info.file||('sales-'+ym+'.b64'))+
    '\n\n다른 사람이 「받기」를 하면 이 달 자료가 사라집니다.\n(내 PC 자료는 그대로 남습니다.)\n\n진행할까요?'))return;
