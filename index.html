@@ -12956,8 +12956,8 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 
 <script id="ver-pin-v183">
 (function(){
- function tgt(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return 'Ver45 (2026-08-15)'+(u?' · '+u:'');}
- function enforce(){var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;if(String(el.title||'').indexOf('2026-08-15')<0)el.title='앱 릴리스 버전 v45 · 구글시트 동기화 규격(clientVersion) 기준 · 최종수정 2026-08-15';}
+ function tgt(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return 'v417 · 자동 로그인 (2026-08-23)'+(u?' · '+u:'');}
+ function enforce(){var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;if(String(el.title||'').indexOf('2026-08-23')<0)el.title='앱 버전 v417 · 로그인 화면 자동 로그인 추가 · 최종수정 2026-08-23';}
  function boot(){var el=document.getElementById('appVer');if(!el){return setTimeout(boot,200);}enforce();try{new MutationObserver(enforce).observe(el,{childList:true,characterData:true,subtree:true});}catch(e){}setInterval(enforce,1500);}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
@@ -14797,6 +14797,23 @@ var AU_KEY = 'dbang2026!';
 /* ▲▲▲ 여기까지 ▲▲▲ */
 
 var AU_STORE='auth_v1';
+var AU_AUTO='auth_auto_v1';   /* 자동 로그인 (아이디·비밀번호 이 PC 저장) */
+function auMask(s){ try{ s=String(s||''); var k='dbps@2026#au'; var o=''; for(var i=0;i<s.length;i++)o+=String.fromCharCode(s.charCodeAt(i)^k.charCodeAt(i%k.length)); return btoa(unescape(encodeURIComponent(o))); }catch(_e){ return ''; } }
+function auUnmask(s){ try{ var t=decodeURIComponent(escape(atob(String(s||'')))); var k='dbps@2026#au'; var o=''; for(var i=0;i<t.length;i++)o+=String.fromCharCode(t.charCodeAt(i)^k.charCodeAt(i%k.length)); return o; }catch(_e){ return ''; } }
+async function auAutoGet(){ try{ var v=await idbGet(AU_AUTO); return (v&&v.id)?v:null; }catch(_e){ return null; } }
+async function auAutoSet(id,pw){ try{ await idbSet(AU_AUTO,{id:String(id||''),p:auMask(pw)}); }catch(_e){} }
+async function auAutoClear(){ try{ await idbSet(AU_AUTO,null); }catch(_e){} }
+/* 저장된 아이디·비밀번호로 조용히 로그인합니다 (토큰이 만료됐을 때) */
+async function auTryAuto(){
+  var a=await auAutoGet(); if(!a||!a.id)return false;
+  var pw=auUnmask(a.p); if(!pw)return false;
+  try{
+    var d=await auCall({action:'auLogin',id:a.id,pw:pw});
+    if(!d||!d.token||!d.user)return false;
+    AU.token=d.token; AU.id=d.user.id; AU.name=d.user.name; AU.role=d.user.role; AU.exp=d.exp;
+    await auPersist(); return true;
+  }catch(e){ AU._autoErr=String((e&&e.message)||e); await auAutoClear(); return false; }
+}
 var AU={ token:'', id:'', name:'', role:'', exp:0, ready:false, urlOverride:'' };
 var AU_ROLE={admin:'관리자',uploader:'업로더',user:'일반'};
 
@@ -14861,7 +14878,8 @@ function auGateHtml(){
     '<input id="auId" type="text" autocomplete="username" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;font-family:inherit;font-size:13.5px;margin-bottom:11px">'+
     '<label style="display:block;font-size:11.5px;font-weight:800;color:#475569;margin-bottom:4px">비밀번호</label>'+
     '<input id="auPw" type="password" autocomplete="current-password" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;font-family:inherit;font-size:13.5px">'+
-    '<label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11.5px;color:#64748b;font-weight:600;cursor:pointer"><input type="checkbox" id="auKeep" checked style="cursor:pointer"> 이 PC에서 로그인 유지 (12시간)</label>'+
+    '<label style="display:flex;align-items:center;gap:6px;margin-top:11px;font-size:11.5px;color:#0f766e;font-weight:800;cursor:pointer"><input type="checkbox" id="auAuto" style="cursor:pointer"> 자동 로그인 <span style="color:#94a3b8;font-weight:600">— 이 PC에서 다음부터 바로 접속</span></label>'+
+    '<label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11.5px;color:#64748b;font-weight:600;cursor:pointer"><input type="checkbox" id="auKeep" checked style="cursor:pointer"> 이 PC에서 로그인 유지 (12시간)</label>'+
     '<button type="submit" id="auBtn" style="width:100%;margin-top:14px;padding:11px;border:0;border-radius:10px;background:#1e3a5f;color:#fff;font-family:inherit;font-size:14px;font-weight:900;cursor:pointer">로그인</button></div>'+
     '<div id="auMsg" style="margin-top:10px;font-size:11.5px;font-weight:700;text-align:center;min-height:16px;color:#dc2626;line-height:1.6;white-space:pre-line"></div>'+
     '<div id="auVerWarn" style="display:none;margin-top:11px;padding:10px 12px;border:1px solid #fca5a5;background:#fef2f2;border-radius:9px;font-size:11.5px;font-weight:700;color:#b91c1c;line-height:1.65;white-space:pre-line"></div>'+
@@ -14876,7 +14894,7 @@ function auGateHtml(){
      '<button type="button" id="auJSend" style="width:100%;margin-top:9px;padding:9px;border:0;border-radius:8px;background:#0d6d66;color:#fff;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer">신청하기</button>'+
      '<div id="auJMsg" style="margin-top:8px;font-size:11.5px;font-weight:700;text-align:center;line-height:1.6;white-space:pre-line"></div></div>'+
     '<div id="auDiag" style="display:none;margin-top:9px;padding:9px 11px;border-radius:8px;background:#f1f5f9;border:1px solid #e2e8f0;font-size:11px;line-height:1.65;color:#334155;white-space:pre-wrap;word-break:break-all;max-height:210px;overflow:auto"></div>'+
-    '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed #e2e8f0;font-size:11px;color:#94a3b8;line-height:1.6">계정은 관리자에게 요청하세요. 비밀번호는 서버에 암호화(SHA-256)되어 저장되며, 로그인하면 12시간 동안 유지됩니다.</div>'+
+    '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed #e2e8f0;font-size:11px;color:#94a3b8;line-height:1.6">계정은 관리자에게 요청하세요. 비밀번호는 서버에 암호화(SHA-256)되어 저장되며, 로그인하면 12시간 동안 유지됩니다.<br><b style="color:#b45309">자동 로그인</b>을 켜면 아이디·비밀번호가 <b>이 PC의 브라우저에만</b> 저장되어 다음부터 바로 접속합니다. 공용 PC에서는 켜지 마세요. (로그아웃하면 해제됩니다)</div>'+
    '</form></div>';
 }
 function auShowGate(){
@@ -14884,6 +14902,20 @@ function auShowGate(){
   document.body.insertAdjacentHTML('beforeend',auGateHtml());
   var f=document.getElementById('auForm'), msg=document.getElementById('auMsg');
   document.getElementById('auId').focus();
+  /* 자동 로그인 실패 안내 */
+  if(AU._autoErr){ msg.style.color='#dc2626'; msg.textContent='자동 로그인에 실패했습니다. 다시 로그인해 주세요.\n('+AU._autoErr+')'; AU._autoErr=''; }
+  /* 저장된 자동 로그인 정보 채우기 */
+  (async function(){ try{
+    var a=await auAutoGet(); if(!a)return;
+    var i=document.getElementById('auId'), p=document.getElementById('auPw');
+    var k=document.getElementById('auKeep'), au=document.getElementById('auAuto');
+    if(i&&!i.value)i.value=a.id;
+    var pw=auUnmask(a.p); if(p&&!p.value&&pw)p.value=pw;
+    if(au)au.checked=true; if(k)k.checked=true;
+    var bt=document.getElementById('auBtn'); if(bt&&pw)bt.focus();
+  }catch(_e){} })();
+  var _aa=document.getElementById('auAuto');
+  if(_aa)_aa.addEventListener('change',function(){ var k=document.getElementById('auKeep'); if(_aa.checked&&k)k.checked=true; });
   var db=document.getElementById('auDiagBtn');
   if(db)db.addEventListener('click',function(){ auDiag(); });
   var jb=document.getElementById('auJoinBtn');
@@ -14925,6 +14957,8 @@ function auShowGate(){
       if(!d||!d.token||!d.user)throw new Error('서버가 로그인 요청을 처리하지 못했습니다.\n앱스스크립트를 「배포 관리 → 연필 → 버전: 새 버전 → 배포」로 재배포했는지 확인하세요.');
       AU.token=d.token; AU.id=d.user.id; AU.name=d.user.name; AU.role=d.user.role; AU.exp=d.exp;
       if(keep)await auPersist(); else { try{ await idbSet(AU_STORE,null); }catch(_e){} }
+      var _autoOn=!!(document.getElementById('auAuto')||{}).checked;
+      if(_autoOn)await auAutoSet(id,pw); else await auAutoClear();
       auHideGate(); auApply();
       msg.textContent='';
     }catch(e){ msg.style.color='#dc2626'; msg.textContent=(e.message||e); }
@@ -14988,6 +15022,7 @@ async function auDiag(){
 
 async function auLogout(){
   try{ if(AU.token)await auCall({action:'auLogout'}); }catch(_e){}
+  try{ await auAutoClear(); }catch(_e){}   /* 로그아웃하면 자동 로그인도 해제 */
   AU={token:'',id:'',name:'',role:'',exp:0,ready:true};
   try{ await idbSet(AU_STORE,null); }catch(_e){}
   location.reload();
@@ -15171,6 +15206,7 @@ async function auBoot(){
       try{ var d=await auCall({action:'auMe'}); if(!d||!d.user)throw new Error('bad'); AU.name=d.user.name; AU.role=d.user.role; AU.id=d.user.id; AU.exp=d.exp||AU.exp; await auPersist(); }
       catch(_e){ AU.token=''; AU.exp=0; try{ await idbSet(AU_STORE,null); }catch(_x){} }
     }
+    if(!auValid()){ try{ await auTryAuto(); }catch(_e){} }   /* 자동 로그인 */
     AU.ready=true;
     if(auValid())auApply(); else { auShowGate(); auVerCheck(); }
   }
