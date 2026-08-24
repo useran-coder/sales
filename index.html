@@ -6343,6 +6343,51 @@ function mixOverrideCust(key){ const ov=(state.gbunOverride||{})[key]; return ov
 function mixBarHtml(mq,basisLabel){ const seg=mixCats().map(k=>[k,MIX_COL[k]]); const tot=seg.reduce((a,[k])=>a+(mq[k]||0),0)||1; const bl=basisLabel?(' · '+basisLabel):''; const bar=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span title="${k}${bl} ${p.toFixed(1)}%" style="display:inline-block;height:12px;width:${p.toFixed(1)}%;background:${c}"></span>`:'';}).join(''); const leg=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span style="font-size:11px;color:${c};white-space:nowrap;font-weight:400">${MIX_ICON[k]} ${k} ${p.toFixed(0)}%</span>`:'';}).join(' '); return `<div style="min-width:170px"><div style="display:flex;width:100%;border-radius:4px;overflow:hidden;background:#f1f5f9;height:12px;border:1px solid #e2e8f0">${bar}</div><div style="display:flex;flex-wrap:wrap;gap:1px 8px;margin-top:2px">${leg}</div></div>`; }
 function mixChipsHtml(cur,id){ const opt=[['all','전체'],...mixCats().map(c=>[c,c])]; return `<div class="seg" id="${id}">${opt.map(([v,l])=>{const on=cur===v; const c=v==='all'?'#1e3a5f':(MIX_TXT[v]||MIX_COL[v]); const bg=v==='all'?'#eef2f7':(MIX_BG&&MIX_BG[v]?MIX_BG[v]:'#fff'); return `<button data-v="${v}" class="${on?'on':''}" style="${on?('background:'+c+';color:#fff;border-color:'+c):('color:'+c+';background:'+bg+';border-color:'+c)}">${l}</button>`;}).join('')}</div>`; }
 function mixSummary(arr){ const cnt={전용품:0,공용품:0,레이저:0,내부보강:0,'유통/OEM':0,기타:0},qty={전용품:0,공용품:0,레이저:0,내부보강:0,'유통/OEM':0,기타:0}; let totQ=0; arr.forEach(o=>{ const c=o.mixCat||mixCatKey(o); cnt[c]=(cnt[c]||0)+1; qty[c]=(qty[c]||0)+(o.qty||0); totQ+=(o.qty||0); }); const seg=mixCats(); return `<div style="display:flex;flex-wrap:wrap;gap:7px 18px;align-items:center;padding:9px 14px;background:#faf9ff;border:1px solid #ece9fb;border-radius:10px;margin:6px 0 2px;font-size:12px"><span><b>전체</b> ${won(arr.length)}종</span>${seg.map(k=>`<span style="color:${MIX_TXT[k]}"><b>${MIX_ICON[k]} ${k}</b> ${won(cnt[k])}종 · 수량 <b>${totQ?(qty[k]/totQ*100).toFixed(1):0}%</b></span>`).join('')}<span class="sub2">레이저=품명에 레이저·(L) · 기타=운반비/실커버/스텐실/도어가공/PD커버/금형/후레임바/고철/EGI 등 · 전용=1개 거래처 · 공용=2개사↑</span></div>`; }
+/* v426: 제품구분 편집 후 현재 목록/드릴 위치를 유지한 채 해당 제품만 즉시 갱신 */
+function refreshMixEditInPlace(key,newCat){
+  try{
+    const badges=[...document.querySelectorAll('.mixedit')];
+    const oldBadge=badges.find(el=>String(el.dataset.k||'')===String(key||''));
+    const oldTop=oldBadge?oldBadge.getBoundingClientRect().top:null;
+    const oldWrap=oldBadge&&oldBadge.closest?oldBadge.closest('.tablewrap'):null;
+    const oldWrapTop=oldWrap?oldWrap.scrollTop:0, oldWrapLeft=oldWrap?oldWrap.scrollLeft:0;
+    const pageX=window.scrollX, pageY=window.scrollY;
+    const patchRows=arr=>{
+      if(!Array.isArray(arr))return;
+      arr.forEach(o=>{
+        if(!o||typeof o!=='object')return;
+        const ok=String(o.key||'')===String(key||'') || (((o.code||'(미상)')+'│'+(o.spec||''))===key);
+        if(ok){
+          if('mixCat' in o || o.mixCat!==undefined)o.mixCat=newCat;
+          if('cat' in o && mixCats().includes(o.cat))o.cat=newCat;
+        }
+      });
+    };
+    if(state.lastData){
+      patchRows(state.lastData.data);
+      if(state.lastData.opts){patchRows(state.lastData.opts.searchData);}
+    }
+    if(typeof drawTable==='function' && document.getElementById('tbl') && state.lastData){
+      drawTable();
+      requestAnimationFrame(()=>{
+        const newBadge=[...document.querySelectorAll('.mixedit')].find(el=>String(el.dataset.k||'')===String(key||''));
+        const newWrap=newBadge&&newBadge.closest?newBadge.closest('.tablewrap'):null;
+        if(newWrap){
+          newWrap.scrollLeft=oldWrapLeft;
+          if(oldTop!=null && newBadge){
+            const delta=newBadge.getBoundingClientRect().top-oldTop;
+            newWrap.scrollTop=Math.max(0,oldWrapTop+delta);
+          }else newWrap.scrollTop=oldWrapTop;
+        }else if(oldTop!=null && newBadge){
+          const delta=newBadge.getBoundingClientRect().top-oldTop;
+          window.scrollTo({left:pageX,top:Math.max(0,pageY+delta),behavior:'auto'});
+        }else{
+          window.scrollTo({left:pageX,top:pageY,behavior:'auto'});
+        }
+      });
+    }
+  }catch(_e){}
+}
 function openMixOverride(key,name,spec,preselect){
   state.mixCustomCats=Array.isArray(state.mixCustomCats)?state.mixCustomCats:[];
   const cur=mixCatOf({code:key.split('│')[0],spec:key.split('│')[1]||'',name:name}); const ov=(state.gbunOverride||{})[key]||{};
@@ -6386,8 +6431,8 @@ function openMixOverride(key,name,spec,preselect){
   ov0.querySelector('#mxNewCat').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addCat();}});
   ov0.querySelector('#mxCancel').addEventListener('click',()=>ov0.remove());
   ov0.addEventListener('click',e=>{ if(e.target===ov0)ov0.remove(); });
-  ov0.querySelector('#mxAuto').addEventListener('click',()=>{ delete state.gbunOverride[key]; if(typeof logEdit==='function')logEdit('제품구분',key+' 자동분류 복원'); saveSettings(); ov0.remove(); if(state.act)runAct(); });
-  ov0.querySelector('#mxSave').addEventListener('click',()=>{ const cust=pick==='전용품'?(ov0.querySelector('#mxCust').value||''):''; state.gbunOverride[key]={cat:pick,cust}; logEdit('제품구분',`${name||key.split('│')[0]} → ${pick}${cust?' (전용:'+cust+')':''}`); saveSettings(); ov0.remove(); if(state.act)runAct(); });
+  ov0.querySelector('#mxAuto').addEventListener('click',async()=>{ delete state.gbunOverride[key]; if(typeof logEdit==='function')logEdit('제품구분',key+' 자동분류 복원'); await saveSettings(); const autoCat=mixCatOf({code:key.split('│')[0],spec:key.split('│')[1]||'',name:name}); ov0.remove(); refreshMixEditInPlace(key,autoCat); });
+  ov0.querySelector('#mxSave').addEventListener('click',async()=>{ const cust=pick==='전용품'?(ov0.querySelector('#mxCust').value||''):''; state.gbunOverride[key]={cat:pick,cust}; logEdit('제품구분',`${name||key.split('│')[0]} → ${pick}${cust?' (전용:'+cust+')':''}`); await saveSettings(); ov0.remove(); refreshMixEditInPlace(key,pick); });
 }
 
 function priceStats2(name,spec){ let byC={},tQ=0,tS=0,code=''; for(const r of CUR){ if((r.name||'')!==name)continue; if((r.spec||'')!==(spec||''))continue; const q=r.qty||0,s=r.supply||r.total||0; tQ+=q;tS+=s; if(!code&&r.code)code=r.code; const c=r.cust; (byC[c]=byC[c]||{q:0,s:0}); byC[c].q+=q; byC[c].s+=s; } const avg=tQ?tS/tQ:0; let mn=null,mx=null; for(const c in byC){ const o=byC[c]; if(o.q<=0)continue; const up=o.s/o.q; if(mn==null||up<mn.p)mn={p:up,c}; if(mx==null||up>mx.p)mx={p:up,c}; } return {avg,min:mn,max:mx,code}; }
