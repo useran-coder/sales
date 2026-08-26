@@ -1552,7 +1552,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)">버전 v452</span>
+  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)">버전 v454</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -10146,7 +10146,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
 <script id="sales-sync-v03-final-patch">
 (function(){
   'use strict';
-  var APP_VERSION='v452';
+  var APP_VERSION='v454';
   var BASE_KEY='sales_gsync_base_stable_v1';
   var OLD_BASE_KEYS=['sales_gsync_base_v02','sales_gsync_base_v01'];
   var AUTO_DELAY=15000, BUSY_RETRY=1500, MAX_AUTO_RETRY=6;
@@ -12552,7 +12552,7 @@ function arBind(model,allModel){
 var arBindV158=arBind;arBind=function(model,allModel){arBindV158(model,allModel);if(state.ar.tab!=='exclude')return;document.querySelectorAll('[data-exclude-cust]').forEach(function(cb){cb.onchange=async function(e){e.stopPropagation();state.ar.excludedCustomers=state.ar.excludedCustomers||{};if(cb.checked)state.ar.excludedCustomers[cb.dataset.excludeCust]=true;else delete state.ar.excludedCustomers[cb.dataset.excludeCust];var tr=cb.closest('tr'),on=cb.checked;if(tr){tr.classList.toggle('ar-excluded-row',on);var statusCell=tr.cells[tr.cells.length-1];if(statusCell)statusCell.innerHTML=on?'<span class="ar-risk manage">집계 제외</span>':'관리 포함';}var visible=(model.customers||[]).filter(function(o){return!!state.ar.excludedCustomers[o.cust]}),chips=document.querySelectorAll('.ar-summary-strip .ar-summary-chip');if(chips[0])chips[0].innerHTML='제외업체 <b>'+visible.length+'</b>개';if(chips[1])chips[1].innerHTML='제외 미수금 <b>'+arMoney(visible.reduce(function(a,o){return a+o.balance},0))+'</b>원';var total=Object.keys(state.ar.excludedCustomers).filter(function(c){return state.ar.excludedCustomers[c]}).length,tab=document.querySelector('[data-ar-tab="exclude"]');if(tab)tab.textContent='🚫 수금관리 제외업체'+(total?' ('+total+')':'');await arSave();};});};
 function arOpenPage(){if(typeof closeFilePanel==='function')closeFilePanel();var p=document.getElementById('dataPanel');if(p)p.classList.remove('open');var ft=document.getElementById('fileToggle');if(ft){ft.classList.remove('open');ft.textContent='📁 파일·관리 ▾';}var r=document.getElementById('result'),s=document.getElementById('summary');if(r)r.style.display='';if(s)s.style.display='';state.act='ar';state.sortKey=null;state._search='';state._drill=false;window.runAct();window.scrollTo({top:0,behavior:'smooth'});}
 function arBindFileManager(){if(typeof arRenderFileList==='function')arRenderFileList();var op=document.getElementById('arFileOpenBtn'),bb=document.getElementById('arFileBalanceBtn'),bi=document.getElementById('arFileBalanceInput'),rb=document.getElementById('arFileReceiptBtn'),ri=document.getElementById('arFileReceiptInput');if(op&&!op.dataset.bound){op.dataset.bound='1';op.onclick=arOpenPage;}if(bb&&bi&&!bb.dataset.bound){bb.dataset.bound='1';bb.onclick=function(){bi.click()};bi.onchange=function(){if(bi.files[0])arImportBalances(bi.files[0]).then(function(){if(typeof arRenderFileList==='function')arRenderFileList();}).catch(function(e){alert(e.message)});bi.value='';};}if(rb&&ri&&!rb.dataset.bound){rb.dataset.bound='1';rb.onclick=function(){ri.click()};ri.onchange=function(){if(ri.files.length)arImportReceipts(Array.from(ri.files)).then(function(){var st=document.getElementById('arFileStatus');if(st)st.textContent='수금내역 반영 완료 · 전체 '+arMoney(state.ar.receipts.length)+'건';if(typeof arRenderFileList==='function')arRenderFileList();}).catch(function(e){alert(e.message)});ri.value='';};}}
-function arInstallMenu(){var menu=document.getElementById('topMenu');if(!menu)return;arBindFileManager();if(document.getElementById('arMenuBtn'))return;var groups=Array.from(menu.querySelectorAll('.tm-grp')),price=groups.find(function(g){return(g.querySelector('.tm-top')||{}).textContent&&g.querySelector('.tm-top').textContent.indexOf('단가표')>=0});var b=document.createElement('button');b.id='arMenuBtn';b.className='tm-direct';b.type='button';b.dataset.act='ar';b.style.cssText='background:#f1f5f9;color:#1e3a5f;border-color:#e2e8f0';b.textContent='💰 미수관리';b.onclick=arOpenPage;if(price)price.after(b);else menu.appendChild(b);var ver=document.getElementById('appVer');if(ver){ver.textContent='v452 · 재고 빈자료 오류 수정 (2026-08-26)';ver.title='앱 버전 v452 · 등록된 달을 모두 지웠을 때 오류 수정(빈 화면 안내·기본자료 복원) · 최종수정 2026-08-26';}}
+function arInstallMenu(){var menu=document.getElementById('topMenu');if(!menu)return;arBindFileManager();if(document.getElementById('arMenuBtn'))return;var groups=Array.from(menu.querySelectorAll('.tm-grp')),price=groups.find(function(g){return(g.querySelector('.tm-top')||{}).textContent&&g.querySelector('.tm-top').textContent.indexOf('단가표')>=0});var b=document.createElement('button');b.id='arMenuBtn';b.className='tm-direct';b.type='button';b.dataset.act='ar';b.style.cssText='background:#f1f5f9;color:#1e3a5f;border-color:#e2e8f0';b.textContent='💰 미수관리';b.onclick=arOpenPage;if(price)price.after(b);else menu.appendChild(b);var ver=document.getElementById('appVer');if(ver){ver.textContent='v454 · 재고소진 제외품 지정 (2026-08-26)';ver.title='앱 버전 v454 · 제품 재고소진·회전에 제외품 지정 추가 · 최종수정 2026-08-26';}}
 /* v163: aging month labels + band drilldown; ratio per-customer view */
 var arAgingV163=arAging;arAging=function(model){
  var a={d0:0,d31:0,d61:0,d91:0,d181:0};
@@ -13835,9 +13835,9 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return 'v452 · 재고 빈자료 오류 수정 (2026-08-26)';}
+ function tgt(){return 'v454 · 재고소진 제외품 지정 (2026-08-26)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
- function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;el.title='앱 버전 v452 · 등록된 달을 모두 지웠을 때 오류 수정(빈 화면 안내·기본자료 복원) · 최종수정 2026-08-26';}
+ function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;el.title='앱 버전 v454 · 제품 재고소진·회전에 제외품 지정 추가 · 최종수정 2026-08-26';}
  function boot(){var el=document.getElementById('appVer');if(!el){return setTimeout(boot,200);}enforce();try{new MutationObserver(enforce).observe(el,{childList:true,characterData:true,subtree:true});}catch(e){}setInterval(enforce,1500);}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
@@ -16383,7 +16383,8 @@ var MV={ months:{}, ui:{ cur:'', tab:'sum', ratio:55, yield:85, win:12, dead:6,
         turnFilter:'전체', matFilter:'전체', deadFilter:'전체', itemCat:'전체', itemLoc:'전체',
         sumSort:null, sumDir:1, sumPick:null, locSort:{k:'amt',d:-1}, pickSort:{k:'amt',d:-1},
         rawFilter:'전체', rawLoc:'전체', rawUse:'전체', rawExpand:false, trendYear:'',
-        rawOpen:null, matOpen:null, deadOpen:null, seedOff:false,
+        rawOpen:null, matOpen:null, deadOpen:null, seedOff:false, trendCat:'전체',
+        turnExcl:{}, turnExclMode:false,
         minAmt:0, sk:null, sd:-1 }, _cache:{} };
 window.MV=MV;
 
@@ -17090,7 +17091,9 @@ function mvTurnData(){
     arr.push({code:code,name:s.name,spec:s.spec,cat:'(재고 미등록)',locs:{},loc:'-',stock:0,amt:0,cost:0,unit:'EA',
       out:s.qty,outAmt:s.amt,mavg:mavg,mos:0,turn:9999,last:s.last,newItem:true});
   });
+  MV.ui.turnExcl=MV.ui.turnExcl||{};
   arr.forEach(function(o){
+    o.excl=!!MV.ui.turnExcl[o.code];
     if(o.newItem) o.verdict='결품·미등록';
     else if(o.stock<=0) o.verdict=(o.mavg>0?'결품·미등록':'재고없음');
     else if(o.out<=0) o.verdict='무출고';
@@ -17107,22 +17110,35 @@ var MV_VC={'전체':'#475569','무출고':'#dc2626','과잉(6개월↑)':'#ea580
 function mvTabTurn(){
   var D=mvTurnData(), arr=D.arr, mon=D.mon, ym=MV.ui.cur;
   var f=MV.ui.turnFilter||'전체';
-  var cnt={}; arr.forEach(function(o){cnt[o.verdict]=(cnt[o.verdict]||0)+1;});
+  var exMode=!!MV.ui.turnExclMode;
+  var live=arr.filter(function(o){return !o.excl;});          /* 제외품을 뺀 실제 분석 대상 */
+  var exArr=arr.filter(function(o){return o.excl;});
+  var cnt={}; live.forEach(function(o){cnt[o.verdict]=(cnt[o.verdict]||0)+1;});
   var order=['전체','무출고','과잉(6개월↑)','다소과다','적정','부족','결품·미등록','재고없음'];
   var chips='<div class="chips" style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px">'+order.map(function(l){
-      var c=(l==='전체')?arr.length:(cnt[l]||0); var on=(f===l);
-      return '<button class="mvchip chip" data-v="'+l+'" style="border:1px solid '+MV_VC[l]+';background:'+(on?MV_VC[l]:'#fff')+';color:'+(on?'#fff':MV_VC[l])+';font-weight:700;font-size:12px;padding:5px 11px;border-radius:14px;font-family:inherit">'+l+' <b>'+mvWon(c)+'</b></button>';}).join('')+'</div>';
-  var show=(f==='전체')?arr.slice():arr.filter(function(o){return o.verdict===f;});
+      var c=(l==='전체')?live.length:(cnt[l]||0); var on=(f===l);
+      return '<button class="mvchip chip" data-v="'+l+'" style="border:1px solid '+MV_VC[l]+';background:'+(on?MV_VC[l]:'#fff')+';color:'+(on?'#fff':MV_VC[l])+';font-weight:700;font-size:12px;padding:5px 11px;border-radius:14px;font-family:inherit">'+l+' <b>'+mvWon(c)+'</b></button>';}).join('')
+    +(exArr.length?('<button class="mvchip chip" data-v="제외품" style="border:1px solid #7c3aed;background:'+(f==='제외품'?'#7c3aed':'#fff')+';color:'+(f==='제외품'?'#fff':'#7c3aed')+';font-weight:700;font-size:12px;padding:5px 11px;border-radius:14px;font-family:inherit">🚫 제외품 <b>'+mvWon(exArr.length)+'</b></button>'):'')
+    +'</div>';
+  var base=exMode?arr:( (f==='제외품')?exArr:live );
+  var show=(f==='전체'||f==='제외품')?base.slice():base.filter(function(o){return o.verdict===f;});
   var tot=show.reduce(function(a,o){return a+o.amt;},0), totOut=show.reduce(function(a,o){return a+o.outAmt;},0);
 
   var winSel='<span class="cl" style="font-size:12px;color:#475569;font-weight:700">출고 집계기간 <select id="mvWin">'
     +[3,6,12,24,0].map(function(n){return '<option value="'+n+'"'+(MV.ui.win===n?' selected':'')+'>'+(n?(n+'개월'):'전체기간')+'</option>';}).join('')+'</select></span>';
-  var controls='<div class="ctrlbar" style="gap:12px;flex-wrap:wrap;align-items:center">'+winSel
+  var exBtn='<button class="btn ghost" id="mvExMode" style="font-size:12.5px;padding:6px 12px;'+(exMode?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe')+'">🚫 제외품 지정'+(exArr.length?(' ('+mvWon(exArr.length)+')'):'')+(exMode?' ✓':'')+'</button>';
+  var exClear=exArr.length?('<button class="btn ghost" id="mvExClear" style="font-size:12px;padding:6px 10px;color:#dc2626;border-color:#fecaca">제외 전체 해제</button>'):'';
+  var exHint=exMode?('<span class="sub2" style="font-size:11.5px;color:#7c3aed;font-weight:700">체크한 품목은 분석·판정·합계에서 빠집니다 (단종·샘플·특수품 등)</span>')
+    :(f==='제외품'?('<span class="sub2" style="font-size:11.5px;color:#7c3aed;font-weight:700">체크를 풀면 바로 분석 대상으로 되돌아갑니다</span>'):'');
+  var controls='<div class="ctrlbar" style="gap:12px;flex-wrap:wrap;align-items:center">'+winSel+exBtn+exClear+exHint
     +'<span class="sub2" style="font-size:11.5px;color:#64748b">재고월수(MOS) = 현재고 ÷ 월평균 출고수량 · 회전율(회/년) = 월평균출고×12 ÷ 현재고 · 판정: 무출고 / 과잉 6개월↑ / 다소과다 3~6 / 적정 0.5~3 / 부족 0.5↓</span></div>'+chips;
 
-  var cols=[
-    {k:'rank',t:'순위',cls:'rank',cell:function(o,i){return i+1;},nosort:true},
-    {k:'code',t:'품번',cls:'l',cell:function(o){return mvEsc(o.code);},sortVal:function(o){return o.code;}},
+  var cols=[];
+  if(exMode||f==='제외품') cols.push({k:'_ex',t:'제외',cls:'c',cell:function(o){
+      return '<input type="checkbox" class="mvexck" data-c="'+mvEsc(o.code)+'"'+(o.excl?' checked':'')+' style="width:16px;height:16px;cursor:pointer;accent-color:#7c3aed">'; },nosort:true});
+  cols=cols.concat([
+    {k:'rank',t:'순위',cls:'rank',cell:function(o,i){return (o.excl?'<span style="color:#7c3aed;font-weight:800">🚫</span> ':'')+(i+1);},nosort:true},
+    {k:'code',t:'품번',cls:'l',cell:function(o){return (o.excl?'<span style="text-decoration:line-through;color:#94a3b8">'+mvEsc(o.code)+'</span>':mvEsc(o.code));},sortVal:function(o){return o.code;}},
     {k:'label',t:'품명',cls:'l',cell:function(o){return mvEsc(o.name||'');},sortVal:function(o){return o.name||'';}},
     {k:'spec',t:'규격',cls:'l',cell:function(o){return mvEsc(o.spec||'');},sortVal:function(o){return o.spec||'';}},
     {k:'cat',t:'구분',cell:function(o){return '<span style="color:'+mvCatCol(o.cat)+';font-weight:800">'+mvEsc(o.cat)+'</span>';},sortVal:function(o){return o.cat;}},
@@ -17137,14 +17153,18 @@ function mvTabTurn(){
     {k:'turn',t:'회전율(회/년)',cell:function(o){ return o.turn>=9999?'<span class="sub2">-</span>':o.turn.toFixed(1); },sortVal:function(o){return o.turn>=9999?0:o.turn;}},
     {k:'outAmt',t:'출고금액',cell:function(o){return mvWon(o.outAmt);},sortVal:function(o){return o.outAmt;}},
     {k:'last',t:'최종출고일',cell:function(o){ return o.last?((typeof fmtD==='function')?fmtD(o.last):o.last.toLocaleDateString()):'<span style="color:#dc2626;font-weight:700">이력없음</span>'; },sortVal:function(o){return o.last?+o.last:0;}},
-    {k:'verdict',t:'판정',cell:function(o){ return '<span style="display:inline-block;padding:2px 9px;border-radius:8px;font-size:11.5px;font-weight:800;background:'+MV_VC[o.verdict]+'1a;color:'+MV_VC[o.verdict]+'">'+o.verdict+'</span>'; },sortVal:function(o){return o.verdict;}}
-  ];
-  var over=arr.filter(function(o){return o.verdict==='과잉(6개월↑)'||o.verdict==='무출고';}).reduce(function(a,o){return a+o.amt;},0);
-  var short=arr.filter(function(o){return o.verdict==='부족'||o.verdict==='결품·미등록';}).length;
+    {k:'verdict',t:'판정',cell:function(o){ if(o.excl)return '<span style="display:inline-block;padding:2px 9px;border-radius:8px;font-size:11.5px;font-weight:800;background:#7c3aed1a;color:#7c3aed">제외품</span>';
+        return '<span style="display:inline-block;padding:2px 9px;border-radius:8px;font-size:11.5px;font-weight:800;background:'+MV_VC[o.verdict]+'1a;color:'+MV_VC[o.verdict]+'">'+o.verdict+'</span>'; },sortVal:function(o){return o.excl?'제외품':o.verdict;}}
+  ]);
+  var over=live.filter(function(o){return o.verdict==='과잉(6개월↑)'||o.verdict==='무출고';}).reduce(function(a,o){return a+o.amt;},0);
+  var short=live.filter(function(o){return o.verdict==='부족'||o.verdict==='결품·미등록';}).length;
+  var exAmt=exArr.reduce(function(a,o){return a+o.amt;},0);
   var note=(!D.SI.ok)?'<b style="color:#dc2626">매출(출고) 자료가 없습니다.</b> 상단 <b>📁 파일·관리</b>에서 매출 파일을 불러오면 재고소진·회전율이 자동 계산됩니다.'
     :('집계기간 <b>'+D.SI.from+' ~ '+D.SI.to+' ('+mon+'개월)</b> 출고 실적과 '+mvYmLabel(ym)+' 말 재고를 품번으로 대조했습니다. '
       +'<b>과잉+무출고 재고금액 '+mvWon(over)+'원</b> — 소진계획·판촉 대상입니다. <b>부족·결품 '+mvWon(short)+'품목</b>은 결품 위험이므로 생산 우선순위를 조정하십시오. '
-      +'수량 단위가 다른 품목(KG/말 등)이 섞여 있으므로 재고월수는 <b>동일 단위 기준</b>으로 해석하십시오.');
+      +'수량 단위가 다른 품목(KG/말 등)이 섞여 있으므로 재고월수는 <b>동일 단위 기준</b>으로 해석하십시오.'
+      +'<br><b>🚫 제외품 지정</b>을 누르면 왼쪽에 체크칸이 생깁니다. 단종품·샘플·특수 주문품처럼 회전 판정에서 빼야 할 품목을 체크하면 <b>목록·판정·합계에서 모두 제외</b>되고, 제외품 칩으로 따로 모아 볼 수 있습니다. 지정 내용은 저장되어 다음에 열 때도 유지됩니다.'
+      +(exArr.length?('<br>현재 제외 <b style="color:#7c3aed">'+mvWon(exArr.length)+'품목 · '+mvWon(exAmt)+'원</b>이 분석에서 빠져 있습니다.'):''));
   render('🔄 제품 재고소진·회전 분석 ('+mvYmLabel(ym)+')',
     (f==='전체'?'전체':f)+' '+mvWon(show.length)+'품목 · 재고 '+mvWon(tot)+'원 · '+(mon?mon+'개월 출고 '+mvWon(totOut)+'원':'출고자료 없음'),
     show, cols, 'amt', note,
@@ -17153,6 +17173,26 @@ function mvTabTurn(){
      onMount:function(){ try{setGlobalBar(false);}catch(e){} mvBind();
        var w=document.getElementById('mvWin'); if(w)w.addEventListener('change',function(e){ MV.ui.win=+e.target.value; MV._scache=null; mvSave(); mvRender(); });
        document.querySelectorAll('#result .mvchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.turnFilter=b.dataset.v; mvSave(); mvRender(); }); });
+       var em=document.getElementById('mvExMode');
+       if(em)em.addEventListener('click',function(){ MV.ui.turnExclMode=!MV.ui.turnExclMode; if(MV.ui.turnExclMode&&MV.ui.turnFilter==='제외품')MV.ui.turnFilter='전체'; mvSave(); mvRender(); });
+       var ec=document.getElementById('mvExClear');
+       if(ec)ec.addEventListener('click',function(){
+         var q='제외 지정한 '+mvWon(exArr.length)+'품목을 모두 해제할까요?';
+         var go=function(ok){ if(!ok)return; MV.ui.turnExcl={}; if(MV.ui.turnFilter==='제외품')MV.ui.turnFilter='전체'; mvSave(); mvRender(); };
+         if(typeof uiConfirm==='function') Promise.resolve(uiConfirm(q)).then(go); else go(confirm(q));
+       });
+     },
+     afterDraw:function(){
+       document.querySelectorAll('#tbl .mvexck').forEach(function(ck){
+         ck.addEventListener('click',function(e){ e.stopPropagation(); });
+         ck.addEventListener('change',function(e){
+           var c=ck.dataset.c;
+           MV.ui.turnExcl=MV.ui.turnExcl||{};
+           if(ck.checked)MV.ui.turnExcl[c]=true; else delete MV.ui.turnExcl[c];
+           if(typeof logEdit==='function')try{ logEdit('재고','재고소진 제외품 '+c+(ck.checked?' 지정':' 해제')); }catch(_e){}
+           mvSave(); mvRender();
+         });
+       });
      }});
 }
 
@@ -17440,63 +17480,157 @@ function mvTabDead(){
      }});
 }
 
-/* ==================== TAB 6 · 월별 추이 (1~12월 전체) ==================== */
+/* ==================== TAB 6 · 월별 추이 (매출 막대 + 재고 추이선) ==================== */
+var MV_TRCAT=['전체','원자재','제품','OEM','부자재','반제품','매출이월','상품'];
+function mvMonthSales(){
+  /* 월별 매출액 (전체 기간) */
+  var m={};
+  if(!mvHasSales()) return m;
+  CUR.forEach(function(r){ var k=r.ym; if(!k)return; m[k]=(m[k]||0)+mvAmt(r); });
+  return m;
+}
 function mvTabTrend(){
   var yms=mvYms();
   var years=Array.from(new Set(yms.map(function(y){return y.slice(0,4);}))).sort();
   var yr=MV.ui.trendYear; if(!yr||years.indexOf(yr)<0) yr=years[years.length-1];
+  var cat=MV.ui.trendCat; if(MV_TRCAT.indexOf(cat)<0) cat='전체';
+  var SM=mvMonthSales(), hasSales=mvHasSales();
+
   var months=[]; for(var i=1;i<=12;i++) months.push(yr+'-'+String(i).padStart(2,'0'));
   var series=months.map(function(y){
-    if(!MV.months[y]) return {ym:y,total:0,by:{},n:0,has:false};
-    var c=mvCatTotals(y), t=0, by={}; c.forEach(function(o){t+=o.amt;by[o.cat]=o.amt;});
-    return {ym:y,total:t,by:by,n:mvRows(y).length,has:true};
+    var o={ym:y,mo:+y.slice(5,7),total:0,by:{},n:0,has:false,sales:SM[y]||0};
+    if(MV.months[y]){ var c=mvCatTotals(y); c.forEach(function(x){o.total+=x.amt;o.by[x.cat]=x.amt;}); o.n=mvRows(y).length; o.has=true; }
+    o.inv=(cat==='전체')?o.total:(o.by[cat]||0);
+    o.ratio=(o.has&&o.sales>0)?(o.inv/o.sales):null;      /* 매출 대비 재고 = 몇 개월분 */
+    return o;
   });
   var have=series.filter(function(s){return s.has;});
   var cats=[]; series.forEach(function(s){ Object.keys(s.by).forEach(function(k){ if(cats.indexOf(k)<0)cats.push(k); }); });
   cats.sort(function(a,b){ var sa=0,sb=0; series.forEach(function(s){sa+=s.by[a]||0;sb+=s.by[b]||0;}); return sb-sa; });
-  if(!cats.length) cats=['원자재','제품','반제품','부자재','상품','OEM','매출이월'];
+  if(!cats.length) cats=['원자재','제품','OEM','부자재','반제품','매출이월','상품'];
 
+  /* ── 구분 선택 버튼 ── */
+  var catTot={}; series.forEach(function(s){ Object.keys(s.by).forEach(function(k){ catTot[k]=(catTot[k]||0)+s.by[k]; }); });
+  var catBtns=MV_TRCAT.filter(function(c){ return c==='전체'||catTot[c]!=null||cats.indexOf(c)>=0; }).map(function(c){
+    var on=(cat===c), col=(c==='전체')?'#1e3a5f':mvCatCol(c);
+    var last=null; for(var i=series.length-1;i>=0;i--){ if(series[i].has){ last=series[i]; break; } }
+    var amt=last?((c==='전체')?last.total:(last.by[c]||0)):0;
+    return '<button class="mvtrcat" data-v="'+mvEsc(c)+'" style="border:1px solid '+col+';background:'+(on?col:'#fff')+';color:'+(on?'#fff':col)
+      +';font-weight:'+(on?800:700)+';font-size:12.5px;padding:5px 12px;border-radius:15px;font-family:inherit;white-space:nowrap">'
+      +mvEsc(c)+' <b style="font-size:12px">'+mvMan(amt)+'</b></button>';
+  }).join('');
+  var yChips=(years.length>1)?years.map(function(y){ var on=(y===yr);
+      return '<button class="mvtychip" data-v="'+y+'" style="border:1px solid '+(on?'#1e3a5f':'#e2e8f0')+';background:'+(on?'#1e3a5f':'#fff')+';color:'+(on?'#fff':'#334155')+';font-weight:800;font-size:12.5px;padding:5px 12px;border-radius:15px;font-family:inherit">'+y+'년</button>';}).join(''):'';
+  var pickBar='<div style="display:flex;flex-direction:column;gap:7px;margin:2px 0 10px">'
+    +(yChips?('<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:52px">연도</b>'+yChips+'</div>'):'')
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:52px">구분</b>'+catBtns
+      +'<span class="sub2" style="font-size:11.5px;color:#64748b">선택한 구분의 재고가 그래프 <b>추이선</b>과 표의 <b>매출대비</b>에 반영됩니다</span></div></div>';
+
+  /* ── 그래프 : 매출 막대 + 재고 추이선 ── */
+  var maxS=Math.max.apply(null,series.map(function(s){return s.sales;}).concat([0]))||1;
+  var maxI=Math.max.apply(null,series.map(function(s){return s.has?s.inv:0;}).concat([0]))||1;
+  var W=1220,H=350,L=78,R=86,T=34,B=54, PW=W-L-R, PH=H-T-B;
+  var step=PW/12, bw=Math.min(38,step*0.46);
+  var xC=function(i){ return L+step*i+step/2; };
+  var yS=function(v){ return T+PH-(v/maxS)*PH; };
+  var yI=function(v){ return T+PH-(v/maxI)*PH; };
+  var grid='',lab='';
+  for(var g=0;g<=4;g++){
+    var gy=T+PH-PH*g/4;
+    grid+='<line x1="'+L+'" y1="'+gy.toFixed(1)+'" x2="'+(W-R)+'" y2="'+gy.toFixed(1)+'" stroke="#eef2f7" stroke-width="1"/>';
+    lab+='<text x="'+(L-8)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="11" fill="#94a3b8">'+((maxS*g/4)/100000000).toFixed(1)+'억</text>'
+       + '<text x="'+(W-R+8)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="start" font-size="11" fill="#94a3b8">'+((maxI*g/4)/100000000).toFixed(1)+'억</text>';
+  }
+  var lineY=series.map(function(s){ return s.has?yI(s.inv):null; });
+  var bars=series.map(function(s,i){
+    if(!(s.sales>0)) return '';
+    var y=yS(s.sales), h=T+PH-y;
+    /* 값 라벨은 막대 안쪽에 넣고, 재고 추이선(점·라벨)과 가까우면 한 단 더 내려 겹침을 피한다 */
+    var inside=(h>30);
+    var ly=inside?(y+15):(y-5), lc=inside?'#1d4ed8':'#2563eb';
+    var dy=lineY[i];
+    if(dy!=null){
+      var tries=inside?[y+15,y+31,y+47]:[y-5,y-19];
+      for(var t=0;t<tries.length;t++){ if(Math.abs(tries[t]-dy)>17&&Math.abs(tries[t]-(dy-11))>13){ ly=tries[t]; break; } ly=tries[t]; }
+      if(inside&&ly>T+PH-6) ly=y+15;
+    }
+    return '<rect x="'+(xC(i)-bw/2).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(1,h).toFixed(1)+'" rx="3" fill="#bfdbfe"/>'
+      +'<text x="'+xC(i).toFixed(1)+'" y="'+ly.toFixed(1)+'" text-anchor="middle" font-size="10.5" font-weight="800" fill="'+lc+'">'+(s.sales/100000000).toFixed(2)+'</text>';
+  }).join('');
+  var segs='',dots='';
+  var prev=null;
+  series.forEach(function(s,i){
+    if(!s.has){ prev=null; return; }
+    var x=xC(i), y=yI(s.inv);
+    if(prev) segs+='<line x1="'+prev.x.toFixed(1)+'" y1="'+prev.y.toFixed(1)+'" x2="'+x.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="#1e3a5f" stroke-width="2.4" stroke-linecap="round"/>';
+    var ty=(y<T+22)?(y+20):(y-11);
+    dots+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="4.5" fill="#fff" stroke="#1e3a5f" stroke-width="2.4"/>'
+      +'<text x="'+x.toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#1e3a5f" stroke="#fff" stroke-width="3.2" paint-order="stroke">'+(s.inv/100000000).toFixed(2)+'</text>';
+    prev={x:x,y:y};
+  });
+  var xlab=series.map(function(s,i){
+    return '<text x="'+xC(i).toFixed(1)+'" y="'+(T+PH+18)+'" text-anchor="middle" font-size="11.5" font-weight="'+(s.has?800:600)+'" fill="'+(s.has?'#1e3a5f':'#c3cbd6')+'">'+s.mo+'월</text>'
+      +(s.ratio!=null?('<text x="'+xC(i).toFixed(1)+'" y="'+(T+PH+34)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="#0d9488">'+s.ratio.toFixed(1)+'개월</text>'):'');
+  }).join('');
+  var chart='<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;min-width:820px;height:auto;display:block">'
+    +grid+lab+bars+segs+dots+xlab
+    +'<line x1="'+L+'" y1="'+(T+PH)+'" x2="'+(W-R)+'" y2="'+(T+PH)+'" stroke="#94a3b8"/>'
+    +'<text x="'+(L-8)+'" y="'+(T-9)+'" text-anchor="start" font-size="11" font-weight="800" fill="#2563eb">← 매출(막대)</text>'
+    +'<text x="'+(W-R+8)+'" y="'+(T-9)+'" text-anchor="end" font-size="11" font-weight="800" fill="#1e3a5f">'+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+'(추이선) →</text>'
+    +'</svg></div>'
+    +'<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:12px;color:#475569">'
+      +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:11px;background:#bfdbfe;border-radius:2px;display:inline-block"></span>월 매출 <b style="color:#2563eb">억원</b></span>'
+      +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;height:0;border-top:2.6px solid #1e3a5f;display:inline-block"></span>'+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+' <b style="color:#1e3a5f">억원</b></span>'
+      +'<span style="display:inline-flex;align-items:center;gap:6px"><b style="color:#0d9488">n.n개월</b> 매출 대비 재고(재고÷그 달 매출)</span>'
+      +(hasSales?'':'<span style="color:#dc2626;font-weight:700">매출 자료가 없어 막대가 표시되지 않습니다 — 매출 파일을 불러오십시오.</span>')
+    +'</div>';
+
+  /* ── 표 ── */
   var TH='padding:7px 9px;background:#1e3a5f;color:#fff;font-weight:700;font-size:13px;border:1px solid #16304f;white-space:nowrap';
   var TD='padding:6px 9px;border:1px solid #e2e8f0;font-size:13px;text-align:right';
-  var head='<tr><th style="'+TH+';text-align:left">기준월</th>'+cats.map(function(c){return '<th style="'+TH+'">'+mvEsc(c)+'</th>';}).join('')
-    +'<th style="'+TH+'">총 재고자산</th><th style="'+TH+'">전월대비</th><th style="'+TH+'">품목수</th></tr>';
+  var head='<tr><th style="'+TH+';text-align:left">기준월</th>'
+    +cats.map(function(c){ var on=(cat===c);
+      return '<th style="'+TH+(on?';background:'+mvCatCol(c)+';border-color:'+mvCatCol(c):'')+'">'+mvEsc(c)+(on?' ●':'')+'</th>'; }).join('')
+    +'<th style="'+TH+(cat==='전체'?';background:#0f2a4a':'')+'">총 재고자산'+(cat==='전체'?' ●':'')+'</th>'
+    +'<th style="'+TH+'">전월대비</th><th style="'+TH+';background:#2563eb;border-color:#1d4ed8">월 매출</th>'
+    +'<th style="'+TH+';background:#0d9488;border-color:#0f766e">매출대비<br><span style="font-size:10.5px;font-weight:600">'+mvEsc(cat)+' 재고÷매출</span></th>'
+    +'<th style="'+TH+'">품목수</th></tr>';
   var prevHas=null;
-  var body=series.map(function(s,i){
-    var d=null, pv=0;
+  var body=series.map(function(s){
+    var d=null,pv=0;
     if(s.has&&prevHas){ pv=prevHas.total; d=s.total-pv; }
     if(s.has) prevHas=s;
     var dim=s.has?'':';color:#c3cbd6;background:#fcfdfe';
-    return '<tr'+(s.has?'':' style="opacity:.72"')+'><td style="'+TD+';text-align:left;font-weight:800;color:'+(s.has?'#1e3a5f':'#94a3b8')+'">'+(+s.ym.slice(5,7))+'월'+(s.has?'':' <span style="font-size:11px;font-weight:600">(미등록)</span>')+'</td>'
-      +cats.map(function(c){return '<td style="'+TD+dim+'">'+(s.by[c]?mvWon(s.by[c]):'0')+'</td>';}).join('')
-      +'<td style="'+TD+dim+';font-weight:800">'+mvWon(s.total)+'</td>'
+    return '<tr'+(s.has?'':' style="opacity:.72"')+'><td style="'+TD+';text-align:left;font-weight:800;color:'+(s.has?'#1e3a5f':'#94a3b8')+'">'+s.mo+'월'+(s.has?'':' <span style="font-size:11px;font-weight:600">(미등록)</span>')+'</td>'
+      +cats.map(function(c){ var on=(cat===c);
+        return '<td style="'+TD+dim+(on?';background:'+mvCatCol(c)+'14;font-weight:800;color:'+mvCatCol(c):'')+'">'+(s.by[c]?mvWon(s.by[c]):'0')+'</td>'; }).join('')
+      +'<td style="'+TD+dim+';font-weight:800'+(cat==='전체'?';background:#1e3a5f14':'')+'">'+mvWon(s.total)+'</td>'
       +'<td style="'+TD+';font-weight:800;color:'+(d==null?'#c3cbd6':(d>=0?'#dc2626':'#16a34a'))+'">'+(d==null?'-':((d>=0?'+':'')+mvWon(d)+(pv?(' ('+(d/pv*100).toFixed(1)+'%)'):'')))+'</td>'
+      +'<td style="'+TD+';font-weight:800;color:'+(s.sales?'#2563eb':'#c3cbd6')+';background:#2563eb0a">'+(s.sales?mvWon(s.sales):'-')+'</td>'
+      +'<td style="'+TD+';font-weight:800;background:#0d94880a;color:'+(s.ratio==null?'#c3cbd6':(s.ratio>3?'#dc2626':s.ratio>1.5?'#d97706':'#0d9488'))+'">'
+        +(s.ratio==null?'-':(s.ratio.toFixed(2)+'<span style="font-size:11px;font-weight:600">개월</span> <span style="font-size:11px;color:#64748b;font-weight:600">'+(s.ratio*100).toFixed(0)+'%</span>'))+'</td>'
       +'<td style="'+TD+dim+'">'+mvWon(s.n)+'</td></tr>';
   }).join('');
+  var avgR=(function(){ var a=series.filter(function(s){return s.ratio!=null;}); if(!a.length)return null;
+    return a.reduce(function(x,s){return x+s.ratio;},0)/a.length; })();
 
-  var maxT=Math.max.apply(null,series.map(function(s){return s.total;}))||1;
-  var chart='<div style="display:flex;align-items:flex-end;gap:10px;height:210px;padding:12px 6px;overflow:auto">'+series.map(function(s){
-      var h=s.has?Math.max(5,s.total/maxT*150):3;
-      return '<div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;min-width:62px">'
-        +'<div style="font-size:11.5px;font-weight:800;color:'+(s.has?'#1e3a5f':'#cbd5e1')+'">'+(s.has?mvEok(s.total):'0')+'</div>'
-        +'<div style="width:100%;max-width:46px;height:'+h+'px;background:'+(s.has?'linear-gradient(180deg,#2c4f7c,#1e3a5f)':'#e8edf3')+';border-radius:6px 6px 0 0"></div>'
-        +'<div style="font-size:12px;color:'+(s.has?'#1e3a5f':'#94a3b8')+';font-weight:'+(s.has?800:600)+'">'+(+s.ym.slice(5,7))+'월</div></div>';
-    }).join('')+'</div>';
-
-  var yChips=(years.length>1)?('<span style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></span>'
-      +years.map(function(y){ var on=(y===yr);
-        return '<button class="mvtychip" data-v="'+y+'" style="border:1px solid '+(on?'#1e3a5f':'#e2e8f0')+';background:'+(on?'#1e3a5f':'#fff')+';color:'+(on?'#fff':'#334155')+';font-weight:800;font-size:12.5px;padding:6px 13px;border-radius:9px;font-family:inherit">'+y+'년</button>';}).join('')):'';
-
-  var loaded=have.length, missing=12-loaded;
-  var html=mvTabBar()
-    +'<div class="rhead" style="margin-bottom:8px"><span class="title">📈 '+yr+'년 월별 재고 추이</span>'
-      +'<span class="meta">1~12월 · 등록 '+loaded+'개월 · 미등록 '+missing+'개월(0 처리)</span>'+yChips+'</div>'
-    +'<div class="panel"><h3>총 재고자산 추이 ('+yr+'년 1~12월)</h3>'+chart+'</div>'
-    +'<div class="panel"><h3>월별 · 구분별 재고금액</h3><div style="overflow:auto"><table style="border-collapse:collapse;min-width:900px"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'
+  var loaded=have.length;
+  var html=mvTabBar()+pickBar
+    +'<div class="rhead" style="margin-bottom:8px"><span class="title">📈 '+yr+'년 월별 재고 추이 · 매출 대비</span>'
+      +'<span class="meta">1~12월 · 재고 등록 '+loaded+'개월 · 기준 구분 <b>'+mvEsc(cat)+'</b>'+(avgR!=null?(' · 평균 매출대비 '+avgR.toFixed(2)+'개월'):'')+'</span></div>'
+    +'<div class="panel"><h3>월 매출(막대) · '+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+'(추이선)</h3>'+chart+'</div>'
+    +'<div class="panel"><h3>월별 · 구분별 재고금액 · 매출 대비</h3><div style="overflow:auto"><table style="border-collapse:collapse;min-width:1100px"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'
     +'<div class="note" style="margin-top:9px">'+(loaded<2
-      ? '현재 <b>'+have.map(function(s){return (+s.ym.slice(5,7))+'월';}).join(', ')+'</b>만 등록되어 있고 나머지 달은 0으로 표시했습니다. 상단 <b>📥 재고 엑셀 불러오기</b>로 다른 달의 「본사 재고현황」 파일을 추가하면 그 달 칸이 실제 값으로 채워지고 전월대비가 자동 계산됩니다.'
-      : '전월대비는 <b>등록된 달끼리만</b> 비교합니다(미등록 달은 건너뜁니다). 재고자산이 늘었는데 매출이 늘지 않았다면 <b>과잉 매입 또는 소진 실패</b> 신호입니다. 원자재만 증가했다면 소재 선매입, 제품만 증가했다면 출하 지연 또는 판매 부진으로 원인이 갈립니다.')+'</div></div>';
+      ? '재고는 <b>'+have.map(function(s){return s.mo+'월';}).join(', ')+'</b>만 등록되어 있고 나머지 달은 0으로 표시했습니다. 상단 <b>📁 파일·관리 ▸ 월 재고현황</b>에서 다른 달 파일을 추가하면 그 달 칸이 채워지고 추이선이 이어집니다.'
+      : '전월대비는 <b>등록된 달끼리만</b> 비교합니다(미등록 달은 건너뜁니다).')
+      +'<br><b>매출대비</b>는 그 달 말 재고를 <b>그 달 매출</b>로 나눈 값으로, <b>재고가 몇 개월치 매출에 해당하는가</b>를 뜻합니다. '
+      +'막대(매출)는 왼쪽 축, 추이선(재고)은 오른쪽 축을 씁니다 — 축이 다르므로 <b>높낮이 자체가 아니라 방향</b>을 비교하십시오. '
+      +'매출은 그대로인데 추이선만 올라가면 <b>과잉 매입 또는 소진 실패</b>, 매출이 늘어도 추이선이 평평하면 <b>회전이 개선</b>된 것입니다. '
+      +'구분 버튼으로 원자재만 놓고 보면 소재 선매입 시점이, 제품만 놓고 보면 출하 지연 여부가 드러납니다.</div></div>';
+
   renderCustom(html,function(){ try{setGlobalBar(false);}catch(e){} mvBind();
     document.querySelectorAll('#result .mvtychip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.trendYear=b.dataset.v; mvSave(); mvRender(); }); });
+    document.querySelectorAll('#result .mvtrcat').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.trendCat=b.dataset.v; mvSave(); mvRender(); }); });
   });
 }
 
