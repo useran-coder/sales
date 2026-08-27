@@ -18000,13 +18000,15 @@ function mvTabTrend(){
 
   /* ── 구분 선택 버튼 ── */
   var catTot={}; series.forEach(function(s){ Object.keys(s.by).forEach(function(k){ catTot[k]=(catTot[k]||0)+s.by[k]; }); });
+  var _lastS=null; for(var _li=series.length-1;_li>=0;_li--){ if(series[_li].has){ _lastS=series[_li]; break; } }
+  var lastTot=_lastS?_lastS.total:0;
   var catBtns=MV_TRCAT.filter(function(c){ return c==='전체'||catTot[c]!=null||cats.indexOf(c)>=0; }).map(function(c){
     var on=(cat===c), col=(c==='전체')?'#1e3a5f':mvCatCol(c);
-    var last=null; for(var i=series.length-1;i>=0;i--){ if(series[i].has){ last=series[i]; break; } }
-    var amt=last?((c==='전체')?last.total:(last.by[c]||0)):0;
+    var amt=_lastS?((c==='전체')?_lastS.total:(_lastS.by[c]||0)):0;
+    var pc=(c==='전체')?100:(lastTot?(amt/lastTot*100):0);
     return '<button class="mvtrcat" data-v="'+mvEsc(c)+'" style="border:1px solid '+col+';background:'+(on?col:'#fff')+';color:'+(on?'#fff':col)
       +';font-weight:'+(on?800:700)+';font-size:12.5px;padding:5px 12px;border-radius:15px;font-family:inherit;white-space:nowrap">'
-      +mvEsc(c)+' <b style="font-size:12px">'+mvMan(amt)+'</b></button>';
+      +mvEsc(c)+' <b style="font-size:12px">'+mvMan(amt)+'</b><span style="font-weight:700;font-size:11px;opacity:.85"> · '+pc.toFixed(1)+'%</span></button>';
   }).join('');
   var yChips=(years.length>1)?years.map(function(y){ var on=(y===yr);
       return '<button class="mvtychip" data-v="'+y+'" style="border:1px solid '+(on?'#1e3a5f':'#e2e8f0')+';background:'+(on?'#1e3a5f':'#fff')+';color:'+(on?'#fff':'#334155')+';font-weight:800;font-size:12.5px;padding:5px 12px;border-radius:15px;font-family:inherit">'+y+'년</button>';}).join(''):'';
@@ -18016,9 +18018,10 @@ function mvTabTrend(){
   var locBtns=['전체'].concat(locsAll).map(function(v){
     var on=(loc===v), col=on?'#1e3a5f':'#475569';
     var amt=(v==='전체')?locTotAll:(locAmt[v]||0), mo=(v==='전체')?0:(locMon[v]||0);
-    return '<button class="mvtrloc" data-v="'+mvEsc(v)+'" title="'+(v==='전체'?'전체 보관장소':(mvEsc(v)+' · 등록 '+mo+'개월 합계'))+'" style="border:1px solid '+col+';background:'+(on?col:'#fff')+';color:'+(on?'#fff':col)
+    var pc=(v==='전체')?100:(locTotAll?(amt/locTotAll*100):0);
+    return '<button class="mvtrloc" data-v="'+mvEsc(v)+'" title="'+(v==='전체'?'전체 보관장소':(mvEsc(v)+' · 등록 '+mo+'개월 합계 · 비중 '+pc.toFixed(1)+'%'))+'" style="border:1px solid '+col+';background:'+(on?col:'#fff')+';color:'+(on?'#fff':col)
       +';font-weight:'+(on?800:700)+';font-size:12.5px;padding:5px 12px;border-radius:15px;font-family:inherit;white-space:nowrap">'
-      +mvEsc(v)+' <b style="font-size:12px">'+mvMan(amt)+'</b></button>';
+      +mvEsc(v)+' <b style="font-size:12px">'+mvMan(amt)+'</b><span style="font-weight:700;font-size:11px;opacity:.85"> · '+pc.toFixed(1)+'%</span></button>';
   }).join('');
   var pickBar='<div style="display:flex;flex-direction:column;gap:7px;margin:2px 0 10px">'
     +(yChips?('<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:52px">연도</b>'+yChips+'</div>'):'')
@@ -18159,19 +18162,86 @@ function mvTabTrend(){
           +'<td colspan="3" style="'+TD+';background:#fff7ed"></td></tr>'):'');
   })();
 
+  /* ── v471 : 구분별 · 보관장소별 비중 (그래프 + 표) ── */
+  var shareYm=_lastS?_lastS.ym:ym;
+  var shareLoc=(function(){ var o={}; try{ mvRows(shareYm).forEach(function(r){
+      if(cat!=='전체'&&r.cat!==cat) return; var L=r.loc||'(미지정)'; o[L]=(o[L]||0)+r.amt; }); }catch(e){} return o; })();
+  var shareCat=(function(){ var o={}; try{ mvRows(shareYm).forEach(function(r){
+      if(loc!=='전체'&&(r.loc||'(미지정)')!==loc) return; var C=r.cat||'기타'; o[C]=(o[C]||0)+r.amt; }); }catch(e){} return o; })();
+  var shareCatArr=Object.keys(shareCat).map(function(k){return {l:k,v:shareCat[k],c:mvCatCol(k)};}).sort(function(a,b){return b.v-a.v;});
+  var shareLocArr=Object.keys(shareLoc).map(function(k){return {l:k,v:shareLoc[k],c:'#2c4f7c'};}).sort(function(a,b){return b.v-a.v;});
+  var sharePanel='<div class="panel"><h3>구성비 (비중) <span style="font-size:11.5px;font-weight:600;color:#64748b">— '+mvEsc(mvYmLabel(shareYm))+' 기준'
+      +(cat!=='전체'?(' · 구분 '+mvEsc(cat)):'')+(loc!=='전체'?(' · 보관장소 '+mvEsc(loc)):'')+' · 막대를 누르면 그 항목으로 좁혀집니다</span></h3>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px">'
+      +'<div><div style="font-size:12.5px;font-weight:800;color:#1e3a5f;margin-bottom:6px">구분별 비중'
+        +(loc!=='전체'?('<span style="font-weight:600;color:#64748b"> · '+mvEsc(loc)+' 안에서</span>'):'')+'</div>'
+        +mvBars(shareCatArr,{labW:96,cls:'mvtrcat',sel:cat})+'</div>'
+      +'<div><div style="font-size:12.5px;font-weight:800;color:#1e3a5f;margin-bottom:6px">보관장소별 비중'
+        +(cat!=='전체'?('<span style="font-weight:600;color:#64748b"> · '+mvEsc(cat)+'만</span>'):'')+'</div>'
+        +mvBars(shareLocArr,{labW:96,cls:'mvtrloc',sel:loc})+'</div>'
+    +'</div></div>';
+
+  /* 월별 · 보관장소별 재고금액 + 비중 표 */
+  var locTbl=(function(){
+    var ms=series.filter(function(s2){return s2.has;});
+    if(!ms.length||!locsAll.length) return '';
+    var byM=ms.map(function(s2){ var o={}; mvRows(s2.ym).forEach(function(r){
+        if(cat!=='전체'&&r.cat!==cat) return; var L=r.loc||'(미지정)'; o[L]=(o[L]||0)+r.amt; }); return {ym:s2.ym,mo:s2.mo,by:o}; });
+    var sum={}, gTot=0;
+    byM.forEach(function(x){ Object.keys(x.by).forEach(function(L){ sum[L]=(sum[L]||0)+x.by[L]; gTot+=x.by[L]; }); });
+    var Ls=Object.keys(sum).sort(function(a,b){return sum[b]-sum[a];});
+    var TH2='padding:7px 9px;background:#1e3a5f;color:#fff;font-weight:700;font-size:13px;border:1px solid #16304f;white-space:nowrap';
+    var TD2='padding:6px 9px;border:1px solid #e2e8f0;font-size:13px;text-align:right';
+    var head2='<tr><th style="'+TH2+';text-align:left">기준월</th>'
+      +Ls.map(function(L){ var on=(loc===L); return '<th style="'+TH2+(on?';background:#0f2a4a':'')+'">'+mvEsc(L)+(on?' ●':'')+'</th>'; }).join('')
+      +'<th style="'+TH2+'">합계</th></tr>';
+    var body2=byM.map(function(x){
+      var t2=Ls.reduce(function(a,L){return a+(x.by[L]||0);},0);
+      return '<tr><td style="'+TD2+';text-align:left;font-weight:800;color:#1e3a5f">'+x.mo+'월</td>'
+        +Ls.map(function(L){ var v=x.by[L]||0, on=(loc===L);
+            return '<td style="'+TD2+(on?';background:#1e3a5f12;font-weight:800':'')+(v?'':';color:#cbd5e1')+'">'+(v?mvWon(v):'-')
+              +(v?('<span style="font-size:10.5px;color:#64748b;font-weight:600"> '+(t2?(v/t2*100).toFixed(1):'0.0')+'%</span>'):'')+'</td>'; }).join('')
+        +'<td style="'+TD2+';font-weight:800">'+mvWon(t2)+'</td></tr>';
+    }).join('');
+    var avg2='<tr><td style="'+TD2+';text-align:left;font-weight:800;background:#eef2f7;border-top:2px solid #94a3b8;color:#1e3a5f">평 균<span style="font-size:10.5px;font-weight:600;color:#64748b"> · '+byM.length+'개월</span></td>'
+      +Ls.map(function(L){ return '<td style="'+TD2+';font-weight:800;background:#eef2f7;border-top:2px solid #94a3b8">'+mvWon(sum[L]/byM.length)+'</td>'; }).join('')
+      +'<td style="'+TD2+';font-weight:800;background:#eef2f7;border-top:2px solid #94a3b8">'+mvWon(gTot/byM.length)+'</td></tr>';
+    var pct2='<tr><td style="'+TD2+';text-align:left;font-weight:800;background:#ecfdf5;color:#0f766e">비 중</td>'
+      +Ls.map(function(L){ return '<td style="'+TD2+';font-weight:800;background:#ecfdf5;color:#0f766e">'+(gTot?(sum[L]/gTot*100).toFixed(1):'0.0')+'%</td>'; }).join('')
+      +'<td style="'+TD2+';font-weight:800;background:#ecfdf5;color:#0f766e">100%</td></tr>';
+    return '<div class="panel"><h3>월별 · 보관장소별 재고금액 · 비중'+(cat!=='전체'?(' <span style="font-size:12px;font-weight:700;color:#1e3a5f">· 구분 '+mvEsc(cat)+'</span>'):'')+'</h3>'
+      +'<div style="overflow:auto"><table style="border-collapse:collapse;min-width:900px"><thead>'+head2+'</thead><tbody>'+body2+avg2+pct2+'</tbody></table></div>'
+      +'<div class="note" style="margin-top:9px">각 칸의 작은 숫자는 <b>그 달 안에서의 보관장소 비중</b>이고, 맨 아래 <b>비 중</b> 행은 <b>등록된 달 전체 합계 기준</b> 비중입니다. 위 <b>보관장소</b> 버튼을 누르면 그 장소만으로 그래프·표가 다시 계산됩니다.</div></div>';
+  })();
+
+  /* 구분별 비중 행 (등록된 달 합계 기준) */
+  var pctRow=(function(){
+    var invM=series.filter(function(s2){return s2.has;});
+    if(!invM.length) return '';
+    var tot2=invM.reduce(function(a,o){return a+o.total;},0);
+    var TDp=TD+';font-weight:800;background:#ecfdf5;color:#0f766e';
+    return '<tr><td style="'+TDp+';text-align:left">비 중<span style="font-size:10.5px;font-weight:600;color:#64748b"> · 등록 '+invM.length+'개월 합계 기준</span></td>'
+      +cats.map(function(c){ var v=invM.reduce(function(a,o){return a+(o.by[c]||0);},0);
+          return '<td style="'+TDp+'">'+(tot2?(v/tot2*100).toFixed(1):'0.0')+'%</td>'; }).join('')
+      +'<td style="'+TDp+'">100%</td>'
+      +'<td style="'+TD+';background:#ecfdf5"></td><td style="'+TD+';background:#ecfdf5"></td><td style="'+TD+';background:#ecfdf5"></td><td style="'+TD+';background:#ecfdf5"></td></tr>';
+  })();
   var loaded=have.length;
   var html=mvTabBar()+pickBar
     +'<div class="rhead" style="margin-bottom:8px"><span class="title">📈 '+yr+'년 월별 재고 추이 · 매출 대비</span>'
       +'<span class="meta">1~12월 · 재고 등록 '+loaded+'개월 · 기준 구분 <b>'+mvEsc(cat)+'</b> · 보관장소 <b>'+mvEsc(loc)+'</b>'+(avgR!=null?(' · 평균 매출대비 '+avgR.toFixed(2)+'개월'):'')+'</span></div>'
     +'<div class="panel"><h3>월 매출(막대) · '+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+'(추이선)'+(loc!=='전체'?(' <span style="font-size:12px;font-weight:700;color:#1e3a5f">· 보관장소 '+mvEsc(loc)+'</span>'):'')+'</h3>'+chart+'</div>'
-    +'<div class="panel"><h3>월별 · 구분별 재고금액 · 매출 대비'+(loc!=='전체'?(' <span style="font-size:12px;font-weight:700;color:#1e3a5f">· 보관장소 '+mvEsc(loc)+'</span>'):'')+'</h3><div style="overflow:auto"><table style="border-collapse:collapse;min-width:1100px"><thead>'+head+'</thead><tbody>'+body+avgRow+'</tbody></table></div>'
+    +sharePanel
+    +'<div class="panel"><h3>월별 · 구분별 재고금액 · 매출 대비'+(loc!=='전체'?(' <span style="font-size:12px;font-weight:700;color:#1e3a5f">· 보관장소 '+mvEsc(loc)+'</span>'):'')+'</h3><div style="overflow:auto"><table style="border-collapse:collapse;min-width:1100px"><thead>'+head+'</thead><tbody>'+body+avgRow+pctRow+'</tbody></table></div>'
     +'<div class="note" style="margin-top:9px">'+(loaded<2
       ? '재고는 <b>'+have.map(function(s){return s.mo+'월';}).join(', ')+'</b>만 등록되어 있고 나머지 달은 0으로 표시했습니다. 상단 <b>📁 파일·관리 ▸ 월 재고현황</b>에서 다른 달 파일을 추가하면 그 달 칸이 채워지고 추이선이 이어집니다.'
       : '전월대비는 <b>등록된 달끼리만</b> 비교합니다(미등록 달은 건너뜁니다). 표 맨 아래 <b>평 균</b> 행은 재고는 <b>등록된 달</b>, 매출·매입은 <b>값이 있는 달</b>만으로 평균을 냅니다.')
       +'<br><b>매출대비</b>는 그 달 말 재고를 <b>그 달 매출</b>로 나눈 값으로, <b>재고가 몇 개월치 매출에 해당하는가</b>를 뜻합니다. '
       +'막대(매출)·재고 추이선·<b style="color:#ea580c">매입 추이선</b>은 모두 <b>같은 눈금(억원)</b>이라 높낮이를 그대로 비교하실 수 있습니다. 재고선이 막대보다 높으면 그 달 재고가 매출보다 크다는 뜻이고, <b style="color:#ea580c">매입선이 매출 막대를 계속 웃돌면</b> 사들이는 속도가 파는 속도보다 빠르다는 신호입니다(재고선이 함께 올라갑니다). 매입액은 <b>매입 분석 도구</b>에서 동기화된 월별 매입 합계입니다. '
       +'매출은 그대로인데 추이선만 올라가면 <b>과잉 매입 또는 소진 실패</b>, 매출이 늘어도 추이선이 평평하면 <b>회전이 개선</b>된 것입니다. '
-      +'구분 버튼으로 원자재만 놓고 보면 소재 선매입 시점이, 제품만 놓고 보면 출하 지연 여부가 드러납니다.</div></div>';
+      +'구분 버튼으로 원자재만 놓고 보면 소재 선매입 시점이, 제품만 놓고 보면 출하 지연 여부가 드러납니다.<br>'
+      +'표 맨 아래 <b style="color:#0f766e">비 중</b> 행은 등록된 달 <b>합계 기준 구분별 구성비</b>입니다.</div></div>'
+    +locTbl;
 
   renderCustom(html,function(){ try{setGlobalBar(false);}catch(e){} mvBind();
     document.querySelectorAll('#result .mvtychip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.trendYear=b.dataset.v; mvSave(); mvRender(); }); });
