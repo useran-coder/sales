@@ -7828,30 +7828,46 @@ function invLastStock(){
     var rows=(typeof mvRows==='function')?mvRows(ym):[];
     var nsp=function(x){ return String(x==null?'':x).toLowerCase().replace(/\s+/g,'').replace(/[\u00d7*]/g,'x'); };
     var byCode=new Map(), byKey=new Map();
+    var add=function(m,k,r){
+      var o=m.get(k); if(!o){o={qty:0,cats:{},locs:{}};m.set(k,o);}
+      o.qty+=(+r.stock||0);
+      var C=r.cat||'기타', L=r.loc||'(미지정)';
+      o.cats[C]=(o.cats[C]||0)+(+r.amt||0)+1; o.locs[L]=(o.locs[L]||0)+(+r.amt||0)+1;
+      return o;
+    };
     rows.forEach(function(r){
       var c=String(r.code||'').trim(); if(!c) return;
-      var q=+r.stock||0;
-      byCode.set(c,(byCode.get(c)||0)+q);
-      var k=c+'\u2502'+nsp(r.spec);
-      byKey.set(k,(byKey.get(k)||0)+q);
+      add(byCode,c,r);
+      add(byKey,c+'\u2502'+nsp(r.spec),r);
     });
+    var top=function(m){ var b='',v=-1; Object.keys(m||{}).forEach(function(k){ if(m[k]>v){v=m[k];b=k;} }); return b; };
     var pp=String(ym).split('-');
+    var hit=function(code,spec){
+      var c=String(code||'').trim(); if(!c) return null;
+      var k=c+'\u2502'+nsp(spec);
+      if(byKey.has(k)) return byKey.get(k);
+      if(byCode.has(c)) return byCode.get(c);
+      return null; };
     var v={ ym:ym, label:(+pp[1])+'월재고', title:pp[0]+'년 '+(+pp[1])+'월 재고현황',
-      get:function(code,spec){
-        var c=String(code||'').trim(); if(!c) return null;
-        var k=c+'\u2502'+nsp(spec);
-        if(byKey.has(k)) return byKey.get(k);
-        if(byCode.has(c)) return byCode.get(c);
-        return null; } };
+      get:function(code,spec){ var o=hit(code,spec); return o?o.qty:null; },
+      /* v465 : 구분·보관장소 버튼용 — 재고현황의 구분/보관장소를 품번(·규격)으로 찾아준다 */
+      info:function(code,spec){ var o=hit(code,spec); if(!o)return null;
+        return {qty:o.qty, cat:top(o.cats)||'기타', loc:top(o.locs)||'(미지정)'}; } };
     invLastStock._k=ck; invLastStock._v=v;
     return v;
   }catch(e){ return null; }
 }
 function safetyStock(){
   state.sortKey=null; state._search='';
-  state.inv.actual=state.inv.actual||{}; state.inv.stab=state.inv.stab||'rec'; state.inv.exclude=state.inv.exclude||{};
+  /* v467 : 화면을 그릴 때마다 state.inv 에 기본값을 써 넣으면, 60초마다 도는 자동 동기화가
+     '서버 자료와 달라졌다'고 판단해 화면을 계속 다시 그렸습니다(가만히 있어도 화면이 움직임).
+     그리기 단계에서는 아무것도 쓰지 않고 읽기만 합니다 — 값은 사용자가 실제로 바꿀 때만 저장합니다. */
+  const INV=state.inv||(state.inv={});
+  const ACTUAL=INV.actual||{}, EXCL=INV.exclude||{};
   const IST=invLastStock(); const ACT_T=IST?IST.label:'실재고';
-  const Zmap={'90':1.28,'95':1.65,'99':2.33}; const z=Zmap[state.inv.z]||1.65; const lt=Math.max(1,+state.inv.lt||14); const ltM=lt/30;
+  /* v465 : 서비스수준이 지정되지 않아 제목에 'undefined%'가 나오던 문제 — 기본값 95%로 확정 */
+  const Zmap={'90':1.28,'95':1.65,'99':2.33};
+  const zPct=Zmap[INV.z]?INV.z:'95'; const z=Zmap[zPct]; const lt=Math.max(1,+INV.lt||14); const ltM=lt/30;
   const allYM=[...new Set(CUR.map(r=>r.ym))].sort(); const endYM=allYM[allYM.length-1]||'';
   const isInner=r=>/상하\s*보강|이너\s*프레임/.test(r.name||'');
   const m=new Map();
@@ -7866,20 +7882,42 @@ function safetyStock(){
     const ss=Math.max(0,z*sd*Math.sqrt(ltM)); const rop=avg*ltM+ss; const monRec=Math.round(avg+ss);
     const specDisp=(o.spec||'(규격없음)')+((o.inner&&o.len!=null)?(' '+o.len):'');
     let exReason='';
-    if(state.inv.exclude[o.pk]) exReason='수동 제외';
+    if(EXCL[o.pk]) exReason='수동 제외';
     else if(/상하보강|이너프레임/.test(o.name||'')) exReason=(/상하보강/.test(o.name||'')?'상하보강':'이너프레임');
     else if(isLaserScope(o.name)) exReason='레이저/(L)';
     else if(isNonStd(o.spec,o.name,o.code)) exReason='비규격';
     else if(o.dates.size<=1) exReason='단발성(1회)';
-    const manQty=(state.inv.actual[o.pk]!=null&&state.inv.actual[o.pk]!=='')?+state.inv.actual[o.pk]:null;
-    const autoQty=IST?IST.get(o.code,o.spec):null;
+    const manQty=(ACTUAL[o.pk]!=null&&ACTUAL[o.pk]!=='')?+ACTUAL[o.pk]:null;
+    const _inf=IST?IST.info(o.code,o.spec):null;
+    const autoQty=_inf?_inf.qty:null;
+    const invCat=_inf?_inf.cat:'(재고현황 없음)', invLoc=_inf?_inf.loc:'(재고현황 없음)';
     const actual=(manQty!=null)?manQty:autoQty;
     const shortage=(actual!=null)?Math.max(0,Math.ceil(rop)-actual):null;
-    return {key:o.pk,label:`${o.name||o.code||'품목'}${specDisp?` · ${specDisp}`:''}`,code:o.code,name:o.name,spec:o.spec,specDisp,inner:o.inner,len:o.len,avg,sd,cv,interval,orders:ds.length,qty:o.qty,ss:Math.ceil(ss),rop:Math.ceil(rop),monRec,exReason,manual:exReason==='수동 제외',actual,manQty,autoQty,shortage,_search:o.code+' '+o.name+' '+o.spec};
+    return {key:o.pk,label:`${o.name||o.code||'품목'}${specDisp?` · ${specDisp}`:''}`,code:o.code,name:o.name,spec:o.spec,specDisp,inner:o.inner,len:o.len,avg,sd,cv,interval,orders:ds.length,qty:o.qty,ss:Math.ceil(ss),rop:Math.ceil(rop),monRec,exReason,manual:exReason==='수동 제외',actual,manQty,autoQty,invCat,invLoc,shortage,_search:o.code+' '+o.name+' '+o.spec};
   }).filter(o=>o.avg>0);
-  const recArr=rows.filter(o=>!o.exReason).sort((a,b)=>b.avg-a.avg);
-  const excArr=rows.filter(o=>o.exReason).sort((a,b)=>b.qty-a.qty);
-  const tab=state.inv.stab==='exc'?'exc':'rec'; const arr=tab==='exc'?excArr:recArr;
+  /* ── v465 : 구분 · 보관장소 버튼 (월 재고현황의 구분·보관장소를 품번으로 연결) ── */
+  const catCnt={},locCntAll={};
+  rows.forEach(o=>{catCnt[o.invCat]=(catCnt[o.invCat]||0)+1;});
+  const catOrder=['제품','반제품','부자재','상품','OEM','원자재','기타','(재고현황 없음)'];
+  const catsAll=Object.keys(catCnt).sort((a,b)=>{const ia=catOrder.indexOf(a),ib=catOrder.indexOf(b);return (ia<0?98:ia)-(ib<0?98:ib);});
+  let fcat=INV.cat||'전체'; if(fcat!=='전체'&&catsAll.indexOf(fcat)<0)fcat='전체';
+  const catRows=(fcat==='전체')?rows:rows.filter(o=>o.invCat===fcat);
+  catRows.forEach(o=>{locCntAll[o.invLoc]=(locCntAll[o.invLoc]||0)+1;});
+  const locsAll=Object.keys(locCntAll).sort((a,b)=>locCntAll[b]-locCntAll[a]);
+  let floc=INV.loc||'전체'; if(floc!=='전체'&&locsAll.indexOf(floc)<0)floc='전체';
+  const scoped=catRows.filter(o=>floc==='전체'||o.invLoc===floc);
+  const SCOPE=(fcat==='전체'?'전체 구분':fcat)+' · '+(floc==='전체'?'전체 보관장소':floc);
+  const invChip=(cls,v,on,n2,col)=>`<button class="${cls}" data-v="${esc(v)}" style="border:1px solid ${col};background:${on?col:'#fff'};color:${on?'#fff':col};font-weight:${on?800:700};font-size:12.5px;padding:5px 12px;border-radius:15px;font-family:inherit;white-space:nowrap">${esc(v)} <b style="font-size:12px">${won(n2)}</b></button>`;
+  const catChips=['전체'].concat(catsAll).map(v=>invChip('sscchip',v,fcat===v,v==='전체'?rows.length:(catCnt[v]||0),fcat===v?'#1e3a5f':'#475569')).join('');
+  const locChips=['전체'].concat(locsAll).map(v=>invChip('sslchip',v,floc===v,v==='전체'?catRows.length:(locCntAll[v]||0),floc===v?'#1e3a5f':'#475569')).join('');
+  const pickBar=`<div style="display:flex;flex-direction:column;gap:7px;margin:2px 0 8px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">구분</b>${catChips}</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">보관장소</b>${locChips}</div>
+      <div class="sub2" style="font-size:11.5px;color:#64748b">구분·보관장소는 <b>${IST?esc(IST.title):'월 재고현황'}</b>의 품번(·규격)을 기준으로 연결했습니다. 재고현황에 없는 품번은 <b>(재고현황 없음)</b>으로 묶입니다.</div>
+    </div>`;
+  const recArr=scoped.filter(o=>!o.exReason).sort((a,b)=>b.avg-a.avg);
+  const excArr=scoped.filter(o=>o.exReason).sort((a,b)=>b.qty-a.qty);
+  const tab=INV.stab==='exc'?'exc':'rec'; const arr=tab==='exc'?excArr:recArr;
   const actCell=o=>{
     const auto=(o.manQty==null&&o.autoQty!=null);
     const v=(o.manQty!=null)?o.manQty:(o.autoQty!=null?o.autoQty:'');
@@ -7917,22 +7955,36 @@ function safetyStock(){
       {k:'excl',t:'제외',cell:exclCell,sortVal:o=>0} ];
   }
   const seg=`<div class="seg" id="ssTab"><button data-v="rec" class="${tab==='rec'?'on':''}" style="${tab==='rec'?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':'color:#1e3a5f'}">🛡️ 안전재고 권장 (${won(recArr.length)})</button><button data-v="exc" class="${tab==='exc'?'on':''}" style="${tab==='exc'?'background:#b45309;color:#fff;border-color:#b45309':'color:#b45309'}">🚫 안전재고 제외 (${won(excArr.length)})</button></div>`;
-  const controls=`<div class="ctrlbar" style="gap:12px;flex-wrap:wrap">${seg}<span class="cl">서비스수준 <select id="invZ"><option value="90"${state.inv.z==='90'?' selected':''}>90%</option><option value="95"${state.inv.z==='95'?' selected':''}>95%</option><option value="99"${state.inv.z==='99'?' selected':''}>99%</option></select></span><span class="cl">리드타임 <input type="number" id="invLT" value="${lt}" min="1" max="120" style="width:60px"> 일</span><span class="sub2">SS=Z×σ(월수요)×√(LT/30) · 월권장=월평균+SS · 부족=ROP−${ACT_T}</span>${IST?`<span class="sub2" style="color:#7c3aed;font-weight:700">📅 ${IST.title}의 재고수량이 <b>${ACT_T}</b> 열에 자동 표시됩니다(보라색). 직접 입력하면 그 값이 우선합니다.</span>`:''}</div>`;
+  const legend=`<div style="margin:2px 0 9px;padding:9px 12px;border:1px solid #dbe3ee;border-radius:9px;background:#f8fafc;font-size:12.5px;line-height:1.85;color:#334155">
+    <b style="color:#1e3a5f">표 용어</b>
+    · <b>월평균 출고량</b> 최근 거래로 계산한 한 달 평균 나가는 수량
+    · <b style="color:#b45309">수요변동(CV)</b> 달마다 출고량이 얼마나 들쭉날쭉한지(표준편차÷월평균). <b>40% 미만</b>이면 안정적, <b>80% 이상</b>이면 변동이 커서 안전재고를 넉넉히 잡아야 합니다
+    · <b>평균 발주주기</b> 출고와 출고 사이 평균 간격(일)
+    · <b style="color:#1e3a5f">권장 안전재고(SS)</b> 수요가 튀거나 납기가 늦어질 때를 대비해 늘 남겨 두는 여유수량 = 안전계수(Z)×월수요 표준편차×√(리드타임÷30)
+    · <b style="color:#b45309">재발주점(ROP)</b> <b>이 수량까지 줄면 바로 발주</b>해야 하는 기준선 = 리드타임 동안 나갈 양 + 안전재고. 재고가 ROP 아래로 내려가면 입고 전에 품절될 위험이 있습니다
+    · <b style="color:#0d9488">월 권장재고</b> 월평균 출고량 + 안전재고 (한 달 운영에 적정한 보유량)
+    · <b style="color:#dc2626">부족수량</b> ROP − ${ACT_T} (0보다 크면 지금 발주 대상)
+    <br><span style="color:#64748b">지금 설정 : 서비스수준 <b>${zPct}%</b>(품절 없이 대응할 확률, Z=${z}) · 리드타임 <b>${lt}일</b> — 위 선택으로 바꾸면 안전재고·재발주점이 다시 계산됩니다.</span>
+  </div>`;
+  const controls=`<div class="ctrlbar" style="gap:12px;flex-wrap:wrap">${seg}<span class="cl">서비스수준 <select id="invZ"><option value="90"${zPct==='90'?' selected':''}>90%</option><option value="95"${zPct==='95'?' selected':''}>95%</option><option value="99"${zPct==='99'?' selected':''}>99%</option></select></span><span class="cl">리드타임 <input type="number" id="invLT" value="${lt}" min="1" max="120" style="width:60px"> 일</span><span class="sub2">SS=Z×σ(월수요)×√(LT/30) · 월권장=월평균+SS · 부족=ROP−${ACT_T}</span>${IST?`<span class="sub2" style="color:#7c3aed;font-weight:700">📅 ${IST.title}의 재고수량이 <b>${ACT_T}</b> 열에 자동 표시됩니다(보라색). 직접 입력하면 그 값이 우선합니다.</span>`:''}</div>`;
   const bindActual=()=>{
-    $('#result').querySelectorAll('.invact').forEach(inp=>{ inp.addEventListener('mousedown',e=>e.stopPropagation()); inp.addEventListener('change',e=>{ const k=e.target.dataset.k; const v=String(e.target.value||'').replace(/[^0-9.\-]/g,'').trim(); if(v===''||isNaN(+v))delete state.inv.actual[k]; else state.inv.actual[k]=+v; if(typeof logEdit==='function')logEdit('재고',k+' 실재고 변경'); saveSettings(); safetyStock(); }); });
-    $('#result').querySelectorAll('.ssexcl').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ state.inv.exclude[e.target.dataset.k]=1; if(typeof logEdit==='function')logEdit('재고',(e.target.dataset.k||'')+' 재고제외'); saveSettings(); safetyStock(); }); });
-    $('#result').querySelectorAll('.ssunexcl').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ delete state.inv.exclude[e.target.dataset.k]; if(typeof logEdit==='function')logEdit('재고',(e.target.dataset.k||'')+' 재고제외 해제'); saveSettings(); safetyStock(); }); });
+    $('#result').querySelectorAll('.invact').forEach(inp=>{ inp.addEventListener('mousedown',e=>e.stopPropagation()); inp.addEventListener('change',e=>{ const k=e.target.dataset.k; const v=String(e.target.value||'').replace(/[^0-9.\-]/g,'').trim(); state.inv.actual=state.inv.actual||{}; if(v===''||isNaN(+v))delete state.inv.actual[k]; else state.inv.actual[k]=+v; if(typeof logEdit==='function')logEdit('재고',k+' 실재고 변경'); saveSettings(); safetyStock(); }); });
+    $('#result').querySelectorAll('.ssexcl').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ state.inv.exclude=state.inv.exclude||{}; state.inv.exclude[e.target.dataset.k]=1; if(typeof logEdit==='function')logEdit('재고',(e.target.dataset.k||'')+' 재고제외'); saveSettings(); safetyStock(); }); });
+    $('#result').querySelectorAll('.ssunexcl').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ state.inv.exclude=state.inv.exclude||{}; delete state.inv.exclude[e.target.dataset.k]; if(typeof logEdit==='function')logEdit('재고',(e.target.dataset.k||'')+' 재고제외 해제'); saveSettings(); safetyStock(); }); });
   };
-  const onMount=()=>{ $('#result').querySelectorAll('#ssTab button').forEach(b=>b.addEventListener('click',()=>{ state.inv.stab=b.dataset.v; safetyStock(); })); const zs=$('#invZ'); zs&&zs.addEventListener('change',e=>{state.inv.z=e.target.value; if(typeof logEdit==='function')logEdit('재고','안전계수(Z) 변경'); saveSettings(); safetyStock();}); const li=$('#invLT'); li&&li.addEventListener('change',e=>{ let v=parseInt(e.target.value)||14; v=Math.min(120,Math.max(1,v)); state.inv.lt=v; if(typeof logEdit==='function')logEdit('재고','리드타임 변경'); saveSettings(); safetyStock(); }); bindActual(); };
+  const onMount=()=>{ $('#result').querySelectorAll('#ssTab button').forEach(b=>b.addEventListener('click',()=>{ state.inv.stab=b.dataset.v; saveSettings(); safetyStock(); }));
+    $('#result').querySelectorAll('.sscchip').forEach(b=>b.addEventListener('click',()=>{ state.inv.cat=b.dataset.v; state.inv.loc='전체'; saveSettings(); safetyStock(); }));
+    $('#result').querySelectorAll('.sslchip').forEach(b=>b.addEventListener('click',()=>{ state.inv.loc=b.dataset.v; saveSettings(); safetyStock(); })); const zs=$('#invZ'); zs&&zs.addEventListener('change',e=>{state.inv.z=e.target.value; if(typeof logEdit==='function')logEdit('재고','안전계수(Z) 변경'); saveSettings(); safetyStock();}); const li=$('#invLT'); li&&li.addEventListener('change',e=>{ let v=parseInt(e.target.value)||14; v=Math.min(120,Math.max(1,v)); state.inv.lt=v; if(typeof logEdit==='function')logEdit('재고','리드타임 변경'); saveSettings(); safetyStock(); }); bindActual(); };
   const note = tab==='exc'
     ? `<b>안전재고 제외</b> 품목입니다. <span class="badge b-org" style="font-size:10px">레이저/(L)</span> <span class="badge b-org" style="font-size:10px">비규격</span> <span class="badge b-org" style="font-size:10px">단발성(1회)</span> 자동 제외 및 <span class="badge b-blu" style="font-size:10px">수동 제외</span>가 포함됩니다. 수동 제외 항목은 <b>해제</b>에 체크하면 권장으로 복귀합니다.`
     : `<b>출고 데이터로 추정한 권장 안전재고</b>입니다. 레이저/(L)·비규격·단발성은 자동 제외됩니다. 상하보강·이너프레임은 <b>비고(내역)의 [길이]를 규격 뒤에 표기</b>하며 <b>같은 품번이라도 길이가 다르면 별도 품목</b>으로 분석합니다. <b>${ACT_T}</b>는 <b>${IST?IST.title:'월 재고현황'}</b>의 품번(·규격) 재고수량을 자동으로 가져온 값이며(보라색), 칸에 직접 입력하면 그 값이 우선합니다. 이를 기준으로 <b>부족수량</b>(ROP−${ACT_T})이 계산됩니다. 오른쪽 <b>제외</b> 체크 시 제외 목록으로 이동합니다. <b>행 클릭</b> 시 거래처별 출고.`;
-  render('🛡️ 안전재고 분석 (출고 데이터 기반)', `${tab==='exc'?'제외':'권장'} ${won(arr.length)}개 · 전체거래(${allYM[0]||''}~${endYM}) · 서비스수준 ${state.inv.z}% · 리드타임 ${lt}일`, arr, cols, tab==='exc'?'qty':'avg', note,
-    {controlsHtml:controls,onMount,afterDraw:bindActual,tableClass:'inv-13',drill:{by:'cust',byLabel:'거래처',monthlyAvgQty:true,rowsFor:o=>CUR.filter(r=>{ const inner=isInner(r); const len=inner?bigoLen(r.bigo):null; const pk=(r.code||'(미상)')+'│'+(r.spec||'')+(inner?('│L'+(len!=null?len:'?')):''); return pk===o.key; })}});
+  render('🛡️ 안전재고 분석 (출고 데이터 기반)', `${SCOPE} · ${tab==='exc'?'제외':'권장'} ${won(arr.length)}개 · 전체거래(${allYM[0]||''}~${endYM}) · 서비스수준 ${zPct}% · 리드타임 ${lt}일`, arr, cols, tab==='exc'?'qty':'avg', note,
+    {controlsHtml:pickBar+legend+controls,onMount,afterDraw:bindActual,tableClass:'inv-13',drill:{by:'cust',byLabel:'거래처',monthlyAvgQty:true,rowsFor:o=>CUR.filter(r=>{ const inner=isInner(r); const len=inner?bigoLen(r.bigo):null; const pk=(r.code||'(미상)')+'│'+(r.spec||'')+(inner?('│L'+(len!=null?len:'?')):''); return pk===o.key; })}});
 }
 function disposalReview(){
   state.sortKey=null; state._search='';
-  state.inv.actual=state.inv.actual||{}; state.inv.dispose=state.inv.dispose||{};
+  const INV=state.inv||(state.inv={});
+  const ACTUAL=INV.actual||{}, DISPOSE=INV.dispose||{};   /* v467 : 그리기 단계에서는 쓰지 않는다 */
   const IST=invLastStock(); const ACT_T=IST?IST.label:'실재고';
   const allYM=[...new Set(CUR.map(r=>r.ym))].sort(); const endYM=allYM[allYM.length-1]||'';
   let ref=0; CUR.forEach(r=>{ if(+r.d>ref)ref=+r.d; }); if(!ref)ref=+TODAY;
@@ -7952,7 +8004,7 @@ function disposalReview(){
     else if(q12>0&&q6===0){ verdict='주의'; reason='최근 6개월 무출고'; }
     else if(prev6>0&&q6>0&&q6<prev6*0.2){ verdict='주의'; reason=`출고 급감(▼${Math.round((1-q6/prev6)*100)}%)`; }
     else { verdict='정상'; reason=gap<=90?'최근 거래 활발':'정상 범위'; }
-    const manQty=(state.inv.actual[o.pk]!=null&&state.inv.actual[o.pk]!=='')?+state.inv.actual[o.pk]:null;
+    const manQty=(ACTUAL[o.pk]!=null&&ACTUAL[o.pk]!=='')?+ACTUAL[o.pk]:null;
     const autoQty=IST?IST.get(o.code,o.spec):null;
     const actual=(manQty!=null)?manQty:autoQty;
     const disposeQty=(actual!=null&&actual>0&&verdict!=='정상')?actual:0;
@@ -7987,7 +8039,7 @@ function disposalReview(){
     {k:'disposeQty',t:'악성/폐기수량',cell:o=>o.disposeQty>0?`<b style="color:#7c3aed">${won(o.disposeQty)}</b>`:(o.actual!=null?'<span style="color:var(--green)">정상</span>':'<span class="sub2">-</span>'),sortVal:o=>o.disposeQty},
     {k:'reason',t:'비고(사유)',cls:'l',cell:o=>`<span class="sub2">${esc(o.reason)}</span>`} ];
   const bindActual=()=>{ $('#result').querySelectorAll('.dispchk').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ const k=e.target.dataset.k; state.inv.dispose=state.inv.dispose||{}; if(e.target.checked)state.inv.dispose[k]=true; else delete state.inv.dispose[k]; if(typeof logEdit==='function')logEdit('재고',k+' 폐기체크'); saveSettings(); disposalReview(); }); }); $('#result').querySelectorAll('.invact').forEach(inp=>{ inp.addEventListener('mousedown',e=>e.stopPropagation()); inp.addEventListener('change',e=>{ const k=e.target.dataset.k; const v=String(e.target.value||'').replace(/[^0-9.\-]/g,'').trim(); if(v===''||isNaN(+v))delete state.inv.actual[k]; else state.inv.actual[k]=+v; if(typeof logEdit==='function')logEdit('재고',k+' 실재고 변경'); saveSettings(); disposalReview(); }); }); };
-  const onMount=()=>{ $('#result').querySelectorAll('.crchip').forEach(b=>b.addEventListener('click',()=>{ state.inv.dfilter=b.dataset.f; disposalReview(); })); bindActual(); };
+  const onMount=()=>{ $('#result').querySelectorAll('.crchip').forEach(b=>b.addEventListener('click',()=>{ state.inv.dfilter=b.dataset.f; saveSettings(); disposalReview(); })); bindActual(); };
   render('🗑️ 폐기검토 분석 (출고 + '+ACT_T+')', `제품 ${won(arr.length)}개 · 폐기검토 ${cnt['폐기검토']} · 주의 ${cnt['주의']} · 악성재고수량 ${won(disposeTot)} · 기준일 ${fmtD(new Date(ref))}`, show, cols, null,
     `<b>장기 미거래·단발성·출고 급감</b> 품목을 자동 판정합니다. <b>${ACT_T}</b>는 <b>${IST?IST.title:'월 재고현황'}</b>의 품번(·규격) 재고수량을 자동으로 가져온 값입니다(보라색·직접 입력 시 그 값 우선). 판정이 <b>폐기검토·주의</b>인데 재고가 남아있는 품목을 <span class="badge" style="background:#7c3aed;color:#fff">악성재고</span>로 잡아 <b>폐기수량</b>을 표시합니다. 재고값은 안전재고 화면과 공유됩니다(품번·규격 기준). <b>행 클릭</b> 시 거래처별 출고.`,
     {controlsHtml:controls,onMount,afterDraw:bindActual,tableClass:'inv-13',drill:{by:'cust',byLabel:'거래처',rowsFor:o=>CUR.filter(r=>(r.code||'(미상)')+'│'+(r.spec||'')===o.key)}});
@@ -9868,7 +9920,11 @@ function gsMerge(d,skipRender){
   if(typeof buildHeadMonthly==='function')buildHeadMonthly();
   _gsApplying=true;
   saveSettings(); state._mgrCountsCache=null; if(typeof buildSummary==='function')buildSummary();
-  if(!skipRender&&state.act&&CUR.length){ if(state._inDrill){ state._syncDeferred=true; } else { runAct(); } }
+  if(!skipRender&&state.act&&CUR.length){
+    if(state._inDrill){ state._syncDeferred=true; }
+    else if(state.act==='minv'||state.act==='rawinv'){ /* v462 : 재고 화면은 동기화로 다시 그리지 않는다 */ }
+    else { runAct(); }
+  }
   const _ned=document.getElementById('fcNotesEd');
   if(_ned){ const _nf={main:'notesHtml',sales:'notesSales',tech:'notesTech'}[state.fc.notesTab||'main']; _ned.innerHTML=state.fc[_nf]||''; }
   setTimeout(()=>{_gsApplying=false;},700);
@@ -10247,11 +10303,23 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
       }else p[k]=clone(snap[n]);
     });
   }
-  function rerender(){
+  var _lastRenderSig='';
+  function rerender(force){
     try{if(typeof syncExcludedCustMaps==='function')syncExcludedCustMaps()}catch(_){}
     try{if(typeof buildHeadMonthly==='function')buildHeadMonthly()}catch(_){}
     try{state._mgrCountsCache=null;if(typeof buildSummary==='function')buildSummary()}catch(_){}
-    try{if(state.act&&typeof CUR!=='undefined'&&CUR.length&&typeof runAct==='function'){ if(state._inDrill){ state._syncDeferred=true; } else { runAct(); } }}catch(_){}
+    /* v462 : 60초마다 도는 자동 동기화가 아무 변화 없이도 화면을 다시 그려
+       (스크롤이 튀고 새로고침처럼 보임) → 실제로 바뀐 게 있을 때만 다시 그린다.
+       재고 화면(월 재고현황·원자재 재고현황)은 동기화 대상이 아니므로 절대 다시 그리지 않는다. */
+    try{if(state.act&&typeof CUR!=='undefined'&&CUR.length&&typeof runAct==='function'){
+      var _sig=''; try{ _sig=JSON.stringify(currentFull()); }catch(_e){}
+      var _same=(!force&&!!_sig&&_sig===_lastRenderSig);
+      if(_sig)_lastRenderSig=_sig;
+      var _invPage=(state.act==='minv'||state.act==='rawinv');
+      if(state._inDrill){ state._syncDeferred=true; }
+      else if(_same||_invPage){ /* 변경 없음 · 재고 화면 → 화면 그대로 둔다 */ }
+      else { runAct(); }
+    }}catch(_){}
     try{var ed=id('fcNotesEd');if(ed){var nf={main:'notesHtml',sales:'notesSales',tech:'notesTech'}[state.fc.notesTab||'main'];ed.innerHTML=state.fc[nf]||''}}catch(_){}
     try{if(typeof refreshElogBtns==='function')refreshElogBtns()}catch(_){}
   }
@@ -10267,7 +10335,11 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
       return _gsBase;
     })();return baseReadyPromise;
   }
-  async function applyAndPersist(snap){_gsApplying=true;internalPersist=true;try{restoreFull(snap);rerender();await saveSettings()}finally{internalPersist=false;_gsApplying=false}}
+  async function applyAndPersist(snap){_gsApplying=true;internalPersist=true;try{
+    /* v462 : '적용 전' 상태를 기준으로 잡아 두면, 서버 자료를 적용해도 달라진 게 없을 때
+       rerender() 가 화면을 다시 그리지 않는다(스크롤 튐·새로고침처럼 보이는 현상 방지). */
+    try{ _lastRenderSig=JSON.stringify(currentFull()); }catch(_e){}
+    restoreFull(snap);rerender();await saveSettings()}finally{internalPersist=false;_gsApplying=false}}
 
   function setSuccess(op,meta){
     state.gsync=state.gsync||{};var t=nowIso();state.gsync.lastAttempt=t;state.gsync.lastResult='ok';state.gsync.lastSync=t;
@@ -11339,14 +11411,31 @@ function mergePurchaseShared(target,source){
         if(!Array.isArray(row.m))row.m=Array(12).fill('');
         if(!Array.isArray(row.w)&&Array.isArray(sr.w))row.w=Array(12).fill(0);
         for(var mi=0;mi<12;mi++){
-          var sv=String(sr.m&&sr.m[mi]!=null?sr.m[mi]:'').trim();if(sv==='')continue;
           var field='m'+mi,old=String(row.m[mi]==null?'':row.m[mi]).trim();
-          var newer=cellStamp(src,y,k,sid,field)>=cellStamp(out,y,k,row._id,field);
+          var sv=String(sr.m&&sr.m[mi]!=null?sr.m[mi]:'').trim();
+          var sStamp=cellStamp(src,y,k,sid,field), oStamp=cellStamp(out,y,k,row._id,field);
+          var sDel=n0((src._cellDeleted||{})[y+'|'+k+'|'+sid+'|'+field]);
+          if(sv===''){
+            /* v463 : 매입 도구에서 지운 칸을 그대로 반영한다.
+               (예전에는 빈 칸을 건너뛰어 매출 도구에 옛 단가가 계속 남았다) */
+            if(old==='')continue;
+            if(sDel>oStamp||(sStamp>0&&sStamp>oStamp)){
+              row.m[mi]=''; cells++;
+              if(Array.isArray(row.w))row.w[mi]=0;
+              out._cellUpdated[y+'|'+k+'|'+row._id+'|'+field]=Math.max(sDel,sStamp,now);
+              if(!po(out._cellDeleted))out._cellDeleted={};
+              out._cellDeleted[y+'|'+k+'|'+row._id+'|'+field]=Math.max(sDel,sStamp,now);
+            }
+            continue;
+          }
+          if(sDel>sStamp&&sDel>oStamp){ continue; }   /* 지운 뒤 다시 안 채운 칸 */
+          var newer=sStamp>=oStamp;
           if(old===''||newer){
             if(old!==sv)cells++;
             row.m[mi]=sv;
             if(Array.isArray(sr.w)){if(!Array.isArray(row.w))row.w=Array(12).fill(0);row.w[mi]=n0(sr.w[mi])}
-            out._cellUpdated[y+'|'+k+'|'+row._id+'|'+field]=Math.max(cellStamp(src,y,k,sid,field),now);
+            out._cellUpdated[y+'|'+k+'|'+row._id+'|'+field]=Math.max(sStamp,now);
+            if(out._cellDeleted)delete out._cellDeleted[y+'|'+k+'|'+row._id+'|'+field];
           }
         }
       });
@@ -11355,6 +11444,33 @@ function mergePurchaseShared(target,source){
   Object.keys(src.marketPrices||{}).forEach(function(y){
     if(!po(out.marketPrices[y]))out.marketPrices[y]={};
     Object.keys(src.marketPrices[y]||{}).forEach(function(k){if(n0(src.marketPrices[y][k])>0)out.marketPrices[y][k]=src.marketPrices[y][k]});
+  });
+  /* v463 : 매입 도구의 삭제표시(tombstone)를 받아 적용한다 — 지운 업체 행·지운 칸이 매출 도구에도 반영된다. */
+  ['_cellUpdated','_cellDeleted','_rowDeleted','_extraUpdated','_extraDeleted'].forEach(function(f){
+    if(!po(out[f]))out[f]={};
+    Object.keys((src&&src[f])||{}).forEach(function(q){ if(n0(src[f][q])>n0(out[f][q]))out[f][q]=src[f][q]; });
+  });
+  /* 지운 칸 비우기 */
+  Object.keys(out._cellDeleted||{}).forEach(function(key){
+    var T=n0(out._cellDeleted[key]); if(!T)return;
+    var pp=String(key).split('|'),y=pp[0],k=pp[1],id=pp[2],f=pp[3];
+    if(!/^m\d+$/.test(f||''))return;
+    if(n0((out._cellUpdated||{})[key])>T)return;      /* 삭제 이후 다시 입력한 칸은 살린다 */
+    var mi=+f.slice(1),rows=(out.years[y]&&out.years[y][k])||[];
+    for(var i2=0;i2<rows.length;i2++){ if(String(rows[i2]._id||'')===id){ if(Array.isArray(rows[i2].m)&&String(rows[i2].m[mi]||'')!==''){rows[i2].m[mi]='';cells++;} break; } }
+  });
+  /* 지운 업체 행 제거 */
+  Object.keys(out._rowDeleted||{}).forEach(function(id){
+    var T=n0(out._rowDeleted[id]); if(!T)return;
+    Object.keys(out.years||{}).forEach(function(y){
+      Object.keys(out.years[y]||{}).forEach(function(k){
+        var rows=out.years[y][k]||[], newest=0;
+        Object.keys(out._cellUpdated||{}).forEach(function(q){ if(q.indexOf('|'+k+'|'+id+'|')>=0)newest=Math.max(newest,n0(out._cellUpdated[q])); });
+        if(newest>T)return;                              /* 삭제 이후 수정됐으면 유지 */
+        var keep=rows.filter(function(r){return String(r&&r._id||'')!==String(id);});
+        if(keep.length!==rows.length)out.years[y][k]=keep;
+      });
+    });
   });
   out._purchaseSyncAt=now;
   out._purchaseImportedAt=Math.max(n0(out._purchaseImportedAt),n0(src._purchaseImportedAt),now);
@@ -11378,6 +11494,7 @@ function pullPurchasePrices(){
   return true;
 }
 window.pullMaterialPricesFromPurchase=function(){return pullPurchasePrices()};
+try{ window.mergePurchaseShared=mergePurchaseShared; }catch(_e){}   /* v463 : 점검·테스트용 노출 */
 
 function getBase(){
   try{if(typeof BASE!=='undefined'&&po(BASE))return BASE}catch(e){}
@@ -16655,15 +16772,30 @@ function mvBars(items,opts){
   opts=opts||{}; var max=0; items.forEach(function(i){ if(i.v>max)max=i.v; });
   if(!max)max=1;
   var tot=items.reduce(function(a,i){return a+i.v;},0);
+  var unit=opts.unit||'';           /* v466 : 값 뒤 단위(KG 등) */
+  var cls=opts.cls||'';             /* v466 : 지정하면 막대를 눌러 하위 리스트를 볼 수 있다 */
   return '<div style="display:flex;flex-direction:column;gap:5px">'+items.map(function(i){
-    var w=Math.max(1,i.v/max*100);
-    return '<div style="display:flex;align-items:center;gap:8px;font-size:12px">'
-      +'<span style="width:'+(opts.labW||118)+'px;flex:none;text-align:right;color:#334155;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+mvEsc(i.l)+'">'+mvEsc(i.l)+'</span>'
+    var w=Math.max(1,i.v/max*100), key=(i.k!=null?i.k:i.l), on=(cls&&opts.sel!=null&&String(opts.sel)===String(key));
+    return '<div'+(cls?(' class="'+cls+'" data-v="'+mvEsc(key)+'" title="눌러서 상세 보기"'):'')+' style="display:flex;align-items:center;gap:8px;font-size:12px;'
+      +(cls?'cursor:pointer;border-radius:7px;padding:2px 4px;margin:0 -4px;':'')
+      +(on?'background:#eef6ff;box-shadow:inset 0 0 0 1.5px #1d4ed8;':'')+'">'
+      +'<span style="width:'+(opts.labW||118)+'px;flex:none;text-align:right;color:'+(on?'#1d4ed8':'#334155')+';font-weight:'+(on?900:700)+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+mvEsc(i.l)+'">'+(on?'▾ ':'')+mvEsc(i.l)+'</span>'
       +'<span style="flex:1;background:#eef2f7;border-radius:5px;height:15px;position:relative;overflow:hidden"><span style="display:block;height:100%;width:'+w+'%;background:'+(i.c||'#1d4ed8')+';border-radius:5px"></span></span>'
-      +'<span style="width:112px;flex:none;text-align:right;font-weight:800;color:#1e3a5f">'+mvWon(i.v)+'</span>'
+      +'<span style="width:112px;flex:none;text-align:right;font-weight:800;color:#1e3a5f">'+mvWon(i.v)+(unit?('<span style="font-size:10.5px;color:#64748b;font-weight:700"> '+unit+'</span>'):'')+'</span>'
       +'<span style="width:52px;flex:none;text-align:right;color:#64748b">'+(tot?mvPct(i.v,tot).toFixed(1):'0.0')+'%</span>'
       +'</div>';
   }).join('')+'</div>';
+}
+/* v466 : 막대 아래에 펼쳐지는 하위 리스트 상자 */
+function mvSubList(title,sub,items,opts){
+  opts=opts||{};
+  if(!items.length) return '<div style="margin-top:9px;padding:9px 11px;border:1px dashed #cbd5e1;border-radius:9px;background:#f8fafc;font-size:12px;color:#64748b">'+mvEsc(title)+' — 표시할 항목이 없습니다.</div>';
+  return '<div style="margin-top:10px;padding:10px 12px;border:1px solid #dbe3ee;border-radius:10px;background:#f8fafc">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'
+      +'<b style="font-size:12.5px;color:#1e3a5f">'+mvEsc(title)+'</b>'
+      +'<span style="font-size:11.5px;color:#64748b">'+sub+'</span><span style="flex:1"></span>'
+      +'<button class="'+(opts.closeCls||'mvsubclose')+'" style="border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:7px;font-size:11.5px;font-weight:700;padding:3px 10px;font-family:inherit">✕ 닫기</button></div>'
+    +mvBars(items,{labW:opts.labW||96,unit:opts.unit||''})+'</div>';
 }
 
 /* ---------- 행 펼침 공용 (표 아래에 상세행 삽입 · 상태 유지) ---------- */
@@ -17040,10 +17172,51 @@ function mvSumRowItems(g,loc,ym,srows,prow){
 }
 
 /* ==================== TAB 2 · 보관장소·구분 ==================== */
+/* v466 : 재고는 월말 스냅샷이므로 기간을 넓히면 '등록된 달들의 평균'으로 본다 */
+var MV_PERIODS=[['month','\uD83D\uDCC5 월'],['quarter','\uD83D\uDDD3\uFE0F 분기'],['half','\uD83D\uDCC6 반기'],['year','\uD83D\uDCCA 연간']];
+function mvPeriodMonths(ym,mode){
+  var y=String(ym).slice(0,4), m=+String(ym).slice(5,7)||1, s2,e2;
+  if(mode==='quarter'){ var q=Math.ceil(m/3); s2=(q-1)*3+1; e2=q*3; }
+  else if(mode==='half'){ s2=(m<=6)?1:7; e2=(m<=6)?6:12; }
+  else if(mode==='year'){ s2=1; e2=12; }
+  else { s2=m; e2=m; }
+  var a=[]; for(var i=s2;i<=e2;i++){ var k=y+'-'+String(i).padStart(2,'0'); if(MV.months[k])a.push(k); }
+  var lab=(mode==='quarter')?(y+'년 '+Math.ceil(m/3)+'분기('+s2+'~'+e2+'월)')
+    :(mode==='half')?(y+'년 '+(m<=6?'상':'하')+'반기('+s2+'~'+e2+'월)')
+    :(mode==='year')?(y+'년 연간(1~12월)'):mvYmLabel(ym);
+  return {ms:a,from:s2,to:e2,y:y,label:lab};
+}
+function mvLocPeriodData(ym,mode){
+  var P=mvPeriodMonths(ym,mode), ms=P.ms.length?P.ms:[ym];
+  var accLoc={}, accCat={}, nRows=0, total=0;
+  ms.forEach(function(k){
+    mvRows(k).forEach(function(r){
+      var L=r.loc||'(미지정)', C=r.cat||'기타';
+      var o=accLoc[L]||(accLoc[L]={loc:L,amt:0,n:0,by:{}});
+      o.amt+=r.amt; o.n++; o.by[C]=(o.by[C]||0)+r.amt;
+      accCat[C]=(accCat[C]||0)+r.amt; total+=r.amt; nRows++;
+    });
+  });
+  var d=ms.length||1;
+  var locs=Object.keys(accLoc).map(function(L){ var o=accLoc[L], q={loc:L,amt:o.amt/d,n:Math.round(o.n/d),by:{}};
+    Object.keys(o.by).forEach(function(c){ q.by[c]=o.by[c]/d; }); return q; });
+  var cats=Object.keys(accCat).map(function(c){return {cat:c,amt:accCat[c]/d};}).sort(function(a,b){return b.amt-a.amt;});
+  var byLocCat={}; ms.forEach(function(k){ mvRows(k).forEach(function(r){
+    var C=r.cat||'기타', L=r.loc||'(미지정)'; (byLocCat[C]=byLocCat[C]||{}); byLocCat[C][L]=(byLocCat[C][L]||0)+r.amt/d; }); });
+  return {ms:ms,d:d,locs:locs,cats:cats,total:total/d,nRows:Math.round(nRows/d),label:P.label,byLocCat:byLocCat};
+}
 function mvTabLoc(){
-  var ym=MV.ui.cur, rows=mvRows(ym), total=rows.reduce(function(a,r){return a+r.amt;},0);
-  var cats=mvCatTotals(ym).map(function(c){return c.cat;});
-  var locs=mvLocTotals(ym);
+  var ym=MV.ui.cur;
+  var pmode=MV.ui.locPeriod||'month'; if(!MV_PERIODS.some(function(p){return p[0]===pmode;})) pmode='month';
+  var PD=mvLocPeriodData(ym,pmode);
+  var total=PD.total, cats=PD.cats.map(function(c){return c.cat;}), locs=PD.locs.slice();
+  var perBtns=MV_PERIODS.map(function(pp){ var on=(pmode===pp[0]);
+    return '<button class="mvperbtn" data-v="'+pp[0]+'" style="border:1px solid '+(on?'#1e3a5f':'#e2e8f0')+';background:'+(on?'#1e3a5f':'#fff')+';color:'+(on?'#fff':'#334155')+';font-weight:'+(on?800:700)+';font-size:12.5px;padding:6px 14px;border-radius:9px;font-family:inherit;white-space:nowrap">'+pp[1]+'</button>';
+  }).join('');
+  var perBar='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 9px">'
+    +'<b style="font-size:12px;color:#64748b;min-width:56px">기간설정</b>'+perBtns
+    +'<span class="sub2" style="font-size:11.5px;color:#64748b">기준월 <b>'+mvYmLabel(ym)+'</b> 기준 '+mvEsc(PD.label)+' · 재고 등록 <b>'+PD.ms.length+'개월</b>'
+    +(pmode==='month'?' — 그 달 재고입니다':' — 재고는 월말 스냅샷이라 <b>등록된 달들의 평균</b>으로 계산합니다')+'</span></div>';
   var ls=MV.ui.locSort||{k:'amt',d:-1};
   var val=function(o,k){
     if(k==='loc')return o.loc;
@@ -17074,25 +17247,28 @@ function mvTabLoc(){
   var foot='<tr><td style="'+TD+';text-align:left;font-weight:800;background:#f1f5f9">합 계</td>'
     +cats.map(function(c){ var s2=0; locs.forEach(function(o){s2+=o.by[c]||0;}); return '<td style="'+TD+';font-weight:800;background:#f1f5f9">'+mvWon(s2)+'</td>'; }).join('')
     +'<td style="'+TD+';font-weight:800;background:#f1f5f9">'+mvWon(total)+'</td><td style="'+TD+';background:#f1f5f9">100%</td>'
-    +'<td style="'+TD+';background:#f1f5f9">'+mvWon(rows.length)+'</td></tr>';
+    +'<td style="'+TD+';background:#f1f5f9">'+mvWon(PD.nRows)+'</td></tr>';
 
-  var byAmt=mvLocTotals(ym); var cum=0, need=0;
+  var byAmt=PD.locs.slice().sort(function(a,b){return b.amt-a.amt;}); var cum=0, need=0;
   for(var i=0;i<byAmt.length;i++){ cum+=byAmt[i].amt; if(cum/total>=0.8){ need=i+1; break; } }
 
-  var catRows=mvCatTotals(ym).map(function(c){
-    var byLoc={}; rows.forEach(function(r){ if(r.cat===c.cat) byLoc[r.loc||'(미지정)']=(byLoc[r.loc||'(미지정)']||0)+r.amt; });
+  var catRows=PD.cats.map(function(c){
+    var byLoc=PD.byLocCat[c.cat]||{};
     var ent=Object.keys(byLoc).map(function(k){return {l:k,v:byLoc[k]};}).sort(function(a,b){return b.v-a.v;});
     return '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:11px 13px;background:#fff">'
       +'<div style="font-weight:800;color:'+mvCatCol(c.cat)+';font-size:13px;margin-bottom:6px">'+mvEsc(c.cat)+' <span style="color:#64748b;font-weight:600;font-size:11.5px">'+mvWon(c.amt)+'원 · '+mvPct(c.amt,total).toFixed(1)+'% · 품목 '+mvWon(c.n)+'건(재고보유 '+mvWon(c.nz)+')</span></div>'
       +mvBars(ent.map(function(e){return {l:e.l,v:e.v,c:mvCatCol(c.cat)};}),{labW:96})+'</div>';
   }).join('');
 
-  var html=mvTabBar()
-    +'<div class="rhead" style="margin-bottom:8px"><span class="title">🏭 보관장소 × 구분 재고 매트릭스</span><span class="meta">'+mvYmLabel(ym)+' · 장소 '+locs.length+'곳 · 총 '+mvWon(total)+'원</span></div>'
+  var html=mvTabBar()+perBar
+    +'<div class="rhead" style="margin-bottom:8px"><span class="title">🏭 보관장소 × 구분 재고 매트릭스</span><span class="meta">'+mvEsc(PD.label)
+      +(pmode==='month'?'':(' · 등록 '+PD.ms.length+'개월 평균'))+' · 장소 '+locs.length+'곳 · 총 '+mvWon(total)+'원</span></div>'
     +'<div class="panel"><h3>장소별 × 구분별 재고금액</h3><div style="overflow:auto"><table style="border-collapse:collapse;min-width:900px"><thead>'+head+'</thead><tbody>'+body+foot+'</tbody></table></div>'
       +'<div class="note" style="margin-top:9px"><b>열 제목을 누르면</b> 그 기준으로 정렬됩니다(한 번 더 누르면 오름/내림 전환). 셀 색이 진할수록 금액이 큽니다. <b>상위 '+need+'개 장소</b>가 전체 재고금액의 80%를 차지합니다 — 월말 실사 인력과 시간을 이 장소에 우선 배분하십시오.</div></div>'
     +'<div class="panel"><h3>구분별 보관 분산도</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px">'+catRows+'</div></div>';
   renderCustom(html,function(){ try{setGlobalBar(false);}catch(e){} mvBind();
+    document.querySelectorAll('#result .mvperbtn').forEach(function(b){
+      b.addEventListener('click',function(){ MV.ui.locPeriod=b.dataset.v; mvSave(); mvRender(); }); });
     document.querySelectorAll('#result .mvloth').forEach(function(th){
       th.addEventListener('click',function(){ var k=th.dataset.k; var c=MV.ui.locSort||{k:'amt',d:-1};
         if(c.k===k) MV.ui.locSort={k:k,d:(c.d===1?-1:1)};
@@ -17105,6 +17281,17 @@ function mvTabLoc(){
 }
 
 /* ==================== TAB 3 · 제품 재고소진·회전 ==================== */
+/* v465 : 구분 · 보관장소 선택 버튼 (재고소진·회전 / 원자재 사용추이 / 안전재고 공용) */
+function mvPickChip(cls,v,on,n2,amt,col){
+  return '<button class="'+cls+'" data-v="'+mvEsc(v)+'" style="border:1px solid '+col+';background:'+(on?col:'#fff')+';color:'+(on?'#fff':col)
+    +';font-weight:'+(on?800:700)+';font-size:12.5px;padding:5px 12px;border-radius:15px;font-family:inherit;white-space:nowrap">'
+    +mvEsc(v)+' <b style="font-size:12px">'+mvWon(n2)+'</b>'+(amt==null?'':'<span style="font-weight:600;font-size:11px;opacity:.8"> · '+mvMan(amt)+'</span>')+'</button>';
+}
+function mvPickBar(rows,note){
+  return '<div style="display:flex;flex-direction:column;gap:7px;margin:2px 0 8px">'
+    +rows.map(function(r){ return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">'+r[0]+'</b>'+r[1]+'</div>'; }).join('')
+    +(note?('<div class="sub2" style="font-size:11.5px;color:#64748b">'+note+'</div>'):'')+'</div>';
+}
 function mvTurnData(){
   var ym=MV.ui.cur, rows=mvRows(ym), win=MV.ui.win|0;
   var SI=mvSalesIdx(win,ym), mon=SI.months||0;
@@ -17113,8 +17300,9 @@ function mvTurnData(){
     if(r.cat==='원자재'||r.cat==='매출이월') return;
     var k=(r.code||'').trim(); if(!k) return;
     var o=m.get(k);
-    if(!o){o={code:k,name:r.name,spec:r.spec,cat:r.cat,locs:{},stock:0,amt:0,cost:0,unit:r.unit||'EA'};m.set(k,o);}
+    if(!o){o={code:k,name:r.name,spec:r.spec,cat:r.cat,locs:{},byLoc:{},byLocStock:{},stock:0,amt:0,cost:0,unit:r.unit||'EA'};m.set(k,o);}
     o.stock+=r.stock; o.amt+=r.amt; o.locs[r.loc]=(o.locs[r.loc]||0)+r.amt;
+    var _L=r.loc||'(미지정)'; o.byLoc[_L]=(o.byLoc[_L]||0)+r.amt; o.byLocStock[_L]=(o.byLocStock[_L]||0)+r.stock;
     if(r.cost>o.cost)o.cost=r.cost;
     if(!o.name&&r.name)o.name=r.name; if(!o.spec&&r.spec)o.spec=r.spec;
   });
@@ -17134,7 +17322,7 @@ function mvTurnData(){
   if(SI.ok) SI.idx.forEach(function(s,code){
     if(m.has(code)) return; if(!(s.qty>0)) return;
     var mavg=mon?s.qty/mon:0; if(mavg<=0) return;
-    arr.push({code:code,name:s.name,spec:s.spec,cat:'(재고 미등록)',locs:{},loc:'-',stock:0,amt:0,cost:0,unit:'EA',
+    arr.push({code:code,name:s.name,spec:s.spec,cat:'(재고 미등록)',locs:{},byLoc:{},byLocStock:{},loc:'-',stock:0,amt:0,cost:0,unit:'EA',
       out:s.qty,outAmt:s.amt,mavg:mavg,mos:0,turn:9999,last:s.last,newItem:true});
   });
   MV.ui.turnExcl=MV.ui.turnExcl||{};
@@ -17154,9 +17342,32 @@ function mvTurnData(){
 }
 var MV_VC={'전체':'#475569','무출고':'#dc2626','과잉(6개월↑)':'#ea580c','다소과다':'#d97706','적정':'#16a34a','부족':'#2563eb','결품·미등록':'#7c3aed','재고없음':'#94a3b8'};
 function mvTabTurn(){
-  var D=mvTurnData(), arr=D.arr, mon=D.mon, ym=MV.ui.cur;
+  var D=mvTurnData(), all0=D.arr, mon=D.mon, ym=MV.ui.cur;
   var f=MV.ui.turnFilter||'전체';
   var exMode=!!MV.ui.turnExclMode;
+  /* ── v465 : 구분 · 보관장소 버튼 ── */
+  var fc=MV.ui.turnCat||'전체', fl=MV.ui.turnLoc||'전체';
+  var catOrder=['제품','반제품','부자재','상품','OEM','(재고 미등록)','기타'];
+  var catsAll=Array.from(new Set(all0.map(function(o){return o.cat;})))
+      .sort(function(a,b){ var ia=catOrder.indexOf(a),ib=catOrder.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib); });
+  if(fc!=='전체'&&catsAll.indexOf(fc)<0){ fc='전체'; MV.ui.turnCat='전체'; }
+  var catArr=(fc==='전체')?all0:all0.filter(function(o){return o.cat===fc;});
+  var locsAll=[]; catArr.forEach(function(o){ Object.keys(o.byLoc||{}).forEach(function(L){ if(locsAll.indexOf(L)<0)locsAll.push(L); }); });
+  locsAll.sort(function(a,b){ var sa=0,sb=0; catArr.forEach(function(o){sa+=(o.byLoc[a]||0);sb+=(o.byLoc[b]||0);}); return sb-sa; });
+  if(fl!=='전체'&&locsAll.indexOf(fl)<0){ fl='전체'; MV.ui.turnLoc='전체'; }
+  var arr=catArr.filter(function(o){ return fl==='전체'||(o.byLoc&&o.byLoc[fl]!=null); }).map(function(o){
+    if(fl==='전체')return o; var c=Object.assign({},o); c.amt=o.byLoc[fl]||0; c.stock=o.byLocStock[fl]||0; c.loc=fl;
+    c.mos=c.mavg>0?(c.stock/c.mavg):(c.stock>0?9999:0); c.turn=c.stock>0?(c.mavg*12/c.stock):(c.mavg>0?9999:0); return c;
+  });
+  var catCnt={},catAmt={}; all0.forEach(function(o){ catCnt[o.cat]=(catCnt[o.cat]||0)+1; catAmt[o.cat]=(catAmt[o.cat]||0)+o.amt; });
+  var locCnt={},locAmt={}; catArr.forEach(function(o){ Object.keys(o.byLoc||{}).forEach(function(L){ locCnt[L]=(locCnt[L]||0)+1; locAmt[L]=(locAmt[L]||0)+o.byLoc[L]; }); });
+  var allAmt0=all0.reduce(function(a,o){return a+o.amt;},0), locAllAmt=catArr.reduce(function(a,o){return a+o.amt;},0);
+  var pickBar=mvPickBar([
+    ['구분', ['전체'].concat(catsAll).map(function(v){ var on=(fc===v);
+        return mvPickChip('mvtcchip',v,on,(v==='전체'?all0.length:(catCnt[v]||0)),(v==='전체'?allAmt0:(catAmt[v]||0)), v==='전체'?'#475569':mvCatCol(v)); }).join('')],
+    ['보관장소', ['전체'].concat(locsAll).map(function(v){ var on=(fl===v);
+        return mvPickChip('mvtlchip',v,on,(v==='전체'?catArr.length:(locCnt[v]||0)),(v==='전체'?locAllAmt:(locAmt[v]||0)), on?'#1e3a5f':'#475569'); }).join('')]
+  ],'구분·보관장소를 고르면 아래 판정 버튼·표·재고월수가 <b>그 범위의 재고</b>로 다시 계산됩니다.');
   var live=arr.filter(function(o){return !o.excl;});          /* 제외품을 뺀 실제 분석 대상 */
   var exArr=arr.filter(function(o){return o.excl;});
   var cnt={}; live.forEach(function(o){cnt[o.verdict]=(cnt[o.verdict]||0)+1;});
@@ -17212,13 +17423,15 @@ function mvTabTurn(){
       +'<br><b>🚫 제외품 지정</b>을 누르면 왼쪽에 체크칸이 생깁니다. 단종품·샘플·특수 주문품처럼 회전 판정에서 빼야 할 품목을 체크하면 <b>목록·판정·합계에서 모두 제외</b>되고, 제외품 칩으로 따로 모아 볼 수 있습니다. 지정 내용은 저장되어 다음에 열 때도 유지됩니다.'
       +(exArr.length?('<br>현재 제외 <b style="color:#7c3aed">'+mvWon(exArr.length)+'품목 · '+mvWon(exAmt)+'원</b>이 분석에서 빠져 있습니다.'):''));
   render('🔄 제품 재고소진·회전 분석 ('+mvYmLabel(ym)+')',
-    (f==='전체'?'전체':f)+' '+mvWon(show.length)+'품목 · 재고 '+mvWon(tot)+'원 · '+(mon?mon+'개월 출고 '+mvWon(totOut)+'원':'출고자료 없음'),
+    (fc==='전체'?'전체 구분':fc)+' · '+(fl==='전체'?'전체 보관장소':fl)+' · '+(f==='전체'?'전체':f)+' '+mvWon(show.length)+'품목 · 재고 '+mvWon(tot)+'원 · '+(mon?mon+'개월 출고 '+mvWon(totOut)+'원':'출고자료 없음'),
     show, cols, 'amt', note,
-    {controlsHtml:mvTabBar()+controls, pageLimit:200, tableClass:'mv-tbl',
+    {controlsHtml:mvTabBar()+pickBar+controls, pageLimit:200, tableClass:'mv-tbl',
      total:{label:'합 계',amt:tot,cells:{amt:mvWon(tot),stock:mvNum(show.reduce(function(a,o){return a+o.stock;},0)),out:mvNum(show.reduce(function(a,o){return a+o.out;},0)),outAmt:mvWon(totOut)}},
      onMount:function(){ try{setGlobalBar(false);}catch(e){} mvBind();
        var w=document.getElementById('mvWin'); if(w)w.addEventListener('change',function(e){ MV.ui.win=+e.target.value; MV._scache=null; mvSave(); mvRender(); });
        document.querySelectorAll('#result .mvchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.turnFilter=b.dataset.v; mvSave(); mvRender(); }); });
+       document.querySelectorAll('#result .mvtcchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.turnCat=b.dataset.v; MV.ui.turnLoc='전체'; MV.ui.turnFilter='전체'; mvSave(); mvRender(); }); });
+       document.querySelectorAll('#result .mvtlchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.turnLoc=b.dataset.v; MV.ui.turnFilter='전체'; mvSave(); mvRender(); }); });
        var em=document.getElementById('mvExMode');
        if(em)em.addEventListener('click',function(){ MV.ui.turnExclMode=!MV.ui.turnExclMode; if(MV.ui.turnExclMode&&MV.ui.turnFilter==='제외품')MV.ui.turnFilter='전체'; mvSave(); mvRender(); });
        var ec=document.getElementById('mvExClear');
@@ -17334,8 +17547,27 @@ function mvMatData(){
 }
 var MV_MC={'전체':'#475569','무소요':'#dc2626','과잉(1년↑)':'#ea580c','다소과다':'#d97706','적정':'#16a34a','부족':'#2563eb','재고없음':'#94a3b8'};
 function mvTabMat(){
-  var D=mvMatData(), raws=D.raws, mon=D.mon, ym=MV.ui.cur;
+  var D=mvMatData(), all0=D.raws, mon=D.mon, ym=MV.ui.cur;
   var f=MV.ui.matFilter||'전체';
+  /* ── v465 : 구분(재질) · 보관장소 버튼 ── */
+  var mn=function(o){ return String(o.name||'').replace(/\s*\(.*?\)\s*/g,'').trim()||'(미상)'; };
+  var lc=function(o){ return o.loc||'(미지정)'; };
+  var fc=MV.ui.matCat||'전체', fl=MV.ui.matLoc||'전체';
+  var catCnt={},catAmt={}; all0.forEach(function(o){ var k=mn(o); catCnt[k]=(catCnt[k]||0)+1; catAmt[k]=(catAmt[k]||0)+o.amt; });
+  var catsAll=Object.keys(catCnt).sort(function(a,b){return catAmt[b]-catAmt[a];});
+  if(fc!=='전체'&&catsAll.indexOf(fc)<0){ fc='전체'; MV.ui.matCat='전체'; }
+  var catArr=(fc==='전체')?all0:all0.filter(function(o){return mn(o)===fc;});
+  var locCnt={},locAmt={}; catArr.forEach(function(o){ var L=lc(o); locCnt[L]=(locCnt[L]||0)+1; locAmt[L]=(locAmt[L]||0)+o.amt; });
+  var locsAll=Object.keys(locCnt).sort(function(a,b){return locAmt[b]-locAmt[a];});
+  if(fl!=='전체'&&locsAll.indexOf(fl)<0){ fl='전체'; MV.ui.matLoc='전체'; }
+  var raws=catArr.filter(function(o){ return fl==='전체'||lc(o)===fl; });
+  var allAmt0=all0.reduce(function(a,o){return a+o.amt;},0), locAllAmt=catArr.reduce(function(a,o){return a+o.amt;},0);
+  var pickBar=mvPickBar([
+    ['구분(재질)', ['전체'].concat(catsAll).map(function(v){ var on=(fc===v);
+        return mvPickChip('mvmcchip',v,on,(v==='전체'?all0.length:(catCnt[v]||0)),(v==='전체'?allAmt0:(catAmt[v]||0)), on?'#0d9488':'#475569'); }).join('')],
+    ['보관장소', ['전체'].concat(locsAll).map(function(v){ var on=(fl===v);
+        return mvPickChip('mvmlchip',v,on,(v==='전체'?catArr.length:(locCnt[v]||0)),(v==='전체'?locAllAmt:(locAmt[v]||0)), on?'#1e3a5f':'#475569'); }).join('')]
+  ],'원자재는 모두 <b>구분=원자재</b>이므로 첫 줄은 <b>재질</b>로 나눕니다. 고르면 아래 판정 버튼·표·요약이 그 범위로 다시 계산됩니다.');
   var cnt={}; raws.forEach(function(o){cnt[o.verdict]=(cnt[o.verdict]||0)+1;});
   var order=['전체','무소요','과잉(1년↑)','다소과다','적정','부족','재고없음'];
   var chips='<div class="chips" style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px">'+order.map(function(l){
@@ -17344,15 +17576,35 @@ function mvTabMat(){
   var show=(f==='전체')?raws.slice():raws.filter(function(o){return o.verdict===f;});
   var totKg=show.reduce(function(a,o){return a+o.kg;},0), totAmt=show.reduce(function(a,o){return a+o.amt;},0), totDem=show.reduce(function(a,o){return a+o.demand;},0);
 
-  /* 재질·두께 요약 */
+  /* 재질·두께 요약 (선택 범위 기준) */
   var byMat=new Map(), byTh=new Map();
+  var mxTh={}, thMx={};        /* v466 : 재질×두께 교차 집계 — 그래프 드릴다운용 */
   raws.forEach(function(o){
     var k=o.name.replace(/\s*\(.*?\)\s*/g,'').trim();
     var a=byMat.get(k); if(!a){a={l:k,kg:0,amt:0,dem:0};byMat.set(k,a);} a.kg+=o.kg; a.amt+=o.amt; a.dem+=o.demand;
     var t=o.tw?String(o.tw.t)+'t':'기타'; var b=byTh.get(t); if(!b){b={l:t,kg:0,amt:0};byTh.set(t,b);} b.kg+=o.kg; b.amt+=o.amt;
+    var c1=(mxTh[k]=mxTh[k]||{}); var c2=(c1[t]=c1[t]||{amt:0,kg:0,dem:0,n:0}); c2.amt+=o.amt; c2.kg+=o.kg; c2.dem+=o.demand; c2.n++;
+    var d1=(thMx[t]=thMx[t]||{}); var d2=(d1[k]=d1[k]||{amt:0,kg:0,dem:0,n:0}); d2.amt+=o.amt; d2.kg+=o.kg; d2.dem+=o.demand; d2.n++;
   });
   var matArr=Array.from(byMat.values()).sort(function(a,b){return b.amt-a.amt;});
   var thArr=Array.from(byTh.values()).sort(function(a,b){return b.amt-a.amt;});
+  /* ── v466 : 그래프 항목을 누르면 아래에 하위 리스트 ── */
+  var selM=MV.ui.mbMat||'', selT=MV.ui.mbTh||'', selD=MV.ui.mbDem||'';
+  if(selM&&!mxTh[selM]){selM='';MV.ui.mbMat='';}
+  if(selT&&!thMx[selT]){selT='';MV.ui.mbTh='';}
+  if(selD&&!mxTh[selD]){selD='';MV.ui.mbDem='';}
+  var sortEnt=function(obj,key){ return Object.keys(obj||{}).map(function(k){return {l:k,v:obj[k][key]||0,n:obj[k].n};})
+      .sort(function(a,b){return b.v-a.v;}); };
+  var subMat=selM?mvSubList(selM+' · 두께별 재고금액',
+      '규격 '+mvWon(Object.keys(mxTh[selM]).reduce(function(a,t){return a+mxTh[selM][t].n;},0))+'개 · 합계 '+mvWon(byMat.get(selM)?byMat.get(selM).amt:0)+'원',
+      sortEnt(mxTh[selM],'amt').map(function(e){return {l:e.l,v:e.v,c:'#0d9488'};}),{labW:70,closeCls:'mbmclose'}):'';
+  var subTh=selT?mvSubList(selT+' · 재질별 재고금액',
+      '규격 '+mvWon(Object.keys(thMx[selT]).reduce(function(a,k){return a+thMx[selT][k].n;},0))+'개 · 합계 '+mvWon(byTh.get(selT)?byTh.get(selT).amt:0)+'원',
+      sortEnt(thMx[selT],'amt').map(function(e){return {l:e.l,v:e.v,c:'#2c4f7c'};}),{labW:104,closeCls:'mbtclose'}):'';
+  var subDem=selD?mvSubList(selD+' · 두께별 월 소요(KG) 추정',
+      '월소요 합계 '+mvNum(byMat.get(selD)?byMat.get(selD).dem:0,0)+'KG',
+      sortEnt(mxTh[selD],'dem').filter(function(e){return e.v>0;}).map(function(e){return {l:e.l,v:Math.round(e.v),c:'#7c3aed'};}),
+      {labW:70,unit:'KG',closeCls:'mbdclose'}):'';
 
   var controls='<div class="ctrlbar" style="gap:14px;flex-wrap:wrap;align-items:center">'
     +'<span style="font-size:12px;color:#475569;font-weight:700">출고 집계기간 <select id="mvWin">'
@@ -17392,13 +17644,16 @@ function mvTabMat(){
      +'<br><span class="sub2">연결되지 않은 제품 '+D.unlinked.length+'건 — 재고표의 <b>자재품목</b> 칸이 비어 있거나 원자재 규격과 표기가 달라 매칭되지 않은 건입니다. 자재품목 표기를 「재질 두께x폭」으로 통일하면 정확도가 올라갑니다.</span>');
 
   render('🧱 원자재 사용추이·소진 분석 ('+mvYmLabel(ym)+')',
-    (f==='전체'?'전체':f)+' '+mvWon(show.length)+'규격 · '+mvNum(totKg,0)+'KG · '+mvWon(totAmt)+'원'+(totDem?(' · 월소요 '+mvNum(totDem,0)+'KG'):''),
+    (fc==='전체'?'전체 재질':fc)+' · '+(fl==='전체'?'전체 보관장소':fl)+' · '+(f==='전체'?'전체':f)+' '+mvWon(show.length)+'규격 · '+mvNum(totKg,0)+'KG · '+mvWon(totAmt)+'원'+(totDem?(' · 월소요 '+mvNum(totDem,0)+'KG'):''),
     show, cols, 'amt', note,
-    {controlsHtml:mvTabBar()+controls, pageLimit:200, tableClass:'mv-tbl',
+    {controlsHtml:mvTabBar()+pickBar+controls, pageLimit:200, tableClass:'mv-tbl',
      afterTableHtml:'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px;margin-top:14px">'
-       +'<div class="panel" style="margin:0"><h3>재질별 재고금액</h3>'+mvBars(matArr.map(function(a){return {l:a.l,v:a.amt,c:'#0d9488'};}),{labW:104})+'</div>'
-       +'<div class="panel" style="margin:0"><h3>두께별 재고금액</h3>'+mvBars(thArr.map(function(a){return {l:a.l,v:a.amt,c:'#2c4f7c'};}),{labW:70})+'</div>'
-       +'<div class="panel" style="margin:0"><h3>재질별 월 소요(KG) 추정</h3>'+mvBars(matArr.filter(function(a){return a.dem>0;}).map(function(a){return {l:a.l,v:Math.round(a.dem),c:'#7c3aed'};}),{labW:104})+'</div>'
+       +'<div class="panel" style="margin:0"><h3>재질별 재고금액 <span style="font-size:11.5px;font-weight:600;color:#64748b">— 재질을 누르면 두께별로 펼쳐집니다</span></h3>'
+         +mvBars(matArr.map(function(a){return {l:a.l,v:a.amt,c:'#0d9488'};}),{labW:104,cls:'mbmat',sel:selM})+subMat+'</div>'
+       +'<div class="panel" style="margin:0"><h3>두께별 재고금액 <span style="font-size:11.5px;font-weight:600;color:#64748b">— 두께를 누르면 재질별로 펼쳐집니다</span></h3>'
+         +mvBars(thArr.map(function(a){return {l:a.l,v:a.amt,c:'#2c4f7c'};}),{labW:70,cls:'mbth',sel:selT})+subTh+'</div>'
+       +'<div class="panel" style="margin:0"><h3>재질별 월 소요(KG) 추정 <span style="font-size:11.5px;font-weight:600;color:#64748b">— 재질을 누르면 두께별로 펼쳐집니다</span></h3>'
+         +mvBars(matArr.filter(function(a){return a.dem>0;}).map(function(a){return {l:a.l,v:Math.round(a.dem),c:'#7c3aed'};}),{labW:104,unit:'KG',cls:'mbdem',sel:selD})+subDem+'</div>'
        +'</div>',
      total:{label:'합 계',amt:totAmt,cells:{amt:mvWon(totAmt),kg:mvNum(totKg,0),demand:mvNum(totDem,0)}},
      afterDraw:function(){
@@ -17410,10 +17665,23 @@ function mvTabMat(){
        var rt=document.getElementById('mvRatio'); if(rt)rt.addEventListener('change',function(e){ MV.ui.ratio=Math.max(10,Math.min(95,+e.target.value||55)); mvSave(); mvRender(); });
        var yl=document.getElementById('mvYield'); if(yl)yl.addEventListener('change',function(e){ MV.ui.yield=Math.max(50,Math.min(100,+e.target.value||85)); mvSave(); mvRender(); });
        document.querySelectorAll('#result .mvmchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.matFilter=b.dataset.v; mvSave(); mvRender(); }); });
+       document.querySelectorAll('#result .mvmcchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.matCat=b.dataset.v; MV.ui.matLoc='전체'; MV.ui.matFilter='전체'; mvSave(); mvRender(); }); });
+       document.querySelectorAll('#result .mvmlchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.matLoc=b.dataset.v; MV.ui.matFilter='전체'; mvSave(); mvRender(); }); });
+       /* v466 : 요약 그래프 드릴다운 */
+       var pick=function(cls,key){ document.querySelectorAll('#result .'+cls).forEach(function(b){
+           b.addEventListener('click',function(e){ if(e.target&&e.target.tagName==='BUTTON')return;
+             MV.ui[key]=(MV.ui[key]===b.dataset.v)?'':b.dataset.v; mvSave(); mvRender(); }); }); };
+       pick('mbmat','mbMat'); pick('mbth','mbTh'); pick('mbdem','mbDem');
+       var shut=function(cls,key){ document.querySelectorAll('#result .'+cls).forEach(function(b){
+           b.addEventListener('click',function(e){ e.stopPropagation(); MV.ui[key]=''; mvSave(); mvRender(); }); }); };
+       shut('mbmclose','mbMat'); shut('mbtclose','mbTh'); shut('mbdclose','mbDem');
      }});
 }
 
 /* ==================== TAB 5 · 악성·장기체류 ==================== */
+/* v467 : 폐기 체크 — 🗑️ 폐기검토 분석(state.inv.dispose)과 같은 키를 씁니다 */
+function mvDispMap(){ try{ return (state.inv&&state.inv.dispose)||{}; }catch(e){ return {}; } }
+function mvDispKey(o){ return (o.code||'(미상)')+'\u2502'+(o.spec||''); }
 function mvDeadData(){
   var ym=MV.ui.cur, rows=mvRows(ym);
   var SI=mvSalesIdx(0,ym);
@@ -17428,8 +17696,10 @@ function mvDeadData(){
     if(!(r.amt>0)) return;
     var k=(r.code||'')+'│'+(r.spec||'');
     var o=m.get(k);
-    if(!o){o={code:r.code,name:r.name,spec:r.spec,cat:r.cat,locs:{},stock:0,amt:0,unit:r.unit,note:r.note};m.set(k,o);}
+    if(!o){o={code:r.code,name:r.name,spec:r.spec,cat:r.cat,locs:{},byLoc:{},byLocStock:{},stock:0,amt:0,unit:r.unit,note:r.note};m.set(k,o);}
     o.stock+=r.stock; o.amt+=r.amt; o.locs[r.loc]=1;
+    var _L=r.loc||'(미지정)';   /* v464 : 보관장소별 금액·수량 (구분·보관장소 필터용) */
+    o.byLoc[_L]=(o.byLoc[_L]||0)+r.amt; o.byLocStock[_L]=(o.byLocStock[_L]||0)+r.stock;
   });
   var arr=[];
   m.forEach(function(o,k){
@@ -17464,8 +17734,41 @@ function mvDeadData(){
 }
 var MV_DC={'전체':'#475569','출고·소요 없음':'#dc2626','12개월↑ 장기체류':'#ea580c','6~12개월':'#d97706','3~6개월':'#0891b2','정상':'#16a34a'};
 function mvTabDead(){
-  var D=mvDeadData(), arr=D.arr, ym=MV.ui.cur;
+  var D=mvDeadData(), all=D.arr, ym=MV.ui.cur;
   var f=MV.ui.deadFilter||'전체';
+  /* ── v464 : 구분 · 보관장소 버튼 ───────────────────────────── */
+  var fc=MV.ui.deadCat||'전체', fl=MV.ui.deadLoc||'전체';
+  var catOrder=['원자재','제품','반제품','부자재','상품','OEM','기타'];
+  var catsAll=Array.from(new Set(all.map(function(o){return o.cat;})))
+      .sort(function(a,b){ var ia=catOrder.indexOf(a),ib=catOrder.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib); });
+  if(fc!=='전체'&&catsAll.indexOf(fc)<0){ fc='전체'; MV.ui.deadCat='전체'; }
+  var catArr=(fc==='전체')?all:all.filter(function(o){return o.cat===fc;});
+  var locsAll=[]; catArr.forEach(function(o){ Object.keys(o.byLoc||{}).forEach(function(L){ if(locsAll.indexOf(L)<0)locsAll.push(L); }); });
+  locsAll.sort(function(a,b){ var sa=0,sb=0; catArr.forEach(function(o){sa+=(o.byLoc[a]||0);sb+=(o.byLoc[b]||0);}); return sb-sa; });
+  if(fl!=='전체'&&locsAll.indexOf(fl)<0){ fl='전체'; MV.ui.deadLoc='전체'; }
+  /* 보관장소를 고르면 그 장소의 재고금액·수량만 보여준다 */
+  var pick=function(o){
+    if(fl==='전체') return o;
+    var c=Object.assign({},o); c.amt=o.byLoc[fl]||0; c.stock=o.byLocStock[fl]||0; c.loc=fl; return c;
+  };
+  var arr=catArr.filter(function(o){ return fl==='전체'||(o.byLoc&&o.byLoc[fl]!=null); }).map(pick);
+  var catCnt={},catAmt={}; all.forEach(function(o){ catCnt[o.cat]=(catCnt[o.cat]||0)+1; catAmt[o.cat]=(catAmt[o.cat]||0)+o.amt; });
+  var locCnt={},locAmt={}; catArr.forEach(function(o){ Object.keys(o.byLoc||{}).forEach(function(L){ locCnt[L]=(locCnt[L]||0)+1; locAmt[L]=(locAmt[L]||0)+o.byLoc[L]; }); });
+  var allAmt=all.reduce(function(a,o){return a+o.amt;},0);
+  var catAllCnt=all.length, locAllCnt=catArr.length, locAllAmt=catArr.reduce(function(a,o){return a+o.amt;},0);
+  var pickChip=function(cls,v,on,n2,amt,col){
+    return '<button class="'+cls+'" data-v="'+mvEsc(v)+'" style="border:1px solid '+col+';background:'+(on?col:'#fff')+';color:'+(on?'#fff':col)
+      +';font-weight:'+(on?800:700)+';font-size:12.5px;padding:5px 12px;border-radius:15px;font-family:inherit;white-space:nowrap">'
+      +mvEsc(v)+' <b style="font-size:12px">'+mvWon(n2)+'</b><span style="font-weight:600;font-size:11px;opacity:.8"> · '+mvMan(amt)+'</span></button>';
+  };
+  var catChips=['전체'].concat(catsAll).map(function(v){ var on=(fc===v);
+      return pickChip('mvdcchip',v,on,(v==='전체'?catAllCnt:(catCnt[v]||0)),(v==='전체'?allAmt:(catAmt[v]||0)), v==='전체'?'#475569':mvCatCol(v)); }).join('');
+  var locChips=['전체'].concat(locsAll).map(function(v){ var on=(fl===v);
+      return pickChip('mvdlchip',v,on,(v==='전체'?locAllCnt:(locCnt[v]||0)),(v==='전체'?locAllAmt:(locAmt[v]||0)), on?'#1e3a5f':'#475569'); }).join('');
+  var pickBar='<div style="display:flex;flex-direction:column;gap:7px;margin:2px 0 8px">'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">구분</b>'+catChips+'</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">보관장소</b>'+locChips+'</div>'
+    +'<div class="sub2" style="font-size:11.5px;color:#64748b">구분·보관장소를 고르면 아래 판정 버튼과 표가 <b>그 범위</b>로 다시 계산됩니다. 보관장소를 고르면 <b>그 장소의 재고금액·수량</b>만 표시됩니다.</div></div>';
   var cnt={},amtBy={}; arr.forEach(function(o){cnt[o.verdict]=(cnt[o.verdict]||0)+1; amtBy[o.verdict]=(amtBy[o.verdict]||0)+o.amt;});
   var order=['전체','출고·소요 없음','12개월↑ 장기체류','6~12개월','3~6개월','정상'];
   var totAll=arr.reduce(function(a,o){return a+o.amt;},0);
@@ -17484,8 +17787,11 @@ function mvTabDead(){
     {k:'label',t:'품명',cls:'l',cell:function(o){return mvEsc(o.name||'');},sortVal:function(o){return o.name||'';}},
     {k:'spec',t:'규격',cls:'l',cell:function(o){return mvEsc(o.spec||'');},sortVal:function(o){return o.spec||'';}},
     {k:'loc',t:'보관',cell:function(o){return '<span class="sub2">'+mvEsc(o.loc)+'</span>';},sortVal:function(o){return o.loc;}},
-    {k:'nCust',t:'사용업체',cell:function(o){ if(o.cat==='원자재')return '<span class="sub2">'+(o.rawUse?('제품 '+mvWon(o.rawUse)):'-')+'</span>';
-        return o.nCust?('<b style="color:#1d4ed8">'+mvWon(o.nCust)+'</b>'):'<span class="sub2" style="color:#cbd5e1">0</span>'; },sortVal:function(o){return o.cat==='원자재'?(o.rawUse||0):(o.nCust||0);}},
+    /* v467 : 사용업체 열 대신 폐기 체크박스 — 🗑️ 폐기검토 분석과 같은 목록을 공유합니다 */
+    {k:'dispose',t:'폐기',cell:function(o){ var k=mvDispKey(o), on=!!(mvDispMap()[k]);
+        return '<span onclick="event.stopPropagation()" title="체크하면 🗑️ 폐기검토 분석의 «폐기» 목록에 함께 반영됩니다"><input type="checkbox" class="mvdispck" data-k="'+mvEsc(k)+'"'+(on?' checked':'')
+          +' style="cursor:pointer;width:16px;height:16px;accent-color:#dc2626"></span>'; },
+      sortVal:function(o){ return mvDispMap()[mvDispKey(o)]?1:0; }},
     {k:'stock',t:'재고',cell:function(o){return mvNum(o.stock)+' <span class="sub2">'+mvEsc(o.unit||'')+'</span>';},sortVal:function(o){return o.stock;}},
     {k:'amt',t:'재고금액',cell:function(o){return '<b>'+mvWon(o.amt)+'</b>';},sortVal:function(o){return o.amt;}},
     {k:'share',t:'금액비중',cell:function(o){return mvPct(o.amt,totAll).toFixed(2)+'%';},sortVal:function(o){return o.amt;}},
@@ -17506,14 +17812,33 @@ function mvTabDead(){
      +'<b>즉시 조치 대상</b> — 출고·소요가 전혀 없거나 12개월 이상 묶여 있는 재고가 <b style="color:#dc2626">'+mvWon(risk.length)+'품목 / '+mvWon(riskAmt)+'원 (전체의 '+mvPct(riskAmt,totAll).toFixed(1)+'%)</b>입니다. '
      +(catList?('구분별로는 '+catList+' 입니다. '):'')
      +'이 금액은 창고 면적·실사 공수·평가손을 동시에 발생시킵니다. ①고객 재고용 재판매 ②규격 통합 후 재가공 ③고철 매각 세 갈래로 품목별 처분방침을 정하고 월 단위 소진율을 추적하십시오. '
-     +'단, 안전재고 성격의 <b>공용 부자재</b>나 A/S 대응 품목은 제외 판단이 필요하니 <b>비고</b>란을 함께 확인하십시오.<br><b>행을 클릭하면</b> 제품은 그 품번을 구매한 <b>거래처 목록</b>이, 원자재는 그 소재를 쓰는 <b>제품 목록</b>이 바로 아래에 펼쳐집니다.');
+     +'<br><b>🗑 폐기 체크</b> — 표의 <b>폐기</b> 칸에 체크하면 <b>🗑️ 폐기검토 분석</b>의 «폐기» 목록에 그대로 반영되고(같은 품번·규격 기준), 그 화면에서 해제해도 이 표에 함께 반영됩니다. '
+     +'현재 체크된 품목은 <b style="color:#dc2626">'+mvWon(arr.filter(function(o){return mvDispMap()[mvDispKey(o)];}).length)+'품목 / '
+     +mvWon(arr.filter(function(o){return mvDispMap()[mvDispKey(o)];}).reduce(function(a,o){return a+o.amt;},0))+'원</b>입니다.'
+     +'<br>단, 안전재고 성격의 <b>공용 부자재</b>나 A/S 대응 품목은 제외 판단이 필요하니 <b>비고</b>란을 함께 확인하십시오.<br><b>행을 클릭하면</b> 제품은 그 품번을 구매한 <b>거래처 목록</b>이, 원자재는 그 소재를 쓰는 <b>제품 목록</b>이 바로 아래에 펼쳐집니다.');
 
   render('💀 악성·장기체류 재고 ('+mvYmLabel(ym)+')',
-    (f==='전체'?'전체':f)+' '+mvWon(show.length)+'품목 · '+mvWon(tot)+'원',
+    (fc==='전체'?'전체 구분':fc)+' · '+(fl==='전체'?'전체 보관장소':fl)+' · '
+      +(f==='전체'?'전체':f)+' '+mvWon(show.length)+'품목 · '+mvWon(tot)+'원',
     show, cols, 'amt', note,
-    {controlsHtml:mvTabBar()+chips, pageLimit:200, tableClass:'mv-tbl',
+    {controlsHtml:mvTabBar()+pickBar+chips, pageLimit:200, tableClass:'mv-tbl',
      total:{label:'합 계',amt:tot,cells:{amt:mvWon(tot),share:mvPct(tot,totAll).toFixed(1)+'%'}},
      afterDraw:function(){
+       document.querySelectorAll('#result .mvdispck').forEach(function(ck){
+         ck.addEventListener('mousedown',function(e){ e.stopPropagation(); });
+         ck.addEventListener('click',function(e){ e.stopPropagation(); });
+         ck.addEventListener('change',function(e){
+           e.stopPropagation();
+           var k=ck.dataset.k;
+           try{
+             state.inv=state.inv||{}; state.inv.dispose=state.inv.dispose||{};
+             if(ck.checked)state.inv.dispose[k]=true; else delete state.inv.dispose[k];
+             if(typeof logEdit==='function')logEdit('재고',k+' 폐기체크'+(ck.checked?'':' 해제'));
+             if(typeof saveSettings==='function')saveSettings();
+           }catch(_e){}
+           mvRender();
+         });
+       });
        var map={}; arr.forEach(function(o){ map[(o.code||'')+'\u2502'+(o.spec||'')]=o; });
        mvRowExpand({ncols:cols.length,map:map,openKey:'deadOpen',build:function(o){
          if(o.cat==='원자재') return o.raw?mvRawUseHTML(o.raw,{cust:true})
@@ -17523,6 +17848,8 @@ function mvTabDead(){
      },
      onMount:function(){ try{setGlobalBar(false);}catch(e){} mvBind();
        document.querySelectorAll('#result .mvdchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.deadFilter=b.dataset.v; mvSave(); mvRender(); }); });
+       document.querySelectorAll('#result .mvdcchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.deadCat=b.dataset.v; MV.ui.deadLoc='전체'; MV.ui.deadFilter='전체'; mvSave(); mvRender(); }); });
+       document.querySelectorAll('#result .mvdlchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.deadLoc=b.dataset.v; MV.ui.deadFilter='전체'; mvSave(); mvRender(); }); });
      }});
 }
 
@@ -17535,17 +17862,34 @@ function mvMonthSales(){
   CUR.forEach(function(r){ var k=r.ym; if(!k)return; m[k]=(m[k]||0)+mvAmt(r); });
   return m;
 }
+/* v464 : 월별 추이를 보관장소별로도 볼 수 있게 — 그 달 재고를 보관장소로 걸러 구분별 합계를 낸다 */
+function mvTrendTotals(ym,loc){
+  var rows=mvRows(ym), out={total:0,by:{},n:0,locs:{}};
+  rows.forEach(function(r){
+    var L=r.loc||'(미지정)';
+    out.locs[L]=(out.locs[L]||0)+r.amt;
+    if(loc&&loc!=='전체'&&L!==loc) return;
+    out.total+=r.amt; out.by[r.cat]=(out.by[r.cat]||0)+r.amt; out.n++;
+  });
+  return out;
+}
 function mvTabTrend(){
   var yms=mvYms();
   var years=Array.from(new Set(yms.map(function(y){return y.slice(0,4);}))).sort();
   var yr=MV.ui.trendYear; if(!yr||years.indexOf(yr)<0) yr=years[years.length-1];
   var cat=MV.ui.trendCat; if(MV_TRCAT.indexOf(cat)<0) cat='전체';
+  var loc=MV.ui.trendLoc||'전체';
   var SM=mvMonthSales(), hasSales=mvHasSales();
 
   var months=[]; for(var i=1;i<=12;i++) months.push(yr+'-'+String(i).padStart(2,'0'));
+  var locAmt={}, locMon={};
+  months.forEach(function(y){ if(!MV.months[y])return; var t=mvTrendTotals(y,'전체');
+    Object.keys(t.locs).forEach(function(L){ locAmt[L]=(locAmt[L]||0)+t.locs[L]; locMon[L]=(locMon[L]||0)+1; }); });
+  var locsAll=Object.keys(locAmt).sort(function(a,b){return locAmt[b]-locAmt[a];});
+  if(loc!=='전체'&&locsAll.indexOf(loc)<0){ loc='전체'; MV.ui.trendLoc='전체'; }
   var series=months.map(function(y){
     var o={ym:y,mo:+y.slice(5,7),total:0,by:{},n:0,has:false,sales:SM[y]||0};
-    if(MV.months[y]){ var c=mvCatTotals(y); c.forEach(function(x){o.total+=x.amt;o.by[x.cat]=x.amt;}); o.n=mvRows(y).length; o.has=true; }
+    if(MV.months[y]){ var c=mvTrendTotals(y,loc); o.total=c.total; o.by=c.by; o.n=c.n; o.has=true; }
     o.inv=(cat==='전체')?o.total:(o.by[cat]||0);
     o.ratio=(o.has&&o.sales>0)?(o.inv/o.sales):null;      /* 매출 대비 재고 = 몇 개월분 */
     return o;
@@ -17567,10 +17911,22 @@ function mvTabTrend(){
   }).join('');
   var yChips=(years.length>1)?years.map(function(y){ var on=(y===yr);
       return '<button class="mvtychip" data-v="'+y+'" style="border:1px solid '+(on?'#1e3a5f':'#e2e8f0')+';background:'+(on?'#1e3a5f':'#fff')+';color:'+(on?'#fff':'#334155')+';font-weight:800;font-size:12.5px;padding:5px 12px;border-radius:15px;font-family:inherit">'+y+'년</button>';}).join(''):'';
+  /* 보관장소 버튼 — 그 해 등록된 달들의 합계 금액으로 표시 */
+  var lastMon=null; for(var _i=series.length-1;_i>=0;_i--){ if(series[_i].has){ lastMon=series[_i].ym; break; } }
+  var locTotAll=0; Object.keys(locAmt).forEach(function(L){ locTotAll+=locAmt[L]; });
+  var locBtns=['전체'].concat(locsAll).map(function(v){
+    var on=(loc===v), col=on?'#1e3a5f':'#475569';
+    var amt=(v==='전체')?locTotAll:(locAmt[v]||0), mo=(v==='전체')?0:(locMon[v]||0);
+    return '<button class="mvtrloc" data-v="'+mvEsc(v)+'" title="'+(v==='전체'?'전체 보관장소':(mvEsc(v)+' · 등록 '+mo+'개월 합계'))+'" style="border:1px solid '+col+';background:'+(on?col:'#fff')+';color:'+(on?'#fff':col)
+      +';font-weight:'+(on?800:700)+';font-size:12.5px;padding:5px 12px;border-radius:15px;font-family:inherit;white-space:nowrap">'
+      +mvEsc(v)+' <b style="font-size:12px">'+mvMan(amt)+'</b></button>';
+  }).join('');
   var pickBar='<div style="display:flex;flex-direction:column;gap:7px;margin:2px 0 10px">'
     +(yChips?('<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:52px">연도</b>'+yChips+'</div>'):'')
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:52px">구분</b>'+catBtns
-      +'<span class="sub2" style="font-size:11.5px;color:#64748b">선택한 구분의 재고가 그래프 <b>추이선</b>과 표의 <b>매출대비</b>에 반영됩니다</span></div></div>';
+      +'<span class="sub2" style="font-size:11.5px;color:#64748b">선택한 구분의 재고가 그래프 <b>추이선</b>과 표의 <b>매출대비</b>에 반영됩니다</span></div>'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:52px">보관장소</b>'+locBtns
+      +'<span class="sub2" style="font-size:11.5px;color:#64748b">보관장소를 고르면 <b>그 장소의 재고만</b>으로 그래프·표가 다시 계산됩니다(매출 막대는 전사 기준 그대로)</span></div></div>';
 
   /* ── 그래프 : 매출 막대 + 재고 추이선 ── */
   var maxS=Math.max.apply(null,series.map(function(s){return s.sales;}).concat([0]))||1;
@@ -17579,7 +17935,7 @@ function mvTabTrend(){
   var maxC=Math.max(maxS,maxI)||1;
   maxC=(function(v){ var e=v/100000000; var st=e<=2?0.25:e<=5?0.5:e<=10?1:e<=20?2:5; return Math.ceil(e/st)*st*100000000; })(maxC);
   maxS=maxC; maxI=maxC;
-  var W=1220,H=360,L=78,R=86,T=50,B=54, PW=W-L-R, PH=H-T-B;
+  var W=1220,H=360,L=86,R=40,T=50,B=54, PW=W-L-R, PH=H-T-B;   /* v465 : 눈금은 왼쪽 하나만 */
   var step=PW/12, bw=Math.min(38,step*0.46);
   var xC=function(i){ return L+step*i+step/2; };
   var yS=function(v){ return T+PH-(v/maxS)*PH; };
@@ -17588,8 +17944,7 @@ function mvTabTrend(){
   for(var g=0;g<=4;g++){
     var gy=T+PH-PH*g/4;
     grid+='<line x1="'+L+'" y1="'+gy.toFixed(1)+'" x2="'+(W-R)+'" y2="'+gy.toFixed(1)+'" stroke="#eef2f7" stroke-width="1"/>';
-    lab+='<text x="'+(L-8)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="11" fill="#94a3b8">'+((maxS*g/4)/100000000).toFixed(1)+'억</text>'
-       + '<text x="'+(W-R+8)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="start" font-size="11" fill="#94a3b8">'+((maxI*g/4)/100000000).toFixed(1)+'억</text>';
+    lab+='<text x="'+(L-8)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="11.5" font-weight="700" fill="#64748b">'+((maxC*g/4)/100000000).toFixed(1)+'억</text>';
   }
   var lineY=series.map(function(s){ return s.has?yI(s.inv):null; });
   var bars=series.map(function(s,i){
@@ -17625,13 +17980,15 @@ function mvTabTrend(){
   var chart='<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;min-width:820px;height:auto;display:block">'
     +grid+lab+bars+segs+dots+xlab
     +'<line x1="'+L+'" y1="'+(T+PH)+'" x2="'+(W-R)+'" y2="'+(T+PH)+'" stroke="#94a3b8"/>'
-    +'<text x="'+(L-8)+'" y="'+(T-30)+'" text-anchor="start" font-size="11" font-weight="800" fill="#2563eb">← 매출(막대) 억원</text>'
-    +'<text x="'+(W-R+8)+'" y="'+(T-30)+'" text-anchor="end" font-size="11" font-weight="800" fill="#1e3a5f">'+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+'(추이선) 억원 →</text>'
-    +'<text x="'+(W/2)+'" y="'+(T-30)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="#64748b">좌·우 축 동일 눈금(억원) — 높이를 그대로 비교할 수 있습니다</text>'
+    +'<text x="'+(L-8)+'" y="'+(T-30)+'" text-anchor="end" font-size="11.5" font-weight="800" fill="#334155">단위 : 억원</text>'
+    +'<text x="'+(L+10)+'" y="'+(T-30)+'" text-anchor="start" font-size="11.5" font-weight="800" fill="#2563eb">■ 월 매출(막대)</text>'
+    +'<text x="'+(L+130)+'" y="'+(T-30)+'" text-anchor="start" font-size="11.5" font-weight="800" fill="#1e3a5f">— '+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+'(추이선)'+(loc!=='전체'?(' · '+mvEsc(loc)):'')+'</text>'
+    +'<text x="'+(W-R)+'" y="'+(T-30)+'" text-anchor="end" font-size="10.5" font-weight="700" fill="#64748b">막대·추이선 모두 같은 눈금(왼쪽 축)입니다 — 높이를 그대로 비교하십시오</text>'
     +'</svg></div>'
     +'<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:12px;color:#475569">'
-      +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:11px;background:#bfdbfe;border-radius:2px;display:inline-block"></span>월 매출 <b style="color:#2563eb">억원</b></span>'
-      +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;height:0;border-top:2.6px solid #1e3a5f;display:inline-block"></span>'+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+' <b style="color:#1e3a5f">억원</b></span>'
+      +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:11px;background:#bfdbfe;border-radius:2px;display:inline-block"></span>월 매출</span>'
+      +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;height:0;border-top:2.6px solid #1e3a5f;display:inline-block"></span>'+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+'</span>'
+      +'<span style="display:inline-flex;align-items:center;gap:6px"><b style="color:#334155">단위 억원</b> · 눈금은 <b>왼쪽 축 하나</b>를 함께 씁니다</span>'
       +'<span style="display:inline-flex;align-items:center;gap:6px"><b style="color:#0d9488">n.n개월</b> 매출 대비 재고(재고÷그 달 매출)</span>'
       +(hasSales?'':'<span style="color:#dc2626;font-weight:700">매출 자료가 없어 막대가 표시되지 않습니다 — 매출 파일을 불러오십시오.</span>')
     +'</div>';
@@ -17668,20 +18025,21 @@ function mvTabTrend(){
   var loaded=have.length;
   var html=mvTabBar()+pickBar
     +'<div class="rhead" style="margin-bottom:8px"><span class="title">📈 '+yr+'년 월별 재고 추이 · 매출 대비</span>'
-      +'<span class="meta">1~12월 · 재고 등록 '+loaded+'개월 · 기준 구분 <b>'+mvEsc(cat)+'</b>'+(avgR!=null?(' · 평균 매출대비 '+avgR.toFixed(2)+'개월'):'')+'</span></div>'
-    +'<div class="panel"><h3>월 매출(막대) · '+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+'(추이선)</h3>'+chart+'</div>'
-    +'<div class="panel"><h3>월별 · 구분별 재고금액 · 매출 대비</h3><div style="overflow:auto"><table style="border-collapse:collapse;min-width:1100px"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'
+      +'<span class="meta">1~12월 · 재고 등록 '+loaded+'개월 · 기준 구분 <b>'+mvEsc(cat)+'</b> · 보관장소 <b>'+mvEsc(loc)+'</b>'+(avgR!=null?(' · 평균 매출대비 '+avgR.toFixed(2)+'개월'):'')+'</span></div>'
+    +'<div class="panel"><h3>월 매출(막대) · '+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+'(추이선)'+(loc!=='전체'?(' <span style="font-size:12px;font-weight:700;color:#1e3a5f">· 보관장소 '+mvEsc(loc)+'</span>'):'')+'</h3>'+chart+'</div>'
+    +'<div class="panel"><h3>월별 · 구분별 재고금액 · 매출 대비'+(loc!=='전체'?(' <span style="font-size:12px;font-weight:700;color:#1e3a5f">· 보관장소 '+mvEsc(loc)+'</span>'):'')+'</h3><div style="overflow:auto"><table style="border-collapse:collapse;min-width:1100px"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'
     +'<div class="note" style="margin-top:9px">'+(loaded<2
       ? '재고는 <b>'+have.map(function(s){return s.mo+'월';}).join(', ')+'</b>만 등록되어 있고 나머지 달은 0으로 표시했습니다. 상단 <b>📁 파일·관리 ▸ 월 재고현황</b>에서 다른 달 파일을 추가하면 그 달 칸이 채워지고 추이선이 이어집니다.'
       : '전월대비는 <b>등록된 달끼리만</b> 비교합니다(미등록 달은 건너뜁니다).')
       +'<br><b>매출대비</b>는 그 달 말 재고를 <b>그 달 매출</b>로 나눈 값으로, <b>재고가 몇 개월치 매출에 해당하는가</b>를 뜻합니다. '
-      +'막대(매출)와 추이선(재고)은 <b>좌·우 축 모두 같은 눈금(억원)</b>을 쓰므로 <b>높낮이를 그대로 비교</b>하실 수 있습니다. 추이선이 막대보다 높으면 그 달 재고가 매출보다 크다는 뜻입니다. '
+      +'막대(매출)와 추이선(재고)은 <b>왼쪽 축 하나(억원)</b>를 함께 쓰므로 <b>높낮이를 그대로 비교</b>하실 수 있습니다. 추이선이 막대보다 높으면 그 달 재고가 매출보다 크다는 뜻입니다. '
       +'매출은 그대로인데 추이선만 올라가면 <b>과잉 매입 또는 소진 실패</b>, 매출이 늘어도 추이선이 평평하면 <b>회전이 개선</b>된 것입니다. '
       +'구분 버튼으로 원자재만 놓고 보면 소재 선매입 시점이, 제품만 놓고 보면 출하 지연 여부가 드러납니다.</div></div>';
 
   renderCustom(html,function(){ try{setGlobalBar(false);}catch(e){} mvBind();
     document.querySelectorAll('#result .mvtychip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.trendYear=b.dataset.v; mvSave(); mvRender(); }); });
     document.querySelectorAll('#result .mvtrcat').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.trendCat=b.dataset.v; mvSave(); mvRender(); }); });
+    document.querySelectorAll('#result .mvtrloc').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.trendLoc=b.dataset.v; mvSave(); mvRender(); }); });
   });
 }
 
@@ -17697,6 +18055,18 @@ function mvTabItems(){
   show=show.map(function(r){ var o=Object.assign({},r); o.label=r.name||r.code; o.key=r.code;
       o._search=[r.code,r.name,r.spec,mvSpecVariants(r.spec),r.cat,r.loc,r.mat,mvSpecVariants(r.mat),r.note,r.acct,r.part].join(' '); return o; });
   var tot=show.reduce(function(a,r){return a+r.amt;},0);
+  /* v462 : 자재품목(원자재)을 '원자재 재고현황'의 실제 원자재 행 기준으로 다시 표기한다.
+     mvRawLinks 가 제품행의 자재품목 문구를 원자재 재고현황 품목과 매칭해 두므로 그 결과를 역인덱스로 만든다. */
+  var _rawLink={};
+  try{ var _D=mvRawLinks(ym);
+    (_D.raws||[]).forEach(function(o){ (o.use||[]).forEach(function(u){
+      var k=(u.code||'')+'\u2502'+(u.spec||'');
+      (_rawLink[k]=_rawLink[k]||[]).push({code:o.code,name:o.name,spec:o.spec,loc:o.loc,kg:o.kg,unit:o.unit,exact:!!u.exact});
+    }); });
+    Object.keys(_rawLink).forEach(function(k){ _rawLink[k].sort(function(a,b){ return ((b.exact?1:0)-(a.exact?1:0))||(b.kg-a.kg); }); });
+  }catch(e){ _rawLink={}; }
+  var _rawOf=function(o){ var a=_rawLink[(o.code||'')+'\u2502'+(o.spec||'')]; return (a&&a.length)?a:null; };
+  var _rawTxt=function(x){ return (x.name||'')+(x.spec?(' '+x.spec):''); };
   var _mt=rows.filter(function(r){return r.cat!=='원자재';});
   var _mtHas=_mt.filter(function(r){return !!r.mat;}), _mtOrig=_mt.filter(function(r){return r.mat&&!r.matVia;});
   var _viaCnt={}; _mtHas.forEach(function(r){ if(r.matVia)_viaCnt[r.matVia]=(_viaCnt[r.matVia]||0)+1; });
@@ -17704,8 +18074,9 @@ function mvTabItems(){
     +'<b>자재품목(원자재)</b> — 그 품목을 만드는 데 들어가는 소재입니다. 원자재를 뺀 '+mvWon(_mt.length)+'행 중 <b>'+mvWon(_mtOrig.length)+'행</b>은 재고표에 직접 적혀 있고, '
     +'<b>'+mvWon(_mtHas.length-_mtOrig.length)+'행</b>은 칸이 비어 있어 같은 소재를 쓰는 다른 행에서 가져왔습니다'
     +(Object.keys(_viaCnt).length?(' ('+Object.keys(_viaCnt).map(function(k){return k+' '+mvWon(_viaCnt[k])+'행';}).join(' · ')+' — 노란 배지로 근거 표시)'):'')+'. '
-    +'나머지 <b style="color:#dc2626">'+mvWon(_mt.length-_mtHas.length)+'행</b>은 <b>미기재</b>입니다 — 스텐경첩보강대·도어록보강·돌쩌귀처럼 A동·창고 제품 시트의 자재품목 칸이 비어 있는 품목군이라 원본에 소재 정보가 없습니다. '
-    +'재고표의 자재품목 칸을 채우시면 이 표와 원자재 사용추이·재고현황에 자동 반영됩니다.';
+    +'나머지 <b style="color:#dc2626">'+mvWon(_mt.length-_mtHas.length)+'행</b>은 소재 정보가 없어 <b>빈 칸</b>으로 둡니다(스텐경첩보강대·도어록보강·돌쩌귀처럼 A동·창고 제품 시트의 자재품목 칸이 비어 있는 품목군). '
+    +'재고표의 자재품목 칸을 채우시면 이 표와 원자재 사용추이·재고현황에 자동 반영됩니다.<br>'
+    +'<b style="color:#0d9488">🧾 재고현황</b> 배지가 붙은 값은 재고표 문구를 그대로 쓰지 않고 <b>원자재 재고현황</b>에서 실제로 연결된 원자재(품명·규격)로 바꿔 표기한 것입니다 — 마우스를 올리면 원자재 품번·보관장소·재고와 재고표 원래 문구를 볼 수 있습니다.';
   var cntC={}, cntL={}, amtC={}, amtL={};
   rows.forEach(function(r){ var c=r.cat; cntC[c]=(cntC[c]||0)+1; amtC[c]=(amtC[c]||0)+r.amt; });
   catRows.forEach(function(r){ var l=r.loc||'(미지정)'; cntL[l]=(cntL[l]||0)+1; amtL[l]=(amtL[l]||0)+r.amt; });
@@ -17737,9 +18108,20 @@ function mvTabItems(){
     {k:'unit',t:'단위',cell:function(o){return mvEsc(o.unit);},sortVal:function(o){return o.unit;}},
     {k:'cost',t:'생산단가',cell:function(o){return mvWon(o.cost);},sortVal:function(o){return o.cost;}},
     {k:'amt',t:'재고금액',cell:function(o){return mvWon(o.amt);},sortVal:function(o){return o.amt;}},
-    {k:'mat',t:'자재품목(원자재)',cls:'l',cell:function(o){ if(!o.mat)return '<span class="sub2" style="color:#cbd5e1">미기재</span>';
+    {k:'mat',t:'자재품목(원자재)',cls:'l',cell:function(o){
+        var lk=_rawOf(o);
+        if(lk){
+          var top=lk[0];
+          var tip='원자재 재고현황 기준 · 품번 '+(top.code||'')+(top.loc?(' · '+top.loc):'')+' · 재고 '+mvNum(top.kg,0)+(top.unit||'')
+                 +(o.mat?(' · 재고표 표기 「'+o.mat+'」'):'')+(o.matVia?(' · '+o.matVia+' 기준 추정'):'');
+          var more=(lk.length>1)?('<span class="sub2" style="margin-left:4px;font-size:10.5px;color:#64748b" title="'+mvEsc(lk.slice(1).map(_rawTxt).join(' · '))+'">외 '+(lk.length-1)+'</span>'):'';
+          return '<span style="color:#0d9488;font-weight:700" title="'+mvEsc(tip)+'">'+mvEsc(_rawTxt(top))+'</span>'
+            +'<span style="margin-left:4px;padding:0 5px;border-radius:5px;font-size:10.5px;font-weight:800;background:#ccfbf1;color:#0f766e">🧾 재고현황</span>'+more;
+        }
+        if(!o.mat) return '';   /* v462 : 미기재 글자는 표시하지 않는다 */
         var via=o.matVia?('<span style="margin-left:4px;padding:0 5px;border-radius:5px;font-size:10.5px;font-weight:800;background:#fef3c7;color:#b45309">'+o.matVia+'</span>'):'';
-        return '<span class="sub2" style="color:#0d9488;font-weight:700"'+(o.matVia?(' title="재고표에 빈 칸이라 '+o.matVia+' 기준으로 같은 소재를 쓰는 행에서 가져왔습니다"'):'')+'>'+mvEsc(o.mat)+'</span>'+via; },sortVal:function(o){return o.mat;}},
+        return '<span class="sub2" style="color:#0d9488;font-weight:700"'+(o.matVia?(' title="재고표에 빈 칸이라 '+o.matVia+' 기준으로 같은 소재를 쓰는 행에서 가져왔습니다"'):'')+'>'+mvEsc(o.mat)+'</span>'+via; },
+      sortVal:function(o){ var lk=_rawOf(o); return lk?_rawTxt(lk[0]):(o.mat||''); }},
     {k:'note',t:'비고',cls:'l',cell:function(o){return '<span class="sub2" title="'+mvEsc(o.note)+'">'+mvEsc(String(o.note||'').slice(0,30))+'</span>';},sortVal:function(o){return o.note;}}
   ];
   render('🔎 품목 상세 ('+mvYmLabel(ym)+')', mvWon(show.length)+'건 · '+mvWon(tot)+'원', show, cols, 'amt',
@@ -18329,6 +18711,106 @@ setTimeout(mvInstallMenu,3500);
 
 })();
 
+</script>
+<script id="drag-guard-v462">
+/* ==========================================================
+   v462 · 드래그(범위 선택) 후에는 클릭이 일어나지 않도록 — 전 화면 공통
+   목표·추이 화면에만 있던 동작(_fieldDrag + 선택영역 검사)을 모든 표·화면에 적용한다.
+   · 표 안에서 글자를 끌어 선택하고 마우스를 표 밖에서 놓아도 행이 열리지 않는다.
+   · 입력칸(input/textarea/select) 안에서 끌기 시작한 경우도 마찬가지.
+   · 버튼·링크·체크박스·입력칸 자체의 클릭은 그대로 동작한다.
+   ========================================================== */
+(function(){
+  var CTL='input,textarea,select,button,a,label,option,summary,[contenteditable=""],[contenteditable="true"],[role="button"]';
+  var sx=0, sy=0, moved=false, fromField=false, armed=false;
+  function isCtl(t){ try{ return !!(t&&t.closest&&t.closest(CTL)); }catch(e){ return false; } }
+  document.addEventListener('pointerdown',function(e){
+    if(e.button!==0){ armed=false; return; }
+    armed=true; moved=false; sx=e.clientX; sy=e.clientY; fromField=isCtl(e.target);
+  },true);
+  document.addEventListener('pointermove',function(e){
+    if(!armed||moved) return;
+    if(Math.abs(e.clientX-sx)>6||Math.abs(e.clientY-sy)>6) moved=true;
+  },true);
+  document.addEventListener('click',function(e){
+    var was=moved, wasField=fromField;
+    moved=false; fromField=false; armed=false;
+    if(isCtl(e.target)) return;                       /* 조작 요소는 그대로 */
+    var sel=''; try{ sel=String((window.getSelection&&window.getSelection())||'').trim(); }catch(_){}
+    if(was||wasField||sel){ e.stopImmediatePropagation(); e.preventDefault(); }
+  },true);
+  /* 마우스를 창 밖에서 놓아 click 이 오지 않는 경우 상태만 정리 */
+  document.addEventListener('pointerup',function(){ setTimeout(function(){ moved=false; fromField=false; armed=false; },0); },true);
+})();
+</script>
+<script id="ar-menu-v463">
+/* ==========================================================
+   v463 · 💰 미수관리 를 드롭다운 메뉴로 — 화면(탭)을 메뉴에서 바로 연다
+   ========================================================== */
+(function(){
+  var TABS=[['dash','\uD83D\uDCCA','종합현황'],['long','\u23F3','장기미수'],['ratio','\uD83D\uDCC8','월매출 대비'],
+            ['duedate','\uD83D\uDCC5','결제일 대비'],['yoy','\u2696\uFE0F','전년대비'],['bills','\uD83E\uDDFE','어음관리'],
+            ['credit','\uD83D\uDCB3','신용도·회수위험'],['detail','\uD83C\uDFE2','업체별 상세'],
+            ['plan','\uD83D\uDCC5','수금계획'],['focus','\u2B50','집중관리업체']];
+  function closeAll(){
+    document.querySelectorAll('.tm-top.open').forEach(function(x){
+      x.classList.remove('open'); if(x.nextElementSibling)x.nextElementSibling.classList.remove('open'); });
+  }
+  function mark(){
+    if(typeof state==='undefined')return;
+    var cur=(state.ar&&state.ar.tab)||'dash', on=(state.act==='ar');
+    document.querySelectorAll('#arMenuDrop .tm-item').forEach(function(b){
+      b.classList.toggle('active', on&&b.dataset.artab===cur); });
+  }
+  function build(){
+    var btn=document.getElementById('arMenuBtn'); if(!btn) return false;
+    if(document.getElementById('arMenuGrp')) return true;
+    var grp=document.createElement('div'); grp.className='tm-grp'; grp.id='arMenuGrp';
+    var top=document.createElement('button'); top.className='tm-top'; top.type='button'; top.id='arMenuTop';
+    top.textContent='\uD83D\uDCB0 미수관리 \u25BE';
+    var drop=document.createElement('div'); drop.className='tm-drop'; drop.id='arMenuDrop';
+    TABS.forEach(function(t){
+      var b=document.createElement('button');
+      b.className='tm-item'; b.type='button'; b.dataset.act='ar'; b.dataset.artab=t[0];
+      b.innerHTML='<span class="ic">'+t[1]+'</span>'+t[2];
+      b.addEventListener('click',function(e){
+        e.stopPropagation();
+        try{
+          if(!state.ar)state.ar=(typeof arBase==='function')?arBase():{};
+          if(t[0]!=='detail')state.ar.prevTab=t[0];
+          state.ar.tab=t[0]; state.ar.card=''; state.ar.search=''; state.ar.agingBand='';
+          if(typeof arSave==='function')arSave();
+        }catch(_){}
+        closeAll();
+        try{ arOpenPage(); }catch(_){ try{ state.act='ar'; window.runAct(); }catch(__){} }
+        setTimeout(mark,0); setTimeout(mark,150);
+      });
+      drop.appendChild(b);
+    });
+    top.addEventListener('click',function(e){
+      e.stopPropagation();
+      var was=top.classList.contains('open');
+      closeAll();
+      if(!was){ top.classList.add('open'); drop.classList.add('open'); mark(); }
+    });
+    grp.appendChild(top); grp.appendChild(drop);
+    btn.parentNode.insertBefore(grp,btn);
+    btn.style.display='none';           /* 기존 직접 버튼은 숨김 (다른 코드가 참조하므로 지우지 않음) */
+    /* 선택된 화면 표시 : syncTopMenuSection 이 .tm-item[data-act="ar"] 를 찾아 상위 메뉴를 표시한다 */
+    try{
+      if(typeof window.runAct==='function'&&!window.runAct.__arMenuV463){
+        var prev=window.runAct;
+        var wrapped=function(){ var r=prev.apply(this,arguments); setTimeout(mark,0); return r; };
+        wrapped.__arMenuV463=true; window.runAct=wrapped;
+      }
+    }catch(_){}
+    mark();
+    return true;
+  }
+  function boot(){ if(build())return; var n=0,t=setInterval(function(){ if(build()||++n>40)clearInterval(t); },300); }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,400);},{once:true});
+  else setTimeout(boot,400);
+})();
 </script>
 </body>
 </html>
