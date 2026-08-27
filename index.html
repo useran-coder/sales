@@ -16682,6 +16682,34 @@ function mvSalesIdx(nMon, endYm){
   return res;
 }
 
+/* v470 : 월별보기 공용 — 그 해 1~12월 품번별 출고수량 */
+function mvCodeMonthQty(yr){
+  var m={};
+  try{
+    if(typeof CUR==='undefined'||!CUR||!CUR.length) return m;
+    var y=String(yr);
+    CUR.forEach(function(r){
+      if(String(r.ym||'').slice(0,4)!==y) return;
+      var c=String(r.code||'').trim(); if(!c) return;
+      var mo=+String(r.ym).slice(5,7); if(!(mo>=1&&mo<=12)) return;
+      var o=m[c]||(m[c]={}); o[mo]=(o[mo]||0)+(+r.qty||0);
+    });
+  }catch(e){}
+  return m;
+}
+var MV_MONTHS12=[1,2,3,4,5,6,7,8,9,10,11,12];
+/* v469 : 월별보기 공용 — 집계기간에 포함된 달 목록 */
+function mvWinMonths(SI){
+  try{
+    if(!SI||!SI.ok||typeof CUR==='undefined'||!CUR.length) return [];
+    var all=Array.from(new Set(CUR.map(function(r){return r.ym;}))).filter(Boolean).sort();
+    return all.filter(function(y){ return (!SI.from||y>=SI.from)&&(!SI.to||y<=SI.to); });
+  }catch(e){ return []; }
+}
+function mvMoLabel(ym,prev){
+  var y=String(ym).slice(0,4), m=+String(ym).slice(5,7);
+  return (!prev||String(prev).slice(0,4)!==y)?('<span style="font-size:10px;color:#8ba3c0">'+y.slice(2)+'.</span>'+m+'월'):(m+'월');
+}
 /* ---------- 요약(합계표) 계산 ---------- */
 var MV_GORDER=['원자재','제품','반제품','부자재','상품','OEM','매출 이월건'];
 function mvSummary(ym){
@@ -17093,7 +17121,19 @@ function mvTabSum(){
     ? ('📦 <b style="color:#b45309">'+mvEsc(pickLbl)+'</b> 품목 <span style="text-transform:none;font-weight:600;color:#64748b">— 전체 '+mvWon(srcRows.length)+'건 · '+mvWon(srcTot)+'원'+(total?(' ('+mvPct(srcTot,total).toFixed(1)+'%)'):'')+(srcRows.length>lim?(' · 상위 '+mvWon(top.length)+'건 표시'):'')+' · 열 제목 클릭 시 정렬</span> <button id="mvPickClear" class="btn ghost" style="font-size:11.5px;padding:3px 9px;margin-left:8px">✕ 전체로 돌아가기</button>')
     : ('재고금액 상위 15개 품목 <span style="text-transform:none;font-weight:600;color:#64748b">— 상위 15개 합계 '+mvWon(top15)+'원 ('+mvPct(top15,total).toFixed(1)+'%) · 위 합계표에서 <b>보관장소 행을 클릭</b>하면 그 장소의 품목만 여기에 표시됩니다 · 열 제목 클릭 시 정렬</span>');
 
-  var html=mvTabBar()
+  /* v469 : 그 달에 품목행이 없거나 수량이 전부 0이면(엑셀 열 제목 차이 등) 이유를 알려준다 */
+  var _qtySum=rows.reduce(function(a,r){return a+(+r.stock||0);},0);
+  var warn='';
+  if(!rows.length){
+    warn='<div class="note" style="margin:0 0 10px;border-left:4px solid #dc2626;background:#fff5f5"><b style="color:#dc2626">이 달은 품목 명세가 없습니다 — 합계(금액)만 저장돼 있습니다.</b><br>'
+      +'재고 엑셀의 <b>품목 시트</b>를 읽으려면 머리글에 <b>보관위치(보관장소) · 품번 · 재고금액(금액)</b>이 있어야 합니다. 그 달 파일의 열 제목이 다르면 합계 시트만 저장되어 <b>수량·상위 품목</b>이 비게 됩니다. '
+      +'상단 <b>📥 재고 엑셀 불러오기</b>로 <b>'+mvYmLabel(ym)+'</b> 파일을 다시 올리시면 이번 버전의 넓어진 열 인식(재고/재고수량/수량/현재고/월말재고 등)으로 다시 읽습니다.</div>';
+  }else if(_qtySum<=0){
+    warn='<div class="note" style="margin:0 0 10px;border-left:4px solid #d97706;background:#fffbeb"><b style="color:#b45309">이 달은 품목 '+mvWon(rows.length)+'건이 있으나 <u>재고 수량</u>이 모두 0입니다.</b><br>'
+      +'그 달 엑셀의 수량 열 제목이 달라(<b>재고수량 · 수량 · 현재고 · 월말재고</b> 등) 인식되지 않았을 때 생깁니다. 이번 버전은 이 이름들을 모두 인식하므로 '
+      +'<b>📥 재고 엑셀 불러오기</b>로 <b>'+mvYmLabel(ym)+'</b> 파일을 다시 올리시면 수량이 채워집니다.</div>';
+  }
+  var html=mvTabBar()+warn
     +'<div class="rhead" style="margin-bottom:8px"><span class="title">📅 '+mvEsc(m.title||(mvYmLabel(ym)+' 본사 재고현황'))+'</span>'
       +'<span class="meta">품목 '+mvWon(nAll)+'건 · 총 '+mvWon(total)+'원</span><span class="spacer"></span>'
       +'<button class="btn ghost" id="mvXls" style="font-size:12.5px">엑셀 내보내기</button></div>'
@@ -17295,6 +17335,7 @@ function mvPickBar(rows,note){
 function mvTurnData(){
   var ym=MV.ui.cur, rows=mvRows(ym), win=MV.ui.win|0;
   var SI=mvSalesIdx(win,ym), mon=SI.months||0;
+  var YQ=mvCodeMonthQty(String(ym).slice(0,4));   /* v470 : 월별보기(1~12월) */
   var m=new Map();
   rows.forEach(function(r){
     if(r.cat==='원자재'||r.cat==='매출이월') return;
@@ -17309,7 +17350,8 @@ function mvTurnData(){
   var arr=[];
   m.forEach(function(o){
     var s=SI.idx.get(o.code), all=SI.all.get(o.code);
-    o.out=s?s.qty:0; o.outAmt=s?s.amt:0;
+    o.out=s?s.qty:0; o.outAmt=s?s.amt:0; o.byYm=(s&&s.byYm)?s.byYm:{};
+    o.monQty=YQ[o.code]||{};                       /* v470 : 그 해 1~12월 출고수량 */
     o.mavg=mon?o.out/mon:0;
     o.mos=o.mavg>0?(o.stock/o.mavg):(o.stock>0?9999:0);
     o.turn=o.stock>0?(o.mavg*12/o.stock):(o.mavg>0?9999:0);
@@ -17323,7 +17365,7 @@ function mvTurnData(){
     if(m.has(code)) return; if(!(s.qty>0)) return;
     var mavg=mon?s.qty/mon:0; if(mavg<=0) return;
     arr.push({code:code,name:s.name,spec:s.spec,cat:'(재고 미등록)',locs:{},byLoc:{},byLocStock:{},loc:'-',stock:0,amt:0,cost:0,unit:'EA',
-      out:s.qty,outAmt:s.amt,mavg:mavg,mos:0,turn:9999,last:s.last,newItem:true});
+      out:s.qty,outAmt:s.amt,byYm:s.byYm||{},monQty:YQ[code]||{},mavg:mavg,mos:0,turn:9999,last:s.last,newItem:true});
   });
   MV.ui.turnExcl=MV.ui.turnExcl||{};
   arr.forEach(function(o){
@@ -17381,13 +17423,16 @@ function mvTabTurn(){
   var show=(f==='전체'||f==='제외품')?base.slice():base.filter(function(o){return o.verdict===f;});
   var tot=show.reduce(function(a,o){return a+o.amt;},0), totOut=show.reduce(function(a,o){return a+o.outAmt;},0);
 
+  /* v469 : 월별보기(수량 기준) */
+  var monOn=!!MV.ui.turnMonthly, monYr=String(ym).slice(0,4);
+  var monBtn='<button class="btn ghost" id="mvMonBtn" style="font-size:12.5px;padding:6px 12px;'+(monOn?'background:#2563eb;color:#fff;border-color:#2563eb':'color:#2563eb;border-color:#bfdbfe')+'">📅 월별보기'+(monOn?(' '+monYr+'년 1~12월'):'')+'</button>';
   var winSel='<span class="cl" style="font-size:12px;color:#475569;font-weight:700">출고 집계기간 <select id="mvWin">'
     +[3,6,12,24,0].map(function(n){return '<option value="'+n+'"'+(MV.ui.win===n?' selected':'')+'>'+(n?(n+'개월'):'전체기간')+'</option>';}).join('')+'</select></span>';
   var exBtn='<button class="btn ghost" id="mvExMode" style="font-size:12.5px;padding:6px 12px;'+(exMode?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe')+'">🚫 제외품 지정'+(exArr.length?(' ('+mvWon(exArr.length)+')'):'')+(exMode?' ✓':'')+'</button>';
   var exClear=exArr.length?('<button class="btn ghost" id="mvExClear" style="font-size:12px;padding:6px 10px;color:#dc2626;border-color:#fecaca">제외 전체 해제</button>'):'';
   var exHint=exMode?('<span class="sub2" style="font-size:11.5px;color:#7c3aed;font-weight:700">체크한 품목은 분석·판정·합계에서 빠집니다 (단종·샘플·특수품 등)</span>')
     :(f==='제외품'?('<span class="sub2" style="font-size:11.5px;color:#7c3aed;font-weight:700">체크를 풀면 바로 분석 대상으로 되돌아갑니다</span>'):'');
-  var controls='<div class="ctrlbar" style="gap:12px;flex-wrap:wrap;align-items:center">'+winSel+exBtn+exClear+exHint
+  var controls='<div class="ctrlbar" style="gap:12px;flex-wrap:wrap;align-items:center">'+winSel+monBtn+exBtn+exClear+exHint
     +'<span class="sub2" style="font-size:11.5px;color:#64748b">재고월수(MOS) = 현재고 ÷ 월평균 출고수량 · 회전율(회/년) = 월평균출고×12 ÷ 현재고 · 판정: 무출고 / 과잉 6개월↑ / 다소과다 3~6 / 적정 0.5~3 / 부족 0.5↓</span></div>'+chips;
 
   var cols=[];
@@ -17413,6 +17458,22 @@ function mvTabTurn(){
     {k:'verdict',t:'판정',cell:function(o){ if(o.excl)return '<span style="display:inline-block;padding:2px 9px;border-radius:8px;font-size:11.5px;font-weight:800;background:#7c3aed1a;color:#7c3aed">제외품</span>';
         return '<span style="display:inline-block;padding:2px 9px;border-radius:8px;font-size:11.5px;font-weight:800;background:'+MV_VC[o.verdict]+'1a;color:'+MV_VC[o.verdict]+'">'+o.verdict+'</span>'; },sortVal:function(o){return o.excl?'제외품':o.verdict;}}
   ]);
+  /* v470 : 월별보기 — 순위 · 품명 · 규격 · 1~12월(출고수량)만 */
+  if(monOn){
+    cols=[
+      {k:'rank',t:'순위',cls:'rank',cell:function(o,i){return (o.excl?'<span style="color:#7c3aed;font-weight:800">🚫</span> ':'')+(i+1);},nosort:true},
+      {k:'label',t:'품명',cls:'l',cell:function(o){return mvEsc(o.name||o.code||'');},sortVal:function(o){return o.name||'';}},
+      {k:'spec',t:'규격',cls:'l',cell:function(o){return mvEsc(o.spec||'');},sortVal:function(o){return o.spec||'';}}
+    ];
+    MV_MONTHS12.forEach(function(mo){
+      cols.push({k:'m'+mo,t:mo+'월',cell:function(o){ var v=(o.monQty&&o.monQty[mo])||0;
+          return v?('<span style="font-weight:700;color:#1d4ed8">'+mvNum(v,0)+'</span>'):'<span style="color:#dde3ea">·</span>'; },
+        sortVal:function(o){ return (o.monQty&&o.monQty[mo])||0; }});
+    });
+    cols.push({k:'msum',t:monYr+'년 합계',cell:function(o){ var t2=0; MV_MONTHS12.forEach(function(mo){ t2+=(o.monQty&&o.monQty[mo])||0; });
+        return t2?('<b style="color:#1e3a5f">'+mvNum(t2,0)+'</b>'):'<span style="color:#dde3ea">·</span>'; },
+      sortVal:function(o){ var t2=0; MV_MONTHS12.forEach(function(mo){ t2+=(o.monQty&&o.monQty[mo])||0; }); return t2; }});
+  }
   var over=live.filter(function(o){return o.verdict==='과잉(6개월↑)'||o.verdict==='무출고';}).reduce(function(a,o){return a+o.amt;},0);
   var short=live.filter(function(o){return o.verdict==='부족'||o.verdict==='결품·미등록';}).length;
   var exAmt=exArr.reduce(function(a,o){return a+o.amt;},0);
@@ -17420,15 +17481,19 @@ function mvTabTurn(){
     :('집계기간 <b>'+D.SI.from+' ~ '+D.SI.to+' ('+mon+'개월)</b> 출고 실적과 '+mvYmLabel(ym)+' 말 재고를 품번으로 대조했습니다. '
       +'<b>과잉+무출고 재고금액 '+mvWon(over)+'원</b> — 소진계획·판촉 대상입니다. <b>부족·결품 '+mvWon(short)+'품목</b>은 결품 위험이므로 생산 우선순위를 조정하십시오. '
       +'수량 단위가 다른 품목(KG/말 등)이 섞여 있으므로 재고월수는 <b>동일 단위 기준</b>으로 해석하십시오.'
+      +'<br><b>📅 월별보기</b>를 켜면 오른쪽에 <b>집계기간 각 달의 출고수량</b>이 붙어 달마다 얼마나 나갔는지 바로 볼 수 있습니다.'
       +'<br><b>🚫 제외품 지정</b>을 누르면 왼쪽에 체크칸이 생깁니다. 단종품·샘플·특수 주문품처럼 회전 판정에서 빼야 할 품목을 체크하면 <b>목록·판정·합계에서 모두 제외</b>되고, 제외품 칩으로 따로 모아 볼 수 있습니다. 지정 내용은 저장되어 다음에 열 때도 유지됩니다.'
       +(exArr.length?('<br>현재 제외 <b style="color:#7c3aed">'+mvWon(exArr.length)+'품목 · '+mvWon(exAmt)+'원</b>이 분석에서 빠져 있습니다.'):''));
-  render('🔄 제품 재고소진·회전 분석 ('+mvYmLabel(ym)+')',
+  render('🔄 제품 재고소진·회전 분석 ('+mvYmLabel(ym)+')'+(monOn?(' · 📅 '+monYr+'년 월별 출고수량'):''),
     (fc==='전체'?'전체 구분':fc)+' · '+(fl==='전체'?'전체 보관장소':fl)+' · '+(f==='전체'?'전체':f)+' '+mvWon(show.length)+'품목 · 재고 '+mvWon(tot)+'원 · '+(mon?mon+'개월 출고 '+mvWon(totOut)+'원':'출고자료 없음'),
-    show, cols, 'amt', note,
+    show, cols, monOn?null:'amt', note,
     {controlsHtml:mvTabBar()+pickBar+controls, pageLimit:200, tableClass:'mv-tbl',
-     total:{label:'합 계',amt:tot,cells:{amt:mvWon(tot),stock:mvNum(show.reduce(function(a,o){return a+o.stock;},0)),out:mvNum(show.reduce(function(a,o){return a+o.out;},0)),outAmt:mvWon(totOut)}},
+     total:{label:'합 계',amt:tot,cells:(function(){ var c={amt:mvWon(tot),stock:mvNum(show.reduce(function(a,o){return a+o.stock;},0)),out:mvNum(show.reduce(function(a,o){return a+o.out;},0)),outAmt:mvWon(totOut)};
+        if(monOn){ var g=0; MV_MONTHS12.forEach(function(mo){ var v=show.reduce(function(a,o){return a+((o.monQty&&o.monQty[mo])||0);},0); g+=v; c['m'+mo]=v?mvNum(v,0):'·'; }); c.msum=mvNum(g,0); }
+        return c; })()},
      onMount:function(){ try{setGlobalBar(false);}catch(e){} mvBind();
        var w=document.getElementById('mvWin'); if(w)w.addEventListener('change',function(e){ MV.ui.win=+e.target.value; MV._scache=null; mvSave(); mvRender(); });
+       var mb=document.getElementById('mvMonBtn'); if(mb)mb.addEventListener('click',function(){ MV.ui.turnMonthly=!MV.ui.turnMonthly; mvSave(); mvRender(); });
        document.querySelectorAll('#result .mvchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.turnFilter=b.dataset.v; mvSave(); mvRender(); }); });
        document.querySelectorAll('#result .mvtcchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.turnCat=b.dataset.v; MV.ui.turnLoc='전체'; MV.ui.turnFilter='전체'; mvSave(); mvRender(); }); });
        document.querySelectorAll('#result .mvtlchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.turnLoc=b.dataset.v; MV.ui.turnFilter='전체'; mvSave(); mvRender(); }); });
@@ -17470,13 +17535,14 @@ function mvMatData(){
   var ym=MV.ui.cur, rows=mvRows(ym), win=MV.ui.win|0;
   var SI=mvSalesIdx(win,ym), mon=SI.months||0;
   var ratio=(MV.ui.ratio||55)/100, yld=(MV.ui.yield||85)/100;
+  var YQ=mvCodeMonthQty(String(ym).slice(0,4));   /* v470 : 월별보기(1~12월 소요KG) */
 
   /* 원자재 마스터 */
   var raws=[];
   rows.forEach(function(r){
     if(r.cat!=='원자재') return;
     raws.push({code:r.code,name:r.name||'(미상)',spec:r.spec||'',loc:r.loc,kg:r.stock,amt:r.amt,price:r.cost,
-           ns:mvNormSpec(r.spec),tw:mvSpecTW(r.spec),demand:0,links:[],exact:0,note:r.note||'',unit:r.unit||'KG'});
+           ns:mvNormSpec(r.spec),tw:mvSpecTW(r.spec),demand:0,byYm:{},monKg:{},links:[],exact:0,note:r.note||'',unit:r.unit||'KG'});
   });
   var _ix=mvRawIndex(raws);
 
@@ -17503,9 +17569,16 @@ function mvMatData(){
     linkedProd++;
     var kg=mavg*wEA/yld;
     var tot=0; cands.forEach(function(c){ tot+=Math.max(c.kg,0); });
+    var _pm=(s&&s.byYm)||{};
     cands.forEach(function(c){
       var share=cands.length===1?1:(tot>0?Math.max(c.kg,0)/tot:1/cands.length);
       c.demand+=kg*share; if(exact)c.exact++;
+      /* v469 : 월별 소요(KG) — 그 달 제품 출고수량 × EA당 소재중량 ÷ 수율 */
+      if(!c.byYm)c.byYm={};
+      Object.keys(_pm).forEach(function(k2){ c.byYm[k2]=(c.byYm[k2]||0)+(_pm[k2]*wEA/yld)*share; });
+      if(!c.monKg)c.monKg={};
+      var _yq=YQ[code]||{};
+      Object.keys(_yq).forEach(function(mo){ c.monKg[mo]=(c.monKg[mo]||0)+(_yq[mo]*wEA/yld)*share; });
       c.links.push({code:code,name:r.name,spec:r.spec,cat:r.cat,loc:r.loc,unit:r.unit,stock:r.stock,amt:r.amt,
                     mat:r.mat,exact:exact,mavg:mavg,wEA:wEA,kg:kg*share,method:method});
     });
@@ -17606,7 +17679,10 @@ function mvTabMat(){
       sortEnt(mxTh[selD],'dem').filter(function(e){return e.v>0;}).map(function(e){return {l:e.l,v:Math.round(e.v),c:'#7c3aed'};}),
       {labW:70,unit:'KG',closeCls:'mbdclose'}):'';
 
-  var controls='<div class="ctrlbar" style="gap:14px;flex-wrap:wrap;align-items:center">'
+  /* v469 : 월별보기(KG 기준) */
+  var monOn=!!MV.ui.matMonthly, monYr=String(ym).slice(0,4);
+  var monBtn='<button class="btn ghost" id="mvMatMonBtn" style="font-size:12.5px;padding:6px 12px;'+(monOn?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488;border-color:#99f6e4')+'">📅 월별보기'+(monOn?(' '+monYr+'년 1~12월'):'')+'</button>';
+  var controls='<div class="ctrlbar" style="gap:14px;flex-wrap:wrap;align-items:center">'+monBtn
     +'<span style="font-size:12px;color:#475569;font-weight:700">출고 집계기간 <select id="mvWin">'
       +[3,6,12,24,0].map(function(n){return '<option value="'+n+'"'+(MV.ui.win===n?' selected':'')+'>'+(n?(n+'개월'):'전체기간')+'</option>';}).join('')+'</select></span>'
     +'<span style="font-size:12px;color:#475569;font-weight:700">재료비 비율 <input type="number" id="mvRatio" value="'+(MV.ui.ratio||55)+'" min="10" max="95" step="5" style="width:62px;padding:5px 7px;border:1px solid #e2e8f0;border-radius:7px;font-family:inherit;text-align:right"> %</span>'
@@ -17633,6 +17709,22 @@ function mvTabMat(){
         return '<span style="padding:1px 8px;border-radius:7px;font-size:11px;font-weight:800;background:'+c+'1a;color:'+c+'">'+o.methods+'</span>'; },sortVal:function(o){return o.methods;}},
     {k:'verdict',t:'판정',cell:function(o){ return '<span style="display:inline-block;padding:2px 9px;border-radius:8px;font-size:11.5px;font-weight:800;background:'+MV_MC[o.verdict]+'1a;color:'+MV_MC[o.verdict]+'">'+o.verdict+'</span>'; },sortVal:function(o){return o.verdict;}}
   ];
+  /* v470 : 월별보기 — 순위 · 재질 · 규격 · 1~12월(소요 KG)만 */
+  if(monOn){
+    cols=[
+      {k:'rank',t:'순위',cls:'rank',cell:function(o,i){return mvRkCell(o,i,o.code+'\u2502'+o.spec+'\u2502'+o.loc);},nosort:true},
+      {k:'label',t:'재질',cls:'l',cell:function(o){return '<b style="color:#0d9488">'+mvEsc(o.name)+'</b>';},sortVal:function(o){return o.name;}},
+      {k:'spec',t:'규격',cls:'l',cell:function(o){return mvEsc(o.spec);},sortVal:function(o){return o.spec;}}
+    ];
+    MV_MONTHS12.forEach(function(mo){
+      cols.push({k:'m'+mo,t:mo+'월',cell:function(o){ var v=(o.monKg&&o.monKg[mo])||0;
+          return v>0?('<span style="font-weight:700;color:#0d9488">'+mvNum(v,v<10?1:0)+'</span>'):'<span style="color:#dde3ea">·</span>'; },
+        sortVal:function(o){ return (o.monKg&&o.monKg[mo])||0; }});
+    });
+    cols.push({k:'msum',t:monYr+'년 합계',cell:function(o){ var t2=0; MV_MONTHS12.forEach(function(mo){ t2+=(o.monKg&&o.monKg[mo])||0; });
+        return t2>0?('<b style="color:#1e3a5f">'+mvNum(t2,t2<10?1:0)+'</b>'):'<span style="color:#dde3ea">·</span>'; },
+      sortVal:function(o){ var t2=0; MV_MONTHS12.forEach(function(mo){ t2+=(o.monKg&&o.monKg[mo])||0; }); return t2; }});
+  }
   var over=raws.filter(function(o){return o.verdict==='과잉(1년↑)'||o.verdict==='무소요';}).reduce(function(a,o){return a+o.amt;},0);
   var lack=raws.filter(function(o){return o.verdict==='부족';});
   var note=(!D.SI.ok)?'<b style="color:#dc2626">매출(출고) 자료가 없습니다.</b> 매출 파일을 불러오면 제품 출고량을 소재 소요량으로 역산해 소진 개월을 산출합니다.'
@@ -17641,11 +17733,12 @@ function mvTabMat(){
      +'재료비율·수율은 위 입력란에서 실제 원가 구조에 맞게 조정하십시오.<br>'
      +'<b>진단</b> — 무소요·과잉(1년↑) 소재가 <b>'+mvWon(over)+'원</b>입니다. 규격 통합(폭 근접 규격 통폐합)·타 품목 전용·매각 중 하나를 결정해야 하는 대상입니다. '
      +(lack.length?('소진 2개월 미만 <b style="color:#2563eb">'+lack.length+'개 규격</b>('+mvEsc(lack.slice(0,5).map(function(o){return o.name+' '+o.spec;}).join(', '))+(lack.length>5?' 외':'')+')은 발주 리드타임을 감안해 즉시 발주 검토가 필요합니다.'):'')
+     +'<br><b>📅 월별보기</b>를 켜면 오른쪽에 <b>집계기간 각 달의 소요량(KG)</b>이 붙습니다 — 그 달 제품 출고수량 × EA당 소재중량 ÷ 수율로 계산한 값입니다.'
      +'<br><span class="sub2">연결되지 않은 제품 '+D.unlinked.length+'건 — 재고표의 <b>자재품목</b> 칸이 비어 있거나 원자재 규격과 표기가 달라 매칭되지 않은 건입니다. 자재품목 표기를 「재질 두께x폭」으로 통일하면 정확도가 올라갑니다.</span>');
 
-  render('🧱 원자재 사용추이·소진 분석 ('+mvYmLabel(ym)+')',
+  render('🧱 원자재 사용추이·소진 분석 ('+mvYmLabel(ym)+')'+(monOn?(' · 📅 '+monYr+'년 월별 소요(KG)'):''),
     (fc==='전체'?'전체 재질':fc)+' · '+(fl==='전체'?'전체 보관장소':fl)+' · '+(f==='전체'?'전체':f)+' '+mvWon(show.length)+'규격 · '+mvNum(totKg,0)+'KG · '+mvWon(totAmt)+'원'+(totDem?(' · 월소요 '+mvNum(totDem,0)+'KG'):''),
-    show, cols, 'amt', note,
+    show, cols, monOn?null:'amt', note,
     {controlsHtml:mvTabBar()+pickBar+controls, pageLimit:200, tableClass:'mv-tbl',
      afterTableHtml:'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px;margin-top:14px">'
        +'<div class="panel" style="margin:0"><h3>재질별 재고금액 <span style="font-size:11.5px;font-weight:600;color:#64748b">— 재질을 누르면 두께별로 펼쳐집니다</span></h3>'
@@ -17655,7 +17748,9 @@ function mvTabMat(){
        +'<div class="panel" style="margin:0"><h3>재질별 월 소요(KG) 추정 <span style="font-size:11.5px;font-weight:600;color:#64748b">— 재질을 누르면 두께별로 펼쳐집니다</span></h3>'
          +mvBars(matArr.filter(function(a){return a.dem>0;}).map(function(a){return {l:a.l,v:Math.round(a.dem),c:'#7c3aed'};}),{labW:104,unit:'KG',cls:'mbdem',sel:selD})+subDem+'</div>'
        +'</div>',
-     total:{label:'합 계',amt:totAmt,cells:{amt:mvWon(totAmt),kg:mvNum(totKg,0),demand:mvNum(totDem,0)}},
+     total:{label:'합 계',amt:totAmt,cells:(function(){ var c={amt:mvWon(totAmt),kg:mvNum(totKg,0),demand:mvNum(totDem,0)};
+        if(monOn){ var g=0; MV_MONTHS12.forEach(function(mo){ var v=show.reduce(function(a,o){return a+((o.monKg&&o.monKg[mo])||0);},0); g+=v; c['m'+mo]=v?mvNum(v,0):'·'; }); c.msum=mvNum(g,0); }
+        return c; })()},
      afterDraw:function(){
        var map={}; raws.forEach(function(o){ map[o.code+'\u2502'+o.spec+'\u2502'+o.loc]=o; });
        mvRowExpand({ncols:cols.length,map:map,openKey:'matOpen',build:function(o){ return mvRawUseHTML(o,{demand:true,cust:true}); }});
@@ -17664,6 +17759,7 @@ function mvTabMat(){
        var w=document.getElementById('mvWin'); if(w)w.addEventListener('change',function(e){ MV.ui.win=+e.target.value; MV._scache=null; mvSave(); mvRender(); });
        var rt=document.getElementById('mvRatio'); if(rt)rt.addEventListener('change',function(e){ MV.ui.ratio=Math.max(10,Math.min(95,+e.target.value||55)); mvSave(); mvRender(); });
        var yl=document.getElementById('mvYield'); if(yl)yl.addEventListener('change',function(e){ MV.ui.yield=Math.max(50,Math.min(100,+e.target.value||85)); mvSave(); mvRender(); });
+       var mmb=document.getElementById('mvMatMonBtn'); if(mmb)mmb.addEventListener('click',function(){ MV.ui.matMonthly=!MV.ui.matMonthly; mvSave(); mvRender(); });
        document.querySelectorAll('#result .mvmchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.matFilter=b.dataset.v; mvSave(); mvRender(); }); });
        document.querySelectorAll('#result .mvmcchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.matCat=b.dataset.v; MV.ui.matLoc='전체'; MV.ui.matFilter='전체'; mvSave(); mvRender(); }); });
        document.querySelectorAll('#result .mvmlchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.matLoc=b.dataset.v; MV.ui.matFilter='전체'; mvSave(); mvRender(); }); });
@@ -17862,6 +17958,8 @@ function mvMonthSales(){
   CUR.forEach(function(r){ var k=r.ym; if(!k)return; m[k]=(m[k]||0)+mvAmt(r); });
   return m;
 }
+/* v468 : 매입 분석 도구에서 동기화된 월별 매입액 */
+function mvMonthBuy(){ try{ return (typeof state!=='undefined'&&state.purchaseMonthlySync)||{}; }catch(e){ return {}; } }
 /* v464 : 월별 추이를 보관장소별로도 볼 수 있게 — 그 달 재고를 보관장소로 걸러 구분별 합계를 낸다 */
 function mvTrendTotals(ym,loc){
   var rows=mvRows(ym), out={total:0,by:{},n:0,locs:{}};
@@ -17880,6 +17978,7 @@ function mvTabTrend(){
   var cat=MV.ui.trendCat; if(MV_TRCAT.indexOf(cat)<0) cat='전체';
   var loc=MV.ui.trendLoc||'전체';
   var SM=mvMonthSales(), hasSales=mvHasSales();
+  var BM=mvMonthBuy();
 
   var months=[]; for(var i=1;i<=12;i++) months.push(yr+'-'+String(i).padStart(2,'0'));
   var locAmt={}, locMon={};
@@ -17888,7 +17987,7 @@ function mvTabTrend(){
   var locsAll=Object.keys(locAmt).sort(function(a,b){return locAmt[b]-locAmt[a];});
   if(loc!=='전체'&&locsAll.indexOf(loc)<0){ loc='전체'; MV.ui.trendLoc='전체'; }
   var series=months.map(function(y){
-    var o={ym:y,mo:+y.slice(5,7),total:0,by:{},n:0,has:false,sales:SM[y]||0};
+    var o={ym:y,mo:+y.slice(5,7),total:0,by:{},n:0,has:false,sales:SM[y]||0,buy:+BM[y]||0};
     if(MV.months[y]){ var c=mvTrendTotals(y,loc); o.total=c.total; o.by=c.by; o.n=c.n; o.has=true; }
     o.inv=(cat==='전체')?o.total:(o.by[cat]||0);
     o.ratio=(o.has&&o.sales>0)?(o.inv/o.sales):null;      /* 매출 대비 재고 = 몇 개월분 */
@@ -17931,8 +18030,10 @@ function mvTabTrend(){
   /* ── 그래프 : 매출 막대 + 재고 추이선 ── */
   var maxS=Math.max.apply(null,series.map(function(s){return s.sales;}).concat([0]))||1;
   var maxI=Math.max.apply(null,series.map(function(s){return s.has?s.inv:0;}).concat([0]))||1;
+  var maxB=Math.max.apply(null,series.map(function(s){return s.buy||0;}).concat([0]))||0;
+  var hasBuy=series.some(function(s){return s.buy>0;});
   /* 좌·우 축을 같은 눈금(억원)으로 통일 — 막대와 추이선 높이를 그대로 비교할 수 있게 한다 */
-  var maxC=Math.max(maxS,maxI)||1;
+  var maxC=Math.max(maxS,maxI,maxB)||1;
   maxC=(function(v){ var e=v/100000000; var st=e<=2?0.25:e<=5?0.5:e<=10?1:e<=20?2:5; return Math.ceil(e/st)*st*100000000; })(maxC);
   maxS=maxC; maxI=maxC;
   var W=1220,H=360,L=86,R=40,T=50,B=54, PW=W-L-R, PH=H-T-B;   /* v465 : 눈금은 왼쪽 하나만 */
@@ -17973,22 +18074,35 @@ function mvTabTrend(){
       +'<text x="'+x.toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#1e3a5f" stroke="#fff" stroke-width="3.2" paint-order="stroke">'+(s.inv/100000000).toFixed(2)+'</text>';
     prev={x:x,y:y};
   });
+  /* v468 : 월 매입 추이선 (매입 분석 도구 동기화값) */
+  var bsegs='',bdots='',bprev=null;
+  series.forEach(function(s,i){
+    if(!(s.buy>0)){ bprev=null; return; }
+    var x=xC(i), y=yS(s.buy);
+    if(bprev) bsegs+='<line x1="'+bprev.x.toFixed(1)+'" y1="'+bprev.y.toFixed(1)+'" x2="'+x.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="#ea580c" stroke-width="2.2" stroke-dasharray="5 3" stroke-linecap="round"/>';
+    var iy=lineY[i], ty=(y-12<T-8)?(y+20):(y-12);
+    if(iy!=null&&Math.abs(ty-(iy-12))<13) ty=(y+20);      /* 재고 라벨과 겹치면 아래로 */
+    bdots+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="4" fill="#fff" stroke="#ea580c" stroke-width="2.2"/>'
+      +'<text x="'+x.toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" font-size="10.5" font-weight="800" fill="#ea580c" stroke="#fff" stroke-width="3" paint-order="stroke">'+(s.buy/100000000).toFixed(2)+'</text>';
+    bprev={x:x,y:y};
+  });
   var xlab=series.map(function(s,i){
     return '<text x="'+xC(i).toFixed(1)+'" y="'+(T+PH+18)+'" text-anchor="middle" font-size="11.5" font-weight="'+(s.has?800:600)+'" fill="'+(s.has?'#1e3a5f':'#c3cbd6')+'">'+s.mo+'월</text>'
       +(s.ratio!=null?('<text x="'+xC(i).toFixed(1)+'" y="'+(T+PH+34)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="#0d9488">'+s.ratio.toFixed(1)+'개월</text>'):'');
   }).join('');
   var chart='<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;min-width:820px;height:auto;display:block">'
-    +grid+lab+bars+segs+dots+xlab
+    +grid+lab+bars+bsegs+segs+bdots+dots+xlab
     +'<line x1="'+L+'" y1="'+(T+PH)+'" x2="'+(W-R)+'" y2="'+(T+PH)+'" stroke="#94a3b8"/>'
     +'<text x="'+(L-8)+'" y="'+(T-30)+'" text-anchor="end" font-size="11.5" font-weight="800" fill="#334155">단위 : 억원</text>'
     +'<text x="'+(L+10)+'" y="'+(T-30)+'" text-anchor="start" font-size="11.5" font-weight="800" fill="#2563eb">■ 월 매출(막대)</text>'
     +'<text x="'+(L+130)+'" y="'+(T-30)+'" text-anchor="start" font-size="11.5" font-weight="800" fill="#1e3a5f">— '+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+'(추이선)'+(loc!=='전체'?(' · '+mvEsc(loc)):'')+'</text>'
-    +'<text x="'+(W-R)+'" y="'+(T-30)+'" text-anchor="end" font-size="10.5" font-weight="700" fill="#64748b">막대·추이선 모두 같은 눈금(왼쪽 축)입니다 — 높이를 그대로 비교하십시오</text>'
+    +(hasBuy?('<text x="'+(L+330)+'" y="'+(T-30)+'" text-anchor="start" font-size="11.5" font-weight="800" fill="#ea580c">--- 월 매입(추이선)</text>'):'')
     +'</svg></div>'
     +'<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:12px;color:#475569">'
       +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:11px;background:#bfdbfe;border-radius:2px;display:inline-block"></span>월 매출</span>'
       +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;height:0;border-top:2.6px solid #1e3a5f;display:inline-block"></span>'+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+'</span>'
-      +'<span style="display:inline-flex;align-items:center;gap:6px"><b style="color:#334155">단위 억원</b> · 눈금은 <b>왼쪽 축 하나</b>를 함께 씁니다</span>'
+      +(hasBuy?'<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;height:0;border-top:2.4px dashed #ea580c;display:inline-block"></span>월 매입 <span class="sub2" style="font-size:11px">(매입 분석 도구 동기화)</span></span>':'<span style="color:#b45309;font-weight:700">매입 자료가 없어 매입 추이선이 표시되지 않습니다 — 매입 분석 도구에서 동기화하십시오.</span>')
+      +'<span style="display:inline-flex;align-items:center;gap:6px"><b style="color:#334155">단위 억원</b></span>'
       +'<span style="display:inline-flex;align-items:center;gap:6px"><b style="color:#0d9488">n.n개월</b> 매출 대비 재고(재고÷그 달 매출)</span>'
       +(hasSales?'':'<span style="color:#dc2626;font-weight:700">매출 자료가 없어 막대가 표시되지 않습니다 — 매출 파일을 불러오십시오.</span>')
     +'</div>';
@@ -18021,18 +18135,41 @@ function mvTabTrend(){
   }).join('');
   var avgR=(function(){ var a=series.filter(function(s){return s.ratio!=null;}); if(!a.length)return null;
     return a.reduce(function(x,s){return x+s.ratio;},0)/a.length; })();
+  /* v468 : 맨 아래 평균 행 — 재고는 등록된 달, 매출·매입은 값이 있는 달 기준 평균 */
+  var avgRow=(function(){
+    var invM=series.filter(function(s){return s.has;}), salM=series.filter(function(s){return s.sales>0;}), buyM=series.filter(function(s){return s.buy>0;});
+    var nI=invM.length||0, nS=salM.length||0;
+    var mean=function(a,f){ return a.length?a.reduce(function(x,o){return x+(f(o)||0);},0)/a.length:0; };
+    var byAvg={}; cats.forEach(function(c){ byAvg[c]=mean(invM,function(o){return o.by[c]||0;}); });
+    var deltas=[]; var pv=null; series.forEach(function(s){ if(!s.has)return; if(pv!=null)deltas.push(s.total-pv); pv=s.total; });
+    var dAvg=deltas.length?(deltas.reduce(function(a,v){return a+v;},0)/deltas.length):null;
+    var TDf=TD+';font-weight:800;background:#eef2f7;border-top:2px solid #94a3b8';
+    return '<tr><td style="'+TDf+';text-align:left;color:#1e3a5f">평 균'
+        +'<span style="font-size:10.5px;font-weight:600;color:#64748b"> · 재고 '+nI+'개월'+(nS?(' · 매출 '+nS+'개월'):'')+'</span></td>'
+      +cats.map(function(c){ return '<td style="'+TDf+'">'+(nI?mvWon(byAvg[c]):'-')+'</td>'; }).join('')
+      +'<td style="'+TDf+'">'+(nI?mvWon(mean(invM,function(o){return o.total;})):'-')+'</td>'
+      +'<td style="'+TDf+';color:'+(dAvg==null?'#94a3b8':(dAvg>=0?'#dc2626':'#16a34a'))+'">'+(dAvg==null?'-':((dAvg>=0?'+':'')+mvWon(dAvg)))+'</td>'
+      +'<td style="'+TDf+';color:#2563eb">'+(nS?mvWon(mean(salM,function(o){return o.sales;})):'-')+'</td>'
+      +'<td style="'+TDf+';color:#0d9488">'+(avgR!=null?(avgR.toFixed(2)+'<span style="font-size:11px;font-weight:600">개월</span>'):'-')+'</td>'
+      +'<td style="'+TDf+'">'+(nI?mvWon(mean(invM,function(o){return o.n;})):'-')+'</td></tr>'
+      +(buyM.length?('<tr><td style="'+TD+';text-align:left;font-weight:800;color:#ea580c;background:#fff7ed">월 매입 평균'
+          +'<span style="font-size:10.5px;font-weight:600;color:#64748b"> · '+buyM.length+'개월</span></td>'
+          +'<td colspan="'+(cats.length+2)+'" style="'+TD+';text-align:right;font-weight:800;color:#ea580c;background:#fff7ed">'+mvWon(mean(buyM,function(o){return o.buy;}))
+          +' <span style="font-size:11px;font-weight:600;color:#64748b">원 · 기간 합계 '+mvWon(buyM.reduce(function(a,o){return a+o.buy;},0))+'원</span></td>'
+          +'<td colspan="3" style="'+TD+';background:#fff7ed"></td></tr>'):'');
+  })();
 
   var loaded=have.length;
   var html=mvTabBar()+pickBar
     +'<div class="rhead" style="margin-bottom:8px"><span class="title">📈 '+yr+'년 월별 재고 추이 · 매출 대비</span>'
       +'<span class="meta">1~12월 · 재고 등록 '+loaded+'개월 · 기준 구분 <b>'+mvEsc(cat)+'</b> · 보관장소 <b>'+mvEsc(loc)+'</b>'+(avgR!=null?(' · 평균 매출대비 '+avgR.toFixed(2)+'개월'):'')+'</span></div>'
     +'<div class="panel"><h3>월 매출(막대) · '+mvEsc(cat==='전체'?'총 재고자산':cat+' 재고')+'(추이선)'+(loc!=='전체'?(' <span style="font-size:12px;font-weight:700;color:#1e3a5f">· 보관장소 '+mvEsc(loc)+'</span>'):'')+'</h3>'+chart+'</div>'
-    +'<div class="panel"><h3>월별 · 구분별 재고금액 · 매출 대비'+(loc!=='전체'?(' <span style="font-size:12px;font-weight:700;color:#1e3a5f">· 보관장소 '+mvEsc(loc)+'</span>'):'')+'</h3><div style="overflow:auto"><table style="border-collapse:collapse;min-width:1100px"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'
+    +'<div class="panel"><h3>월별 · 구분별 재고금액 · 매출 대비'+(loc!=='전체'?(' <span style="font-size:12px;font-weight:700;color:#1e3a5f">· 보관장소 '+mvEsc(loc)+'</span>'):'')+'</h3><div style="overflow:auto"><table style="border-collapse:collapse;min-width:1100px"><thead>'+head+'</thead><tbody>'+body+avgRow+'</tbody></table></div>'
     +'<div class="note" style="margin-top:9px">'+(loaded<2
       ? '재고는 <b>'+have.map(function(s){return s.mo+'월';}).join(', ')+'</b>만 등록되어 있고 나머지 달은 0으로 표시했습니다. 상단 <b>📁 파일·관리 ▸ 월 재고현황</b>에서 다른 달 파일을 추가하면 그 달 칸이 채워지고 추이선이 이어집니다.'
-      : '전월대비는 <b>등록된 달끼리만</b> 비교합니다(미등록 달은 건너뜁니다).')
+      : '전월대비는 <b>등록된 달끼리만</b> 비교합니다(미등록 달은 건너뜁니다). 표 맨 아래 <b>평 균</b> 행은 재고는 <b>등록된 달</b>, 매출·매입은 <b>값이 있는 달</b>만으로 평균을 냅니다.')
       +'<br><b>매출대비</b>는 그 달 말 재고를 <b>그 달 매출</b>로 나눈 값으로, <b>재고가 몇 개월치 매출에 해당하는가</b>를 뜻합니다. '
-      +'막대(매출)와 추이선(재고)은 <b>왼쪽 축 하나(억원)</b>를 함께 쓰므로 <b>높낮이를 그대로 비교</b>하실 수 있습니다. 추이선이 막대보다 높으면 그 달 재고가 매출보다 크다는 뜻입니다. '
+      +'막대(매출)·재고 추이선·<b style="color:#ea580c">매입 추이선</b>은 모두 <b>같은 눈금(억원)</b>이라 높낮이를 그대로 비교하실 수 있습니다. 재고선이 막대보다 높으면 그 달 재고가 매출보다 크다는 뜻이고, <b style="color:#ea580c">매입선이 매출 막대를 계속 웃돌면</b> 사들이는 속도가 파는 속도보다 빠르다는 신호입니다(재고선이 함께 올라갑니다). 매입액은 <b>매입 분석 도구</b>에서 동기화된 월별 매입 합계입니다. '
       +'매출은 그대로인데 추이선만 올라가면 <b>과잉 매입 또는 소진 실패</b>, 매출이 늘어도 추이선이 평평하면 <b>회전이 개선</b>된 것입니다. '
       +'구분 버튼으로 원자재만 놓고 보면 소재 선매입 시점이, 제품만 놓고 보면 출하 지연 여부가 드러납니다.</div></div>';
 
@@ -18139,6 +18276,27 @@ function mvS(v){ if(v==null)return ''; if(v instanceof Date)return v.toISOString
 function mvN(v){ if(typeof v==='number')return isFinite(v)?v:0; if(v==null)return 0;
   var s=String(v).replace(/,/g,'').trim(); var n=parseFloat(s); return isFinite(n)?n:0; }
 var MV_COLMAP={'보관위치':'loc','계정구분':'acct','생산파트':'part','품목':'part','품명':'name','품번':'code','규격':'spec','재고':'qty','반제품':'semi','단위':'unit','생산단가':'cost','재고금액':'amt','자재품목':'mat','비고':'note'};
+/* v469 : 달마다 열 제목이 조금씩 달라 '재고 수량'이 통째로 비는 일이 있었습니다
+   (예: 재고 / 재고수량 / 수량 / 현재고 / 월말재고). 정확히 같은 이름이 아니어도 알아보게 합니다. */
+function mvColKey(h){
+  var t=String(h==null?'':h).replace(/\s+/g,'').replace(/[()（）]/g,'');
+  if(!t) return '';
+  if(MV_COLMAP[t]) return MV_COLMAP[t];
+  if(/^(재고금액|금액|재고자산|자산금액|평가금액)$/.test(t)) return 'amt';
+  if(/^(재고|재고수량|수량|현재고|기말재고|월말재고|재고량|실재고|기말수량)$/.test(t)) return 'qty';
+  if(/^(반제품|반제품재고|반제품수량|재공|재공품|재공수량)$/.test(t)) return 'semi';
+  if(/^(단위|UNIT)$/i.test(t)) return 'unit';
+  if(/(생산단가|단가|평가단가|입고단가)$/.test(t)) return 'cost';
+  if(/^(보관위치|보관장소|보관|위치|장소|창고)$/.test(t)) return 'loc';
+  if(/^(품번|품목코드|코드|품목번호)$/.test(t)) return 'code';
+  if(/^(품명|품목명|제품명)$/.test(t)) return 'name';
+  if(/^(규격|사양|SPEC)$/i.test(t)) return 'spec';
+  if(/^(자재품목|자재|소재|원자재품목)$/.test(t)) return 'mat';
+  if(/^(비고|메모|특이사항)$/.test(t)) return 'note';
+  if(/^(계정구분|계정)$/.test(t)) return 'acct';
+  if(/^(생산파트|파트|공정)$/.test(t)) return 'part';
+  return '';
+}
 function mvCatOf(sn){
   var s=String(sn||'');
   if(/반제품/.test(s))return '반제품';
@@ -18213,11 +18371,14 @@ function mvParseWB(wb, fileName){
     }
     /* --- 표준 품목 시트 --- */
     var hr4=-1;
-    for(var f2=0;f2<Math.min(12,aoa.length);f2++){ var R5=(aoa[f2]||[]).map(mvS);
-      if(R5.indexOf('보관위치')>=0&&R5.indexOf('품번')>=0&&R5.indexOf('재고금액')>=0){hr4=f2;break;} }
+    for(var f2=0;f2<Math.min(12,aoa.length);f2++){ var R5=(aoa[f2]||[]).map(mvS).map(mvColKey);
+      if(R5.indexOf('loc')>=0&&R5.indexOf('code')>=0&&R5.indexOf('amt')>=0){hr4=f2;break;} }
     if(hr4<0) return;
     var H=(aoa[hr4]||[]).map(mvS), idx={}, matCols=[];
-    H.forEach(function(h,k){ var key=MV_COLMAP[h]; if(h==='자재품목')matCols.push(k);
+    /* ① 정확히 일치하는 이름 먼저 잡고 ② 남은 항목을 유사 이름으로 채운다 */
+    H.forEach(function(h,k){ var key=MV_COLMAP[h]; if(mvColKey(h)==='mat')matCols.push(k);
+      if(key&&!(key in idx))idx[key]=k; });
+    H.forEach(function(h,k){ var key=mvColKey(h);
       if(key&&!(key in idx))idx[key]=k; });
     var cat=mvCatOf(t);
     for(var h2=hr4+1;h2<aoa.length;h2++){
