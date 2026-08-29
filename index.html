@@ -20653,7 +20653,8 @@ function tHelp(){
   CB_TIPS.forEach(function(g){ h+='<div class="cb-tipg">'+E(g[0])+'</div>'+CHIPS(g[1]).replace(' style="margin-top:9px"',''); });
   h+='<div class="cb-note">· 기간을 안 쓰면 <b>가장 최근 달</b>로 답합니다. “올해 / 작년 / 최근 3개월 / 상반기 / 2분기”도 됩니다.<br>'
    +'· 업체·품목 이름은 <b>일부만</b> 써도 찾습니다(“경동” → (주)경동원).<br>'
-   +'· 화면 이름을 말하면 <b>그 화면으로 바로</b> 이동합니다. 숫자는 전부 이 파일 안에서 계산하며 밖으로 나가지 않습니다.</div>';
+   +'· 화면 이름을 말하면 <b>그 화면으로 바로</b> 이동합니다. 숫자는 전부 이 파일 안에서 계산하며 밖으로 나가지 않습니다.<br>'
+   +'· 고정 질문에 없어도 업체·품목·규격·월·프로젝트 등 단어를 넣으면 <b>전체 매출 행 검색</b>을 하고, “다음달/향후/예측”을 넣으면 최근 추세로 참고 전망을 계산합니다.</div>';
   return {sum:'💬 무엇을 도와드릴까요?',html:h};
 }
 function tSuggest(q){
@@ -20677,6 +20678,50 @@ function tSuggest(q){
   return {sum:'혹시 이걸 찾으셨나요? <span class="cb-sub" style="display:inline">— 눌러 보세요</span>',
     html:CHIPS(chips),go:goP};
 }
+/* ── 전체 행 검색 · 추세 전망 ──
+   고정 질문으로 분류되지 않은 자연어도 현재 파일의 매출 행 전체에서 찾습니다.
+   전망값은 최근 월별 실적의 가중이동평균과 추세를 이용한 참고치입니다. */
+function tSearchAll(q,P){
+  var stop={매출:1,매출액:1,매출금액:1,실적:1,알려:1,알려줘:1,보여:1,보여줘:1,검색:1,찾아:1,찾아줘:1,관련:1,정보:1,자료:1,전체:1,현재:1,얼마:1,뭐:1,무엇:1,대해:1,대상:1};
+  var toks=String(q||'').split(/[\s,?.!·/]+/).map(NM).filter(function(t){return t.length>=2&&!stop[t];});
+  var rows=ROWS(), scored=[];
+  rows.forEach(function(r){
+    if(P&&P.yms&&P.yms.length&&!P.def&&!inP(r,P))return;
+    var txt=[r.ym,r.date,r.cust,r.vendor,r.code,r.name,r.spec,r.group,r.cat,r.big,r.mid,r.small,r.project,r.mgr,r.note].map(function(v){return NM(v);}).join(' ');
+    var score=0; toks.forEach(function(t){if(txt.indexOf(t)>=0)score+=2;});
+    if(score)scored.push({r:r,score:score});
+  });
+  scored.sort(function(a,b){return b.score-a.score||String(b.r.ym||'').localeCompare(String(a.r.ym||''));});
+  if(!scored.length)return null;
+  var hit=scored.map(function(x){return x.r;});
+  var total=hit.reduce(function(a,r){return a+A(r);},0), qty=hit.reduce(function(a,r){return a+(+r.qty||+r.quantity||0);},0);
+  return {sum:'🔎 <b>매출자료 전체 검색</b> · '+W(hit.length)+'건 · 합계 <b class="cb-big">'+W(total)+'</b>원<div class="cb-sub">'+(P&&P.label?E(P.label)+' · ':'')+'검색어와 일치하는 행을 점수순으로 표시했습니다 · 수량 '+N(qty,0)+'</div>',
+    tbl:TBL(['#','월','거래처','품번','품명·규격','매출액','수량'],hit.slice(0,20).map(function(r,i){return [i+1,E(r.ym||r.date||'-'),E(CAL(r.cust||r.vendor||'(미상)')),E(r.code||''),E((r.name||'')+(r.spec?' / '+r.spec:'')),W(A(r)),N(+r.qty||+r.quantity||0,0)];}),['','', 'l','l','l','','']),
+    chips:['최근 3개월 매출 전망','이번달 매출 상위 10개사'],go:GO('home','🏠 대시보드 보기')};
+}
+function tForecastSales(P,cust,prod,cat,q){
+  var all=ROWS(),scope=all.filter(function(r){
+    if(cust&&CAL(r.cust||r.vendor)!==CAL(cust))return false;
+    if(prod&&!prodMatch(r,prod))return false;
+    if(cat&&String(r.group||r.cat||r.big||'')!==String(cat))return false;
+    return true;
+  });
+  if(!scope.length)return {sum:'예측할 매출 행을 찾지 못했습니다. 업체명·품목명 또는 기간을 함께 입력해 주세요.',html:CHIPS(['최근 3개월 매출 전망','올해 매출 요약'])};
+  var avail=ALLYM(), base=(P&&P.yms&&P.yms.length&&!P.def?P.yms.slice():avail.slice(-6));
+  base=base.filter(function(ym){return avail.indexOf(ym)>=0;}); if(!base.length)base=avail.slice(-6);
+  var vals=base.map(function(ym){return scope.filter(function(r){return r.ym===ym;}).reduce(function(a,r){return a+A(r);},0);});
+  var recent=vals.slice(-Math.min(6,vals.length));
+  if(!recent.length||recent.every(function(v){return !v;}))return {sum:'선택한 범위에 실제 매출값이 없어 전망을 계산할 수 없습니다.',html:CHIPS(['최근 3개월 매출 전망','매출 현황'])};
+  var n=Math.min(3,recent.length), weighted=0,ws=0; for(var i=recent.length-n,j=1;i<recent.length;i++,j++){weighted+=recent[i]*j;ws+=j;}
+  var avg=weighted/(ws||1), delta=recent.length>1?(recent[recent.length-1]-recent[0])/(recent.length-1):0;
+  var horizon=Math.max(1,Math.min(6,+(String(q||'').match(/(\d+)\s*개월/)||[])[1]||3));
+  var last=base[base.length-1]||avail[avail.length-1], rows=[], prev=recent[recent.length-1]||0;
+  for(var h=1;h<=horizon;h++){var val=Math.max(0,avg+delta*h);rows.push([ymLab(ymAdd(last,h)),'예상',W(val),prev?(val/prev-1)*100:null]);prev=val;}
+  var scopeLabel=cust?cust:(prod?prodLabel(prod):(cat||'전체 매출'));
+  return {sum:'📈 <b>'+E(scopeLabel)+'</b> 매출 전망 · 향후 '+horizon+'개월<div class="cb-sub">최근 '+recent.length+'개월 실적 가중평균 '+W(avg)+'원 · 월 추세 '+(delta>=0?'+':'')+W(delta)+'원 · 단순 추세 참고치</div>',
+    tbl:TBL(['기간','구분','예상 매출','직전 대비'],rows.map(function(r){return [E(r[0]),r[1],r[2]+'원',r[3]==null?'-':DLT(r[3])];}),['l','l','','']),
+    chips:['최근 6개월 매출 검색','매출 감소 거래처'],go:GO('home','🏠 대시보드 보기')};
+}
 function nav(p,auto){
   return {sum:(auto?'✅ ':'')+'<b>'+E(p.label)+'</b> 화면'+(auto?'으로 이동했습니다.':'입니다. 아래 버튼으로 여세요.'),
     go:GO(p.act,'▶ '+p.label+' 열기',p.tab||''),auto:!!auto};
@@ -20690,7 +20735,8 @@ var RX={
   ar:/(미수|수금|외상|채권|어음|회수|연체|잔액|받을 ?돈|입금)/,
   price:/(단가|가격|판매가|얼마에|납품가|견적|단가표)/,
   inv:/(재고|안전재고|발주|장기체류|악성|폐기|소진|회전|원자재|소재|철판|전용품|보관장소|창고|묶인|재고월수|과잉|무출고)/,
-  sales:/(매출|실적|판매|출고|수주|납품|얼마|팔렸|나갔)/
+  sales:/(매출|실적|판매|출고|수주|납품|얼마|팔렸|나갔)/,
+  forecast:/(예측|전망|다음\s*달|향후|앞으로|추정|예상|계속|증가할|감소할)/
 };
 function route(q0){
   var q=String(q0||'').trim(); if(!q)return tHelp();
@@ -20702,6 +20748,9 @@ function route(q0){
 
   var P=parsePeriod(q)||defPeriod()||{yms:[],label:'-',n:1,def:true};
   var cust=findCust(q), prod=findProd(q), raw=findRaw(q), loc=findLoc(q), cat=findCat(q);
+
+  /* ── 예측·전망: 업체/품목을 알아냈다면 그 범위로 계산 ── */
+  if(RX.forecast.test(q))return tForecastSales(P,cust,prod,cat,q);
 
   /* ── 미수 ── */
   if(RX.ar.test(q)){
@@ -20755,12 +20804,13 @@ function route(q0){
   if(prod)return tProdSales(prod,P);
   var pg0=findPage(q);
   if(pg0&&!cust&&!prod&&pg0.n&&pg0.n.length>=4)return nav(pg0,RX.nav.test(q));
+  var allHit=tSearchAll(q,P); if(allHit)return allHit;
   if(RX.sales.test(q))return tSalesSummary(P);
 
   /* ── 화면 이름 ── */
   var pg=findPage(q);
   if(pg)return nav(pg,RX.nav.test(q));
-  return tSuggest(q);
+  return tSearchAll(q,P)||tSuggest(q);
 }
 
 /* ═══════════ 🤖 하이브리드 AI ═══════════
@@ -20778,7 +20828,7 @@ function aiPost(payload,ms){
     var tm=ctl?setTimeout(function(){ try{ctl.abort();}catch(_e){} },ms||20000):null;
     return fetch(AI.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
         body:JSON.stringify(payload),signal:ctl?ctl.signal:undefined})
-      .then(function(r){ if(tm)clearTimeout(tm); return r.text(); })
+      .then(function(r){ if(tm)clearTimeout(tm); if(!r.ok)throw new Error('AI 중계 HTTP 오류 '+r.status); return r.text(); })
       .then(function(t){ try{ return JSON.parse(t); }catch(e){ throw new Error('응답이 JSON 이 아닙니다 — 배포 «액세스 권한: 모든 사용자» 를 확인하세요.'); } });
   }
   if(typeof auCall!=='function')return Promise.reject(new Error('AI 주소가 설정되지 않았습니다.'));
@@ -20863,7 +20913,7 @@ function aiPing(){
   try{
     aiPost({action:'ai',ping:1},11000).then(function(d){
       if(d&&(d.ok||d.model)){ AI.state='on'; AI.model=String(d.model||''); AI.free=!!d.free; }
-      else { AI.state='off'; AI.note=String((d&&d.error)||'서버에 ai 중계가 없습니다.'); }
+      else { AI.state='off'; AI.note=String((d&&d.error)||'주소에는 연결됐지만 action:"ai" 응답이 없습니다. AI 중계 서버에 ping 처리와 {ok:true, model:"..."} JSON 응답을 추가하세요.'); }
       badge();
     }).catch(function(e){ AI.state='off'; AI.note=String((e&&e.message)||e).slice(0,80); badge(); });
   }catch(e){ AI.state='off'; AI.note=String(e.message||e).slice(0,80); badge(); }
@@ -21059,11 +21109,11 @@ function mount(){
   var st=document.createElement('style'); st.textContent=CSS; document.head.appendChild(st);
   var b=document.createElement('button'); b.id='cbBtn'; b.type='button'; b.title='사내 챗봇 (Alt+C)'; b.textContent='💬';
   var p=document.createElement('div'); p.id='cbPanel';
-  p.innerHTML='<div class="cb-head"><div><b>💬 파스텍 도우미</b><br><small>매출 · 재고 · 미수 · 단가 · 화면 이동</small></div>'
+  p.innerHTML='<div class="cb-head"><div><b>💬 (주)동방파스텍 도우미</b><br><small>매출 · 재고 · 미수 · 단가 · 화면 이동</small></div>'
     +'<button class="cb-clear" id="cbAi" title="AI 상태">🤖 확인 중…</button>'
     +'<button class="cb-clear" id="cbClear">비우기</button><button class="cb-x" id="cbX">✕</button></div>'
     +'<div class="cb-body" id="cbBody"></div>'
-    +'<div class="cb-foot"><input id="cbInput" placeholder="예) 악성재고 얼마야? / 경동원 7월 매출" autocomplete="off"><button id="cbSend">전송</button></div>';
+    +'<div class="cb-foot"><input id="cbInput" placeholder="예) 경동원 7월 매출 / A1 정보 검색 / 다음달 전망" autocomplete="off"><button id="cbSend">전송</button></div>';
   document.body.appendChild(b); document.body.appendChild(p);
   b.addEventListener('click',function(){ toggle(); });
   p.querySelector('#cbX').addEventListener('click',function(){ toggle(false); });
