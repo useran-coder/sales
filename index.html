@@ -52,6 +52,9 @@
   #tbl.mvx-tbl thead th,table.mvx-tbl thead th{font-size:12px;line-height:1.3;padding:8px 8px;vertical-align:bottom}
   #tbl.mvx-tbl tbody td,table.mvx-tbl tbody td{font-size:12px}
   #tbl.mvx-tbl tbody td .sub2,#tbl.mvx-tbl tbody td span.sub2,table.mvx-tbl tbody td .sub2{font-size:11px}
+  /* v493 : 긴 이름은 한 줄로 줄이고 «…» 처리 — 마우스를 올리면 전체가 뜹니다 */
+  .mvxcut{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+  #tbl.mvx-tbl tbody td.l,table.mvx-tbl tbody td.l{white-space:nowrap;overflow:hidden}
   table.mv-tbl tbody td{font-size:13px}
   table.mv-tbl tbody td .sub2{font-size:12px}
 
@@ -5667,7 +5670,8 @@ function salesQtyAnalysis(){
   const basisName=st.basis==='monthavg'?'월평균 수량':st.basis==='order'?'최소 출고건 수량':'기간합계 수량',thresholdLabel=st.basis==='monthavg'?`월평균 ${won(st.threshold)}개 이하`:st.basis==='order'?`출고 1건당 ${won(st.threshold)}개 이하 출고건 보유`:`기간합계 ${won(st.threshold)}개 이하`;
   const bandsHtml=`<div class="qtya-bands" style="grid-template-columns:repeat(${Math.max(1,bands.length)},minmax(0,1fr))">${bands.map(b=>`<div class="qtya-band ${b.max<=st.threshold?'low':''} ${st.band===b.lab?'on':''}" data-qtya-band="${esc(b.lab)}" title="${bandIsOrd?`출고 1건당 ${esc(b.lab)}개로 나간 출고건 · 선택하면 그런 출고가 있는 제품만 표시`:`선택하면 ${esc(b.lab)} 제품만 표시`} · 다시 선택하면 해제"><b>${b.lab}</b><strong>${won(b.n)}${bandUnit}</strong><small>${bandTotal?(b.n/bandTotal*100).toFixed(1):'0.0'}%</small></div>`).join('')}</div>`;
   /* v436: 업체 리스트를 독립 박스로 분리 — 📅 월별 소량판매 발생 추이 오른쪽에 같은 높이로 배치 */
-  const vendorBoxHtml=`<div class="qtya-box qtya-vendor-box"><div class="qtya-box-head"><span class="qtya-box-title">🏢 ${esc(st.mix)} 업체 리스트</span><span class="qtya-box-meta">${won(vendorRows.length)}개사</span>${monthSel?`<span class="qtya-mtag">📅 ${esc(monthSel)}</span>`:''}${selectedVendor?`<span style="font-size:10.5px;color:#1d4ed8;font-weight:900">선택 · ${esc(selectedVendor.cust)}</span>`:''}<span class="qtya-cardhint">업체 선택 → 아래 📦 제품별 소량판매 분석 표를 해당 업체 제품으로 전환 · 매출순</span></div><div class="qtya-vendor-list qtya-vlist-table"><table class="qtya-vtbl"><colgroup><col style="width:38px"><col><col style="width:52px"><col style="width:78px"><col style="width:96px"><col style="width:78px"></colgroup><thead><tr><th>순위</th><th class="l">업체명</th><th>품목</th><th>수량</th><th>매출</th><th>마지막출고</th></tr></thead><tbody>${vendorRows.length?vendorRows.map((v,i)=>`<tr class="${st.selectedVendor===v.cust?'on':''}" data-qtya-vendor="${esc(v.cust)}" title="${esc(v.cust)} · 품목 ${won(v.productN)}종 · 수량 ${won(v.qty)}개 · 매출 ${won(Math.round(v.amt))}원${v.last?' · 마지막출고 '+fmtD(v.last):''}"><td class="no">${i+1}</td><td class="l nm">${esc(v.cust)}</td><td>${won(v.productN)}</td><td>${won(v.qty)}</td><td class="amt">${disp(v.amt)}</td><td>${v.last?fmtD(v.last):'<span style="color:#cbd5e1">-</span>'}</td></tr>`).join(''):`<tr><td class="empty" colspan="6">선택한 제품구분·수량 조건에 해당하는 업체가 없습니다.</td></tr>`}</tbody></table></div></div>`;
+  const vendorAmtTot=vendorRows.reduce((s2,v)=>s2+(v.amt||0),0);
+  const vendorBoxHtml=`<div class="qtya-box qtya-vendor-box"><div class="qtya-box-head"><span class="qtya-box-title">🏢 ${esc(st.mix)} 업체 리스트</span><span class="qtya-box-meta">${won(vendorRows.length)}개사</span>${monthSel?`<span class="qtya-mtag">📅 ${esc(monthSel)}</span>`:''}${selectedVendor?`<span style="font-size:10.5px;color:#1d4ed8;font-weight:900">선택 · ${esc(selectedVendor.cust)}</span>`:''}<span class="qtya-cardhint">업체 선택 → 아래 📦 제품별 소량판매 분석 표를 해당 업체 제품으로 전환 · 매출순</span></div><div class="qtya-vendor-list qtya-vlist-table"><table class="qtya-vtbl"><colgroup><col style="width:38px"><col><col style="width:50px"><col style="width:74px"><col style="width:92px"><col style="width:56px"><col style="width:74px"></colgroup><thead><tr><th>순위</th><th class="l">업체명</th><th>품목</th><th>수량</th><th>매출</th><th>비중</th><th>마지막출고</th></tr></thead><tbody>${vendorRows.length?vendorRows.map((v,i)=>`<tr class="${st.selectedVendor===v.cust?'on':''}" data-qtya-vendor="${esc(v.cust)}" title="${esc(v.cust)} · 품목 ${won(v.productN)}종 · 수량 ${won(v.qty)}개 · 매출 ${won(Math.round(v.amt))}원${v.last?' · 마지막출고 '+fmtD(v.last):''}"><td class="no">${i+1}</td><td class="l nm">${esc(v.cust)}</td><td>${won(v.productN)}</td><td>${won(v.qty)}</td><td class="amt">${disp(v.amt)}</td><td style="color:#0d9488;font-weight:700">${vendorAmtTot?(v.amt/vendorAmtTot*100).toFixed(1):'0.0'}%</td><td>${v.last?fmtD(v.last):'<span style="color:#cbd5e1">-</span>'}</td></tr>`).join(''):`<tr><td class="empty" colspan="7">선택한 제품구분·수량 조건에 해당하는 업체가 없습니다.</td></tr>`}</tbody></table></div></div>`;
   const mixColN=Math.min(9,Math.max(1,mixStats.length));
   const mixCards=`<div class="qtya-mixcards" style="grid-template-columns:repeat(${mixColN},minmax(0,1fr))">${mixStats.map(x=>`<div class="qtya-mixcard ${st.mix===x.cat?'on':''}" data-qtya-mixcard="${esc(x.cat)}" title="${esc(x.cat)} 제품만 보기"><b>${esc(x.cat)}</b><strong>${won(x.n)}종</strong><small>${mixPool.length?(x.n/mixPool.length*100).toFixed(1):'0.0'}%</small></div>`).join('')}</div>`;
   /* v474 : 기간설정으로 한 달만 골라도 월별 추이 표는 그 해 1~12월이 모두 나오도록
@@ -5752,9 +5756,12 @@ function salesQtyAnalysis(){
     <select id="qtyaMix" class="qtya-select">${mixOpts}</select><select id="qtyaGroup" class="qtya-select">${groupOpts}</select>
     <input id="qtyaSearch" class="qtya-search" type="text" lang="ko" value="${esc(st.search)}" placeholder="품번 · 품명 · 규격 · 품목군 검색" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text">
     <button id="qtyaFilterReset" type="button" class="qtya-filter-reset ${filterOn?'on':''}" title="카드·제품구분·품목군·검색 필터 초기화">↺ 필터초기화</button>
-    <span class="qtya-label">규격구분</span><div class="qtya-seg qtya-kind-seg">${QTYA_KINDS.map(([k,lab,col])=>`<button type="button" data-qtya-kind="${k}" class="${st.kind===k?'on':''}" title="${k==='all'?'모든 품목':lab+' 품목만 분석합니다 · 📐 규격/비규격 매출 화면과 같은 기준'}"${st.kind===k?` style="background:${col};color:#fff"`:''}>${lab} ${won(kindN[k]||0)}</button>`).join('')}</div>
+    <span class="qtya-label">규격구분</span><div class="qtya-seg qtya-kind-seg">${QTYA_KINDS.map(([k,lab,col])=>{const _n=kindN[k]||0,_t=kindN.all||0,_p=_t?(_n/_t*100):0;
+      return `<button type="button" data-qtya-kind="${k}" class="${st.kind===k?'on':''}" title="${k==='all'?'모든 품목':lab+' 품목만 분석합니다 · 📐 규격/비규격 매출 화면과 같은 기준'} · ${won(_n)}건 · ${_p.toFixed(1)}%"${st.kind===k?` style="background:${col};color:#fff"`:''}>${lab} ${won(_n)}${k==='all'?'':`<span style="font-weight:700;opacity:.75"> · ${_p.toFixed(1)}%</span>`}</button>`;}).join('')}</div>
     <button id="qtyaMergeCode" type="button" class="qtya-merge-toggle ${st.mergeCode?'on':''}" title="같은 품명·규격인데 품번이 여러 개면 제품이 쪼개져 소량으로 잘못 잡힙니다. 켜면 품명+규격으로 묶어 내부보강 분석(규격별)과 같은 기준이 됩니다.">🔗 품번통합 ${st.mergeCode?'ON':'OFF'}</button>
-    <button id="qtyaLaserToggle" type="button" class="qtya-laser-toggle ${st.exLaser?'on':''}" title="품명에 (L)·레이저·LASER·임가공이 있는 주문제작품입니다. 기본은 전체 분석에 포함되며, 필요할 때만 제외할 수 있습니다.">🔦 레이저(L) ${st.exLaser?`제외중 ${won(laserAll.length)}종`:`포함 ${won(laserAll.length)}종`}</button>
+    ${(()=>{const _ln=laserAll.length,_lb=products.filter(o=>!st.excluded[o.key]).length,_lp=_lb?(_ln/_lb*100):0;
+      const _la=laserAll.reduce((s2,o)=>s2+(o.amt||0),0),_ab=products.filter(o=>!st.excluded[o.key]).reduce((s2,o)=>s2+(o.amt||0),0),_ap=_ab?(_la/_ab*100):0;
+      return `<button id="qtyaLaserToggle" type="button" class="qtya-laser-toggle ${st.exLaser?'on':''}" title="품명에 (L)·레이저·LASER·임가공이 있는 주문제작품입니다 · ${won(_ln)}종(${_lp.toFixed(1)}%) · 매출 ${won(_la)}원(${_ap.toFixed(1)}%). 기본은 전체 분석에 포함되며, 필요할 때만 제외할 수 있습니다.">🔦 레이저(L) ${st.exLaser?`제외중`:`포함`} ${won(_ln)}종<span style="font-weight:700;opacity:.75"> · ${_lp.toFixed(1)}%</span></button>`;})()}
     <button id="qtyaExclToggle" type="button" class="qtya-excl-toggle ${st.exclOpen?'on':''}">🚫 제외제품 ${won(excludedN)}종</button>
     <button id="qtyaExport" type="button" class="qtya-export">📥 엑셀</button>
   </div>`;
@@ -17519,7 +17526,7 @@ function mvSumRowItems(g,loc,ym,srows,prow){
 
 /* ==================== TAB 2 · 보관장소·구분 ==================== */
 /* v466 : 재고는 월말 스냅샷이므로 기간을 넓히면 '등록된 달들의 평균'으로 본다 */
-var MV_PERIODS=[['month','\uD83D\uDCC5 월'],['quarter','\uD83D\uDDD3\uFE0F 분기'],['half','\uD83D\uDCC6 반기'],['year','\uD83D\uDCCA 연간']];
+var MV_PERIODS=[['month','\uD83D\uDCC5 월'],['year','\uD83D\uDCCA 연평균']];
 function mvPeriodMonths(ym,mode){
   var y=String(ym).slice(0,4), m=+String(ym).slice(5,7)||1, s2,e2;
   if(mode==='quarter'){ var q=Math.ceil(m/3); s2=(q-1)*3+1; e2=q*3; }
@@ -17529,7 +17536,7 @@ function mvPeriodMonths(ym,mode){
   var a=[]; for(var i=s2;i<=e2;i++){ var k=y+'-'+String(i).padStart(2,'0'); if(MV.months[k])a.push(k); }
   var lab=(mode==='quarter')?(y+'년 '+Math.ceil(m/3)+'분기('+s2+'~'+e2+'월)')
     :(mode==='half')?(y+'년 '+(m<=6?'상':'하')+'반기('+s2+'~'+e2+'월)')
-    :(mode==='year')?(y+'년 연간(1~12월)'):mvYmLabel(ym);
+    :(mode==='year')?(y+'년 연평균(1~12월)'):mvYmLabel(ym);
   return {ms:a,from:s2,to:e2,y:y,label:lab};
 }
 function mvLocPeriodData(ym,mode){
@@ -17550,6 +17557,48 @@ function mvLocPeriodData(ym,mode){
   var byLocCat={}; ms.forEach(function(k){ mvRows(k).forEach(function(r){
     var C=r.cat||'기타', L=r.loc||'(미지정)'; (byLocCat[C]=byLocCat[C]||{}); byLocCat[C][L]=(byLocCat[C][L]||0)+r.amt/d; }); });
   return {ms:ms,d:d,locs:locs,cats:cats,total:total/d,nRows:Math.round(nRows/d),label:P.label,byLocCat:byLocCat};
+}
+/* v493 : 보관장소 행을 누르면 그 장소의 1~12월 재고를 펼칩니다 */
+function mvLocMonthsHTML(loc,ym,cats,ncol){
+  var y=String(ym).slice(0,4), ms=[], tot=0, nMon=0, catTot={};
+  for(var m=1;m<=12;m++){
+    var k=y+'-'+String(m).padStart(2,'0'), has=!!(MV.months&&MV.months[k]), by={}, amt=0, n=0;
+    if(has){ mvRows(k).forEach(function(r){ if((r.loc||'(미지정)')!==loc)return;
+      var C=r.cat||'기타'; by[C]=(by[C]||0)+(+r.amt||0); amt+=(+r.amt||0); n++; }); }
+    if(has){ tot+=amt; nMon++; Object.keys(by).forEach(function(c){ catTot[c]=(catTot[c]||0)+by[c]; }); }
+    ms.push({m:m,k:k,has:has,by:by,amt:amt,n:n});
+  }
+  var avg=nMon?(tot/nMon):0;
+  var TH='padding:5px 8px;background:#eaf0f8;color:#1e3a5f;font-weight:800;font-size:12px;border:1px solid #d8e0ea;white-space:nowrap;text-align:right';
+  var TD='padding:4px 8px;border:1px solid #e8edf4;font-size:12px;text-align:right;white-space:nowrap';
+  var mx=0; ms.forEach(function(x){ if(x.amt>mx)mx=x.amt; });
+  var head='<tr><th style="'+TH+';text-align:left">월</th>'
+    +cats.map(function(c){ return '<th style="'+TH+'">'+mvEsc(c)+'</th>'; }).join('')
+    +'<th style="'+TH+'">합계</th><th style="'+TH+'">평균대비</th><th style="'+TH+'">품목수</th></tr>';
+  var body=ms.map(function(x){
+    if(!x.has) return '<tr><td style="'+TD+';text-align:left;color:#cbd5e1">'+x.m+'월</td>'
+      +'<td colspan="'+(cats.length+3)+'" style="'+TD+';text-align:center;color:#cbd5e1">재고자료 없음</td></tr>';
+    var d=avg?((x.amt-avg)/avg*100):0;
+    var dc=d>0?'#dc2626':d<0?'#2563eb':'#94a3b8';
+    return '<tr><td style="'+TD+';text-align:left;font-weight:800;color:#1e3a5f">'+x.m+'월</td>'
+      +cats.map(function(c){ var v=x.by[c]||0;
+          return '<td style="'+TD+';'+(v?('background:rgba(29,78,216,'+Math.min(.15,(mx?v/mx:0)*.3)+')'):'color:#cbd5e1')+'">'+(v?mvWon(v):'-')+'</td>'; }).join('')
+      +'<td style="'+TD+';font-weight:800">'+mvWon(x.amt)+'</td>'
+      +'<td style="'+TD+';color:'+dc+';font-weight:700">'+(avg?((d>0?'+':'')+d.toFixed(1)+'%'):'-')+'</td>'
+      +'<td style="'+TD+'">'+mvWon(x.n)+'</td></tr>';
+  }).join('');
+  var foot='<tr><td style="'+TD+';text-align:left;font-weight:800;background:#f1f5f9">평 균</td>'
+    +cats.map(function(c){ return '<td style="'+TD+';font-weight:800;background:#f1f5f9">'+(catTot[c]?mvWon(catTot[c]/(nMon||1)):'-')+'</td>'; }).join('')
+    +'<td style="'+TD+';font-weight:800;background:#f1f5f9">'+mvWon(avg)+'</td>'
+    +'<td style="'+TD+';background:#f1f5f9">100%</td><td style="'+TD+';background:#f1f5f9">-</td></tr>';
+  return '<tr class="mvlocdet"><td colspan="'+ncol+'" style="padding:11px 12px;background:#f8fbff;border:1px solid #dbe4ef">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap">'
+      +'<b style="font-size:13px;color:#1e3a5f">🏭 '+mvEsc(loc)+'</b>'
+      +'<span class="sub2" style="font-size:11.5px;color:#64748b">'+y+'년 월별 재고금액 · 등록 <b>'+nMon+'개월</b> · 월평균 <b>'+mvWon(avg)+'</b>원</span>'
+      +'<span style="flex:1"></span>'
+      +'<button class="mvlocclose" style="border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:7px;font-size:11.5px;font-weight:700;padding:3px 10px;font-family:inherit;cursor:pointer">✕ 닫기</button></div>'
+    +'<div style="overflow:auto;max-height:340px"><table style="border-collapse:collapse;width:100%;min-width:760px"><tbody>'+head+body+foot+'</tbody></table></div>'
+    +'</td></tr>';
 }
 function mvTabLoc(){
   var ym=MV.ui.cur;
@@ -17583,12 +17632,19 @@ function mvTabLoc(){
     +'<th class="mvloth" data-k="amt" style="'+TH+'">합계'+arw('amt')+'</th>'
     +'<th class="mvloth" data-k="amt" style="'+TH+'">구성비</th>'
     +'<th class="mvloth" data-k="n" style="'+TH+'">품목수'+arw('n')+'</th></tr>';
+  var NCOL=cats.length+4;
+  var pickLoc=MV.ui.locPick||'';
+  if(pickLoc&&!locs.some(function(o){return o.loc===pickLoc;})){ pickLoc=''; MV.ui.locPick=''; }
   var body=locs.map(function(o){
-    return '<tr><td style="'+TD+';text-align:left;font-weight:800;color:#1e3a5f">'+mvEsc(o.loc)+'</td>'
+    var on=(pickLoc===o.loc);
+    var tr='<tr class="mvlocrow" data-loc="'+mvEsc(o.loc)+'" title="누르면 이 장소의 1~12월 재고가 펼쳐집니다" style="cursor:pointer'+(on?';background:#eff6ff':'')+'">'
+      +'<td style="'+TD+';text-align:left;font-weight:800;color:'+(on?'#1d4ed8':'#1e3a5f')+'">'+(on?'▾ ':'')+mvEsc(o.loc)+'</td>'
       +cats.map(function(c){ var v=o.by[c]||0; return '<td style="'+TD+';'+(v?('background:rgba(29,78,216,'+Math.min(.16,v/total*1.6)+')'):'color:#cbd5e1')+'">'+(v?mvWon(v):'-')+'</td>'; }).join('')
       +'<td style="'+TD+';font-weight:800">'+mvWon(o.amt)+'</td>'
       +'<td style="'+TD+';color:#0d9488;font-weight:700">'+mvPct(o.amt,total).toFixed(1)+'%</td>'
       +'<td style="'+TD+'">'+mvWon(o.n)+'</td></tr>';
+    if(on){ try{ tr+=mvLocMonthsHTML(o.loc,ym,cats,NCOL); }catch(e){ tr+='<tr><td colspan="'+NCOL+'" style="'+TD+';color:#dc2626">월별 자료를 만드는 중 오류: '+mvEsc(e.message||e)+'</td></tr>'; } }
+    return tr;
   }).join('');
   var foot='<tr><td style="'+TD+';text-align:left;font-weight:800;background:#f1f5f9">합 계</td>'
     +cats.map(function(c){ var s2=0; locs.forEach(function(o){s2+=o.by[c]||0;}); return '<td style="'+TD+';font-weight:800;background:#f1f5f9">'+mvWon(s2)+'</td>'; }).join('')
@@ -17610,11 +17666,16 @@ function mvTabLoc(){
     +'<div class="rhead" style="margin-bottom:8px"><span class="title">🏭 보관장소 × 구분 재고 매트릭스</span><span class="meta">'+mvEsc(PD.label)
       +(pmode==='month'?'':(' · 등록 '+PD.ms.length+'개월 평균'))+' · 장소 '+locs.length+'곳 · 총 '+mvWon(total)+'원</span></div>'
     +'<div class="panel"><h3>장소별 × 구분별 재고금액</h3><div style="overflow:auto"><table style="border-collapse:collapse;min-width:900px"><thead>'+head+'</thead><tbody>'+body+foot+'</tbody></table></div>'
-      +'<div class="note" style="margin-top:9px"><b>열 제목을 누르면</b> 그 기준으로 정렬됩니다(한 번 더 누르면 오름/내림 전환). 셀 색이 진할수록 금액이 큽니다. <b>상위 '+need+'개 장소</b>가 전체 재고금액의 80%를 차지합니다 — 월말 실사 인력과 시간을 이 장소에 우선 배분하십시오.</div></div>'
+      +'<div class="note" style="margin-top:9px"><b>보관장소 행을 누르면</b> 그 장소의 <b>1~12월 재고금액</b>이 아래로 펼쳐집니다(다시 누르면 접힘). <b>열 제목을 누르면</b> 그 기준으로 정렬됩니다(한 번 더 누르면 오름/내림 전환). 셀 색이 진할수록 금액이 큽니다. <b>상위 '+need+'개 장소</b>가 전체 재고금액의 80%를 차지합니다 — 월말 실사 인력과 시간을 이 장소에 우선 배분하십시오.</div></div>'
     +'<div class="panel"><h3>구분별 보관 분산도</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px">'+catRows+'</div></div>';
   renderCustom(html,function(){ try{setGlobalBar(false);}catch(e){} mvBind();
     document.querySelectorAll('#result .mvperbtn').forEach(function(b){
       b.addEventListener('click',function(){ MV.ui.locPeriod=b.dataset.v; mvSave(); mvRender(); }); });
+    document.querySelectorAll('#result .mvlocrow').forEach(function(tr){
+      tr.addEventListener('click',function(){ var v=tr.dataset.loc;
+        MV.ui.locPick=(String(MV.ui.locPick||'')===String(v))?'':v; mvSave(); mvRender(); }); });
+    document.querySelectorAll('#result .mvlocclose').forEach(function(b){
+      b.addEventListener('click',function(e){ e.stopPropagation(); MV.ui.locPick=''; mvSave(); mvRender(); }); });
     document.querySelectorAll('#result .mvloth').forEach(function(th){
       th.addEventListener('click',function(){ var k=th.dataset.k; var c=MV.ui.locSort||{k:'amt',d:-1};
         if(c.k===k) MV.ui.locSort={k:k,d:(c.d===1?-1:1)};
@@ -18682,6 +18743,9 @@ function mvExclData(){
   MV._xcache={k:ck,v:v};
   return v;
 }
+/* v493 : 긴 값을 한 줄 «…» 로 줄이고 title 로 전체를 보여줍니다 */
+function mvXcut(t,w,style){ t=String(t==null?'':t);
+  return '<span class="mvxcut" style="max-width:'+w+'px'+(style?(';'+style):'')+'" title="'+mvEsc(t)+'">'+mvEsc(t)+'</span>'; }
 var MV_XC={'전체':'#475569','무출고 재고':'#dc2626','장기재고(6개월↑)':'#ea580c','과잉(6개월↑)':'#d97706','부족(발주필요)':'#2563eb','적정':'#16a34a','재고없음':'#94a3b8','거래없음':'#94a3b8'};
 function mvTabExcl(){
   var D=mvExclData(), all0=D.arr, ym=D.ym;
@@ -18793,10 +18857,10 @@ function mvTabExcl(){
       +'</div>';
     var colsR=[
       {k:'rank',t:'순위',cls:'rank',cell:function(o,i){return mvRkCell(o,i,o.key);},nosort:true},
-      {k:'cust',t:'전용업체',cls:'l',cell:function(o){ return o.cust?('<b style="color:#1d4ed8">'+mvEsc(o.cust)+'</b>'):'<span class="sub2">-</span>'; },sortVal:function(o){return o.cust||'';}},
-      {k:'label',t:'재질',cls:'l',cell:function(o){return '<b style="color:#0d9488">'+mvEsc(o.name)+'</b>';},sortVal:function(o){return o.name;}},
-      {k:'spec',t:'규격(두께x폭)',cls:'l',cell:function(o){return mvEsc(o.spec);},sortVal:function(o){return o.spec;}},
-      {k:'code',t:'품번',cls:'l',cell:function(o){return '<span class="sub2">'+mvEsc(o.code)+'</span>';},sortVal:function(o){return o.code;}},
+      {k:'cust',t:'전용업체',cls:'l',cell:function(o){ return o.cust?mvXcut(o.cust,140,'font-weight:800;color:#1d4ed8'):'<span class="sub2">-</span>'; },sortVal:function(o){return o.cust||'';}},
+      {k:'label',t:'재질',cls:'l',cell:function(o){return mvXcut(o.name,96,'font-weight:800;color:#0d9488');},sortVal:function(o){return o.name;}},
+      {k:'spec',t:'규격(두께x폭)',cls:'l',cell:function(o){return mvXcut(o.spec,150);},sortVal:function(o){return o.spec;}},
+      {k:'code',t:'품번',cls:'l',cell:function(o){return mvXcut(o.code,120,'color:#64748b');},sortVal:function(o){return o.code;}},
       {k:'kg',t:'재고(KG)',cell:function(o){return mvNum(o.kg,0);},sortVal:function(o){return o.kg;}},
       {k:'price',t:'KG단가',cell:function(o){return mvWon(o.price);},sortVal:function(o){return o.price;}},
       {k:'amt',t:'재고금액',cell:function(o){return mvWon(o.amt);},sortVal:function(o){return o.amt;}},
@@ -18858,10 +18922,10 @@ function mvTabExcl(){
     +'</div>';
   var cols=[
     {k:'rank',t:'순위',cls:'rank',cell:function(o,i){return mvRkCell(o,i,o.key);},nosort:true},
-    {k:'cust',t:'전용업체',cls:'l',cell:function(o){ return o.cust?('<b style="color:#1d4ed8">'+mvEsc(o.cust)+'</b>'):'<span class="sub2" style="color:#cbd5e1">출고이력 없음</span>'; },sortVal:function(o){return o.cust||'';}},
-    {k:'code',t:'품번',cls:'l',cell:function(o){return '<span class="sub2">'+mvEsc(o.code)+'</span>';},sortVal:function(o){return o.code;}},
-    {k:'label',t:'품명',cls:'l',cell:function(o){return mvEsc(o.name);},sortVal:function(o){return o.name;}},
-    {k:'spec',t:'규격',cls:'l',cell:function(o){return mvEsc(o.spec);},sortVal:function(o){return o.spec;}},
+    {k:'cust',t:'전용업체',cls:'l',cell:function(o){ return o.cust?mvXcut(o.cust,126,'font-weight:800;color:#1d4ed8'):'<span class="sub2" style="color:#cbd5e1">출고이력 없음</span>'; },sortVal:function(o){return o.cust||'';}},
+    {k:'code',t:'품번',cls:'l',cell:function(o){return mvXcut(o.code,92,'color:#64748b');},sortVal:function(o){return o.code;}},
+    {k:'label',t:'품명',cls:'l',cell:function(o){return mvXcut(o.name,130);},sortVal:function(o){return o.name;}},
+    {k:'spec',t:'규격',cls:'l',cell:function(o){return mvXcut(o.spec,210);},sortVal:function(o){return o.spec;}},
     {k:'stock',t:'재고',cell:function(o){return mvNum(o.stock);},sortVal:function(o){return o.stock;}},
     {k:'amt',t:'재고금액',cell:function(o){return mvWon(o.amt);},sortVal:function(o){return o.amt;}},
     {k:'ordAvg',t:'1회 발주수량',cell:function(o){ if(!(o.ordAvg>0))return '<span class="sub2">-</span>';
@@ -18886,9 +18950,9 @@ function mvTabExcl(){
   if(monOn){
     cols=[
       {k:'rank',t:'순위',cls:'rank',cell:function(o,i){return mvRkCell(o,i,o.key);},nosort:true},
-      {k:'cust',t:'전용업체',cls:'l',cell:function(o){ return o.cust?('<b style="color:#1d4ed8">'+mvEsc(o.cust)+'</b>'):'<span class="sub2" style="color:#cbd5e1">-</span>'; },sortVal:function(o){return o.cust||'';}},
-      {k:'label',t:'품명',cls:'l',cell:function(o){return mvEsc(o.name);},sortVal:function(o){return o.name;}},
-      {k:'spec',t:'규격',cls:'l',cell:function(o){return mvEsc(o.spec);},sortVal:function(o){return o.spec;}}
+      {k:'cust',t:'전용업체',cls:'l',cell:function(o){ return o.cust?mvXcut(o.cust,126,'font-weight:800;color:#1d4ed8'):'<span class="sub2" style="color:#cbd5e1">-</span>'; },sortVal:function(o){return o.cust||'';}},
+      {k:'label',t:'품명',cls:'l',cell:function(o){return mvXcut(o.name,140);},sortVal:function(o){return o.name;}},
+      {k:'spec',t:'규격',cls:'l',cell:function(o){return mvXcut(o.spec,210);},sortVal:function(o){return o.spec;}}
     ];
     MV_MONTHS12.forEach(function(mo){
       cols.push({k:'m'+mo,t:mo+'월',cell:function(o){ var v=(o.monQty&&o.monQty[mo])||0;
