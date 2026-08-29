@@ -237,7 +237,7 @@
   .wr-tabs{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px}
   .wr-tab{border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:8px;padding:7px 12px;font-weight:800;font-size:12px;font-family:inherit}
   .wr-tab.on{background:#1e3a5f;color:#fff;border-color:#1e3a5f}
-  .wr-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:0}
+  .wr-controls{display:flex;align-items:center;gap:8px;flex:1 1 100%;width:100%;min-width:0;flex-wrap:wrap;margin-left:0}
   .wr-controls label{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#475569}
   .wr-controls select{min-width:auto;padding:6px 9px}
   /* 목표안 선택값은 필드 높이의 중앙에 오도록 전용 줄상자와 세로 패딩을 고정 */
@@ -1826,7 +1826,7 @@ function fcSyncActivePlan(){ const f=state.fc||{}; fcEnsureTargetPlans(); f.targ
 function fcTargetPlanLabel(){ fcEnsureTargetPlans(); return state.fc.activePlan==='2'?'수정 2안':'수정 1안'; }
 function fcTargetPlanSelectorHTML(id){ id=id||'fcTargetPlanSel'; fcEnsureTargetPlans(); const a=state.fc.activePlan==='2'?'2':'1'; return `<label class="fc-plan-ctl" title="목표수정액을 안별로 분리해 표시합니다."><span>목표안</span> <select id="${id}"><option value="1" ${a==='1'?'selected':''}>수정 1안</option><option value="2" ${a==='2'?'selected':''}>수정 2안</option></select></label>`; }
 function bindFcTargetPlanSelector(id,rerun){ const sel=document.getElementById(id||'fcTargetPlanSel'); if(!sel)return; sel.addEventListener('change',function(){ const next=sel.value==='2'?'2':'1'; fcSyncActivePlan(); state.fc.activePlan=next; fcApplyTargetPlan(state.fc.targetPlans[next]); state.fc._targetPlanLoaded=next; if(typeof logEdit==='function')logEdit('목표안',fcTargetPlanLabel()+' 선택'); saveSettings(); if(typeof rerun==='function')rerun(); }); }
-function fcInjectReportControls(root){ const ctl=root&&root.querySelector('.wr-controls'); if(!ctl||document.getElementById('wrTargetPlanSel'))return; const box=document.createElement('span'); box.style.cssText='display:inline-flex;align-items:center;gap:8px;border-left:1px solid #cbd5e1;padding-left:8px'; box.innerHTML=fcTargetPlanSelectorHTML('wrTargetPlanSel')+fcCutoffSelectorHTML(); ctl.appendChild(box); }
+function fcInjectReportControls(root){ const ctl=root&&root.querySelector('.wr-controls'); if(!ctl||document.getElementById('wrTargetPlanSel'))return; const box=document.createElement('span'); box.className='fc-report-plan-box'; box.style.cssText='display:inline-flex;align-items:center;gap:8px;padding-left:8px;margin-left:auto;flex-shrink:0'; box.innerHTML=fcTargetPlanSelectorHTML('wrTargetPlanSel')+fcCutoffSelectorHTML(); ctl.appendChild(box); }
 function headFor(ym){ const v=state.headMonthly[ym]; if(v!=null&&v!=='')return +v; const yd=state.headYearDefault[ym.slice(0,4)]; if(yd!=null&&yd!=='')return +yd; return state.headcount; }
 const KR_HOLIDAYS={
  '2025':['2025-01-01','2025-01-27','2025-01-28','2025-01-29','2025-01-30','2025-03-03','2025-05-01','2025-05-05','2025-05-06','2025-06-06','2025-08-15','2025-10-03','2025-10-06','2025-10-07','2025-10-08','2025-10-09','2025-12-25'],
