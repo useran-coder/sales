@@ -22017,7 +22017,7 @@ html.edge-browser #result .sg-month-plan-svg text.sg-month-axis-text{
   font-weight:400!important;
   line-height:normal!important;
 }
-/* 목표 갭 워터폴: 금액 글자와 '비어있음'을 각각 기존 크기의 70%로 고정 */
+/* 매출목표 달성 구성: 금액 글자와 '비어있음'을 각각 기존 크기의 70%로 고정 */
 #result .sg-waterfall-svg text.sg-wf-money-sm{font-size:7.35px!important;font-weight:400!important}
 #result .sg-waterfall-svg text.sg-wf-goal-label{font-size:8px!important;font-weight:900!important}
 #result .sg-waterfall-svg text.sg-wf-money-lg{font-size:8.05px!important;font-weight:400!important}
@@ -22121,7 +22121,7 @@ html.edge-browser #result .sg-month-plan-svg text.sg-month-axis-text{
 <script>
 /* ============================================================
    v530 : 🧭 매출 목표전략 > 종합전략 고도화 패치
-   - 목표갭 워터폴 + 영업전략 파이프라인 입력(신규사업/신규제품/신규업체/기존확대/이탈방어)
+   - 매출목표 달성 구성 + 영업전략 추진현황 입력(신규사업/신규제품/신규업체/기존확대/이탈방어)
    - 교차판매 기회맵 분포도(가로=거래처 매출 / 세로=취급 제품수)
    - 매출 증감 분해 브릿지 · 파레토 집중도 · 제품×거래처 침투 히트맵
    - 데이터 기반 우선 실행과제 자동 생성 → 클릭 한 번으로 전략 파이프라인 등록
@@ -22372,7 +22372,7 @@ function sgManPanel(kind,A){
       var manTitle=o.name||'(무제)',manReg=sgPlanItems().some(function(x){return x.type===D.type&&String(x.title||'')===String(manTitle);});
       body+='<tr style="border-bottom:1px solid #eef2f7">'
         +D.cols.map(function(c){ return '<td style="padding:4px 5px;text-align:left!important">'+inp(c,o[c.f],'sgManE" data-k="'+kind+'" data-id="'+o.id)+'</td>'; }).join('')
-        +'<td style="padding:4px 5px;text-align:center"><button class="sgManReg btn" data-k="'+kind+'" data-id="'+o.id+'" data-reg="'+(manReg?'1':'0')+'" title="'+(manReg?'다시 클릭하면 파이프라인 등록을 해제합니다':'영업전략 파이프라인에 등록합니다')+'" style="font-size:10.5px;padding:3px 8px;background:'+(manReg?'#dcfce7':D.c)+';color:'+(manReg?'#15803d':'#fff')+';border-color:'+(manReg?'#86efac':D.c)+'">'+(manReg?'✓ 등록됨':'＋전략등록')+'</button></td>'
+        +'<td style="padding:4px 5px;text-align:center"><button class="sgManReg btn" data-k="'+kind+'" data-id="'+o.id+'" data-reg="'+(manReg?'1':'0')+'" title="'+(manReg?'다시 클릭하면 추진현황 등록을 해제합니다':'영업전략 추진현황에 등록합니다')+'" style="font-size:10.5px;padding:3px 8px;background:'+(manReg?'#dcfce7':D.c)+';color:'+(manReg?'#15803d':'#fff')+';border-color:'+(manReg?'#86efac':D.c)+'">'+(manReg?'✓ 등록됨':'＋전략등록')+'</button></td>'
         +'<td style="padding:4px 5px;text-align:center"><button class="sgManDel btn ghost" data-k="'+kind+'" data-id="'+o.id+'" style="font-size:10.5px;padding:2px 7px;color:#dc2626;border-color:#f3c0c0">삭제</button></td></tr>';
     });
     body+='</tbody><tfoot><tr style="background:#f1f5f9;font-weight:900;color:'+D.c+'">'
@@ -22566,7 +22566,7 @@ function sgAnalyze(){
     CP:CP,PCu:PCu,annualTarget:annualTarget};
 }
 
-/* ---------- 3. 그래프 : 목표갭 워터폴 ---------- */
+/* ---------- 3. 그래프 : 매출목표 달성 구성 ---------- */
 /*
  * 업체별/제품별 연간 목표표의 남은 목표를 워터폴 전략군으로 자동 배분합니다.
  * 두 표는 같은 연간 목표를 서로 다른 축으로 본 것이므로 동시에 더하지 않고
@@ -22636,7 +22636,7 @@ function sgWaterfall(A){
   var maxV=Math.max(axisGoal*1.08,Math.max(end,baseVal)*1.08)||1;
   var n=steps.length, slot=iw/n, bw=Math.min(78,slot*0.6);
   var y=function(v){ return T+ih-(v/maxV)*ih; };
-  var s='<svg class="sg-waterfall-svg" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="목표 갭 워터폴">';
+  var s='<svg class="sg-waterfall-svg" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="매출목표 달성 구성">';
   // grid
   for(var g=0;g<=4;g++){ var gv=axisGoal*g/4, gy=y(gv);
     s+='<line x1="'+L+'" y1="'+gy+'" x2="'+(W-R)+'" y2="'+gy+'" stroke="#eef2f7"/>'
@@ -22699,7 +22699,7 @@ function sgWaterfall(A){
     +sgPill(gap>0?'추가로 찾아야 할 매출':'목표 초과 달성',sgShort(Math.abs(gap))+'원',gap>0?'#dc2626':'#15803d')
     +'</div>'
     +'<div class="note" style="margin-top:8px">'+(gap>0
-      ? '목표까지 <b style="color:#dc2626">'+sgShort(gap)+'원</b>이 비어 있습니다. '+(autoOn?'연간 목표표의 남은 목표 <b>'+sgShort(autoFuture)+'</b>에 파이프라인 순 기대영향 <b>'+((pipelineExtra>=0?'+':'')+sgShort(pipelineExtra))+'</b>과 미수관리 자동 거래축소를 합산한 결과입니다.':'아래 <b>②영업전략 파이프라인</b>에 전략을 등록하면 즉시 반영됩니다.')
+      ? '목표까지 <b style="color:#dc2626">'+sgShort(gap)+'원</b>이 비어 있습니다. '+(autoOn?'연간 목표표의 남은 목표 <b>'+sgShort(autoFuture)+'</b>에 영업전략 순 기대영향 <b>'+((pipelineExtra>=0?'+':'')+sgShort(pipelineExtra))+'</b>과 미수관리 자동 거래축소를 합산한 결과입니다.':'아래 <b>② 영업전략 추진현황</b>에 전략을 등록하면 즉시 반영됩니다.')
       : (autoOn?'연간 목표표 자동분류와 파이프라인 직접전략을 합산한 도달예상이 목표를 <b style="color:#15803d">'+sgShort(-gap)+'원</b> 초과합니다.':'등록된 전략만으로 목표를 <b style="color:#15803d">'+sgShort(-gap)+'원</b> 초과합니다. 확률 낮은 항목의 실현 가능성을 재점검하세요.'))+'</div>'
     +'<div class="sub2" style="margin-top:5px">'+(autoOn?'② 파이프라인의 직접 등록 전략은 성공확률 기준으로 워터폴·월별 기대매출에 반영됩니다. 💳 거래축소는 <b>미수관리 자동 영향 + 파이프라인 추가 축소</b>를 합쳐 차감합니다.':'💳 거래축소는 회수위험 업체의 자동 예상액과 파이프라인에 직접 등록한 영향금액을 합쳐 계획 합계에서 차감합니다.')+'</div>';
   return head+s+sourceDetail+foot;
@@ -22717,7 +22717,7 @@ function sgGoalCtl(A){
 function sgGoalContextStrip(A){
   return '<div class="panel" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 11px;margin:0 0 10px;border-left:4px solid #2563eb;background:#f8fafc">'
     +'<b style="font-size:12px;color:#1e3a5f;white-space:nowrap">🎯 현재 목표조건</b>'+sgGoalCtl(A)
-    +'<span class="sub2">이 조건은 현재 전략 탭과 ① 목표 갭 워터폴·연간 목표표에 함께 적용됩니다.</span></div>';
+    +'<span class="sub2">이 조건은 현재 전략 탭과 ① 매출목표 달성 구성·연간 목표표에 함께 적용됩니다.</span></div>';
 }
 function sgPill(lab,val,col){
   return '<div style="border:1px solid #e2e8f0;border-left:4px solid '+col+';border-radius:9px;padding:7px 11px;background:#fff;flex:1;min-width:150px">'
@@ -22725,7 +22725,7 @@ function sgPill(lab,val,col){
     +'<div style="font-size:16px;font-weight:900;color:'+col+';margin-top:2px">'+val+'</div></div>';
 }
 
-/* ---------- 4. 영업전략 파이프라인 입력 ---------- */
+/* ---------- 4. 영업전략 추진현황 입력 ---------- */
 function sgPipeline(A){
   var pl=sgPlan(), activePlan=sgActivePlan(),items=sgPlanItems(activePlan).slice();
   var filt=pl.filter||'all';
@@ -22758,7 +22758,7 @@ function sgPipeline(A){
     +'<span style="flex:1"></span>'
     +'<button class="btn ghost" id="sgExp" style="font-size:11.5px;padding:4px 9px">📤 내보내기</button>'
     +'<button class="btn ghost" id="sgImp" style="font-size:11.5px;padding:4px 9px">📥 불러오기</button>'
-    +'</div><div style="display:flex;align-items:flex-start;gap:7px;flex-wrap:wrap;margin:-2px 0 8px;padding:7px 9px;border:1px solid #dbeafe;border-radius:8px;background:#f8fbff;font-size:10.8px;color:#475569;line-height:1.55"><b style="color:#1e3a5f;white-space:nowrap">등록 시 적용 위치</b><span><b>① 목표 갭 워터폴의 파이프라인 추가금액</b> · <b>영업 단계별 파이프라인</b> · <b>전략 반영 월별 기대매출</b> · <b>목표 달성 전망</b>에 반영됩니다. 성공확률을 켜면 <b>목표/영향금액 × 확률</b>로 계산합니다. 신규·성장·기존·신규사업·거래처 위험은 더하고, 💳 거래축소는 차감합니다. 연간 목표표와 명시적으로 연결된 기존업체·기존제품 추가%만 워터폴에서 중복 제외하며, 직접 등록한 신규업체·신규제품은 추가 기대금액으로 반영합니다.</span></div>';
+    +'</div><div style="display:flex;align-items:flex-start;gap:7px;flex-wrap:wrap;margin:-2px 0 8px;padding:7px 9px;border:1px solid #dbeafe;border-radius:8px;background:#f8fbff;font-size:10.8px;color:#475569;line-height:1.55"><b style="color:#1e3a5f;white-space:nowrap">등록 시 적용 위치</b><span><b>① 매출목표 달성 구성의 영업전략 추가금액</b> · <b>영업 단계별 파이프라인</b> · <b>전략 반영 월별 기대매출</b> · <b>목표 달성 전망</b>에 반영됩니다. 성공확률을 켜면 <b>목표/영향금액 × 확률</b>로 계산합니다. 신규·성장·기존·신규사업·거래처 위험은 더하고, 💳 거래축소는 차감합니다. 연간 목표표와 명시적으로 연결된 기존업체·기존제품 추가%만 달성 구성에서 중복 제외하며, 직접 등록한 신규업체·신규제품은 추가 기대금액으로 반영합니다.</span></div>';
 
   var rowsHtml;
   if(!view.length){
@@ -23571,8 +23571,8 @@ function sgOverview(A){
     +'③~⑥은 데이터가 말해주는 <b>기회의 위치</b>, ⑦은 그걸 <b>바로 실행할 과제</b>로 바꾼 것입니다. ⑦의 <b>＋전략등록</b>을 누르면 ②로 자동 입력됩니다. '
     +'데이터에 없는 신규업체·개발제품·신규사업은 상단 <b>🏢신규업체 / 🧪신규제품 / 🚀신규사업</b> 탭에서 직접 등록하세요.</div>'
     +sgSecBar()
-    +sgSec('w','①','목표 갭 워터폴','무엇으로 목표를 채울 것인가',sgGoalCtl(A),sgWaterfall(A))
-    +sgSec('p','②','영업전략 파이프라인','9개 전략분류별 신규·성장·유지·회복·축소 계획','',sgPipeline(A))
+    +sgSec('w','①','매출목표 달성 구성','무엇으로 목표를 채울 것인가',sgGoalCtl(A),sgWaterfall(A))
+    +sgSec('p','②','영업전략 추진현황','9개 전략분류별 신규·성장·유지·회복·축소 계획','',sgPipeline(A))
     +sgSec('o','③','교차판매 기회맵','거래처/제품 기준을 전환해 확장 기회를 찾습니다','',sgOppMap(A))
     +sgSec('b','④','매출 증감 분해','어디서 늘고 어디서 빠졌나','',sgBridge(A))
     +sgSec('r','⑤','매출 집중도 (파레토)','몇 곳에 기대고 있나','',sgPareto(A))
@@ -23662,7 +23662,7 @@ function sgTable(list,kind,A){
     +(showMarket?'<th class="sg-table-sort" data-kind="'+kind+'" data-sk="market" style="padding:7px;text-align:center">시장대비'+sgListArrow(kind,'market')+'</th><th class="sg-table-sort" data-kind="'+kind+'" data-sk="status" style="padding:7px;text-align:center">판정'+sgListArrow(kind,'status')+'</th>':'')
       +'<th class="sg-table-sort" data-kind="'+kind+'" data-sk="count" style="padding:7px;text-align:center">'+(isProd?'거래처수':'취급품목')+sgListArrow(kind,'count')+'</th>'
     +'<th class="sg-table-sort" data-kind="'+kind+'" data-sk="activity" style="padding:7px;text-align:center">'+(isProd?'수량':'거래월')+sgListArrow(kind,'activity')+'</th>'
-    +(linkedAdd?'<th style="padding:7px;text-align:center;width:82px" title="영업전략 파이프라인 확률과 양방향 연동됩니다. 기존업체·기존제품은 연간 목표표 추가%에도 함께 연동됩니다.">추가%</th>':'')
+    +(linkedAdd?'<th style="padding:7px;text-align:center;width:82px" title="영업전략 추진현황 확률과 양방향 연동됩니다. 기존업체·기존제품은 연간 목표표 추가%에도 함께 연동됩니다.">추가%</th>':'')
     +'<th class="sg-table-sort" data-kind="'+kind+'" data-sk="registered" style="padding:7px;text-align:center">전략'+sgListArrow(kind,'registered')+'</th></tr></thead><tbody>';
   list.slice(0,80).forEach(function(o,i){
     var quickTitle=String(o.label||o.name||''),addKey=isProd?String(o.key||''):String(o.name||o.label||''),regItem=sgFindQuickItem(kind,quickTitle);
@@ -23684,7 +23684,7 @@ function sgTable(list,kind,A){
       +'<td style="padding:6px 7px;text-align:center">'+(isProd?o.nCust:o.nProd)+'</td>'
       +'<td style="padding:6px 7px;text-align:center;color:#64748b">'+(isProd?sgWon(o.qty):(o.nMon+'개월'))+'</td>'
       +(linkedAdd?'<td style="padding:5px 6px;text-align:center;white-space:nowrap"><input type="number" class="sgLinkedAddPct" data-k="'+kind+'" data-n="'+sgEsc(quickTitle)+'" data-iid="'+sgEsc(regItem&&regItem.id||'')+'" data-add-kind="'+(annualLinked?(isProd?'prod':'cust'):'prob')+'" data-add-key="'+sgEsc(addKey)+'" value="'+(addRaw==null?'':sgEsc(addRaw))+'" min="0" max="100" step="0.1" placeholder="0" '+(registered?'':'disabled')+' style="width:56px;height:26px;border:1px solid '+(registered?'#94a3b8':'#e2e8f0')+';border-radius:6px;padding:2px 5px;text-align:right;font-family:inherit;font-size:11px;background:'+(registered?'#fff':'#f8fafc')+';color:'+(registered?'#1e3a5f':'#94a3b8')+'"> %</td>':'')
-      +'<td style="padding:6px 7px;text-align:center">'+(noQuick?'<span style="font-size:10.5px;font-weight:800;color:#64748b">회복 제외</span>':'<button class="sgQuick btn ghost" data-k="'+kind+'" data-n="'+sgEsc(quickTitle)+'" data-key="'+sgEsc(addKey)+'" data-iid="'+sgEsc(regItem&&regItem.id||'')+'" data-a="'+Math.round(quickAmt)+'" data-reg="'+(registered?'1':'0')+'" title="'+(registered?'다시 클릭하면 파이프라인 등록을 해제합니다':'영업전략 파이프라인에 등록합니다')+'" style="font-size:10.5px;padding:2px 7px;'+(registered?'background:#dcfce7;color:#15803d;border-color:#86efac;cursor:pointer':'')+'">'+(registered?'✓ 등록됨':'＋등록')+'</button>')+'</td></tr>';
+      +'<td style="padding:6px 7px;text-align:center">'+(noQuick?'<span style="font-size:10.5px;font-weight:800;color:#64748b">회복 제외</span>':'<button class="sgQuick btn ghost" data-k="'+kind+'" data-n="'+sgEsc(quickTitle)+'" data-key="'+sgEsc(addKey)+'" data-iid="'+sgEsc(regItem&&regItem.id||'')+'" data-a="'+Math.round(quickAmt)+'" data-reg="'+(registered?'1':'0')+'" title="'+(registered?'다시 클릭하면 추진현황 등록을 해제합니다':'영업전략 추진현황에 등록합니다')+'" style="font-size:10.5px;padding:2px 7px;'+(registered?'background:#dcfce7;color:#15803d;border-color:#86efac;cursor:pointer':'')+'">'+(registered?'✓ 등록됨':'＋등록')+'</button>')+'</td></tr>';
   });
   h+='</tbody></table></div>';
   return toolbar+h;
@@ -23881,7 +23881,7 @@ function sgRender(){
     content=sgKpis(A)
       +(manKind?sgManPanel(manKind,A):'')
       +'<div class="panel" style="padding:12px"><b style="font-size:14px;color:#1e3a5f">📊 '+cfg.t+' <span class="sub2" style="font-weight:600">(출고 데이터 기준)</span></b>'
-      +'<div class="sub2" style="margin:4px 0 10px">'+cfg.d+' · 우측 <b>＋등록</b>으로 영업전략 파이프라인에 바로 담을 수 있습니다.</div>'
+      +'<div class="sub2" style="margin:4px 0 10px">'+cfg.d+' · 우측 <b>＋등록</b>으로 영업전략 추진현황에 바로 담을 수 있습니다.</div>'
       +sgStrategySearchBar(tab,cfg.l.length,filtered.length)+sgTable(filtered,tab,A)+'</div>';
   }
 
