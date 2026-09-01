@@ -4264,8 +4264,17 @@ function cmgrInfoSwap(){
   var _imStat='';
   { var _mc={}; IMETHODS.forEach(function(m){_mc[m[0]]=0;}); var _base=custs.length;
     custs.forEach(function(c){ intakeArr(c).forEach(function(x){ if(_mc[x]!==undefined)_mc[x]++; }); });
-    var _rowsS=IMETHODS.slice().sort(function(a,b){return _mc[b[0]]-_mc[a[0]];}).map(function(m){ var n=_mc[m[0]], pct=_base?(n/_base*100):0; return '<tr><td class="l" style="font-size:15px">'+m[1]+' '+esc(m[0])+'</td><td style="text-align:right;font-weight:700">'+won(n)+'개사</td><td style="text-align:right">'+pct.toFixed(1)+'%</td><td><div style="height:12px;background:#eef2ff;border-radius:6px;overflow:hidden"><div style="width:'+Math.min(100,pct).toFixed(1)+'%;height:100%;background:#6366f1"></div></div></td></tr>'; }).join('');
-    _imStat='<div class="cmgr-intake-stat" style="width:100%"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 8px;padding:9px 12px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px"><b style="font-size:14px;color:#3730a3">📊 접수방법 비중</b><span style="font-size:12px;color:#64748b">현재 표시 업체 '+won(_base)+'개사 기준</span></div><table class="cmgr-tbl" style="border-collapse:collapse;font-size:13px;width:100%;table-layout:fixed"><colgroup><col style="width:22%"><col style="width:16%"><col style="width:14%"><col style="width:48%"></colgroup><thead><tr><th class="l">접수방법</th><th style="text-align:right">사용 업체수</th><th style="text-align:right">비중</th><th class="l">업체 비중 그래프</th></tr></thead><tbody>'+_rowsS+'</tbody><tfoot><tr><td class="l" style="font-weight:700">전체 업체수</td><td style="text-align:right;font-weight:700">'+won(_base)+'개사</td><td colspan="2"></td></tr></tfoot></table><div style="font-size:12px;color:#64748b;margin-top:7px">※ 한 업체가 여러 접수방법을 선택할 수 있어 비중 합계가 100%를 넘을 수 있습니다. 미입력 업체는 각 항목에서 제외됩니다.</div></div>';
+    var _selM=String(state.cmgr.intakeStatMethod||''),_sortedMethods=IMETHODS.slice().sort(function(a,b){return _mc[b[0]]-_mc[a[0]];});
+    if(_selM&&!_sortedMethods.some(function(m){return m[0]===_selM;}))_selM=state.cmgr.intakeStatMethod='';
+    var _rowsS=_sortedMethods.map(function(m){ var n=_mc[m[0]],pct=_base?(n/_base*100):0,on=_selM===m[0]; return '<tr class="ci-intake-stat-row" data-m="'+esc(m[0])+'" title="선택하면 '+esc(m[0])+' 사용 업체를 아래에 표시합니다" style="cursor:pointer;'+(on?'background:#eef2ff;box-shadow:inset 4px 0 #6366f1':'')+'"><td class="l" style="font-size:15px;font-weight:'+(on?'800':'400')+'">'+(on?'▾ ':'')+m[1]+' '+esc(m[0])+'</td><td style="text-align:right;font-weight:700">'+won(n)+'개사</td><td style="text-align:right;color:'+(on?'#4f46e5':'inherit')+';font-weight:'+(on?'800':'400')+'">'+pct.toFixed(1)+'%</td><td><div style="height:12px;background:#eef2ff;border-radius:6px;overflow:hidden"><div style="width:'+Math.min(100,pct).toFixed(1)+'%;height:100%;background:'+(on?'#4f46e5':'#6366f1')+'"></div></div></td></tr>'; }).join('');
+    var _detail='';
+    if(_selM){
+      var _picked=custs.filter(function(c){return intakeArr(c).indexOf(_selM)>=0;}).sort(function(a,b){return (agg[b]||0)-(agg[a]||0);});
+      var _contactName=function(c){var o=state.custInfo[c]||{},km=o.keyman||{},cs=o.contacts||[];return km.n||((cs[0]&&cs[0].n)||'-');};
+      var _detailRows=_picked.map(function(c,i){var o=state.custInfo[c]||{};return '<tr data-cust="'+esc(c)+'"><td style="text-align:center">'+(i+1)+'</td><td class="l" style="font-weight:700;color:#1e3a5f">'+star(c)+esc(c)+' '+catChip(c)+'</td><td class="l">'+esc(_contactName(c))+'</td><td class="l">'+esc(o.tel||'-')+'</td><td class="l">'+esc(o.fax||'-')+'</td><td class="l">'+esc((typeof mgrS==='function'&&mgrS(c))||'-')+'</td><td class="l">'+esc((typeof mgrT==='function'&&mgrT(c))||'-')+'</td></tr>';}).join('');
+      _detail='<div id="ciIntakeCompanyList" style="margin-top:10px;border:1px solid #c7d2fe;border-radius:9px;overflow:hidden"><div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#eef2ff"><b style="font-size:13.5px;color:#3730a3">📋 '+esc(_selM)+' 사용 업체</b><span style="font-size:12px;color:#64748b">'+won(_picked.length)+'개사 · 매출순</span><span style="flex:1"></span><button type="button" id="ciIntakeListClose" class="btn ghost" style="font-size:11px;padding:3px 9px;background:#fff">닫기</button></div><div style="max-height:520px;overflow:auto"><table class="cmgr-tbl" style="border-collapse:collapse;font-size:12.5px;width:100%;table-layout:fixed"><colgroup><col style="width:5%"><col style="width:29%"><col style="width:14%"><col style="width:14%"><col style="width:14%"><col style="width:12%"><col style="width:12%"></colgroup><thead style="position:sticky;top:0;z-index:2"><tr><th>#</th><th class="l">업체명·분류</th><th class="l">주요 담당자</th><th class="l">회사전화</th><th class="l">팩스</th><th class="l">영업관리</th><th class="l">기술영업</th></tr></thead><tbody>'+(_detailRows||'<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:22px">해당 접수방법을 사용하는 업체가 없습니다.</td></tr>')+'</tbody></table></div></div>';
+    }
+    _imStat='<div class="cmgr-intake-stat" style="width:100%"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 8px;padding:9px 12px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px"><b style="font-size:14px;color:#3730a3">📊 접수방법 비중</b><span style="font-size:12px;color:#64748b">접수방법을 선택하면 아래에 업체목록 표시 · 현재 '+won(_base)+'개사 기준</span></div><table class="cmgr-tbl" style="border-collapse:collapse;font-size:13px;width:100%;table-layout:fixed"><colgroup><col style="width:22%"><col style="width:16%"><col style="width:14%"><col style="width:48%"></colgroup><thead><tr><th class="l">접수방법</th><th style="text-align:right">사용 업체수</th><th style="text-align:right">비중</th><th class="l">업체 비중 그래프</th></tr></thead><tbody>'+_rowsS+'</tbody><tfoot><tr><td class="l" style="font-weight:700">전체 업체수</td><td style="text-align:right;font-weight:700">'+won(_base)+'개사</td><td colspan="2"></td></tr></tfoot></table>'+_detail+'<div style="font-size:12px;color:#64748b;margin-top:7px">※ 한 업체가 여러 접수방법을 선택할 수 있어 비중 합계가 100%를 넘을 수 있습니다. 미입력 업체는 각 항목에서 제외됩니다.</div></div>';
   }
   var _scEl=box,_scTop=0; try{ var _e=box; while(_e&&_e!==document.body){ var _oy=getComputedStyle(_e).overflowY; if((_oy==='auto'||_oy==='scroll')&&_e.scrollHeight>_e.clientHeight+4){_scEl=_e;break;} _e=_e.parentElement; } _scTop=_scEl?_scEl.scrollTop:0; }catch(_x){} box.innerHTML=state.cmgr.intakeStat?_imStat:('<table class="cmgr-tbl" style="border-collapse:collapse;font-size:13px;width:100%"><thead><tr><th class="l" id="ci2SortName" style="cursor:pointer" title="클릭: 거래처명순 / 매출순 정렬">거래처 '+(state.cmgr.infoSort==='name'?'▲':'⇅')+'</th>'+(state.cmgr.intakeView?IMETHODS.map(function(m){return '<th class="ci2-msort" data-m="'+esc(m[0])+'" style="cursor:pointer;white-space:nowrap;font-size:11px;text-align:center" title="클릭: '+esc(m[0])+' 정렬">'+m[1]+'<br>'+esc(m[0])+(state.cmgr.infoSort==='ik:'+m[0]?' ▲':'')+'</th>';}).join(''):'')+'<th>구분</th><th>이름</th><th>직책/직위</th><th>부서/담당업무</th><th>휴대전화</th><th>이메일</th>'+(state.cmgr.intakeView?'':'<th>회사전화</th><th>팩스</th>')+'<th>비고</th><th></th></tr></thead><tbody>'+(rows||('<tr><td colspan="12" style="text-align:center;color:#94a3b8;padding:26px">표시할 거래처가 없습니다. 필터(★ 주요업체 · 🚫 체크제외 · 담당자 필터)를 해제해 보세요.</td></tr>'))+'</tbody></table>');
   var exbar=document.getElementById('ciSwapBar'); if(!exbar){ exbar=document.createElement('div'); exbar.id='ciSwapBar'; exbar.style.cssText='margin:6px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap'; box.parentNode.insertBefore(exbar, box); }
@@ -4280,6 +4289,8 @@ function cmgrInfoSwap(){
   box.querySelectorAll('.ci2-n,.ci2-pos,.ci2-dept,.ci2-p,.ci2-email,.ci2-m,.ci2-tel,.ci2-fax').forEach(function(_ip){ var _pt=function(){ _ip.classList.toggle('editedm',!!(_ip.value&&String(_ip.value).trim())); }; _pt(); _ip.addEventListener('input',_pt); });
   box.querySelectorAll('.ci2-exclcb').forEach(function(cb){ cb.addEventListener('mousedown',function(e){ e.stopPropagation(); }); cb.addEventListener('click',function(e){ e.stopPropagation(); }); cb.addEventListener('change',function(e){ var c=e.target.dataset.c; setExcludedCust(c,e.target.checked); if(typeof logEdit==='function')logEdit('거래처제외',c+' 제외 '+(e.target.checked?'설정':'해제')+' (매출목표/담당자 동시)'); saveSettings(); cmgrInfoSwap(); }); });
   var _sn=document.getElementById('ci2SortName'); if(_sn)_sn.addEventListener('click',function(){ state.cmgr.infoSort=(state.cmgr.infoSort==='name')?'amt':'name'; cmgrInfoSwap(); });
+  box.querySelectorAll('.ci-intake-stat-row').forEach(function(tr){tr.addEventListener('click',function(){var m=tr.dataset.m||'';state.cmgr.intakeStatMethod=(state.cmgr.intakeStatMethod===m)?'':m;cmgrInfoSwap();if(state.cmgr.intakeStatMethod)requestAnimationFrame(function(){var d=document.getElementById('ciIntakeCompanyList');if(d)d.scrollIntoView({behavior:'smooth',block:'nearest'});});});});
+  var _icl=document.getElementById('ciIntakeListClose');if(_icl)_icl.addEventListener('click',function(){state.cmgr.intakeStatMethod='';cmgrInfoSwap();});
   box.querySelectorAll('.ci2-ik').forEach(function(bt){ bt.addEventListener('click',function(){ var c=bt.dataset.c,m=bt.dataset.m; var o=ensure(c); var arr=String(o.intake||'').split(',').map(function(x){return x.trim();}).filter(Boolean); var ix=arr.indexOf(m); if(ix>=0)arr.splice(ix,1); else arr.push(m); o.intake=IMETHODS.filter(function(mm){return arr.indexOf(mm[0])>=0;}).map(function(mm){return mm[0];}).join(', '); if(typeof logEdit==='function')logEdit('담당정보',c+' 접수방법 수정'); saveSettings(); cmgrInfoSwap(); }); });
   box.querySelectorAll('.ci2-msort').forEach(function(th){ th.addEventListener('click',function(){ state.cmgr.infoSort='ik:'+th.dataset.m; cmgrInfoSwap(); }); });
   box.querySelectorAll('.ci2-add').forEach(function(b){ b.addEventListener('click',function(){ var o=ensure(b.dataset.c); o.contacts.push(blank()); if(typeof logEdit==='function')logEdit('담당정보',b.dataset.c+' 담당자 추가'); saveSettings(); cmgrInfoSwap(); }); });
@@ -22097,6 +22108,17 @@ html.edge-browser #result .sg-month-plan-svg text.sg-month-axis-text{
 #result .sg-bridge-row:hover,#result .sg-bridge-row.is-selected{background:#eff6ff!important;box-shadow:inset 3px 0 #2563eb}
 #result .sg-bridge-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
 #result .sg-bridge-arrow{display:inline-block;width:14px;color:#2563eb;font-weight:900}
+#result .sg-bridge-bar{cursor:pointer;transform-box:fill-box;transform-origin:center bottom;transition:transform .22s ease,filter .22s ease,opacity .22s ease,stroke-width .22s ease}
+#result .sg-bridge-bar:hover,#result .sg-bridge-bar.is-selected{transform:translateY(-3px) scale(1.08,1.045);filter:drop-shadow(0 5px 4px rgba(30,58,95,.28));opacity:1!important;stroke:#1d4ed8;stroke-width:1.6px}
+#result .sg-bridge-bar:focus{outline:none}
+#result .sg-bridge-bar:focus-visible{filter:drop-shadow(0 0 4px rgba(37,99,235,.75));stroke:#1d4ed8;stroke-width:2px}
+#result .sg-bridge-company-panel{margin-top:8px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 5px 14px rgba(30,64,175,.08)}
+#result .sg-bridge-company-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;background:#eff6ff;color:#1e3a5f;font-size:10.5px;font-weight:900}
+#result .sg-bridge-company-scroll{max-height:250px;overflow:auto}
+#result .sg-bridge-company-table{width:100%;min-width:700px;border-collapse:collapse;table-layout:fixed;font-size:10px}
+#result .sg-bridge-company-table th{position:sticky;top:0;z-index:1;padding:6px;background:#f8fafc;border-bottom:1px solid #dbe3ee;color:#475569;text-align:center;white-space:nowrap}
+#result .sg-bridge-company-table td{padding:6px;border-bottom:1px solid #eef2f7;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#result .sg-bridge-company-table tr:last-child td{border-bottom:0}
 #result .sg-bridge-detail>td{padding:0 8px 9px;background:#f8fafc}
 #result .sg-bridge-detail-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;padding:9px;border:1px solid #bfdbfe;border-radius:8px;background:#fff}
 #result .sg-bridge-mini{border:1px solid #e2e8f0;border-radius:7px;overflow:hidden;min-width:0}
@@ -23195,8 +23217,8 @@ function sgOppListPanel(q,title,list,c,salesRank){
 /* ---------- 6. 매출 증감 분해 브릿지 ---------- */
 function sgBridge(A){
   var b=A.brk;
-  var steps=[{l:A.PY+'년',v:A.pyTot,k:'t'},{l:'신규업체',v:b.newC,k:'d'},{l:'신규제품(참고)',v:b.newP,k:'i'},{l:'기존 증가',v:b.upC,k:'d'},
-             {l:'기존 감소',v:b.dnC,k:'d'},{l:'거래중단',v:b.lostC,k:'d'},{l:A.CY+'년',v:A.cyTot,k:'t'}];
+  var steps=[{l:A.PY+'년',v:A.pyTot,k:'t',sel:''},{l:'신규업체',v:b.newC,k:'d',sel:'newCust'},{l:'신규제품(참고)',v:b.newP,k:'i',sel:'newProd'},{l:'기존 증가',v:b.upC,k:'d',sel:'up'},
+             {l:'기존 감소',v:b.dnC,k:'d',sel:'down'},{l:'거래중단',v:b.lostC,k:'d',sel:'lost'},{l:A.CY+'년',v:A.cyTot,k:'t',sel:''}];
   var W=470,H=260,L=52,R=12,T=22,B=46,iw=W-L-R,ih=H-T-B;
   var max=Math.max(A.pyTot,A.cyTot)*1.18||1;
   var y=function(v){return T+ih-(v/max)*ih;};
@@ -23210,7 +23232,8 @@ function sgBridge(A){
     if(st.k==='t'){ top=y(st.v); hh=y(0)-y(st.v); col=i===0?'#94a3b8':'#1e3a5f'; run=st.v; attr='fill="'+col+'" opacity=".9"'; }
     else if(st.k==='i'){ top=y(st.v); hh=y(0)-y(st.v); col='#0d9488'; attr='fill="'+col+'" opacity=".18" stroke="'+col+'" stroke-width="1.5" stroke-dasharray="3 2"'; }
     else{ var a=run,bb=run+st.v; run=bb; top=y(Math.max(a,bb)); hh=Math.abs(y(a)-y(bb)); col=st.v>=0?'#16a34a':'#dc2626'; attr='fill="'+col+'" opacity=".9"'; }
-    s+='<rect x="'+x+'" y="'+top+'" width="'+bw+'" height="'+Math.max(2,hh)+'" rx="3" '+attr+'><title>'+st.l+' '+sgWon(st.v)+'원'+(st.k==='i'?' (누적 미반영 참고값)':'')+'</title></rect>'
+    var selectAttr=st.sel?' class="sg-bridge-bar" data-key="'+st.sel+'" tabindex="0" role="button" aria-pressed="false" aria-label="'+st.l+' 관련 업체 목록 보기"':'';
+    s+='<rect x="'+x+'" y="'+top+'" width="'+bw+'" height="'+Math.max(2,hh)+'" rx="3" '+attr+selectAttr+'><title>'+st.l+' '+sgWon(st.v)+'원'+(st.k==='i'?' (누적 미반영 참고값)':'')+(st.sel?' · 클릭하면 관련 업체 목록을 표시합니다.':'')+'</title></rect>'
       +'<text x="'+cx+'" y="'+(top-4)+'" text-anchor="middle" font-size="6.65" data-screen-px="15" font-weight="800" fill="'+col+'">'+((st.k==='d'||st.k==='i')&&st.v>0?'+':'')+sgShort(st.v)+'</text>'
       +'<text x="'+cx+'" y="'+(T+ih+14)+'" text-anchor="middle" font-size="6.65" data-screen-px="13" fill="#475569">'+st.l+'</text>';
   });
@@ -23240,8 +23263,19 @@ function sgBridge(A){
     }).join(''):'<div class="sg-bridge-mini-row"><span style="color:#94a3b8">표시할 항목이 없습니다.</span></div>';
     return '<div class="sg-bridge-mini"><div class="sg-bridge-mini-title">'+icon+' '+title+'</div>'+rows+'</div>';
   };
+  var custByName={}; A.custs.forEach(function(c){custByName[c.name]=c;});
+  var newProdCustomerAmounts={};
+  A.newProd.forEach(function(p){Object.keys(p.cyCust||{}).forEach(function(name){newProdCustomerAmounts[name]=(newProdCustomerAmounts[name]||0)+(p.cyCust[name]||0);});});
   var newProdCompanies=customersForProducts(A.newProd);
   var lostProd=A.prods.filter(function(p){return p.py>0&&p.cy<=0;});
+  var companyRow=function(c,impact){return {name:c.name,py:+c.py||0,cy:+c.cy||0,impact:+impact||0,growth:c.py>0?c.gRaw:null,nProd:+c.nProd||0,nMon:+c.nMon||0};};
+  window.__sgBridgeCompanyLists={
+    newCust:{label:'신규업체',amountLabel:'신규 매출',rows:A.newCust.map(function(c){return companyRow(c,c.cy);})},
+    newProd:{label:'신규제품(참고)',amountLabel:'신규제품 매출',rows:Object.keys(newProdCustomerAmounts).map(function(name){return companyRow(custByName[name]||{name:name},newProdCustomerAmounts[name]);}).sort(function(a,z){return z.impact-a.impact;})},
+    up:{label:'기존 증가',amountLabel:'증가액',rows:A.upCust.map(function(c){return companyRow(c,c.diff);})},
+    down:{label:'기존 감소',amountLabel:'감소액',rows:A.dnCust.map(function(c){return companyRow(c,c.diff);})},
+    lost:{label:'거래중단',amountLabel:'감소액',rows:A.lostCust.map(function(c){return companyRow(c,-c.py);})}
+  };
   var explainRows=[
     {k:'newCust',l:'신규업체',v:b.newC,n:A.newCust.length,u:'개사',d:'전년 매출이 없고 올해 처음 발생한 거래처 매출입니다.',c:topItems(A.newCust,function(o){return o.cy;},function(o){return o.name;}),p:productsForCustomers(A.newCust)},
     {k:'newProd',l:'신규제품(참고)',v:b.newP,n:A.newProd.length,u:'종',d:'매출 증가(＋) 항목이나 고객 증감과 중복되어 누적합에서는 제외합니다.',c:newProdCompanies,p:topItems(A.newProd,function(o){return o.cy;},function(o){return o.label;})},
@@ -23250,16 +23284,14 @@ function sgBridge(A){
     {k:'lost',l:'거래중단',v:b.lostC,n:A.lostCust.length,u:'개사',d:'전년 매출이 있었지만 올해 매출이 끊긴 거래처 매출입니다.',c:topItems(A.lostCust,function(o){return -o.py;},function(o){return o.name;}),p:topItems(lostProd,function(o){return -o.py;},function(o){return o.label;})}
   ].map(function(x){
     var neg=x.v<0;
-    var main='<tr class="sg-bridge-row" data-key="'+x.k+'" tabindex="0" role="button" aria-expanded="false" style="border-bottom:1px solid #e2e8f0"><td style="padding:7px 8px;text-align:left;font-weight:800;color:'+(neg?'#dc2626':'#1e3a5f')+'"><span class="sg-bridge-arrow">▸</span>'+x.l+'</td><td style="padding:7px 8px;text-align:right;font-weight:900;color:'+(neg?'#dc2626':'#16a34a')+'">'+(neg?'−':'＋')+sgShort(Math.abs(x.v))+'</td><td style="padding:7px 8px;text-align:center;color:#475569;white-space:nowrap">'+x.n+x.u+'</td><td style="padding:7px 8px;text-align:left;color:#64748b;line-height:1.45">'+x.d+'</td></tr>';
-    var detail='<tr class="sg-bridge-detail" data-key="'+x.k+'" style="display:none"><td colspan="4"><div class="sg-bridge-detail-grid">'+miniList('주요업체 리스트','🏢',x.c)+miniList('주요제품 리스트','📦',x.p)+'</div></td></tr>';
-    return main+detail;
+    return '<tr class="sg-bridge-row" data-key="'+x.k+'" tabindex="0" role="button" aria-expanded="false" style="border-bottom:1px solid #e2e8f0"><td style="padding:7px 8px;text-align:left;font-weight:800;color:'+(neg?'#dc2626':'#1e3a5f')+'"><span class="sg-bridge-arrow">▸</span>'+x.l+'</td><td style="padding:7px 8px;text-align:right;font-weight:900;color:'+(neg?'#dc2626':'#16a34a')+'">'+(neg?'−':'＋')+sgShort(Math.abs(x.v))+'</td><td style="padding:7px 8px;text-align:center;color:#475569;white-space:nowrap">'+x.n+x.u+'</td><td style="padding:7px 8px;text-align:left;color:#64748b;line-height:1.45">'+x.d+'</td></tr>';
   }).join('');
   var explain='<div style="overflow:hidden;border:1px solid #dbe3ee;border-radius:8px;background:#fff"><table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:10.5px"><colgroup><col style="width:18%"><col style="width:15%"><col style="width:15%"><col style="width:52%"></colgroup><thead><tr style="background:#eef2f7;color:#334155"><th style="padding:7px;text-align:center">구분</th><th style="padding:7px;text-align:center">증감금액</th><th style="padding:7px;text-align:center">대상</th><th style="padding:7px;text-align:center">분석 기준</th></tr></thead><tbody>'+explainRows+'</tbody></table></div>';
   return '<div style="display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:14px;align-items:start">'
     +'<div>'+s+'</div>'
     +'<div><div class="sub2" style="margin-bottom:6px">'+A.PY+'년에서 '+A.CY+'년까지의 변화를 신규업체·신규제품·기존 증가·기존 감소·거래중단으로 나눴습니다.</div>'
     +'<div class="note">'+msg+'</div>'
-    +'<div style="margin-top:7px">'+explain+'</div></div></div>';
+    +'<div style="margin-top:7px">'+explain+'<div id="sgBridgeCompanyPanel" class="sg-bridge-company-panel" style="display:none" aria-live="polite"></div></div></div></div>';
 }
 
 /* ---------- 7. 파레토 집중도 ---------- */
@@ -24114,20 +24146,36 @@ function sgBind(A){
   });
   window.addEventListener('resize',hidePipeSuggest,{once:true});
 
-  /* 매출 증감 분해: 선택한 행 바로 아래에서 주요업체·주요제품을 펼칩니다. */
-  $$('.sg-bridge-row').forEach(function(row){
-    var toggleBridge=function(){
-      var key=row.dataset.key,detail=null;
-      $$('.sg-bridge-detail').some(function(el){if(el.dataset.key===key){detail=el;return true;}return false;});
-      if(!detail)return;
-      var open=detail.style.display==='none';
-      detail.style.display=open?'table-row':'none';
-      row.classList.toggle('is-selected',open);
-      row.setAttribute('aria-expanded',open?'true':'false');
-      var arrow=row.querySelector('.sg-bridge-arrow'); if(arrow)arrow.textContent=open?'▾':'▸';
-    };
-    row.addEventListener('click',toggleBridge);
-    row.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleBridge();}});
+  /* 매출 증감 분해: 오른쪽 행과 그래프 막대가 같은 업체 목록을 제어합니다. */
+  var bridgeRows=$$('.sg-bridge-row'),bridgeBars=$$('.sg-bridge-bar'),bridgePanel=document.getElementById('sgBridgeCompanyPanel'),bridgeSelected='';
+  var bridgeListHtml=function(key){
+    var data=(window.__sgBridgeCompanyLists||{})[key];
+    if(!data)return '';
+    var rows=data.rows||[],body=rows.map(function(o,i){
+      var impact=+o.impact||0,rate=o.growth==null?'-':((o.growth>0?'+':'')+o.growth.toFixed(1)+'%');
+      return '<tr><td style="text-align:center;color:#64748b">'+(i+1)+'</td><td style="text-align:left;font-weight:800;color:#1e3a5f" title="'+sgEsc(o.name)+'">'+sgEsc(o.name)+'</td><td style="text-align:right">'+sgWon(o.py)+'</td><td style="text-align:right">'+sgWon(o.cy)+'</td><td style="text-align:right;font-weight:900;color:'+(impact<0?'#dc2626':'#15803d')+'">'+(impact>0?'+':'')+sgWon(impact)+'</td><td style="text-align:right;color:'+(o.growth<0?'#dc2626':'#15803d')+'">'+rate+'</td><td style="text-align:center">'+o.nProd+'</td><td style="text-align:center">'+o.nMon+'</td></tr>';
+    }).join('');
+    if(!body)body='<tr><td colspan="8" style="padding:16px;text-align:center;color:#94a3b8">해당 업체가 없습니다.</td></tr>';
+    return '<div class="sg-bridge-company-head"><span>🏢 '+sgEsc(data.label)+' 관련 업체</span><span>전체 '+rows.length.toLocaleString()+'개사</span></div><div class="sg-bridge-company-scroll"><table class="sg-bridge-company-table"><colgroup><col style="width:38px"><col style="width:25%"><col style="width:16%"><col style="width:16%"><col style="width:16%"><col style="width:10%"><col style="width:8%"><col style="width:8%"></colgroup><thead><tr><th>#</th><th>업체명</th><th>전년매출</th><th>올해매출</th><th>'+sgEsc(data.amountLabel)+'</th><th>증감률</th><th>품목</th><th>거래월</th></tr></thead><tbody>'+body+'</tbody></table></div>';
+  };
+  var setBridgeSelection=function(key,scrollToPanel){
+    if(!bridgePanel||!(window.__sgBridgeCompanyLists||{})[key])return;
+    bridgeSelected=bridgeSelected===key?'':key;
+    bridgeRows.forEach(function(row){var on=bridgeSelected&&row.dataset.key===bridgeSelected;row.classList.toggle('is-selected',!!on);row.setAttribute('aria-expanded',on?'true':'false');var arrow=row.querySelector('.sg-bridge-arrow');if(arrow)arrow.textContent=on?'▾':'▸';});
+    bridgeBars.forEach(function(bar){var on=bridgeSelected&&bar.dataset.key===bridgeSelected;bar.classList.toggle('is-selected',!!on);bar.setAttribute('aria-pressed',on?'true':'false');});
+    if(!bridgeSelected){bridgePanel.style.display='none';bridgePanel.innerHTML='';return;}
+    bridgePanel.innerHTML=bridgeListHtml(bridgeSelected);bridgePanel.style.display='block';
+    if(scrollToPanel&&bridgePanel.scrollIntoView)setTimeout(function(){bridgePanel.scrollIntoView({behavior:'smooth',block:'nearest'});},20);
+  };
+  bridgeRows.forEach(function(row){
+    var select=function(){setBridgeSelection(row.dataset.key,true);};
+    row.addEventListener('click',select);
+    row.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();select();}});
+  });
+  bridgeBars.forEach(function(bar){
+    var select=function(){setBridgeSelection(bar.dataset.key,true);};
+    bar.addEventListener('click',select);
+    bar.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();select();}});
   });
 
   /* 교차판매 기회맵: 마우스 강조 + 클릭 선택 유지 + 신용도 포함 업체목록 */
