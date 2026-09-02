@@ -1935,13 +1935,13 @@ function fcEnsureTargetPlans(){
   const legacyProdMonthPct=(f.prodMonthPct&&typeof f.prodMonthPct==='object'&&!Array.isArray(f.prodMonthPct))?f.prodMonthPct:{};
   if(!f.targetPlans['1'])f.targetPlans['1']=fcPlanSnapshot(f);
   if(f.targetPlans['1'].actualCutoffMonth==null||f.targetPlans['1'].actualCutoffMonth==='')f.targetPlans['1'].actualCutoffMonth=legacyCut;
-  if(f.targetPlans['1'].custMonthPct==null)f.targetPlans['1'].custMonthPct=fcPlanClone(legacyCustMonthPct);
-  if(f.targetPlans['1'].prodMonthPct==null)f.targetPlans['1'].prodMonthPct=fcPlanClone(legacyProdMonthPct);
+  if(f.targetPlans['1'].custMonthPct==null||(!Object.keys(f.targetPlans['1'].custMonthPct||{}).length&&Object.keys(legacyCustMonthPct).length))f.targetPlans['1'].custMonthPct=fcPlanClone(legacyCustMonthPct);
+  if(f.targetPlans['1'].prodMonthPct==null||(!Object.keys(f.targetPlans['1'].prodMonthPct||{}).length&&Object.keys(legacyProdMonthPct).length))f.targetPlans['1'].prodMonthPct=fcPlanClone(legacyProdMonthPct);
   if(f.targetPlans['1'].newCustReplacements==null||(!Object.keys(f.targetPlans['1'].newCustReplacements||{}).length&&Object.keys(f.newCustReplacements||{}).length))f.targetPlans['1'].newCustReplacements=fcPlanClone(f.newCustReplacements||{});
   if(!f.targetPlans['2'])f.targetPlans['2']=fcPlanClone(f.targetPlans['1']);
   if(f.targetPlans['2'].actualCutoffMonth==null||f.targetPlans['2'].actualCutoffMonth==='')f.targetPlans['2'].actualCutoffMonth=fcPlanClone(f.targetPlans['1'].actualCutoffMonth);
-  if(f.targetPlans['2'].custMonthPct==null)f.targetPlans['2'].custMonthPct=fcPlanClone(f.targetPlans['1'].custMonthPct);
-  if(f.targetPlans['2'].prodMonthPct==null)f.targetPlans['2'].prodMonthPct=fcPlanClone(f.targetPlans['1'].prodMonthPct);
+  if(f.targetPlans['2'].custMonthPct==null||(!Object.keys(f.targetPlans['2'].custMonthPct||{}).length&&f.activePlan==='2'&&Object.keys(legacyCustMonthPct).length))f.targetPlans['2'].custMonthPct=fcPlanClone(f.activePlan==='2'?legacyCustMonthPct:f.targetPlans['1'].custMonthPct);
+  if(f.targetPlans['2'].prodMonthPct==null||(!Object.keys(f.targetPlans['2'].prodMonthPct||{}).length&&f.activePlan==='2'&&Object.keys(legacyProdMonthPct).length))f.targetPlans['2'].prodMonthPct=fcPlanClone(f.activePlan==='2'?legacyProdMonthPct:f.targetPlans['1'].prodMonthPct);
   if(f.targetPlans['2'].newCustReplacements==null)f.targetPlans['2'].newCustReplacements=fcPlanClone(f.targetPlans['1'].newCustReplacements||{});
   f.activePlan=f.activePlan==='2'?'2':'1';
   if(f._targetPlanLoaded!==f.activePlan){fcApplyTargetPlan(f.targetPlans[f.activePlan]);f._targetPlanLoaded=f.activePlan;}
@@ -1988,7 +1988,7 @@ function mergePriceSets(localArr, remoteArr){
   (localArr||[]).forEach(add); (remoteArr||[]).forEach(add);
   return [...map.values()].sort((a,b)=>tsOf(b)-tsOf(a));
 }
-async function saveSettings(){ fcSyncActivePlan(); syncExcludedCustMaps(); syncTargetExcludedCustMap(); try{ if(typeof ciBackup==='function')ciBackup(); }catch(_e){} await idbSet('settings',{headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,fcTargetPlans:state.fc.targetPlans,fcActivePlan:state.fc.activePlan,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,workdays:state.workdays,weekly:state.weekly,bep:state.bep,fcNewCusts:state.fc.newCusts,fcNewCustReplacements:state.fc.newCustReplacements,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,gbunOverride:state.gbunOverride,specKindOverride:state.specKindOverride,mixCustomCats:state.mixCustomCats,salesQtyAnalysis:state.salesQtyAnalysis,priceSets:state.priceSets,comp:state.comp,editLog:state.editLog,custProdOverride:state.fc.custProdOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcCustMonthPct:state.fc.custMonthPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcActualCutoffMonth:state.fc.actualCutoffMonth,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,monthIssueAt:state.monthIssueAt,fcPctAt:state.fc.pctAt,fcOverrideAt:state.fc.overrideAt,fcAddPctAt:state.fc.addPctAt,syncLog:state.syncLog,retainMemo:state.retainMemo,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,custAddr:state.custAddr,inv:state.inv,pd:state.pd,salesMonthlySync:state.salesMonthlySync,laserMonthlySync:state.laserMonthlySync,purchaseMonthlySync:state.purchaseMonthlySync,mixSalesView:state.mixSalesView,mixSalesMonthly:state.mixSalesMonthly,mixSalesYear:state.mixSalesYear,gsync:state.gsync,_seedV:state._seedV,scrapVendors:state.scrapVendors,scrapVendorOff:state.scrapVendorOff,kvcExclProd:state.kvcExclProd,doorFrame:state.doorFrame,market:state.market,custInfoBak:state.custInfoBak}); gsAutoPush(); }
+async function saveSettings(){ fcSyncActivePlan(); syncExcludedCustMaps(); syncTargetExcludedCustMap(); try{ if(typeof ciBackup==='function')ciBackup(); }catch(_e){} await idbSet('settings',{headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,fcTargetPlans:state.fc.targetPlans,fcActivePlan:state.fc.activePlan,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,workdays:state.workdays,weekly:state.weekly,bep:state.bep,fcNewCusts:state.fc.newCusts,fcNewCustReplacements:state.fc.newCustReplacements,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,gbunOverride:state.gbunOverride,specKindOverride:state.specKindOverride,mixCustomCats:state.mixCustomCats,salesQtyAnalysis:state.salesQtyAnalysis,priceSets:state.priceSets,comp:state.comp,editLog:state.editLog,custProdOverride:state.fc.custProdOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcCustMonthPct:state.fc.custMonthPct,fcProdMonthPct:state.fc.prodMonthPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcActualCutoffMonth:state.fc.actualCutoffMonth,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,monthIssueAt:state.monthIssueAt,fcPctAt:state.fc.pctAt,fcOverrideAt:state.fc.overrideAt,fcAddPctAt:state.fc.addPctAt,syncLog:state.syncLog,retainMemo:state.retainMemo,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,custAddr:state.custAddr,inv:state.inv,pd:state.pd,salesMonthlySync:state.salesMonthlySync,laserMonthlySync:state.laserMonthlySync,purchaseMonthlySync:state.purchaseMonthlySync,mixSalesView:state.mixSalesView,mixSalesMonthly:state.mixSalesMonthly,mixSalesYear:state.mixSalesYear,gsync:state.gsync,_seedV:state._seedV,scrapVendors:state.scrapVendors,scrapVendorOff:state.scrapVendorOff,kvcExclProd:state.kvcExclProd,doorFrame:state.doorFrame,market:state.market,custInfoBak:state.custInfoBak}); gsAutoPush(); }
 
 /* ---------------- file loading ---------------- */
 const drop=$('#drop');
@@ -2176,7 +2176,7 @@ function renderFileList(){
   const chips=datasets.map((d,i)=>({d,i,y:fileDatasetYear(d)})).filter(o=>selected==='all'||o.y===selected).map(({d,i})=>{
     const dis = RAWMEM[d.uid]?'':'disabled title="시트 변경은 재업로드 필요"';
     const opts = (RAWMEM[d.uid]?d.sheetNames:[d.sheetName]).map(s=>`<option ${s===d.sheetName?'selected':''}>${esc(s)}</option>`).join('');
-    return `<span class="filechip">📄 ${esc(d.fileName)} · 시트 <select data-i="${i}" class="sheetpick" ${dis}>${opts}</select> · ${d.recs.length.toLocaleString()}행 <button class="x" data-i="${i}" title="제거">✕</button></span>`;
+    return `<span class="filechip">📄 ${esc(d.fileName)} · 시트 <select data-i="${i}" class="sheetpick" ${dis}>${opts}</select> · ${d.recs.length.toLocaleString()}행 <button class="x" data-i="${i}" title="내 PC에서 이 매출파일 삭제" aria-label="${esc(d.fileName)} 삭제">🗑</button></span>`;
   }).join('');
   box.innerHTML=`<div class="fileyear-tabs" aria-label="파일 연도별 보기">${tabs}</div><div class="fileyear-list">${chips||'<span class="fileyear-empty">선택한 연도의 파일이 없습니다.</span>'}</div>`;
   box.querySelectorAll('.fileyear-tab').forEach(btn=>btn.addEventListener('click',e=>{ setFileListYear(e.currentTarget.dataset.year||'all'); renderFileList(); }));
@@ -2184,7 +2184,8 @@ function renderFileList(){
     const d=datasets[+e.target.dataset.i], raw=RAWMEM[d.uid]; if(!raw)return;
     d.sheetName=e.target.value; d.recs=normalize(raw[d.sheetName].headers, raw[d.sheetName].rows); state.act&&(state.sortKey=null); afterDataChanged(); }));
   box.querySelectorAll('.x').forEach(b=>b.addEventListener('click',e=>{
-    const d=datasets[+e.target.dataset.i]; delete RAWMEM[d.uid]; datasets.splice(+e.target.dataset.i,1); afterDataChanged(); }));
+    const i=+e.currentTarget.dataset.i,d=datasets[i];if(!d||!confirm(`${d.fileName}\n\n이 매출파일을 내 PC 목록에서 삭제할까요?`))return;
+    delete RAWMEM[d.uid];datasets.splice(i,1);afterDataChanged(); }));
 }
 
 function weekKey(d){ const x=new Date(d); const off=(x.getDay()+6)%7; x.setDate(x.getDate()-off); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; }
@@ -10377,7 +10378,7 @@ function dlCSV(fn,header,rows){ dlXLSX(fn.replace(/\.csv$/i,'.xlsx'),'Sheet1',[h
 
 function dlXLSX(fn,sheet,aoa){ const ws=XLSX.utils.aoa_to_sheet(aoa); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,sheet); XLSX.writeFile(wb,fn); }
 function importXLSX(cb){ const inp=document.createElement('input'); inp.type='file'; inp.accept='.xlsx,.xls'; inp.onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ const wb=XLSX.read(new Uint8Array(r.result),{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]]; cb(XLSX.utils.sheet_to_json(ws,{header:1,defval:''})); }catch(err){ console.error(err); uiConfirm('파일을 읽지 못했습니다: '+(err.message||err)); } }; r.readAsArrayBuffer(f); }; inp.click(); }
-function fullBackupExport(){ fcSyncActivePlan(); const data={headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,fcTargetPlans:state.fc.targetPlans,fcActivePlan:state.fc.activePlan,workdays:state.workdays,bep:state.bep,fcNewCusts:state.fc.newCusts,fcNewCustReplacements:state.fc.newCustReplacements,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,gbunOverride:state.gbunOverride,specKindOverride:state.specKindOverride,mixCustomCats:state.mixCustomCats,salesQtyAnalysis:state.salesQtyAnalysis,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcCustMonthPct:state.fc.custMonthPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcActualCutoffMonth:state.fc.actualCutoffMonth,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,syncLog:state.syncLog,retainMemo:state.retainMemo,retainMemoAt:state.retainMemoAt,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,custAddr:state.custAddr,inv:state.inv,pd:state.pd,kvcExclProd:state.kvcExclProd,doorFrame:state.doorFrame,materialDB:state.materialDB,materialBase:state.materialBase,gsync:state.gsync,weekly:state.weekly,_exportedAt:new Date().toISOString()}; const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='settings_backup.json'; a.click(); URL.revokeObjectURL(a.href); }
+function fullBackupExport(){ fcSyncActivePlan(); const data={headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,fcTargetPlans:state.fc.targetPlans,fcActivePlan:state.fc.activePlan,workdays:state.workdays,bep:state.bep,fcNewCusts:state.fc.newCusts,fcNewCustReplacements:state.fc.newCustReplacements,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,gbunOverride:state.gbunOverride,specKindOverride:state.specKindOverride,mixCustomCats:state.mixCustomCats,salesQtyAnalysis:state.salesQtyAnalysis,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcCustMonthPct:state.fc.custMonthPct,fcProdMonthPct:state.fc.prodMonthPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcActualCutoffMonth:state.fc.actualCutoffMonth,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,syncLog:state.syncLog,retainMemo:state.retainMemo,retainMemoAt:state.retainMemoAt,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,custAddr:state.custAddr,inv:state.inv,pd:state.pd,scrapVendors:state.scrapVendors,scrapVendorOff:state.scrapVendorOff,kvcExclProd:state.kvcExclProd,doorFrame:state.doorFrame,materialDB:state.materialDB,materialBase:state.materialBase,gsync:state.gsync,weekly:state.weekly,_exportedAt:new Date().toISOString()}; const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='settings_backup.json'; a.click(); URL.revokeObjectURL(a.href); }
 function fullBackupImport(){ importJSON(d=>{ if(d.headcount!=null)state.headcount=d.headcount; if(d.headMonthly)state.headMonthly=d.headMonthly; if(d.headYearDefault)state.headYearDefault=d.headYearDefault; if(d.cmgrPrimary)state.cmgrPrimary=d.cmgrPrimary; if(d.cmgrKey)state.cmgrKey=d.cmgrKey; if(d.mgrOverride)state.mgrOverride=d.mgrOverride; if(d.fcPctAt)state.fc.pctAt=d.fcPctAt; if(d.fcOverrideAt)state.fc.overrideAt=d.fcOverrideAt; if(d.fcAddPctAt)state.fc.addPctAt=d.fcAddPctAt; if(d.monthIssueAt)state.monthIssueAt=d.monthIssueAt; if(d.fcPct)state.fc.pct=d.fcPct; if(d.fcOverride)state.fc.override=d.fcOverride; if(d.fcAddPct)state.fc.addPct=d.fcAddPct; if(d.fcTargetPlans)state.fc.targetPlans=fcPlanClone(d.fcTargetPlans); if(d.fcActivePlan)state.fc.activePlan=d.fcActivePlan==='2'?'2':'1'; if(d.workdays)state.workdays=d.workdays; if(d.bep!=null)state.bep=d.bep; if(d.fcNewCusts)state.fc.newCusts=d.fcNewCusts; if(d.fcNewCustReplacements)state.fc.newCustReplacements=d.fcNewCustReplacements; if(d.clsOverride)state.clsOverride=d.clsOverride; if(d.gradeOverride)state.gradeOverride=d.gradeOverride; if(d.gbunOverride)state.gbunOverride=d.gbunOverride; if(d.specKindOverride)state.specKindOverride=d.specKindOverride; if(Array.isArray(d.mixCustomCats))state.mixCustomCats=d.mixCustomCats; if(d.salesQtyAnalysis&&typeof d.salesQtyAnalysis==='object')state.salesQtyAnalysis={...state.salesQtyAnalysis,...d.salesQtyAnalysis}; if(d.priceSets)state.priceSets=mergePriceSets(state.priceSets||[], d.priceSets); if(d.comp)state.comp=d.comp; if(d.editLog)state.editLog=d.editLog; if(d.custProdOverride)state.fc.custProdOverride=d.custProdOverride; if(d.fcProdOverride)state.fc.prodOverride=d.fcProdOverride; if(d.fcProdAddPct)state.fc.prodAddPct=d.fcProdAddPct; if(d.fcCustMonthPct)state.fc.custMonthPct=d.fcCustMonthPct; if(d.fcNewProds)state.fc.newProds=d.fcNewProds; if(d.fcNewLines)state.fc.newLines=d.fcNewLines; if(d.fcCustMemo)state.fc.custMemo=d.fcCustMemo; if(d.fcProdMemo)state.fc.prodMemo=d.fcProdMemo; if(d.fcNotesHtml!=null)state.fc.notesHtml=d.fcNotesHtml; if(d.fcNotesSales!=null)state.fc.notesSales=d.fcNotesSales; if(d.fcNotesTech!=null)state.fc.notesTech=d.fcNotesTech; if(d.fcNotesMeta)state.fc.notesMeta={...state.fc.notesMeta,...d.fcNotesMeta}; if(d.fcExclCust)state.fc.exclCust=d.fcExclCust; if(d.fcTargetExclCust)state.fc.targetExclCust=d.fcTargetExclCust; if(d.fcExclProd)state.fc.exclProd=d.fcExclProd; if(d.fcShowExclRows!=null)state.fc.showExclRows=!!d.fcShowExclRows; if(d.fcActualCutoffMonth!=null)state.fc.actualCutoffMonth=d.fcActualCutoffMonth; if(d.fcAnnualHist)state.fc.annualHist={...state.fc.annualHist,...d.fcAnnualHist}; if(d.inv)state.inv={...state.inv,...d.inv}; if(d.syncLog)state.syncLog={...state.syncLog,...d.syncLog}; if(d.pd)state.pd={...state.pd,...d.pd}; if(d.kvcExclProd)state.kvcExclProd=d.kvcExclProd; if(d.doorFrame&&typeof d.doorFrame==='object'){state.doorFrame={...state.doorFrame,...d.doorFrame,map:{...(state.doorFrame.map||{}),...(d.doorFrame.map||{})}};dfInvalidateGroupCache();} if(d.retainMemo)state.retainMemo=d.retainMemo; if(d.retainMemoAt)state.retainMemoAt=d.retainMemoAt; if(d.retainExcl)state.retainExcl=d.retainExcl; if(d.retainVisit)state.retainVisit=d.retainVisit; if(d.cmgrExcl)state.cmgrExcl=d.cmgrExcl; if(d.custInfo)state.custInfo=d.custInfo; if(d.custAddr)state.custAddr=d.custAddr; if(d.monthIssue)state.monthIssue=d.monthIssue; if(d.weekly&&typeof d.weekly==='object'){ state.weekly=state.weekly||{}; ['issues','notes','commonPlans','newCustomerNotes'].forEach(function(kk){ var w=d.weekly[kk]; if(w&&typeof w==='object'){ state.weekly[kk]=state.weekly[kk]||{}; for(var pk in w){ if(state.weekly[kk][pk]&&typeof state.weekly[kk][pk]==='object'&&w[pk]&&typeof w[pk]==='object'){ Object.assign(state.weekly[kk][pk], w[pk]); } else { state.weekly[kk][pk]=w[pk]; } } } }); if(d.weekly.issueAuthor&&!state.weekly.issueAuthor)state.weekly.issueAuthor=d.weekly.issueAuthor; if(d.weekly.p1NewCustomers!=null)state.weekly.p1NewCustomers=!!d.weekly.p1NewCustomers; } if(d.gsync){ state.gsync=state.gsync||{}; for(const _k in d.gsync){ if(_k!=='user'&&_k!=='url') state.gsync[_k]=d.gsync[_k]; } } if(typeof buildHeadMonthly==='function')buildHeadMonthly(); state.fc._targetPlanLoaded=null; fcEnsureTargetPlans(); saveSettings(); state._mgrCountsCache=null; if(typeof buildSummary==='function')buildSummary(); if(state.act&&CUR.length)runAct(); const gu=$('#gsUrl');if(gu&&state.gsync)gu.value=state.gsync.url||''; const gk=$('#gsKey');if(gk&&state.gsync)gk.value=state.gsync.key||''; const bx=$('#baseInfoBox'); if(bx&&bx.classList.contains('open')&&typeof baseInfo==='function')baseInfo(); uiConfirm('전체 설정 백업을 복원했습니다.'); }); }
 
 function gsMerge(d,skipRender){ if(!d)return;
@@ -10510,12 +10511,13 @@ function gsFields(){ return [
   ['clsOverride',state,'clsOverride'],['gradeOverride',state,'gradeOverride'],['gbunOverride',state,'gbunOverride'],['specKindOverride',state,'specKindOverride'],['mixCustomCats',state,'mixCustomCats'],['salesQtyAnalysis',state,'salesQtyAnalysis'],['doorFrameMap',state.doorFrame,'map'],['doorFrameProductGroups',state.doorFrame,'productGroups'],['doorFrameGroupMap',state.doorFrame,'groupMap'],['doorFrameDeletedGroups',state.doorFrame,'deletedGroups'],
   ['priceSets',state,'priceSets'],['comp',state,'comp'],['editLog',state,'editLog'],
   ['custProdOverride',state.fc,'custProdOverride'],['fcProdOverride',state.fc,'prodOverride'],['fcProdAddPct',state.fc,'prodAddPct'],
+  ['fcCustMonthPct',state.fc,'custMonthPct'],['fcProdMonthPct',state.fc,'prodMonthPct'],
   ['fcNewProds',state.fc,'newProds'],['fcNewLines',state.fc,'newLines'],
   ['fcCustMemo',state.fc,'custMemo'],['fcProdMemo',state.fc,'prodMemo'],
   ['fcNotesHtml',state.fc,'notesHtml'],['fcNotesSales',state.fc,'notesSales'],['fcNotesTech',state.fc,'notesTech'],['fcNotesMeta',state.fc,'notesMeta'],
   ['fcExclCust',state.fc,'exclCust'],['fcTargetExclCust',state.fc,'targetExclCust'],['fcExclProd',state.fc,'exclProd'],['fcShowExclRows',state.fc,'showExclRows'],['fcActualCutoffMonth',state.fc,'actualCutoffMonth'],['fcAnnualHist',state.fc,'annualHist'],
   ['monthIssue',state,'monthIssue'],['monthIssueAt',state,'monthIssueAt'],
-  ['syncLog',state,'syncLog'],['inv',state,'inv'],['pd',state,'pd'],
+  ['syncLog',state,'syncLog'],['inv',state,'inv'],['pd',state,'pd'],['scrapVendors',state,'scrapVendors'],['scrapVendorOff',state,'scrapVendorOff'],
   ['retainMemo',state,'retainMemo'],['retainMemoAt',state,'retainMemoAt'],['retainExcl',state,'retainExcl'],['retainVisit',state,'retainVisit'],
   ['custInfo',state,'custInfo'],['cross',state,'cross'],
   ['fcPctAt',state.fc,'pctAt'],['fcOverrideAt',state.fc,'overrideAt'],['fcAddPctAt',state.fc,'addPctAt'],
@@ -10569,7 +10571,7 @@ function gsTrimSyncLog(){
 }
 function gsDeltaSummary(d){
   if(!d)return '변경없음';
-  const names={mgrOverride:'담당자',cmgrPrimary:'주담당',cmgrKey:'거래처키',fcPct:'월목표%',fcOverride:'거래처목표',fcAddPct:'추가%',fcCustMemo:'거래처메모',fcProdMemo:'제품메모',fcNotesHtml:'주요사항',fcNotesSales:'영업관리메모',fcNotesTech:'기술영업메모',fcExclCust:'제외거래처',fcTargetExclCust:'목표합산제외',fcExclProd:'제외제품',clsOverride:'업체분류',gradeOverride:'신용등급',gbunOverride:'제품구분 지정',mixCustomCats:'제품구분 목록',salesQtyAnalysis:'판매수량 기준·제외제품',doorFrameProductGroups:'품목군목록',doorFrameGroupMap:'품목군지정',doorFrameDeletedGroups:'품목군삭제',monthIssue:'월별이슈',weeklyIssues:'주간이슈',weeklyNewCustomerNotes:'신규업체 비고',weeklyCommonPlans:'영업계획·실적',pd:'PD설정',retainMemo:'거래유지메모',custInfo:'거래처정보',custAddr:'거래처주소정보',syncLog:'수정이력'};
+  const names={mgrOverride:'담당자',cmgrPrimary:'주담당',cmgrKey:'거래처키',fcPct:'월목표%',fcOverride:'거래처목표',fcAddPct:'추가%',fcCustMonthPct:'업체 월조정%',fcProdMonthPct:'제품 월조정%',custProdOverride:'업체·제품 목표조정%',scrapVendors:'고철업체',scrapVendorOff:'고철업체 제외',fcTargetPlans:'목표안 전체',fcCustMemo:'거래처메모',fcProdMemo:'제품메모',fcNotesHtml:'주요사항',fcNotesSales:'영업관리메모',fcNotesTech:'기술영업메모',fcExclCust:'제외거래처',fcTargetExclCust:'목표합산제외',fcExclProd:'제외제품',clsOverride:'업체분류',gradeOverride:'신용등급',gbunOverride:'제품구분 지정',mixCustomCats:'제품구분 목록',salesQtyAnalysis:'판매수량 기준·제외제품',doorFrameProductGroups:'품목군목록',doorFrameGroupMap:'품목군지정',doorFrameDeletedGroups:'품목군삭제',monthIssue:'월별이슈',weeklyIssues:'주간이슈',weeklyNewCustomerNotes:'신규업체 비고',weeklyCommonPlans:'영업계획·실적',pd:'PD설정',retainMemo:'거래유지메모',custInfo:'거래처정보',custAddr:'거래처주소정보',syncLog:'수정이력'};
   const keys=Object.keys(d).filter(k=>k!=='syncLog');
   if(!keys.length)return '수정이력';
   return keys.slice(0,6).map(k=>names[k]||k).join(', ')+(keys.length>6?' 외 '+(keys.length-6)+'건':'');
@@ -10922,6 +10924,7 @@ function exportCSV(){
   if(st&&Array.isArray(st.clsCustomCats)){ state.clsCustomCats=st.clsCustomCats.map(function(x){return String(x||'').trim();}).filter(Boolean); clsApplyCustomCats(); }
   if(st&&st.fcActivePlan)state.fc.activePlan=st.fcActivePlan==='2'?'2':'1';
   if(st&&st.fcCustMonthPct)state.fc.custMonthPct=fcPlanClone(st.fcCustMonthPct);
+  if(st&&st.fcProdMonthPct)state.fc.prodMonthPct=fcPlanClone(st.fcProdMonthPct);
   fcEnsureTargetPlans();
   if(st&&st.specKindOverride)state.specKindOverride=st.specKindOverride;
   if(st&&st.mixSalesView)state.mixSalesView=st.mixSalesView;
@@ -10984,7 +10987,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
 <script id="sales-sync-v03-final-patch">
 (function(){
   'use strict';
-  var APP_VERSION='v454';
+  var APP_VERSION='v601';
   var BASE_KEY='sales_gsync_base_stable_v1';
   var OLD_BASE_KEYS=['sales_gsync_base_v02','sales_gsync_base_v01'];
   var AUTO_DELAY=15000, BUSY_RETRY=1500, MAX_AUTO_RETRY=6;
@@ -11235,11 +11238,26 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
     await ensureBase();if(_gsBusy){if(silent){setTimeout(function(){gsLoad(true)},BUSY_RETRY)}else status('다른 동기화 작업이 진행 중입니다. 잠시 후 자동으로 다시 시도합니다.','#b45309');return false}
     var c;try{c=config(!!silent)}catch(e){if(!silent){setFailure(e.message,'load');await persistOnly()}gsUpdateBtn();return false}
     var firstServerLoad=!sessionServerReady;
+    /* v600: 과거 버전에서 공용 항목이 아니었던 목표 구성·월 조정값은 서버에 해당 키가
+       아직 없을 때만 현재 PC 값을 1회 보존합니다. 이미 서버 값이 있으면 서버를 우선해
+       다른 PC의 오래된 로컬 설정이 정상 공유값을 덮어쓰지 않도록 합니다. */
+    var firstLocalSnapshot=firstServerLoad?currentFull():null,firstMissingFields=[];
     /* 첫 동기화에서는 저장돼 있던 로컬 차이를 미전송 변경으로 재사용하지 않습니다.
        서버 속성을 먼저 기준점으로 잡은 뒤, 이 세션에서 사용자가 수정한 값만 이후 델타로 저장합니다. */
     var localPatch=firstServerLoad?{}:gsDelta(),hasLocal=patchHas(localPatch),oldBase=clone(_gsBase||currentFull());_gsBusy=true;setMode('working','불러오는 중…');if(!silent)status(firstServerLoad?'서버 원본을 보호 기준으로 처음 적용합니다.':'서버 최신 자료를 불러오고 로컬 변경사항을 보존합니다.');
     try{
-      var rr=await getRemote(c),remoteFull=snapshotFromRemote(oldBase,rr.data),merged=clone(remoteFull);
+      var rr=await getRemote(c);
+      if(firstServerLoad&&firstLocalSnapshot){
+        ['fcTargetPlans','fcNewCusts','fcTargetExclCust','pd','scrapVendors','scrapVendorOff','fcCustMonthPct','fcProdMonthPct','custProdOverride','fcProdOverride','fcProdAddPct'].forEach(function(n){
+          if(hasOwn(rr.data,n))return;
+          var v=firstLocalSnapshot[n],meaningful=Array.isArray(v)?v.length>0:(isPlain(v)?Object.keys(v).length>0:(v!==undefined&&v!==null&&v!==''));
+          if(meaningful){localPatch[n]=clone(v);firstMissingFields.push(n);}
+        });
+        hasLocal=patchHas(localPatch);
+      }
+      var remoteFull=snapshotFromRemote(oldBase,rr.data);
+      firstMissingFields.forEach(function(n){delete remoteFull[n];});
+      var merged=clone(remoteFull);
       restoreFull(merged);_gsBase=clone(remoteFull);if(hasLocal)gsApplyDelta(localPatch);merged=currentFull();
       await applyAndPersist(merged);await saveBase(remoteFull);sessionServerReady=true;initialLoadQueued=false;setSuccess('load',rr.meta);await persistOnly();
       status('✓ 동기화완료 · 서버 자료 불러오기'+(firstServerLoad?' · 서버 원본 보호 기준 확정':(hasLocal?' · 미전송 변경 보존':''))+' · '+fmtFull(state.gsync.lastSync),'#0f766e');setMode('idle','');
@@ -13744,7 +13762,7 @@ function arBuildShared(){
     서버가 키 삭제를 무시하고 병합만 하더라도, 이 표시가 있으면 받는 쪽에서 지워집니다. */
  (a.receipts||[]).forEach(function(r){if(!arIsBundledSource(r.source))receiptsByKey[arReceiptSyncKey(r)]=arSyncClone(r);});
  (a.sources||[]).forEach(function(s){if(!arIsBundledSource(s.name))sourcesByName[s.name]=arSyncClone(s);});
- return{schema:1,delSources:arSyncClone(a.delSources||{}),balClearedAt:+a.balClearedAt||0,balAt:+a.balAt||0,receiptsByKey:receiptsByKey,sourcesByName:sourcesByName,opening:arSyncClone(a.opening||{}),balances:arSyncClone(a.balances||{}),yearEndBills:arSyncClone(a.yearEndBills||{}),openingBills:arSyncClone(a.openingBills||{}),actualYears:arSyncClone(a.actualYears||{}),plans:arSyncClone(a.plans||{}),collectionPlans:arSyncClone(a.collectionPlans||{}),excludedCustomers:arSyncClone(a.excludedCustomers||{}),billStatus:arSyncClone(a.billStatus||{}),focusCustomers:arSyncClone(a.focusCustomers||{}),updatedAt:a.updatedAt||'',asOf:a.asOf||''};
+ return{schema:1,delSources:arSyncClone(a.delSources||{}),balClearedAt:+a.balClearedAt||0,balAt:+a.balAt||0,balDeletedYears:arSyncClone(a.balDeletedYears||{}),balAtYears:arSyncClone(a.balAtYears||{}),balanceSources:arSyncClone(a.balanceSources||{}),receiptsByKey:receiptsByKey,sourcesByName:sourcesByName,opening:arSyncClone(a.opening||{}),balances:arSyncClone(a.balances||{}),yearEndBills:arSyncClone(a.yearEndBills||{}),openingBills:arSyncClone(a.openingBills||{}),actualYears:arSyncClone(a.actualYears||{}),plans:arSyncClone(a.plans||{}),collectionPlans:arSyncClone(a.collectionPlans||{}),excludedCustomers:arSyncClone(a.excludedCustomers||{}),billStatus:arSyncClone(a.billStatus||{}),focusCustomers:arSyncClone(a.focusCustomers||{}),updatedAt:a.updatedAt||'',asOf:a.asOf||''};
 }
 function arApplyShared(v){
  if(!v||typeof v!=='object'){arPendingShared=v;return;}
@@ -13752,7 +13770,7 @@ function arApplyShared(v){
  var remoteReceipts=v.receiptsByKey&&typeof v.receiptsByKey==='object'?Object.keys(v.receiptsByKey).map(function(k){return v.receiptsByKey[k];}):Array.isArray(v.receipts)?v.receipts:[];
  var remoteSources=v.sourcesByName&&typeof v.sourcesByName==='object'?Object.keys(v.sourcesByName).map(function(k){return v.sourcesByName[k];}):Array.isArray(v.sources)?v.sources:[];
  remoteReceipts.forEach(function(r){if(r&&r.cust)rm.set(arReceiptSyncKey(r),arSyncClone(r));});remoteSources.forEach(function(s){if(s&&s.name)sm.set(s.name,arSyncClone(s));});a.receipts=Array.from(rm.values()).sort(function(x,y){return String(x.date||'').localeCompare(String(y.date||''))||String(x.no||'').localeCompare(String(y.no||''));});a.sources=Array.from(sm.values());
- ['opening','balances','yearEndBills','openingBills','actualYears','plans','collectionPlans','excludedCustomers','billStatus','focusCustomers'].forEach(function(k){if(v[k]&&typeof v[k]==='object')a[k]=arSyncClone(v[k]);});
+ ['opening','balances','yearEndBills','openingBills','actualYears','balanceSources','plans','collectionPlans','excludedCustomers','billStatus','focusCustomers'].forEach(function(k){if(v[k]&&typeof v[k]==='object')a[k]=arSyncClone(v[k]);});
  /* v477 : 삭제표시 적용 — 지운 뒤 다시 올린 파일(at 가 더 최신)은 살립니다 */
  var _del=Object.assign({},a.delSources||{});
  if(v.delSources&&typeof v.delSources==='object')Object.keys(v.delSources).forEach(function(nm){
@@ -13778,6 +13796,12 @@ function arApplyShared(v){
  var _bc=Math.max(+a.balClearedAt||0,+v.balClearedAt||0), _ba=Math.max(+a.balAt||0,+v.balAt||0);
  if(_bc>_ba){ a.balances={}; a.opening={}; a.yearEndBills={}; a.openingBills={}; a.actualYears={}; a.sourceLabel=''; }
  a.balClearedAt=_bc; a.balAt=_ba;
+ /* v598: 연도별 삭제표시가 해당 연도 자료만 제거하도록 동기화. */
+ var _dy=Object.assign({},a.balDeletedYears||{}),_ay=Object.assign({},a.balAtYears||{});
+ Object.keys(v.balDeletedYears||{}).forEach(function(y){_dy[y]=Math.max(+_dy[y]||0,+v.balDeletedYears[y]||0);});
+ Object.keys(v.balAtYears||{}).forEach(function(y){_ay[y]=Math.max(+_ay[y]||0,+v.balAtYears[y]||0);});
+ Object.keys(_dy).forEach(function(y){if((+_dy[y]||0)<(+_ay[y]||0))return;['balances','yearEndBills'].forEach(function(n){Object.keys(a[n]||{}).forEach(function(k){if(String(k).indexOf(y+'|')===0)delete a[n][k];});});Object.keys(a.opening||{}).forEach(function(k){if(String(k).indexOf((+y+1)+'|')===0&&!(a.openingManual||{})[k])delete a.opening[k];});Object.keys(a.openingBills||{}).forEach(function(k){if(String(k).indexOf((+y+1)+'|')===0)delete a.openingBills[k];});delete a.actualYears[y];if(a.balanceSources)delete a.balanceSources[y];});
+ a.balDeletedYears=_dy;a.balAtYears=_ay;
  try{ if(typeof arRenderFileList==='function')arRenderFileList(); }catch(_e){}
  var latest=a.receipts.map(function(r){return r.date||'';}).filter(Boolean).sort().pop()||'';a.asOf=[a.asOf||'',v.asOf||'',latest].sort().pop()||a.asOf;a.updatedAt=v.updatedAt||a.updatedAt||'';arCache=null;arPendingShared=null;
 }
@@ -14266,6 +14290,44 @@ var arBindV496=arBind;arBind=function(model,allModel){
  document.querySelectorAll('.ar-transfer-edit-save').forEach(function(btn){btn.onclick=async function(){var tr=btn.closest('[data-transfer-source]'),old={type:tr.dataset.transferType,source:tr.dataset.transferSource,target:tr.dataset.transferTarget},target=String((tr.querySelector('.ar-transfer-target-input')||{}).value||'').trim();if(!target){alert('전환 대상 업체를 입력해 주세요.');return;}target=arCustV494(target)||target;if(arAliasLooseKeyV495(old.source)===arAliasLooseKeyV495(target)){alert('원래 입금명과 전환 대상 업체가 같습니다.');return;}if(!arAliasConfirmV495(old.source,target))return;arAliasUpsertV495(old,{type:old.type,source:old.source,target:target});await arSave();logEdit('미수관리',old.source+' → '+target+' 월별표에서 전환 수정');alert('전환 대상을 '+target+'(으)로 수정했습니다.\n전체 해당 수금과 월별 미수금을 즉시 다시 계산합니다.');arRender();};});
  document.querySelectorAll('.ar-transfer-restore').forEach(function(btn){btn.onclick=async function(){var tr=btn.closest('[data-transfer-source]'),old={type:tr.dataset.transferType,source:tr.dataset.transferSource,target:tr.dataset.transferTarget};if(!confirm(old.source+' → '+old.target+' 전환을 원복하시겠습니까?\n해당 이름의 기존 수금은 원래 업체로 돌아갑니다.'))return;arAliasDeleteV495(old);await arSave();logEdit('미수관리',old.source+' → '+old.target+' 월별표에서 전환 원복');arRender();};});
 };
+
+/* v598: 📁 파일·관리의 미수 업로드 영역을 연말잔액/수금내역으로 분리하고 연도·월별로 표시.
+   이 코드는 arBindFileManager와 같은 IIFE 안에 있어 실제 호출되는 렌더 함수를 직접 교체합니다. */
+function arUploadYearsV598(){
+ var set={2025:1,2026:1};
+ (state.ar.receipts||[]).forEach(function(r){var y=+(String(r.date||'').slice(0,4));if(y)set[y]=1;});
+ Object.keys(state.ar.actualYears||{}).forEach(function(y){if(state.ar.actualYears[y])set[+y]=1;});
+ Object.keys(state.ar.balances||{}).forEach(function(k){var y=+String(k).split('|')[0];if(y)set[y]=1;});
+ return Object.keys(set).map(Number).sort(function(a,b){return a-b;});
+}
+function arUploadYearV598(){var ys=arUploadYearsV598(),y=+state.ar.fileOverviewYear;if(ys.indexOf(y)<0)y=ys.indexOf(2026)>=0?2026:ys[ys.length-1];state.ar.fileOverviewYear=y;return y;}
+function arReceiptSourcesV598(year){
+ return(state.ar.sources||[]).map(function(s){var rows=(state.ar.receipts||[]).filter(function(r){return r.source===s.name&&+String(r.date||'').slice(0,4)===year;});return{name:s.name,rows:rows.length,amount:rows.reduce(function(a,r){return a+(+r.amount||0);},0),last:rows.map(function(r){return r.date||'';}).sort().pop()||''};}).filter(function(s){return s.rows>0;});
+}
+function arReceiptMonthsV598(year){
+ var map={};(state.ar.receipts||[]).forEach(function(r){if(+String(r.date||'').slice(0,4)!==year)return;var m=+String(r.date||'').slice(5,7);if(!(m>=1&&m<=12))return;if(!map[m])map[m]={rows:0,amount:0,sources:{}};map[m].rows++;map[m].amount+=+r.amount||0;if(r.source)map[m].sources[r.source]=1;});
+ var html='';for(var m=1;m<=12;m++){var x=map[m],names=x?Object.keys(x.sources):[];html+='<div class="ar-upload-month '+(x?'active':'empty')+'"><strong>'+m+'월</strong>'+(x?'<b>'+arMoney(x.rows)+'건</b><span>'+arMoney(x.amount)+'원</span><span title="'+esc(names.join(', '))+'">'+names.length+'개 파일</span>':'<span>자료 없음</span>')+'</div>';}return html;
+}
+function arBalanceInfoV598(year){var keys=Object.keys(state.ar.balances||{}).filter(function(k){return String(k).indexOf(year+'|')===0;}),meta=(state.ar.balanceSources||{})[year]||{};return{count:keys.length,amount:keys.reduce(function(a,k){return a+(+state.ar.balances[k]||0);},0),name:meta.name||state.ar.sourceLabel||'연말미수잔액'};}
+function arUploadButtonsV598(){
+ var oldB=document.getElementById('arFileBalanceBtn'),oldR=document.getElementById('arFileReceiptBtn'),bp=document.getElementById('arBalanceUploadSlot'),rp=document.getElementById('arReceiptUploadSlot');if(oldB)oldB.style.display='none';if(oldR)oldR.style.display='none';
+ if(bp){bp.innerHTML='<button type="button" class="btn" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f">＋ 연말미수잔액 업로드</button>';bp.firstChild.onclick=function(){var x=document.getElementById('arFileBalanceInput');if(x)x.click();};}
+ if(rp){rp.innerHTML='<button type="button" class="btn" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f">＋ 수금내역 업로드</button>';rp.firstChild.onclick=function(){var x=document.getElementById('arFileReceiptInput');if(x)x.click();};}
+}
+arRenderFileList=function(){
+ if(typeof arDedupeUploadedV556==='function')arDedupeUploadedV556();var el=document.getElementById('arFileList');if(!el||!state.ar)return;
+ var year=arUploadYearV598(),ys=arUploadYearsV598(),bal=arBalanceInfoV598(year),src=arReceiptSourcesV598(year),on=arShareConfigured(),share='<div class="ar-file-share-note '+(on?'on':'off')+'">'+(on?'<b>🟢 공유 설정됨</b><span>같은 URL·비밀키 사용자에게 파일명과 미수 분석자료 공유</span>':'<b>⚠️ 로컬 저장</b><span>새 업로드 자료는 현재 브라우저에 저장</span>')+'</div>';
+ var yearbar='<div class="ar-upload-yearbar"><b style="font-size:11px;color:#64748b">연도</b>'+ys.map(function(y){return'<button type="button" class="ar-upload-year '+(y===year?'on':'')+'" data-ar-overview-year="'+y+'">'+y+'년</button>';}).join('')+'<span class="ar-mf-count">'+year+'년 자료</span></div>';
+ var balCard='<div class="ar-upload-months"><div class="ar-upload-month '+(bal.count?'balance':'empty')+'" style="grid-column:1/-1"><strong>12월 · 연말미수잔액</strong>'+(bal.count?'<b>'+arMoney(bal.count)+'개 업체</b><span>'+arMoney(bal.amount)+'원</span><span title="'+esc(bal.name)+'">'+esc(bal.name)+'</span>':'<span>업로드 자료 없음</span>')+'</div></div>'+(bal.count?'<div class="ar-upload-files"><div class="ar-file-item"><span class="ar-file-ic">📄</span><div class="ar-file-meta"><b>'+esc(bal.name)+'</b><span>'+year+'년 12월 · '+arMoney(bal.count)+'개 업체 · '+arMoney(bal.amount)+'원</span></div><button class="ar-btn ar-file-del" type="button" data-del-balance-year="'+year+'">삭제</button></div></div>':'');
+ var files=src.map(function(s){return'<div class="ar-file-item"><span class="ar-file-ic">🧾</span><div class="ar-file-meta"><b>'+esc(s.name)+'</b><span>'+year+'년 · '+arMoney(s.rows)+'건 · '+arMoney(s.amount)+'원'+(s.last?' · ~'+esc(s.last):'')+'</span></div><button class="ar-btn ar-file-del" type="button" data-del-receipt="'+esc(s.name)+'">삭제</button></div>';}).join('');
+ el.innerHTML='<div class="ar-file-head">업로드된 미수관리자료</div>'+share+yearbar+'<div class="ar-upload-sections"><section class="ar-upload-section"><div class="ar-upload-section-head"><b>📄 연말미수잔액</b><span id="arBalanceUploadSlot"></span></div>'+balCard+'</section><section class="ar-upload-section"><div class="ar-upload-section-head"><b>🧾 수금내역</b><span id="arReceiptUploadSlot"></span></div><div class="ar-upload-months">'+arReceiptMonthsV598(year)+'</div><details class="ar-upload-files" open><summary>파일별 목록 · '+src.length+'개</summary>'+(files||'<div class="ar-file-empty">'+year+'년 수금 파일 없음</div>')+'</details></section></div>';
+ arUploadButtonsV598();
+ el.querySelectorAll('[data-ar-overview-year]').forEach(function(b){b.onclick=function(){state.ar.fileOverviewYear=+b.dataset.arOverviewYear;arRenderFileList();};});
+ el.querySelectorAll('[data-del-receipt]').forEach(function(btn){btn.onclick=async function(){var nm=btn.dataset.delReceipt;if(!confirm(nm+' 수금내역 파일을 삭제할까요?'))return;state.ar.receipts=(state.ar.receipts||[]).filter(function(r){return r.source!==nm;});state.ar.sources=(state.ar.sources||[]).filter(function(s){return s.name!==nm;});state.ar.delSources=state.ar.delSources||{};state.ar.delSources[nm]=Date.now();arCache=null;await arSave();arRenderFileList();if(state.act==='ar')arRender();};});
+ el.querySelectorAll('[data-del-balance-year]').forEach(function(btn){btn.onclick=async function(){var y=+btn.dataset.delBalanceYear;if(!confirm(y+'년 연말미수잔액 파일을 삭제할까요?'))return;['balances','yearEndBills'].forEach(function(n){Object.keys(state.ar[n]||{}).forEach(function(k){if(String(k).indexOf(y+'|')===0)delete state.ar[n][k];});});Object.keys(state.ar.opening||{}).forEach(function(k){if(String(k).indexOf((y+1)+'|')===0&&!(state.ar.openingManual||{})[k])delete state.ar.opening[k];});Object.keys(state.ar.openingBills||{}).forEach(function(k){if(String(k).indexOf((y+1)+'|')===0)delete state.ar.openingBills[k];});delete state.ar.actualYears[y];if(state.ar.balanceSources)delete state.ar.balanceSources[y];state.ar.balDeletedYears=state.ar.balDeletedYears||{};state.ar.balDeletedYears[y]=Date.now();arCache=null;await arSave();arRenderFileList();if(state.act==='ar')arRender();};});
+};
+var arImportBalancesV598=arImportBalances;arImportBalances=async function(file){var out=await arImportBalancesV598.apply(this,arguments),y=+state.ar.viewYear||arInferYear(file,2026),now=Date.now();state.ar.balanceSources=state.ar.balanceSources||{};state.ar.balAtYears=state.ar.balAtYears||{};state.ar.balanceSources[y]={name:file.name,at:now};state.ar.balAtYears[y]=now;if(state.ar.balDeletedYears&&(+state.ar.balDeletedYears[y]||0)<now)delete state.ar.balDeletedYears[y];await arSave();arRenderFileList();return out;};
+setTimeout(function(){Promise.resolve(arReady).then(function(){arRenderFileList();});},0);
 
 window.receivablesPage=arPage;
 /* v485 : 챗봇이 미수 집계를 읽을 수 있도록 내보냅니다 */
@@ -16657,12 +16719,17 @@ function dsRender(){
  var local=dsLocalMonths(), lk=Object.keys(local).sort();
  var rm=(mf&&mf.months)||{}, rk=Object.keys(rm).sort();
  var all=Array.from(new Set(lk.concat(rk))).sort();
+ var yearSet={2025:1,2026:1};all.forEach(function(ym){var y=+String(ym||'').slice(0,4);if(y)yearSet[y]=1;});
+ var fileYears=Object.keys(yearSet).map(Number).sort(function(a,b){return a-b;}),nowYear=new Date().getFullYear(),viewYear=+DS.fileListYear;
+ if(fileYears.indexOf(viewYear)<0)viewYear=fileYears.indexOf(nowYear)>=0?nowYear:fileYears[fileYears.length-1];
+ DS.fileListYear=viewYear;
+ var visible=all.filter(function(ym){return+String(ym||'').slice(0,4)===viewYear;});
  var _mine=dsIsOwnerMe(owner), _adm=dsIsAdmin();
  var ownTxt = owner
    ? ('<b style="color:'+((_mine||_adm)?'#0f766e':'#b45309')+'">👑 업로드 담당: '+esc(owner)+'</b>'+(_mine?' <span style="color:#0f766e">(나)</span>':(_adm?' <span style="color:#0f766e">— 나는 관리자라 올릴 수 있습니다</span>':' <span style="color:#b45309">— 나는 받기 전용</span>')))
    : '<b style="color:#b45309">👑 업로드 담당 미지정</b> <button type="button" id="dsClaimHere" class="btn" style="background:#fef3c7;color:#b45309;border-color:#fcd34d;padding:2px 9px;font-size:11.5px;margin-left:4px">여기를 눌러 나를 담당으로 지정</button>';
  var canEdit=dsCanUpload(owner);
- var rows=all.map(function(ym){
+ var rows=visible.map(function(ym){
   var L=local[ym]?local[ym].length:0, R=rm[ym]?(rm[ym].rows||0):0;
   var st = (!R)?['<span style="color:#b45309">올릴 것</span>','#fffbeb']
         : (!L)?['<span style="color:#1d4ed8">받을 것</span>','#eff6ff']
@@ -16686,7 +16753,7 @@ function dsRender(){
     (canEdit&&!L&&!R?'<span style="color:#cbd5e1;font-size:10.5px">—</span>':'')+
    '</td></tr>';
  }).join('');
- var dup=salesDupRows();
+ var dup=salesDupRows().filter(function(d){return+String(d.ym||'').slice(0,4)===viewYear;});
  var dupTotal=dup.reduce(function(a,d){return a+(d.count||0);},0);
  var dupItems=salesDupItems(dup);
  var dupDetailOpen=true;try{dupDetailOpen=sessionStorage.getItem('sales_dup_detail_closed_v556')!=='1';}catch(_e){}
@@ -16703,15 +16770,18 @@ function dsRender(){
    '<b>⚠ 동일 거래행 중복 '+dupTotal.toLocaleString()+'건이 발견되었습니다.</b> <b style="color:#047857">중복행은 자동 제외되어 1회만 반영됩니다.</b><br>'+ 
    dup.map(function(d){ return '· <b>'+esc(d.ym)+'</b> : <b>'+Number(d.count||0).toLocaleString()+'건 제외</b> · '+esc(d.files.join(' + ')); }).join('<br>')+
    '<div style="margin-top:4px;color:#7f1d1d">판정 기준: 출고일자·거래처·품번·품명·규격·수량·단가·공급가·합계액이 모두 같은 행입니다.<br>같은 파일 안의 동일행은 유지하고, 서로 다른 파일에서 겹친 행만 자동 제외합니다.</div>'+dupListHtml+'</div>') : '';
+ var yearTabs='<div class="ds-file-year-tabs"><b>연도</b>'+fileYears.map(function(y){var count=all.filter(function(ym){return+String(ym||'').slice(0,4)===y;}).length;return'<button type="button" class="ds-file-year-tab '+(y===viewYear?'on':'')+'" data-ds-file-year="'+y+'">'+y+'년 <span>'+count+'</span></button>';}).join('')+'<em>'+viewYear+'년 '+visible.length+'개월</em></div>';
  box.innerHTML = '<div style="margin-bottom:5px">'+ownTxt+
    (mf&&mf.updatedAt?(' <span class="sub2">· 서버 최종 '+esc(String(mf.updatedAt).slice(0,16).replace('T',' '))+'</span>'):'')+'</div>'+
+   yearTabs+
    dupHtml+
-   (all.length? ('<div style="max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:8px">'+
+   (visible.length? ('<div class="ds-year-file-list" style="overflow-x:auto;overflow-y:visible;border:1px solid var(--line);border-radius:8px">'+
      '<table style="width:100%;border-collapse:collapse;font-size:11.5px;min-width:1000px"><thead><tr style="background:#f1f5f9">'+
      ['월','파일 이름','내 PC','서버','용량','상태','올린 사람','올린 일시','관리']
       .map(function(h){ return '<th style="padding:4px 8px;text-align:right;color:#475569;white-space:nowrap">'+h+'</th>'; }).join('')+
      '</tr></thead><tbody>'+rows+'</tbody></table></div>')
-    : '<div class="sub2">아직 공유된 매출자료가 없습니다.</div>');
+    : '<div class="sub2" style="padding:12px 4px">'+viewYear+'년 공유 매출자료가 없습니다.</div>');
+ box.querySelectorAll('[data-ds-file-year]').forEach(function(b){b.onclick=function(){DS.fileListYear=+b.getAttribute('data-ds-file-year');dsPersist();dsRender();};});
  var ch=document.getElementById('dsClaimHere'); if(ch)ch.onclick=function(){ Promise.resolve(dsClaim()).catch(function(){}); };
  var dc=document.getElementById('dsDupClose');if(dc)dc.onclick=function(e){e.preventDefault();e.stopPropagation();var d=document.getElementById('dsDupDetails');if(d)d.open=false;try{sessionStorage.setItem('sales_dup_detail_closed_v556','1');}catch(_e){}};
  var dd=document.getElementById('dsDupDetails');if(dd)dd.addEventListener('toggle',function(){try{sessionStorage.setItem('sales_dup_detail_closed_v556',dd.open?'0':'1');}catch(_e){}});
@@ -22502,7 +22572,12 @@ function sgAnalyze(){
       arEnd=arM.end||'';
     }
   }catch(_arErr){ arRows=[]; }
-  var cKey=sgCreditKey;
+  /* DSO 연결키는 미수관리와 동일한 거래처 통합 규칙을 사용합니다.
+     전략 전용 축약키를 쓰면 괄호·법인표기·입금별칭 업체가 다른 행에 연결될 수 있습니다. */
+  var cKey=function(name){
+    try{return typeof arCust==='function'?arCust(name):String(name||'').trim();}
+    catch(_e){return String(name||'').trim();}
+  };
   var arMap={},arDuplicateKeys=0;
   arRows.forEach(function(o){
     var k=cKey(o.cust),prev=arMap[k];
@@ -22527,7 +22602,8 @@ function sgAnalyze(){
     if(!status)status='기타';
     var grade=String(ar.grade||gr.grade||'-');
     var balance=Math.max(0,+ar.balance||0), overdue=Math.max(0,+ar.overduePay||0);
-    var long90=Math.max(0,+ar.long90Pay||0), dso=Math.max(0,+ar.dso||0);
+    /* 별도 추정 없이 미수관리 고객행의 최종 DSO를 그대로 사용합니다. */
+    var long90=Math.max(0,+ar.long90Pay||0), dso=arLinked?Math.max(0,+ar.dso||0):0;
     var ratio=Math.max(0,+ar.ratio||0), score=Math.max(0,+ar.score||0);
     var longShare=balance?long90/balance:0;
     var hardStatus=/위험|거래중지|거래제한/.test(status);
@@ -22546,7 +22622,8 @@ function sgAnalyze(){
     return Object.assign({},o,{creditGrade:grade,creditStatus:status,balance:balance,overduePay:overdue,
       long90Pay:long90,longShare:longShare,dso:dso,creditRatio:ratio,creditScore:score,
       creditRisk:ar.risk||'',creditBalanceMode:arLinked?(ar.balanceMode||'추정'):'자료없음',creditBalanceAdjustment:+ar.balanceAdjustment||0,creditArLinked:arLinked,creditArCust:ar.cust||'',creditAction:action,creditReason:reasons.join(' · ')||'신용·채권 재검토',
-      creditEnd:arEnd,creditRank:action==='신규출고 중지'?3:action==='선결제 전환'?2:1});
+      creditEnd:arEnd,creditAvgSales:arLinked?Math.max(0,+ar.avgSales||0):0,
+      creditDsoSource:arLinked?'미수관리':'자료없음',creditRank:action==='신규출고 중지'?3:action==='선결제 전환'?2:1});
   }).filter(Boolean).sort(function(a,b){return b.creditRank-a.creditRank||b.creditScore-a.creditScore||b.balance-a.balance;});
   var creditExcluded=sgCreditExclusions();
   var creditCutCust=creditCutAll.filter(function(o){return !creditExcluded[sgCreditKey(o.name)];});
@@ -22555,7 +22632,8 @@ function sgAnalyze(){
     linked:creditCutAll.filter(function(o){return o.creditArLinked;}).length,
     actual:creditCutAll.filter(function(o){return o.creditBalanceMode==='실제입력';}).length,
     estimated:creditCutAll.filter(function(o){return o.creditBalanceMode==='추정';}).length,
-    missing:creditCutAll.filter(function(o){return o.creditBalanceMode==='자료없음';}).length
+    missing:creditCutAll.filter(function(o){return o.creditBalanceMode==='자료없음';}).length,
+    dsoLinked:creditCutAll.filter(function(o){return o.creditDsoSource==='미수관리';}).length
   };
 
   /* 거래축소의 목표 영향액: 올해 월평균 매출 중 남은 달의 예상매출에 관리강도별 축소율을 적용합니다. */
@@ -23323,7 +23401,9 @@ function sgPareto(A){
   var tableCum=0;
   var paretoRows=list.slice(0,show).map(function(o,i){
     tableCum+=o.cy; var share=o.cy/tot*100, cumShare=tableCum/tot*100, core=i<n80;
-    return '<tr style="border-bottom:1px solid #eef2f7;'+(core?'background:#fffbeb':'')+'">'
+    /* 거래처 자체 비중 구간을 연한 색으로 구분. 2% 이하는 흰색 유지. */
+    var rowBg=share>=20?'#fff1f2':share>=10?'#fff7ed':share>=5?'#fefce8':share>=3?'#f0fdf4':share>2?'#eff6ff':'#ffffff';
+    return '<tr data-share-tier="'+(share>=20?'20':share>=10?'10':share>=5?'5':share>=3?'3':share>2?'2':'under2')+'" style="border-bottom:1px solid #eef2f7;background:'+rowBg+'">'
       +'<td style="padding:5px 6px;text-align:center;color:#64748b">'+(i+1)+'</td>'
       +'<td style="padding:5px 7px;text-align:left!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px" title="'+sgEsc(o.name)+'"><b style="color:#1e3a5f">'+sgEsc(o.name)+'</b>'+(core?'<span style="margin-left:4px;color:#b45309;font-size:9px">80% 핵심</span>':'')+'</td>'
       +'<td style="padding:5px 7px;text-align:right;font-weight:800">'+sgWon(o.cy)+'</td>'
@@ -23881,7 +23961,7 @@ function sgCreditCutTab(A){
       +'<td style="padding:6px;text-align:right;font-weight:800" title="미수관리 통합 거래처: '+sgEsc(o.creditArCust||'자료없음')+'">'+sgWon(o.balance)+'<br><span style="font-size:9px;font-weight:600;color:'+(o.creditBalanceMode==='실제입력'?'#0f766e':o.creditBalanceMode==='자료없음'?'#dc2626':'#94a3b8')+'">'+sgEsc(o.creditBalanceMode||'자료없음')+'</span></td>'
       +'<td style="padding:6px;text-align:right;color:'+(o.overduePay>0?'#c2410c':'#64748b')+'">'+sgWon(o.overduePay)+'</td>'
       +'<td style="padding:6px;text-align:right;color:'+(o.long90Pay>0?'#dc2626':'#64748b')+';font-weight:'+(o.long90Pay>0?'800':'400')+'">'+sgWon(o.long90Pay)+'</td>'
-      +'<td style="padding:6px;text-align:center;color:'+(o.dso>=90?'#dc2626':'#475569')+'">'+Math.round(o.dso)+'일</td>'
+      +'<td style="padding:6px;text-align:center;color:'+(o.dso>=90?'#dc2626':'#475569')+'" title="미수관리 '+sgEsc(o.creditEnd||'-')+' 기준 · 미수 '+sgWon(o.balance)+'원 · 월평균매출 '+sgWon(o.creditAvgSales||0)+'원">'+Math.round(o.dso)+'일<br><span style="font-size:9px;color:#0f766e">'+sgEsc(o.creditDsoSource||'자료없음')+'</span></td>'
       +'<td style="padding:6px;text-align:center"><b style="color:'+(o.creditScore>=70?'#dc2626':'#d97706')+'">'+Math.round(o.creditScore)+'점</b></td>'
       +'<td style="padding:6px;text-align:center"><span style="display:inline-block;padding:3px 8px;border:1px solid '+actionColor+'55;border-radius:999px;background:'+actionColor+'12;color:'+actionColor+';font-size:10.5px;font-weight:900;white-space:nowrap">'+o.creditAction+'</span></td>'
       +'<td style="padding:6px 7px;text-align:left!important;color:#64748b;font-size:10.5px">'+sgEsc(o.creditReason)+'</td>'
@@ -23890,10 +23970,10 @@ function sgCreditCutTab(A){
   var table=list.length?'<div style="overflow:auto"><table style="width:100%;min-width:'+(manage?'1225':'1180')+'px;border-collapse:collapse;font-size:11.5px">'
     +'<thead><tr style="background:#f1f5f9;color:#334155">'+(manage?'<th style="padding:7px;width:42px">제외</th>':'')+'<th style="padding:7px">#</th><th class="sg-table-sort" data-kind="creditCut" data-sk="name" style="padding:7px;text-align:left!important">거래처'+sgListArrow('creditCut','name')+'</th>'
     +'<th class="sg-table-sort" data-kind="creditCut" data-sk="status" style="padding:7px">신용등급·상태'+sgListArrow('creditCut','status')+'</th><th class="sg-table-sort" data-kind="creditCut" data-sk="balance" style="padding:7px;text-align:right">미수잔액'+sgListArrow('creditCut','balance')+'</th><th class="sg-table-sort" data-kind="creditCut" data-sk="overdue" style="padding:7px;text-align:right">결제기한 초과'+sgListArrow('creditCut','overdue')+'</th>'
-    +'<th class="sg-table-sort" data-kind="creditCut" data-sk="long90" style="padding:7px;text-align:right">90일 초과'+sgListArrow('creditCut','long90')+'</th><th class="sg-table-sort" data-kind="creditCut" data-sk="dso" style="padding:7px">DSO'+sgListArrow('creditCut','dso')+'</th><th class="sg-table-sort" data-kind="creditCut" data-sk="score" style="padding:7px">회수위험'+sgListArrow('creditCut','score')+'</th><th class="sg-table-sort" data-kind="creditCut" data-sk="action" style="padding:7px">권장관리'+sgListArrow('creditCut','action')+'</th><th style="padding:7px;text-align:left!important">선정 근거</th><th class="sg-table-sort" data-kind="creditCut" data-sk="registered" style="padding:7px">전략'+sgListArrow('creditCut','registered')+'</th></tr></thead><tbody>'+body+'</tbody></table></div>'
+    +'<th class="sg-table-sort" data-kind="creditCut" data-sk="long90" style="padding:7px;text-align:right">90일 초과'+sgListArrow('creditCut','long90')+'</th><th class="sg-table-sort" data-kind="creditCut" data-sk="dso" style="padding:7px">매출채권 회전일수'+sgListArrow('creditCut','dso')+'</th><th class="sg-table-sort" data-kind="creditCut" data-sk="score" style="padding:7px">회수위험'+sgListArrow('creditCut','score')+'</th><th class="sg-table-sort" data-kind="creditCut" data-sk="action" style="padding:7px">권장관리'+sgListArrow('creditCut','action')+'</th><th style="padding:7px;text-align:left!important">선정 근거</th><th class="sg-table-sort" data-kind="creditCut" data-sk="registered" style="padding:7px">전략'+sgListArrow('creditCut','registered')+'</th></tr></thead><tbody>'+body+'</tbody></table></div>'
     :'<div style="padding:28px;text-align:center;color:#64748b;border:1px dashed #cbd5e1;border-radius:9px">'+(sgStrategySearchNorm(sgStrategySearchStore().creditCut||'')?'검색어와 일치하는 거래축소 업체가 없습니다.':(excludedCount?'모든 검토대상이 제외되었습니다. 위 <b>거래축소 제외</b> 버튼에서 체크를 해제하면 다시 표시됩니다.':'현재 기준에서 거래축소가 필요한 고위험 업체가 없습니다.'))+'</div>';
   var toolbar='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 9px;padding:7px 9px;border:1px solid #dbe3ee;border-radius:8px;background:#f8fafc">'
-    +'<div style="flex:1;min-width:420px;font-size:11px;color:#475569;line-height:1.5"><b style="color:#1e3a5f">DSO(매출채권 회전일수)</b>는 현재 미수잔액이 최근 월평균 매출의 몇 일분인지 나타냅니다. <b>산식: 미수잔액 ÷ 월평균 매출 × 30일</b>이며, 일수가 길수록 회수가 느리고 90일 이상은 거래조건 축소 검토대상입니다.</div>'
+    +'<div style="flex:1;min-width:420px;font-size:11px;color:#475569;line-height:1.5"><b style="color:#1e3a5f">매출채권 회전일수(DSO)</b>는 💰 미수관리의 계산값을 그대로 연동합니다. <b>산식: 현재 미수금 ÷ 월평균매출 × 30일</b>이며, 월평균매출은 분석기간 누적매출 ÷ 경과월수입니다.</div>'
     +'<button type="button" class="btn ghost" id="sgCreditExcludeToggle" style="font-size:11.5px;padding:5px 10px;white-space:nowrap;'+(manage?'background:#b45309;color:#fff;border-color:#b45309':'border-color:#f59e0b;color:#b45309')+'">🚫 거래축소 제외 ('+excludedCount+')</button>'
     +(manage?'<span style="font-size:10.5px;color:#b45309">체크하면 목록에서 제외되고, 체크를 해제하면 복원됩니다.</span>':'')+'</div>';
   return sgKpis(A)+guide+summary+'<div class="panel" style="padding:12px;border-top:3px solid #d97706">'
@@ -24682,9 +24762,16 @@ try{ clsSales=sgClsSales; }catch(_e){}
 .fileyear-tabs{padding:5px 7px!important;margin-bottom:5px!important;gap:4px!important}
 .fileyear-tab{padding:4px 10px!important;font-size:10.5px!important;min-height:26px!important}
 .fileyear-list{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:4px!important;align-items:stretch}
-.fileyear-list .filechip{display:flex!important;width:100%!important;box-sizing:border-box!important;margin:0!important;padding:3px 6px!important;min-height:28px!important;font-size:10.5px!important;border-radius:6px!important;white-space:nowrap;overflow:hidden}
+.fileyear-list .filechip{display:flex!important;position:relative!important;width:100%!important;box-sizing:border-box!important;margin:0!important;padding:3px 32px 3px 6px!important;min-height:28px!important;font-size:10.5px!important;border-radius:6px!important;white-space:nowrap;overflow:hidden}
 .fileyear-list .filechip select{min-width:62px!important;max-width:92px!important;padding:2px 4px!important;font-size:10px!important}
-.fileyear-list .filechip .x{width:17px!important;height:17px!important;font-size:10px!important;flex:0 0 17px}
+.fileyear-list .filechip .x{display:inline-flex!important;align-items:center!important;justify-content:center!important;position:absolute!important;right:5px!important;top:50%!important;transform:translateY(-50%)!important;width:21px!important;height:21px!important;padding:0!important;font-size:10px!important;line-height:1!important;flex:0 0 21px;z-index:2!important;color:#dc2626!important;background:#fff1f2!important;border:1px solid #fecaca!important;border-radius:5px!important;cursor:pointer!important}
+.ds-file-year-tabs{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin:6px 0;padding:6px 8px;border:1px solid #dbe3ee;border-radius:8px;background:#f8fafc}
+.ds-file-year-tabs>b{margin-right:2px;font-size:10.5px;color:#64748b}
+.ds-file-year-tab{min-height:26px;padding:4px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#475569;font-size:10.5px;font-weight:800;cursor:pointer}
+.ds-file-year-tab span{display:inline-block;min-width:17px;margin-left:3px;padding:1px 5px;border-radius:9px;background:#eef2f7;color:#64748b;font-size:9.5px;text-align:center}
+.ds-file-year-tab.on{border-color:#1e3a5f;background:#1e3a5f;color:#fff}
+.ds-file-year-tab.on span{background:rgba(255,255,255,.2);color:#fff}
+.ds-file-year-tabs em{margin-left:auto;color:#64748b;font-size:10px;font-style:normal}
 @media(max-width:900px){
   .fileyear-list{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
   #result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table{font-size:9px!important}
@@ -24936,6 +25023,104 @@ try{ clsSales=sgClsSales; }catch(_e){}
     records.forEach(function(r){r.addedNodes.forEach(function(n){pending.push(n);});});
     if(pending.length&&!scheduled){scheduled=true;(window.requestAnimationFrame||setTimeout)(flush);}
   }).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+<script id="v595-ar-strategy-dso-sync">
+/* 미수관리 저장·공유반영 직후 전략 분석 캐시를 폐기해 거래축소 DSO가 즉시 일치하도록 합니다. */
+(function(){
+  function invalidate(){
+    try{arCache=null;}catch(_e){}
+    try{sgLastAnalysis=null;sgLastAnalysisRows=null;}catch(_e){}
+    window.__sgFastRender=false;
+  }
+  if(typeof arSave==='function'&&!arSave.__v595){
+    var nativeSave=arSave;
+    var wrappedSave=async function(){invalidate();var out=await nativeSave.apply(this,arguments);invalidate();return out;};
+    wrappedSave.__v595=true;window.arSave=wrappedSave;try{arSave=wrappedSave;}catch(_e){}
+  }
+  if(typeof arApplyShared==='function'&&!arApplyShared.__v595){
+    var nativeApply=arApplyShared;
+    var wrappedApply=function(){var out=nativeApply.apply(this,arguments);invalidate();return out;};
+    wrappedApply.__v595=true;window.arApplyShared=wrappedApply;try{arApplyShared=wrappedApply;}catch(_e){}
+  }
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible'&&state&&state.act==='strategy')invalidate();
+  });
+})();
+</script>
+<style id="v597-ar-upload-calendar-style">
+.ar-upload-yearbar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:7px 8px;margin:8px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px}
+.ar-upload-year{border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:7px;padding:5px 12px;font:800 11px inherit;cursor:pointer}
+.ar-upload-year.on{background:#1e3a5f;color:#fff;border-color:#1e3a5f}
+.ar-upload-sections{display:grid;grid-template-columns:1fr 1.35fr;gap:10px;align-items:start}
+.ar-upload-section{border:1px solid #dbe3ee;border-radius:10px;background:#fff;overflow:hidden}
+.ar-upload-section-head{display:flex;align-items:center;gap:7px;padding:8px 9px;background:#f1f5f9;border-bottom:1px solid #dbe3ee}
+.ar-upload-section-head b{font-size:12px;color:#1e3a5f}.ar-upload-section-head .btn{margin-left:auto;padding:4px 9px;font-size:10.5px}
+.ar-upload-months{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:8px}
+.ar-upload-month{min-height:55px;padding:6px 7px;border:1px solid #e2e8f0;border-radius:7px;background:#fff;box-sizing:border-box}
+.ar-upload-month.empty{background:#f8fafc;color:#cbd5e1}.ar-upload-month.active{background:#eff6ff;border-color:#bfdbfe}
+.ar-upload-month.balance{background:#f0fdf4;border-color:#bbf7d0}
+.ar-upload-month strong{display:block;font-size:10.5px;color:#334155}.ar-upload-month.empty strong{color:#94a3b8}
+.ar-upload-month b{display:block;margin-top:3px;font-size:11px;color:#0f172a}.ar-upload-month span{display:block;font-size:9.5px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ar-upload-files{padding:0 8px 8px}.ar-upload-files summary{cursor:pointer;font-size:10.5px;font-weight:800;color:#475569;padding:5px 0}
+.ar-upload-files .ar-file-item{padding:5px 7px;margin-bottom:4px}.ar-upload-files .ar-file-meta b{font-size:11px}.ar-upload-files .ar-file-meta span{font-size:9.5px}
+@media(max-width:900px){.ar-upload-sections{grid-template-columns:1fr}.ar-upload-months{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:560px){.ar-upload-months{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
+<script id="v597-ar-upload-calendar">
+/* 연말미수잔액과 수금내역을 분리하고, 연도·월 기준으로 업로드 현황을 표시합니다. */
+(function(){
+  /* v598에서 실제 파일관리 IIFE 내부 구현으로 이전됨. */
+  return;
+  function years(){
+    var set={2025:1,2026:1};
+    (state.ar.sources||[]).forEach(function(s){var y=+(String(s.asOf||'').slice(0,4));if(y)set[y]=1;});
+    (state.ar.receipts||[]).forEach(function(r){var y=+(String(r.date||'').slice(0,4));if(y)set[y]=1;});
+    Object.keys(state.ar.actualYears||{}).forEach(function(y){if(state.ar.actualYears[y])set[+y]=1;});
+    Object.keys(state.ar.balances||{}).forEach(function(k){var y=+String(k).split('|')[0];if(y)set[y]=1;});
+    return Object.keys(set).map(Number).sort(function(a,b){return a-b;});
+  }
+  function selectedYear(){
+    var ys=years(),v=+state.ar.fileOverviewYear;
+    if(ys.indexOf(v)<0)v=ys.indexOf(2026)>=0?2026:ys[ys.length-1];
+    state.ar.fileOverviewYear=v;return v;
+  }
+  function sourceRows(name,year){return(state.ar.receipts||[]).filter(function(r){return r.source===name&&+String(r.date||'').slice(0,4)===year;});}
+  function receiptSources(year){
+    return(state.ar.sources||[]).map(function(s){var rows=sourceRows(s.name,year);return{name:s.name,rows:rows.length,amount:rows.reduce(function(a,r){return a+(+r.amount||0);},0),last:rows.map(function(r){return r.date||'';}).sort().pop()||''};}).filter(function(s){return s.rows>0;});
+  }
+  function monthCards(year){
+    var map={};(state.ar.receipts||[]).forEach(function(r){if(+String(r.date||'').slice(0,4)!==year)return;var m=+String(r.date||'').slice(5,7);if(!map[m])map[m]={rows:0,amount:0,sources:{}};map[m].rows++;map[m].amount+=+r.amount||0;if(r.source)map[m].sources[r.source]=1;});
+    var html='';for(var m=1;m<=12;m++){var x=map[m],names=x?Object.keys(x.sources):[];html+='<div class="ar-upload-month '+(x?'active':'empty')+'"><strong>'+m+'월</strong>'+(x?'<b>'+arMoney(x.rows)+'건</b><span>'+arMoney(x.amount)+'원</span><span title="'+esc(names.join(', '))+'">'+names.length+'개 파일</span>':'<span>자료 없음</span>')+'</div>';}
+    return html;
+  }
+  function balanceInfo(year){
+    var keys=Object.keys(state.ar.balances||{}).filter(function(k){return String(k).indexOf(year+'|')===0;}),amount=keys.reduce(function(a,k){return a+(+state.ar.balances[k]||0);},0),meta=(state.ar.balanceSources||{})[year]||{};
+    return{count:keys.length,amount:amount,name:meta.name||state.ar.sourceLabel||'연말미수잔액',at:meta.at||''};
+  }
+  function moveUploadButtons(){
+    var b=document.getElementById('arFileBalanceBtn'),r=document.getElementById('arFileReceiptBtn'),bp=document.getElementById('arBalanceUploadSlot'),rp=document.getElementById('arReceiptUploadSlot');
+    if(b)b.style.display='none';if(r)r.style.display='none';
+    if(bp){bp.innerHTML='<button type="button" class="btn" data-ar-upload-balance style="background:#1e3a5f;color:#fff;border-color:#1e3a5f">＋ 연말미수잔액 업로드</button>';bp.querySelector('button').onclick=function(){var input=document.getElementById('arFileBalanceInput');if(input)input.click();};}
+    if(rp){rp.innerHTML='<button type="button" class="btn" data-ar-upload-receipt style="background:#1e3a5f;color:#fff;border-color:#1e3a5f">＋ 수금내역 업로드</button>';rp.querySelector('button').onclick=function(){var input=document.getElementById('arFileReceiptInput');if(input)input.click();};}
+  }
+  window.arRenderFileList=function(){
+    if(typeof arDedupeUploadedV556==='function')arDedupeUploadedV556();var el=document.getElementById('arFileList');if(!el||!state.ar)return;
+    var yr=selectedYear(),ys=years(),bi=balanceInfo(yr),rs=receiptSources(yr),share='';
+    if(typeof arShareConfigured==='function'){var on=arShareConfigured();share='<div class="ar-file-share-note '+(on?'on':'off')+'">'+(on?'<b>🟢 공유 설정됨</b><span>동기화된 미수자료를 같은 사용자에게 공유</span>':'<b>⚠️ 로컬 저장</b><span>새 업로드 자료는 현재 브라우저에 저장</span>')+'</div>';}
+    var yearbar='<div class="ar-upload-yearbar"><b style="font-size:11px;color:#64748b">연도</b>'+ys.map(function(y){return'<button type="button" class="ar-upload-year '+(y===yr?'on':'')+'" data-ar-overview-year="'+y+'">'+y+'년</button>';}).join('')+'<span class="ar-mf-count">'+yr+'년 자료</span></div>';
+    var balCard='<div class="ar-upload-months"><div class="ar-upload-month '+(bi.count?'balance':'empty')+'" style="grid-column:1/-1"><strong>12월 · 연말잔액</strong>'+(bi.count?'<b>'+arMoney(bi.count)+'개 업체</b><span>'+arMoney(bi.amount)+'원</span><span title="'+esc(bi.name)+'">'+esc(bi.name)+'</span>':'<span>업로드 자료 없음</span>')+'</div></div>'+(bi.count?'<div class="ar-upload-files"><div class="ar-file-item"><span class="ar-file-ic">📄</span><div class="ar-file-meta"><b>'+esc(bi.name)+'</b><span>'+yr+'년말 · '+arMoney(bi.count)+'개 업체 · '+arMoney(bi.amount)+'원</span></div><button class="ar-btn ar-file-del" type="button" data-del-balance-year="'+yr+'">삭제</button></div></div>':'');
+    var recFiles=rs.map(function(s){return'<div class="ar-file-item"><span class="ar-file-ic">🧾</span><div class="ar-file-meta"><b>'+esc(s.name)+'</b><span>'+yr+'년 · '+arMoney(s.rows)+'건 · '+arMoney(s.amount)+'원'+(s.last?' · ~'+esc(s.last):'')+'</span></div><button class="ar-btn ar-file-del" type="button" data-del-receipt="'+esc(s.name)+'">삭제</button></div>';}).join('');
+    el.innerHTML='<div class="ar-file-head">업로드된 미수관리자료</div>'+share+yearbar+'<div class="ar-upload-sections">'
+      +'<section class="ar-upload-section"><div class="ar-upload-section-head"><b>📄 연말미수잔액</b><span id="arBalanceUploadSlot"></span></div>'+balCard+'</section>'
+      +'<section class="ar-upload-section"><div class="ar-upload-section-head"><b>🧾 수금내역</b><span id="arReceiptUploadSlot"></span></div><div class="ar-upload-months">'+monthCards(yr)+'</div><details class="ar-upload-files" '+(rs.length?'':'open')+'><summary>파일별 목록 · '+rs.length+'개</summary>'+(recFiles||'<div class="ar-file-empty">'+yr+'년 수금 파일 없음</div>')+'</details></section></div>';
+    moveUploadButtons();
+    el.querySelectorAll('[data-ar-overview-year]').forEach(function(b){b.onclick=function(){state.ar.fileOverviewYear=+b.dataset.arOverviewYear;arRenderFileList();};});
+    el.querySelectorAll('[data-del-receipt]').forEach(function(btn){btn.onclick=async function(){var nm=btn.dataset.delReceipt;if(!confirm(nm+' 수금내역을 삭제할까요?'))return;state.ar.receipts=(state.ar.receipts||[]).filter(function(r){return r.source!==nm;});state.ar.sources=(state.ar.sources||[]).filter(function(s){return s.name!==nm;});state.ar.delSources=state.ar.delSources||{};state.ar.delSources[nm]=Date.now();arCache=null;await arSave();arRenderFileList();if(state.act==='ar')arRender();};});
+    el.querySelectorAll('[data-del-balance-year]').forEach(function(btn){btn.onclick=async function(){var y=+btn.dataset.delBalanceYear;if(!confirm(y+'년 연말미수잔액을 삭제할까요?'))return;['balances','yearEndBills'].forEach(function(n){Object.keys(state.ar[n]||{}).forEach(function(k){if(String(k).indexOf(y+'|')===0)delete state.ar[n][k];});});Object.keys(state.ar.opening||{}).forEach(function(k){if(String(k).indexOf((y+1)+'|')===0&&!(state.ar.openingManual||{})[k])delete state.ar.opening[k];});Object.keys(state.ar.openingBills||{}).forEach(function(k){if(String(k).indexOf((y+1)+'|')===0)delete state.ar.openingBills[k];});delete state.ar.actualYears[y];if(state.ar.balanceSources)delete state.ar.balanceSources[y];arCache=null;await arSave();arRenderFileList();if(state.act==='ar')arRender();};});
+  };
+  if(typeof arImportBalances==='function'&&!arImportBalances.__v597){var nativeBalance=arImportBalances;arImportBalances=async function(file){var out=await nativeBalance.apply(this,arguments),y=+state.ar.viewYear||arInferYear(file,2026);state.ar.balanceSources=state.ar.balanceSources||{};state.ar.balanceSources[y]={name:file.name,at:Date.now()};await arSave();if(typeof arRenderFileList==='function')arRenderFileList();return out;};arImportBalances.__v597=true;window.arImportBalances=arImportBalances;}
+  setTimeout(function(){if(document.getElementById('arFileList'))arRenderFileList();},0);
 })();
 </script>
 </body>
