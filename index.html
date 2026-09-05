@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v85 · 핵심업체 제외제품</title>
+<title>동방파스텍 매출 분석 도구 v638</title>
+<script>window.APP_BUILD='v638';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -638,6 +639,12 @@
   .fcnewreplace:hover{background:#d1fae5;border-color:#059669}
   .fcrow,.fcprow{cursor:pointer}
   .fcov.edited,.fcadd.edited,.fcpov.edited,.fcpadd.edited{background:#fff7e6;border-color:#f59e0b;font-weight:700}
+  /* v632 : 자동값(placeholder)은 흐린 기울임 — 내가 넣은 값과 한눈에 구분됩니다. */
+  .fcov::placeholder,.fcadd::placeholder,.fcpov::placeholder,.fcpadd::placeholder{color:#b6c0cc;font-style:italic;font-weight:400;opacity:1}
+  .fcov.edited,.fcpov.edited{box-shadow:0 0 0 2px #fde68a inset}
+  /* v632 : 조정%·추가% 입력칸을 칸 폭에 맞춰 넓힙니다(값이 잘려 보이던 문제). */
+  #result .fc-cust-annual-table .fcov,#result .fc-cust-annual-table .fcadd,
+  #result .fc-prod-annual-table .fcpov,#result .fc-prod-annual-table .fcpadd{width:calc(100% - 16px)!important;min-width:46px;max-width:82px;box-sizing:border-box}
   .fcmemo.editedm,.fcpmemo.editedm,.rtmemo.editedm,.cmgr-tbl input.editedm{background:#eff6ff;border-color:#60a5fa}
   .fcissue-c th:nth-child(5),.fcissue-c th:nth-child(6),.fcissue-c td:nth-child(5),.fcissue-c td:nth-child(6){display:none}
   .fcissue-c table{width:100%}.fcissue-c table td:last-child,.fcissue-c table th:last-child{width:100%}.fcissue-c .fcmemo{width:100%!important;font-size:12.5px!important;padding:7px 9px!important}
@@ -1704,7 +1711,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일 버전(수정 일시)">버전 v454</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v638</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -4980,7 +4987,7 @@ document.addEventListener('change',function(e){ const t=e.target; if(t&&t.classL
 (function(){
   function fmtVer(d){ try{ const x=new Date(d); if(isNaN(x))return String(d); const p=v=>String(v).padStart(2,'0'); return x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate())+' '+p(x.getHours())+':'+p(x.getMinutes()); }catch(e){ return String(d); } }
   var _verD=null,_verLabel='버전';
-  function setVer(label,d){ _verLabel=label;_verD=d; const el=document.getElementById('appVer'); if(el)el.textContent=label+' '+fmtVer(d)+((typeof state!=='undefined'&&state.gsync&&state.gsync.user)?(' · '+state.gsync.user):''); }
+  function setVer(label,d){ _verLabel=label;_verD=d; const el=document.getElementById('appVer'); if(el)el.textContent=(window.APP_BUILD||label)+' · '+fmtVer(d)+((typeof state!=='undefined'&&state.gsync&&state.gsync.user)?(' · '+state.gsync.user):''); }
   function refreshVer(){ if(_verD!=null)setVer(_verLabel,_verD); }
   window.refreshVer=refreshVer;
   function init(){ const el=document.getElementById('appVer'); if(!el)return; setVer('버전', document.lastModified); setTimeout(refreshVer,800);
@@ -9829,8 +9836,8 @@ function fcMemo2Line(sel,dk){ $('#result').querySelectorAll(sel).forEach(inp=>{ 
 function fcPaintNegativeField(inp){
   if(!inp)return;
   const entered=String(inp.value==null?'':inp.value).trim();
-  const visible=entered!==''?entered:String(inp.getAttribute('placeholder')||'').trim();
-  const raw=visible.replace(/,/g,'.').replace(/[%\s]/g,'');
+  /* v632 : 자동 계산값(placeholder)에는 강조를 입히지 않습니다. 실제 입력한 값만 색으로 표시합니다. */
+  const raw=entered.replace(/,/g,'.').replace(/[%\s]/g,'');
   const num=Number(raw),neg=raw!==''&&Number.isFinite(num)&&num<0;
   inp.classList.toggle('fc-negative-number',neg);
   if(neg){
@@ -10098,7 +10105,7 @@ function forecast(){ state._inDrill=false;
   const applyFcSort=(arr)=>{ if(!arr.length){return;} const sk=state.fc.sortKey, dir=state.fc.sortDir||-1; if(!sk||!(sk in arr[0])){ arr.sort((a,b)=>b.proj-a.proj); return; }
     const str=['c','code','name','spec','sales','tech'].includes(sk);
     arr.sort((a,b)=>{ if(str){ const r=(a[sk]||'').localeCompare(b[sk]||'','ko'); return dir===-1?-r:r; } const va=a[sk]==null?-Infinity:a[sk], vb=b[sk]==null?-Infinity:b[sk]; return dir===-1?vb-va:va-vb; }); };
-  let custArr=[...custKeys].map(c=>{ const prev=sumC(pyMonCust,c); const proj=projC(c); let ytd=0; for(let _m=m1;_m<=Math.min(m2,lastAct);_m++) ytd+=(cyMonCust[_m].get(c)||0); const diff=proj-prev; const pct=prev?diff/prev*100:(proj>0?null:0); const ov=state.fc.override[c]; const ad=state.fc.addPct[c]; /* v621 : 조정%·추가%가 만든 증감(추가증감액). 기준은 '월별 목표%만 적용한 기본 목표'입니다. */ let _basePlan=0; for(let _b=Math.max(m1,lastAct+1);_b<=m2;_b++){ const _py=pyMonCust[_b].get(c)||0; const _pc=(state.fc.pct[_b]!=null&&state.fc.pct[_b]!=='')?+state.fc.pct[_b]:0; _basePlan+=_py*(1+_pc/100); } const _projFuture=proj-ytd-fcNewTargetAmount(c); const adj=Math.round(_projFuture-_basePlan); return {c,prev,proj,diff,pct,ytd,adj,sales:mgrS(c),tech:mgrT(c),ov:(ov==null?'':ov),ad:(ad==null?'':ad)}; }).filter(o=>o.prev>0||o.proj>0||o.ytd>0);
+  let custArr=[...custKeys].map(c=>{ const prev=sumC(pyMonCust,c); const proj=projC(c); let ytd=0; for(let _m=m1;_m<=Math.min(m2,lastAct);_m++) ytd+=(cyMonCust[_m].get(c)||0); const diff=proj-prev; const pct=prev?diff/prev*100:(proj>0?null:0); const ov=state.fc.override[c]; const ad=state.fc.addPct[c]; /* v621 : 조정%·추가%가 만든 증감(추가증감액). 기준은 '월별 목표%만 적용한 기본 목표'입니다. */ let _basePlan=0; for(let _b=Math.max(m1,lastAct+1);_b<=m2;_b++){ const _py=pyMonCust[_b].get(c)||0; const _pc=(state.fc.pct[_b]!=null&&state.fc.pct[_b]!=='')?+state.fc.pct[_b]:0; _basePlan+=_py*(1+_pc/100); } const _projFuture=proj-ytd-fcNewTargetAmount(c); const adj=Math.round(_projFuture-_basePlan); return {c,prev,proj,diff,pct,ytd,adj,_bp:_basePlan,sales:mgrS(c),tech:mgrT(c),ov:(ov==null?'':ov),ad:(ad==null?'':ad)}; }).filter(o=>o.prev>0||o.proj>0||o.ytd>0);
   custArr=custArr.filter(o=>(clsFilter==='전체'||(catsOf(o.c)||[]).includes(clsFilter))&&(statusFilter==='전체'||catOf(o.c)===statusFilter));
   custArr.forEach(o=>{ o.excl=fcDisplayExSet.has(o.c); o.targetOnly=fcTargetOnlyKeys.has(fcCustKey(o.c)); o.targetExcl=fcExSet.has(o.c); if(o.targetExcl){ o.proj=0; o.diff=-o.prev; o.pct=o.prev?-100:0; o.ov=''; o.ad=''; } });
   const custArrTotalBase=custArr.slice();
@@ -10180,7 +10187,7 @@ function forecast(){ state._inDrill=false;
       </div>
       <span class="sub2"><b>업체만 추가</b>: 품목·수량 없이 <b>거래처명+연 목표금액</b>만 등록됩니다. 또는 같은 <b>거래처명</b>으로 제품을 여러 개 추가하세요. 단가는 <b>평균단가 자동</b>(수정가능) · 연목표=Σ(수량×단가) · 추가 제품은 <b>제품 목표에도 연동</b>됩니다. 출고가 발생한 뒤에는 아래 신규 행의 <b>실제 매출처로 교체</b>를 눌러 목표를 실제 거래처에 연결할 수 있습니다.</span>
     </div><datalist id="fcNewCustRealDL">${fcRealCustDL}</datalist>
-    <div class="note" style="margin:0 0 8px"><b>제외 옵션</b>: <b>거래처 제외</b>는 담당자 표에서 숨기고 목표액도 0원 처리합니다. <b>목표합산 제외</b>만 선택하면 거래처와 실적은 정상 표시하고 2026년 목표액만 합계·목표추이에서 제외합니다. <b>조정%</b>: 입력 시 그 거래처가 전년 동월 比 해당%로 고정되고 나머지는 월 목표총액에 맞춰 <b>재배분</b>(전체 합계 유지). <b>추가%</b>: 그 거래처 목표에 <b>추가로 가산</b>되어 전체 목표금액과 그래프·<b>월별 실적·목표</b>가 함께 늘어납니다(예: 추가 10% → 그만큼 합계 증가). <b>거래처 행 클릭</b> 시 품목군→품번·품명·규격으로 이어집니다.</div>${fcExclOptionSummary}
+    <div class="note" style="margin:0 0 8px"><b>제외 옵션</b>: <b>거래처 제외</b>는 담당자 표에서 숨기고 목표액도 0원 처리합니다. <b>목표합산 제외</b>만 선택하면 거래처와 실적은 정상 표시하고 2026년 목표액만 합계·목표추이에서 제외합니다. <b>조정%</b>: 입력 시 그 거래처가 전년 동월 比 해당%로 고정되고 나머지는 월 목표총액에 맞춰 <b>재배분</b>(전체 합계 유지). 칸에 <i style="color:#b6c0cc">흐린 기울임</i>으로 보이는 숫자는 <b>아직 입력하지 않은 자동 계산값</b>이고, 직접 입력하면 <b style="background:#fff7e6;padding:0 3px;border-radius:3px">노란 칸</b>으로 바뀝니다. <b>Enter</b>를 누르면 바로 반영됩니다. <b>추가%</b>: 그 거래처 목표에 <b>추가로 가산</b>되어 전체 목표금액과 그래프·<b>월별 실적·목표</b>가 함께 늘어납니다(예: 추가 10% → 그만큼 합계 증가). <b>거래처 행 클릭</b> 시 품목군→품번·품명·규격으로 이어집니다.</div>${fcExclOptionSummary}
     <div class="tablewrap ${state.fc.showExcl?'fcshowexcl':''} ${state.fc.issC?'fcissue-c':''}" style="max-height:1120px"><table class="fc-cust-annual-table"><colgroup><col style="width:44px"><col style="width:150px"><col style="width:84px"><col style="width:84px"><col style="width:92px"><col style="width:92px"><col style="width:92px"><col style="width:92px"><col style="width:96px"><col style="width:72px"><col style="width:62px"><col style="width:62px"><col></colgroup><thead><tr><th>순위</th><th class="l fcsort" data-sk="c">거래처${fcArrow('c')}</th><th class="mgr fcsort" data-sk="sales">영업관리${fcArrow('sales')}</th><th class="mgr fcsort" data-sk="tech">기술영업${fcArrow('tech')}</th><th class="fcsort" data-sk="ytd">실적(1~${lastAct}월)${fcArrow('ytd')}<div style="font-size:8px;color:#0d9488;font-weight:700">제외업체 포함</div></th><th class="fcsort" data-sk="prev">전년(${PY})${fcArrow('prev')}</th><th class="fcsort" data-sk="proj">올해목표${fcArrow('proj')}</th><th class="fcsort" data-sk="diff">증감액${fcArrow('diff')}</th><th class="fcsort" data-sk="adj" title="조정%·추가%로 늘거나 줄어든 금액입니다. 기준은 월별 목표%만 적용한 기본 목표이며, 다른 업체의 조정%로 인한 재배분 효과도 함께 반영됩니다.">추가증감액${fcArrow('adj')}</th><th class="fcsort" data-sk="pct">증감%${fcArrow('pct')}</th><th title="해당 월 목표 내에서 재분배(전체 합계 유지)">조정%</th><th title="전체 금액에 추가로 가산(합계·그래프 증가)">추가%</th><th class="l">메모(조정·추가% 이슈)</th></tr></thead><tbody>${custRows}<tr class="total-row"><td></td><td class="l">합 계</td><td></td><td></td><td>${disp(cTotYtdAll)}</td><td>${disp(cTotPrevAll)}</td><td>${disp(cTotProjAll)}</td><td>${diffSpan(cTotProjAll-cTotPrevAll)}</td><td>${fcAdjSpan(custArr.reduce((a,o)=>a+(+o.adj||0),0))}</td><td></td><td></td><td></td><td></td></tr></tbody></table></div>`:`
     <h4 class="fch">📦 제품(규격)별 매출 목표 · ${rLab} <span class="fc-target-search fc-prod-unified-search"><input type="search" id="fcProdSearch" autocomplete="off" spellcheck="false" placeholder="${state.fc._prodSearchMode==='customer'?'업체명 포함 검색':'품번·품명·규격 포함 검색'}" value="${esc(state.fc._prodSearchMode==='customer'?(state.fc._prodCustSearch||''):(state.fc._psearch||''))}"><select id="fcProdSearchMode" aria-label="검색 기준"><option value="customer" ${state.fc._prodSearchMode==='customer'?'selected':''}>🏢 업체</option><option value="product" ${state.fc._prodSearchMode==='customer'?'':'selected'}>📦 제품</option></select><button type="button" id="fcProdSearchBtn" class="fc-target-search-btn" aria-label="제품 목표 검색" title="검색"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="M12.5 12.5L17 17"></path></svg></button></span> <span style="float:right"><button class="btn" id="fcAddProd" style="font-size:13px;padding:3px 10px">＋ 제품추가</button> <button class="btn ghost" id="fcIssueProd" style="font-size:13px;padding:3px 10px;${state.fc.issP?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.fc.issP?' (해제)':''}</button> <button class="btn ghost fcexcltoggle" style="font-size:13px;padding:3px 8px;${state.fc.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.fc.showExcl?'숨기기':'보이기'}</button> <button class="btn ghost" id="fcProdOvReset" style="font-size:13px;padding:3px 8px">조정% 초기화</button> <button class="btn ghost" id="fcProdAddReset" style="font-size:13px;padding:3px 8px;color:var(--red);border-color:#f3c0c0">추가% 초기화</button> <button class="btn ghost" id="fcProdCsv" style="font-size:13px;padding:3px 8px">엑셀</button></span></h4>
     <div id="fcNewProdForm" style="display:none;margin:0 0 8px;padding:10px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px">
@@ -10196,7 +10203,7 @@ function forecast(){ state._inDrill=false;
         <button class="btn" id="fcNewPAdd">＋ 추가</button><button class="btn ghost" id="fcNewProdClear" style="font-size:12px">🗑️ 지우기</button><button class="btn ghost" id="fcNewProdClose" style="font-size:12px">✕ 닫기</button>
       </div>
       <span class="sub2">기존 제품 선택 시 <b>단가=평균단가 자동</b>(수정가능) · 거래처 입력/선택 + 수량·단가 → <b>업체·제품 목표 동시 연동</b>.</span></div>
-    <div class="note" style="margin:0 0 8px"><b>조정%</b>: 입력 시 그 제품을 전년 比 해당%로 고정. <b>추가%</b>: 그 제품 목표에 가산. <b>품번·규격 행 클릭</b> 시 거래처별 증감이 나옵니다. <span class="sub2">(제품 조정/추가%는 제품 목록 기준이며, 상단 그래프·연매출 카드는 거래처 기준입니다.)</span></div>
+    <div class="note" style="margin:0 0 8px"><b>조정%</b>: 입력 시 그 제품을 전년 比 해당%로 고정. <b>추가%</b>: 그 제품 목표에 가산. 칸에 <i style="color:#b6c0cc">흐린 기울임</i>으로 보이는 숫자는 <b>자동 계산값</b>이고, 직접 입력하면 <b style="background:#fff7e6;padding:0 3px;border-radius:3px">노란 칸</b>이 됩니다(<b>Enter</b>로 확정). <b>품번·규격 행 클릭</b> 시 거래처별 증감이 나옵니다. <span class="sub2">(제품 조정/추가%는 제품 목록 기준이며, 상단 그래프·연매출 카드는 거래처 기준입니다.)</span></div>
     <div class="tablewrap ${state.fc.showExcl?'fcshowexcl':''} ${state.fc.issP?'fcissue-p':''}" style="max-height:1120px"><table class="fc-prod-annual-table"><thead><tr><th>순위</th><th class="l fcsort" data-sk="code">품번${fcArrow('code')}</th><th class="l fcsort" data-sk="name">품명${fcArrow('name')}</th><th class="l fcsort" data-sk="spec">규격${fcArrow('spec')}</th><th class="fcsort" data-sk="prev">전년매출${fcArrow('prev')}</th><th class="fcsort" data-sk="ytd">실적(1~${lastAct}월)${fcArrow('ytd')}</th><th class="fcsort" data-sk="proj">올해목표${fcArrow('proj')}</th><th class="fcsort" data-sk="diff">증감액${fcArrow('diff')}</th><th class="fcsort" data-sk="pct">증감%${fcArrow('pct')}</th><th title="전년 比 해당%로 고정">조정%</th><th title="제품 목표에 가산">추가%</th><th class="fcsort" data-sk="pq">전년수량${fcArrow('pq')}</th><th class="fcsort" data-sk="cq">올해목표수량${fcArrow('cq')}</th><th class="l">메모(조정·추가% 이슈)</th></tr></thead><tbody>${prodRows}<tr class="total-row"><td></td><td class="l">합 계</td><td></td><td></td><td>${disp(pTotPrev)}</td><td>${disp(prodArr.reduce((a,o)=>a+(o.ytd||0),0))}</td><td>${disp(pTotProj)}</td><td>${diffSpan(pTotProj-pTotPrev)}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></div>`}`;
   renderCustom(html,()=>{
     setGlobalBar(false); bindFcCutoffSelector(fcFastForecast);
@@ -10273,13 +10280,13 @@ function forecast(){ state._inDrill=false;
     const _rowMapC={}; $('#result').querySelectorAll('tr.fcrow').forEach(tr=>{_rowMapC[tr.dataset.c]=tr;});
     $('#result').querySelectorAll('.fcov,.fcadd,.fcmemo,.fcpov,.fcpadd,.fcpmemo').forEach(i=>{ i.addEventListener('mousedown',e=>e.stopPropagation()); i.addEventListener('click',e=>e.stopPropagation()); });
     let _recCT=null;
-    const recalcCust=()=>{ const fcM={}; for(const m of fcMonths){ const pc=state.fc.pct[m]!=null?state.fc.pct[m]:0; const f=1+pc/100; const target=pyMonTot[m]*f; const cmap=pyMonCust[m]; let ovrSum=0,nonOvrPY=0; cmap.forEach((py,cc)=>{const ov=state.fc.override[cc]; if(ov!=null&&ov!=='')ovrSum+=py*(1+(+ov)/100); else nonOvrPY+=py;}); const fn=nonOvrPY>0?(target-ovrSum)/nonOvrPY:0; const mm=new Map(); cmap.forEach((py,cc)=>{const ov=state.fc.override[cc]; const cf=(ov!=null&&ov!=='')?(1+(+ov)/100):fn; const ad=state.fc.addPct[cc]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; mm.set(cc,py*cf*af);}); fcM[m]=mm; } let allProj=0; custArr.forEach(o=>{ if(o.targetExcl){ o.proj=0; } else { let s=0; for(let m=m1;m<=m2;m++) s+= m<=lastAct?(cyMonCust[m].get(o.c)||0):((fcM[m]&&fcM[m].get(o.c))||0); o.proj=s+fcNewTargetAmount(o.c); } o.diff=o.proj-o.prev; o.pct=o.prev?o.diff/o.prev*100:(o.proj>0?null:0); allProj+=o.proj; const tr=_rowMapC[o.c]; if(tr){ if(tr.children[6])tr.children[6].innerHTML=disp(o.proj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(o.diff); if(tr.children[8])tr.children[8].innerHTML=pctSpan(o.pct); } }); const tot=$('#result .total-row'); if(tot){ const all=allProj+newProjSum+lineCustTotal+pdYearNet; if(tot.children[6])tot.children[6].innerHTML=disp(all); if(tot.children[7])tot.children[7].innerHTML=diffSpan(all-cTotPrev); } if(typeof saveSettings==='function')saveSettings(); };
+    const recalcCust=()=>{ const fcM={}; for(const m of fcMonths){ const pc=state.fc.pct[m]!=null?state.fc.pct[m]:0; const f=1+pc/100; const target=pyMonTot[m]*f; const cmap=pyMonCust[m]; let ovrSum=0,nonOvrPY=0; cmap.forEach((py,cc)=>{const ov=state.fc.override[cc]; if(ov!=null&&ov!=='')ovrSum+=py*(1+(+ov)/100); else nonOvrPY+=py;}); const fn=nonOvrPY>0?(target-ovrSum)/nonOvrPY:0; const mm=new Map(); cmap.forEach((py,cc)=>{const ov=state.fc.override[cc]; const cf=(ov!=null&&ov!=='')?(1+(+ov)/100):fn; const ad=state.fc.addPct[cc]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; mm.set(cc,py*cf*af);}); fcM[m]=mm; } let allProj=0; custArr.forEach(o=>{ if(o.targetExcl){ o.proj=0; } else { let s=0; for(let m=m1;m<=m2;m++) s+= m<=lastAct?(cyMonCust[m].get(o.c)||0):((fcM[m]&&fcM[m].get(o.c))||0); o.proj=s+fcNewTargetAmount(o.c); } o.diff=o.proj-o.prev; o.pct=o.prev?o.diff/o.prev*100:(o.proj>0?null:0); o.adj=Math.round((o.proj-o.ytd-fcNewTargetAmount(o.c))-(o._bp||0)); allProj+=o.proj; const tr=_rowMapC[o.c]; if(tr){ if(tr.children[6])tr.children[6].innerHTML=disp(o.proj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(o.diff); if(tr.children[8])tr.children[8].innerHTML=fcAdjSpan(o.adj); if(tr.children[9])tr.children[9].innerHTML=pctSpan(o.pct); } }); const tot=$('#result .total-row'); if(tot){ const all=allProj+newProjSum+lineCustTotal+pdYearNet; if(tot.children[6])tot.children[6].innerHTML=disp(all); if(tot.children[7])tot.children[7].innerHTML=diffSpan(all-cTotPrev); if(tot.children[8])tot.children[8].innerHTML=fcAdjSpan(custArr.reduce((a,x)=>a+(+x.adj||0),0)); } if(typeof saveSettings==='function')saveSettings(); };
     const scheduleRecalcCust=()=>{ clearTimeout(_recCT); _recCT=setTimeout(recalcCust,220); };
     const _csel=c=>$('#result').querySelector('tr.fcrow[data-c="'+(window.CSS&&CSS.escape?CSS.escape(c):c.replace(/"/g,'\\"'))+'"]');
-    const fcTotCust=()=>{ const tr=$('#result .total-row'); if(!tr)return; const allProj=custArr.reduce((a,o)=>a+o.proj,0)+newProjSum+lineCustTotal+pdYearNet; if(tr.children[6])tr.children[6].innerHTML=disp(allProj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(allProj-cTotPrev); };
-    const fcUpdCust=c=>{ const o=fcCMap[c]; if(o&&!o.targetExcl){ o.proj=projC(c); o.diff=o.proj-o.prev; o.pct=o.prev?o.diff/o.prev*100:(o.proj>0?null:0); const tr=_csel(c); if(tr){ if(tr.children[6])tr.children[6].innerHTML=disp(o.proj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(o.diff); if(tr.children[8])tr.children[8].innerHTML=pctSpan(o.pct); } } fcTotCust(); };
-    $('#result').querySelectorAll('.fcov').forEach(inp=>{ inp.addEventListener('input',e=>{ const c=e.target.dataset.c; const v=e.target.value.trim(); if(v==='')state.fc.override[c]=''; else state.fc.override[c]=parseFloat(v)||0; if(typeof logEdit==='function')logEdit('목표조정',c+' 조정% 변경'); (state.fc.overrideAt=state.fc.overrideAt||{})[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'}; scheduleRecalcCust(); }); inp.addEventListener('change',fcRenderIfDone); });
-    $('#result').querySelectorAll('.fcadd').forEach(inp=>{ inp.addEventListener('input',e=>{ const c=e.target.dataset.c; const v=e.target.value.trim(); if(v===''||parseFloat(v)===0)state.fc.addPct[c]=''; else state.fc.addPct[c]=parseFloat(v)||0; if(typeof logEdit==='function')logEdit('목표추가',c+' 추가% 변경'); (state.fc.addPctAt=state.fc.addPctAt||{})[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'}; scheduleRecalcCust(); }); inp.addEventListener('change',fcRenderIfDone); });
+    const fcTotCust=()=>{ const tr=$('#result .total-row'); if(!tr)return; const allProj=custArr.reduce((a,o)=>a+o.proj,0)+newProjSum+lineCustTotal+pdYearNet; if(tr.children[6])tr.children[6].innerHTML=disp(allProj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(allProj-cTotPrev); if(tr.children[8])tr.children[8].innerHTML=fcAdjSpan(custArr.reduce((a,o)=>a+(+o.adj||0),0)); };
+    const fcUpdCust=c=>{ const o=fcCMap[c]; if(o&&!o.targetExcl){ o.proj=projC(c); o.diff=o.proj-o.prev; o.pct=o.prev?o.diff/o.prev*100:(o.proj>0?null:0); o.adj=Math.round((o.proj-o.ytd-fcNewTargetAmount(c))-(o._bp||0)); const tr=_csel(c); if(tr){ if(tr.children[6])tr.children[6].innerHTML=disp(o.proj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(o.diff); if(tr.children[8])tr.children[8].innerHTML=fcAdjSpan(o.adj); if(tr.children[9])tr.children[9].innerHTML=pctSpan(o.pct); } } fcTotCust(); };
+    $('#result').querySelectorAll('.fcov').forEach(inp=>{ inp.addEventListener('input',e=>{ const c=e.target.dataset.c; const v=e.target.value.trim(); if(v==='')state.fc.override[c]=''; else state.fc.override[c]=parseFloat(v)||0; (state.fc.overrideAt=state.fc.overrideAt||{})[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'}; scheduleRecalcCust(); }); inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } }); inp.addEventListener('change',e=>{ if(typeof logEdit==='function')logEdit('목표조정',e.target.dataset.c+' 조정% '+(e.target.value.trim()||'해제')); fcRenderIfDone(); }); });
+    $('#result').querySelectorAll('.fcadd').forEach(inp=>{ inp.addEventListener('input',e=>{ const c=e.target.dataset.c; const v=e.target.value.trim(); if(v===''||parseFloat(v)===0)state.fc.addPct[c]=''; else state.fc.addPct[c]=parseFloat(v)||0; (state.fc.addPctAt=state.fc.addPctAt||{})[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'}; scheduleRecalcCust(); }); inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } }); inp.addEventListener('change',e=>{ if(typeof logEdit==='function')logEdit('목표추가',e.target.dataset.c+' 추가% '+(e.target.value.trim()||'해제')); fcRenderIfDone(); }); });
     $('#result').querySelectorAll('.fcexcl').forEach(c=>c.addEventListener('change',e=>{ const k=e.target.dataset.c; setExcludedCust(k,e.target.checked); if(typeof logEdit==='function')logEdit('목표제외',k+' 거래처 '+(e.target.checked?'제외':'복원')+' (매출목표/담당자 동시)'); saveSettings(); forecast(); }));
     $('#result').querySelectorAll('.fctargetexcl').forEach(c=>c.addEventListener('change',e=>{ const k=e.target.dataset.c; setTargetExcludedCust(k,e.target.checked); if(typeof logEdit==='function')logEdit('목표합산',k+' 2026 목표합산 '+(e.target.checked?'제외':'복원')); saveSettings(); forecast(); }));
     $('#result').querySelectorAll('.fcpexcl').forEach(c=>c.addEventListener('change',e=>{ const k=e.target.dataset.pk; if(e.target.checked)state.fc.exclProd[k]=true; else delete state.fc.exclProd[k]; if(typeof logEdit==='function')logEdit('목표제외',k+' 제품 '+(e.target.checked?'제외':'복원')); saveSettings(); forecast(); }));
@@ -10328,8 +10335,8 @@ function forecast(){ state._inDrill=false;
     const _psel=pk=>$('#result').querySelector('tr.fcprow[data-pk="'+(window.CSS&&CSS.escape?CSS.escape(pk):pk.replace(/"/g,'\\"'))+'"]');
     const fcTotProd=()=>{ const tr=$('#result .total-row'); if(!tr)return; const allProj=prodArr.reduce((a,o)=>a+o.proj,0)+newProdArr.reduce((a,o)=>a+o.proj,0)+lineProdTotal+pdYear; if(tr.children[6])tr.children[6].innerHTML=disp(allProj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(allProj-pTotPrev); };
     const fcUpdProd=pk=>{ const o=fcPMap[pk]; if(o&&!o.excl){ const ov=state.fc.prodOverride[pk], ad=state.fc.prodAddPct[pk]; let pj=(ov!=null&&ov!=='')?o.prev*(1+(+ov)/100):o.proj0; pj*=1+((ad!=null&&ad!=='')?+ad:0)/100; o.proj=pj; o.diff=o.proj-o.prev; o.pct=o.prev?o.diff/o.prev*100:(o.proj>0?null:0); const tr=_psel(pk); if(tr){ if(tr.children[6])tr.children[6].innerHTML=disp(o.proj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(o.diff); if(tr.children[8])tr.children[8].innerHTML=pctSpan(o.pct); } } fcTotProd(); };
-    $('#result').querySelectorAll('.fcpov').forEach(inp=>{ inp.addEventListener('input',e=>{ const pk=e.target.dataset.pk; const v=e.target.value.trim(); if(v==='')state.fc.prodOverride[pk]=''; else state.fc.prodOverride[pk]=parseFloat(v)||0; recalcProd(pk); }); inp.addEventListener('change',fcRenderIfDone); });
-    $('#result').querySelectorAll('.fcpadd').forEach(inp=>{ inp.addEventListener('input',e=>{ const pk=e.target.dataset.pk; const v=e.target.value.trim(); if(v===''||parseFloat(v)===0)state.fc.prodAddPct[pk]=''; else state.fc.prodAddPct[pk]=parseFloat(v)||0; recalcProd(pk); }); inp.addEventListener('change',fcRenderIfDone); });
+    $('#result').querySelectorAll('.fcpov').forEach(inp=>{ inp.addEventListener('input',e=>{ const pk=e.target.dataset.pk; const v=e.target.value.trim(); if(v==='')state.fc.prodOverride[pk]=''; else state.fc.prodOverride[pk]=parseFloat(v)||0; recalcProd(pk); }); inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } }); inp.addEventListener('change',e=>{ if(typeof logEdit==='function')logEdit('목표조정',e.target.dataset.pk+' 제품 조정% '+(e.target.value.trim()||'해제')); fcRenderIfDone(); }); });
+    $('#result').querySelectorAll('.fcpadd').forEach(inp=>{ inp.addEventListener('input',e=>{ const pk=e.target.dataset.pk; const v=e.target.value.trim(); if(v===''||parseFloat(v)===0)state.fc.prodAddPct[pk]=''; else state.fc.prodAddPct[pk]=parseFloat(v)||0; recalcProd(pk); }); inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } }); inp.addEventListener('change',e=>{ if(typeof logEdit==='function')logEdit('목표추가',e.target.dataset.pk+' 제품 추가% '+(e.target.value.trim()||'해제')); fcRenderIfDone(); }); });
     $('#result').querySelectorAll('.fcnewp').forEach(inp=>inp.addEventListener('change',e=>{ const pk=e.target.dataset.pk; const v=parseInt(e.target.value.replace(/[^\d]/g,''))||0; if(state.fc.newProds[pk]){ if(v<=0)delete state.fc.newProds[pk]; else state.fc.newProds[pk].amt=v; } if(typeof logEdit==='function')logEdit('신규제품',pk+' 목표액 변경'); saveSettings(); forecast(); }));
     $('#result').querySelectorAll('.fcpdel').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); const pk=b.dataset.pk; delete state.fc.newProds[pk]; delete state.fc.prodAddPct[pk]; saveSettings(); forecast(); }));
     const addProdBtn=$('#fcAddProd'); addProdBtn&&addProdBtn.addEventListener('click',()=>{ const f=$('#fcNewProdForm'); f.style.display=f.style.display==='none'?'block':'none'; });
@@ -15157,10 +15164,10 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return 'v454 · 재고소진 제외품 지정 (2026-08-26)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 9가지 판단 카드 분리 (2026-09-05)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
-   var ti='앱 버전 v454 · 제품 재고소진·회전에 제외품 지정 추가 · 최종수정 2026-08-26';
+   var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
    if(el.getAttribute('title')!==ti)el.setAttribute('title',ti);   /* v473 : 같은 값이면 다시 쓰지 않는다(불필요한 DOM 변경 방지) */
  }
  function boot(){var el=document.getElementById('appVer');if(!el){return setTimeout(boot,200);}enforce();try{new MutationObserver(enforce).observe(el,{childList:true,characterData:true,subtree:true});}catch(e){}setInterval(enforce,1500);}
@@ -15589,29 +15596,47 @@ table.mk-tbl td.k{font-weight:800;color:#0f172a;text-align:left;white-space:nowr
    ═══════════════════════════════════════════════════════════════ */
 var MK_DEFAULT={
 /* ── 공통 배너 ── */
-asOf:'2026-08-22',
-verify:'최신 공표치 2026년 6월분 기준 (산업활동동향·주택통계 2026.7.31 공표) · 7월분은 8월말 공표 예정',
-summary:'선행지표는 돌아섰지만 후행지표는 바닥입니다. 2026년 상반기 착공은 +14.4%로 반등한 반면 준공은 -49.5%로 반토막 났습니다. 방화문·부자재는 준공 직전 6~12개월 구간에 투입되는 마감 자재이므로, 착공 반등의 온기는 2028년에야 도달하고 2026년 하반기~2027년이 실질 매출 저점입니다.',
+asOf:'2026-09-05',
+verify:'주택 지표는 국토교통부 「2026년 7월 주택통계」(2026.8.31 공표) 1~7월 누적 기준 · 건설수주·기성·공사비지수 등 산업활동동향은 2026년 6월분이 최신 공표치',
+summary:'선행지표는 돌아섰지만 후행지표는 바닥입니다. 2026년 1~7월 착공은 +11.1%로 반등한 반면 준공은 -41.4%로 반토막 났습니다. 방화문·부자재는 준공 직전 6~12개월 구간에 투입되는 마감 자재이므로, 착공 반등의 온기는 2028년에야 도달하고 2026년 하반기~2027년이 실질 매출 저점입니다.',
 policy:'CERIK 2026 수정전망(6/18): 건설수주 240.8조원(+8.9%) 상향 · 건설투자 266.1조원(+0.3%) 하향. LH 2026 발주 17.9조원(수도권·3기 신도시 71%), 공공주택 5.2만호 착공. 3기 신도시 첫 입주는 인천계양 2026년 12월.',
-checkTbl:'주택 준공|2026 상반기|103,735호|-49.5%|★ 납품 직결 — 올해 매출 절벽의 실체\n주택 착공|2026 상반기|118,005호|+14.4%|2028년 납품 회복 신호\n주택 인허가|2026 상반기|116,611호|-15.8%|2029년 이후 물량 재축소 경고\n건설기성|2026.6|전월비 +4.1%|전년동월비 -4.0%|2개월 연속 반등하나 전년 수준 미달\n건설수주|2026.6|18.7조원|-28.1%|공공 +13.1% · 민간 -41.1% — 민간 붕괴\n상반기 누계|2026.1~6|수주 +25.8%|기성 -5.3%|수주는 늘고 실제 공사는 줄어드는 괴리\n건설공사비지수|2026.6|138.22|+5.5% YoY|역대 최고 — 원가 전가 협상 근거\n미분양|2026.6말|67,464호|전월비 +3.4%|준공후 29,786호 · 지방 집중 → 대금회수 리스크\n건설업 취업자|2026.7|-5.7만명|2022 정점 대비 -26만명|현장 인력 이탈 → 공기 지연 상시화',
-history:'2026-08-22|착공 반등(+14.4%)·준공 -49.5% 확인 → 「후행 절벽」으로 관점 수정. CERIK 6/18 수정전망(수주 240.8조·투자 266.1조), PF 연체율 4.65%, 상반기 폐업 2,092곳, 품질인정기준 2026.2.20 개정 반영\n2026-07-31|국토교통부 주택통계·국가데이터처 산업활동동향 2026년 6월분 공표치로 전 지표 검증\n2026-05-15|건산연·건정연 2025.11 전망 기반 초기 구축 (착공 시차 2~2.5년 모델)',
+checkTbl:'주택 준공|2026 1~7월|135,513호|-41.4%|★ 납품 직결 — 올해 매출 절벽의 실체\n주택 착공|2026 1~7월|138,383호|+11.1%|2028년 납품 회복 신호\n주택 인허가|2026 1~7월|142,328호|-7.9%|2029년 이후 물량 재축소 경고\n건설기성|2026.6|전월비 +4.1%|전년동월비 -4.0%|2개월 연속 반등하나 전년 수준 미달\n건설수주|2026.6|18.7조원|-28.1%|공공 +13.1% · 민간 -41.1% — 민간 붕괴\n상반기 누계|2026.1~6|수주 +25.8%|기성 -5.3%|수주는 늘고 실제 공사는 줄어드는 괴리\n건설공사비지수|2026.6|138.22|+5.5% YoY|역대 최고 — 원가 전가 협상 근거\n미분양|2026.7말|68,217호|전월비 +1.1%|준공후 29,152호 · 지방 집중 → 대금회수 리스크\n건설업 취업자|2026.7|-5.7만명|2022 정점 대비 -26만명|현장 인력 이탈 → 공기 지연 상시화',
+history:'2026-09-05|국토교통부 「2026년 7월 주택통계」(8/31 공표) 반영 → 1~7월 누적 준공 135,513호(-41.4%)·착공 138,383호(+11.1%)·인허가 142,328호(-7.9%)로 전 지표 갱신. 준공후 미분양 29,152호(-2.1%)로 첫 감소. LH·SH 공급계획을 2026~2031 착공·준공 시계열 그래프로 확장, 방화문 시장 금액 전망을 2031년까지 연장\n2026-08-22|착공 반등(+11.1%)·준공 -41.4% 확인 → 「후행 절벽」으로 관점 수정. CERIK 6/18 수정전망(수주 240.8조·투자 266.1조), PF 연체율 4.65%, 상반기 폐업 2,092곳, 품질인정기준 2026.2.20 개정 반영\n2026-07-31|국토교통부 주택통계·국가데이터처 산업활동동향 2026년 6월분 공표치로 전 지표 검증\n2026-05-15|건산연·건정연 2025.11 전망 기반 초기 구축 (착공 시차 2~2.5년 모델)',
 srcline:'국가데이터처 산업활동동향(2026.6)·국토교통부 주택통계(2026.6)·한국건설산업연구원 월간건설시장동향 2026.8호·대한건설협회 월간건설경제동향·금융위원회 PF 현황(2026.3말)',
 
 /* ── 건설동향 ── */
-conWarn:'방화문 납품은 <b>준공 6~12개월 전</b>에 투입되는 마감자재입니다. 2026년 <b>준공 -49.5%</b>는 곧바로 올해 매출 절벽이고, <b>착공 +14.4%</b>의 온기는 2028년에나 도달합니다. 착공 반등 뉴스를 현재 실적 회복 신호로 오독하면 안 됩니다.',
+conWarn:'방화문 납품은 <b>준공 6~12개월 전</b>에 투입되는 마감자재입니다. 2026년 1~7월 <b>준공 -41.4%</b>(아파트 -44.2%)는 곧바로 올해 매출 절벽이고, <b>착공 +11.1%</b>의 온기는 2028년에나 도달합니다. 착공 반등 뉴스를 현재 실적 회복 신호로 오독하면 안 됩니다.',
 chain:'인허가|선행|건설공사 시작을 위한 법적 허가|국토부 주택통계(매월)\n수주/계약|선행|발주자로부터 공사를 맡기로 약속|국가데이터처(매월)\n착공|선행·동행|인허가 후 실제 공사 시작|건축착공(매월)\n기성|동행|공사 진행에 따른 대금 청구·지급|건설기성(매월)\n준공|후행|건설공사 설계대로 물리적 완료|건축완공(매월)',
 chainNote:'★ 방화문·PD커버는 <b>착공 후 18~30개월</b>, <b>준공 6~12개월 전</b>에 납품됩니다. 따라서 <b>착공</b>은 2년 뒤 물량을 알려주는 선행지표, <b>준공</b>은 지금 이 순간의 매출을 알려주는 동행지표입니다. 두 지표를 반드시 함께 보십시오.',
-conTypeAsOf:'2026-08-22 · 건축 용도별은 대한건설협회 「주요건설통계」·「월간건설경제동향」(2026.6) · 주택 지표는 국토교통부 주택통계(2026.6월분) · 비주거 세부는 CBRE·알스퀘어·쿠시먼앤드웨이크필드 2026년 자료',
-conTypeHouse:'인허가|116,611호|-15.8%|99,724호|-18.5%|16,887호|+4.9%|85.5%|2028년 이후 물량 — 아파트 급감이 장기 위험\n착공|118,005호|+14.4%|103,232호|-|14,773호|-|87.5%|2028년 납품 — 유일하게 증가한 지표\n준공|103,735호|-49.5%|90,276호|-52.8%|13,459호|-5.1%|87.0%|★ 현재 납품 — 아파트가 반토막나며 직격',
+conTypeAsOf:'2026-09-05 · 건축 용도별은 대한건설협회 「주요건설통계」·「월간건설경제동향」(2026.6) · 주택 지표는 국토교통부 주택통계(2026.7월분, 1~7월 누적 · 준공의 아파트/비아파트는 공표치, 인허가·착공의 분해는 상반기 비중 적용 추정) · 비주거 세부는 CBRE·알스퀘어·쿠시먼앤드웨이크필드 2026년 자료',
+conTypeHouse:'인허가|142,328호|-7.9%|121,700호|-|20,600호|-|85.5%|2028년 이후 물량 — 7월 단월 +59.6%로 낙폭 축소(아파트 분해는 추정)\n착공|138,383호|+11.1%|121,100호|-|17,300호|-|87.5%|2028년 납품 — 누적 두 자릿수 증가 유지(아파트 분해는 추정)\n준공|135,513호|-41.4%|119,682호|-44.2%|15,831호|-|88.3%|★ 현재 납품 — 아파트 -44.2%로 직격(공표치)',
 conAreaTrend:'2022|181.6|64.6|117.0|64.4%|110.9|34.7|76.2|68.7%|확정|허가 정점 — 이후 3년 연속 감소\n2023|135.1|44.7|90.3|66.9%|75.7|25.2|50.5|66.7%|확정|★ 착공 바닥 — 2026 준공절벽의 원인\n2024|122.7|43.4|79.3|64.6%|89.8|33.7|56.1|62.5%|확정|착공 +18.6% 반등 (주거용 +33.8%)\n2025|109.8|37.6|72.1|65.7%|78.8|26.9|51.9|65.9%|역산|공표 증감률(허가 -10.5%·착공 -12.2%) 기준\n2026 상반기|47.6|14.6|33.0|69.3%|40.0|14.2|25.9|64.6%|실적|★ 주거 허가 -15.4% vs 주거 착공 +24.2%\n2026 하반기|56.2|17.2|39.0|69.4%|45.9|16.2|29.6|64.5%|전망|반도체·데이터센터 착공 이어짐\n2026 연간|103.8|31.8|72.0|69.4%|85.9|30.4|55.5|64.6%|전망|★ 비주거 허가 비중 69% — 역대 최고\n2027|107.7|33.7|74.0|68.7%|89.3|31.3|58.0|65.0%|전망|주거 인허가 회복 시작\n2028|113.7|36.7|77.0|67.7%|94.2|33.2|61.0|64.8%|전망|3기 신도시 + 오피스 대량 공급 개시\n2029|117.7|38.7|79.0|67.1%|97.5|34.5|63.0|64.6%|전망|주거 회복으로 비주거 비중 하락 전환\n2030|121.7|40.7|81.0|66.6%|100.5|35.5|65.0|64.7%|전망|정상 수준 근접\n2031|124.7|41.7|83.0|66.6%|103.5|36.5|67.0|64.7%|전망|허가 기준 성수기(2022)의 69% 수준',
 conAreaTrendNote:'단위는 백만㎡입니다. 2022~2024년은 대한건설협회 「주요건설통계」 확정치, 2025년은 공표 증감률 역산치, 2026년 상반기는 실적, 그 이후는 자체 전망입니다. <b>비주거 비중</b>은 허가·착공 면적 중 비주거용이 차지하는 몫으로, 2026년 허가 기준 <b>69.4%</b>까지 올라 역대 최고입니다. 주거가 무너진 자리를 비주거가 메우고 있다는 뜻이며, 2029년부터 주거가 회복되면서 비중은 다시 내려갑니다.',
 conTypeArea:'건축허가|8,986천㎡|-5.2%|2,844천㎡|-12.1%|6,142천㎡|-1.7%|68.4%|비주거가 허가 면적의 2/3 — 주거보다 방어적\n건축착공|8,002천㎡|+15.9%|2,378천㎡|-9.7%|5,624천㎡|+31.6%|70.3%|★ 비주거 착공 +31.6% — 2028년 우리 기회\n상반기 누계 허가|47,564천㎡|-5.4%|-|-15.4%|-|-|-|주거용 -15.4% · 공업용 +12.5%(유일 증가)\n상반기 누계 착공|40,038천㎡|+9.0%|-|-|-|-|-|10년 평균의 66% 수준 · 절대량은 여전히 낮음',
-conTypeRes:'수도권 민간 아파트|수도권 주택 준공 5.29만호(-47.6%) · 분양 6.36만호(+55.1%) · 아파트가 절대 비중|준공 저점 지속 · 분양·착공 현장 선점 구간|착공 회복분 골조 진행 · 마감자재 견적 확대|2026 착공 반등분이 납품으로 도달 · 회복 본격화|정비사업·3기 신도시와 겹쳐 수도권 중심 정상화|높음|대형 방화문 제작사·시공사 핵심계정 선점 · 2027년까지 사양·단가 등록\n지방 민간 아파트|전국 미분양 6.75만호 중 지방 4.87만호(72%) · 준공후 미분양도 지방 집중|미분양 부담으로 신규 착공 선별 · 준공 현장 우선|구조조정 지속 · 광역시 핵심지 중심 선별 회복|착공 반등 지역부터 제한적 회복|인구·미분양에 따른 지역 양극화 고착|낮음(리스크)|매출보다 대금회수 우선 · 시행사·시공사 신용 확인 후 한도·결제조건 차등\n공공주택·3기 신도시|LH 건설형 5.2만호 착공 목표 · 수도권 공공주택 연간 6.2만호 계획|하반기 착공 집중 · 인천계양 12월 첫 입주|수도권 공공 7만호+ · 3기 신도시 분양·착공 확대|3기 신도시 착공·입주가 동시에 확대|정부 공급축으로 2029~31 연속성 가장 높음|매우 높음|LH·SH·GH·iH 표준사양과 민간참여 시공사 동시 공략 · 프로젝트별 선행 스펙인\n재개발·재건축|서울 2031년까지 31만호 착공 목표 · 2026~28 핵심 85개 구역 8.5만호 신속착공|핵심사업장 인허가·이주·착공 공정 단축|관리처분·이주 완료 사업장 착공 증가|서울 정비사업 착공 피크 진입|준공 증가와 노후주택 교체 수요가 함께 확대|매우 높음|시공사 선정·사업시행인가 단계부터 스펙 진입 · 방화문 제작업체와 세트 제안\n연립·다세대(비아파트)|상반기 비아파트 준공 1.35만호(-5.1%) · 인허가 1.69만호(+4.9%)로 아파트보다 방어적|신축매입임대·소규모 민간발주가 하방 지지|서울·수도권 역세권 중심 완만한 회복|모아주택·소규모정비와 연계해 물량 확대|대규모 아파트보다 완만하지만 안정적 수요|중간|표준규격·소량 다품종 대응력 강화 · 지역 제작사·유통망에 묶음 공급\n일반주택(단독·다가구)|비아파트 내 소규모·분산 발주 · 금리와 개별 사업성에 매우 민감|보합 · 개별건축 위주|보합|노후주택 개보수·소규모 정비 수요 일부 증가|신축보다 리모델링·교체 수요 비중 확대|낮음|직접 현장영업보다 규격품 유통·지역 방화문 제작사 채널 중심으로 효율화\n모아주택·소규모정비|서울 132개소 추진 · 2030 누적 준공 2.9만호, 2031 6.0만호 계획|2026~28 착공 대상 사업지 공정관리 본격화|통합심의·사업시행인가 누적 · 착공 준비 확대|착공 본격 확대|2030~31 준공 물량 급증 구간 진입|중간→높음|중소형 공동주택 전용 규격세트 구축 · 지역 방화문업체와 사전 표준화·공동영업',
-conTypeResNote:'2026 상반기 주택 실적은 국토교통부 주택통계(2026.7.31 공표), 공공주택은 LH 2026 업무계획, 정비사업은 서울시 2026.7.10 공급계획, 모아주택은 서울주거포털 2026.3월말 현황을 반영했습니다. <b>2027년 이후 문구는 공식 물량 예측치가 아니라 착공→방화문·부자재 납품 18~30개월 시차와 공표된 공급계획을 결합한 영업전망</b>입니다. 아파트는 수도권과 지방의 회복 속도가 달라 분리했고, 비아파트는 발주 규모가 작아도 2026년 상반기 준공 감소폭이 -5.1%로 아파트(-52.8%)보다 훨씬 방어적입니다.',
+conTypeRes:'수도권 민간 아파트|수도권 주택 준공 7.12만호(-38.7%) · 분양 6.36만호(+55.1%) · 아파트가 절대 비중|준공 저점 지속 · 분양·착공 현장 선점 구간|착공 회복분 골조 진행 · 마감자재 견적 확대|2026 착공 반등분이 납품으로 도달 · 회복 본격화|정비사업·3기 신도시와 겹쳐 수도권 중심 정상화|높음|대형 방화문 제작사·시공사 핵심계정 선점 · 2027년까지 사양·단가 등록\n지방 민간 아파트|전국 미분양 6.75만호 중 지방 4.87만호(72%) · 준공후 미분양도 지방 집중|미분양 부담으로 신규 착공 선별 · 준공 현장 우선|구조조정 지속 · 광역시 핵심지 중심 선별 회복|착공 반등 지역부터 제한적 회복|인구·미분양에 따른 지역 양극화 고착|낮음(리스크)|매출보다 대금회수 우선 · 시행사·시공사 신용 확인 후 한도·결제조건 차등\n공공주택·3기 신도시|LH 건설형 5.2만호 착공 목표 · 수도권 공공주택 연간 6.2만호 계획|하반기 착공 집중 · 인천계양 12월 첫 입주|수도권 공공 7만호+ · 3기 신도시 분양·착공 확대|3기 신도시 착공·입주가 동시에 확대|정부 공급축으로 2029~31 연속성 가장 높음|매우 높음|LH·SH·GH·iH 표준사양과 민간참여 시공사 동시 공략 · 프로젝트별 선행 스펙인\n재개발·재건축|서울 2031년까지 31만호 착공 목표 · 2026~28 핵심 85개 구역 8.5만호 신속착공|핵심사업장 인허가·이주·착공 공정 단축|관리처분·이주 완료 사업장 착공 증가|서울 정비사업 착공 피크 진입|준공 증가와 노후주택 교체 수요가 함께 확대|매우 높음|시공사 선정·사업시행인가 단계부터 스펙 진입 · 방화문 제작업체와 세트 제안\n연립·다세대(비아파트)|상반기 비아파트 준공 1.35만호(-5.1%) · 인허가 1.69만호(+4.9%)로 아파트보다 방어적|신축매입임대·소규모 민간발주가 하방 지지|서울·수도권 역세권 중심 완만한 회복|모아주택·소규모정비와 연계해 물량 확대|대규모 아파트보다 완만하지만 안정적 수요|중간|표준규격·소량 다품종 대응력 강화 · 지역 제작사·유통망에 묶음 공급\n일반주택(단독·다가구)|비아파트 내 소규모·분산 발주 · 금리와 개별 사업성에 매우 민감|보합 · 개별건축 위주|보합|노후주택 개보수·소규모 정비 수요 일부 증가|신축보다 리모델링·교체 수요 비중 확대|낮음|직접 현장영업보다 규격품 유통·지역 방화문 제작사 채널 중심으로 효율화\n모아주택·소규모정비|서울 132개소 추진 · 2030 누적 준공 2.9만호, 2031 6.0만호 계획|2026~28 착공 대상 사업지 공정관리 본격화|통합심의·사업시행인가 누적 · 착공 준비 확대|착공 본격 확대|2030~31 준공 물량 급증 구간 진입|중간→높음|중소형 공동주택 전용 규격세트 구축 · 지역 방화문업체와 사전 표준화·공동영업',
+conTypeResNote:'2026 상반기 주택 실적은 국토교통부 주택통계(2026.7.31 공표), 공공주택은 LH 2026 업무계획, 정비사업은 서울시 2026.7.10 공급계획, 모아주택은 서울주거포털 2026.3월말 현황을 반영했습니다. <b>2027년 이후 문구는 공식 물량 예측치가 아니라 착공→방화문·부자재 납품 18~30개월 시차와 공표된 공급계획을 결합한 영업전망</b>입니다. 아파트는 수도권과 지방의 회복 속도가 달라 분리했고, 비아파트는 발주 규모가 작아도 2026년 1~7월 준공 감소폭이 -5.1%로 아파트(-44.2%)보다 훨씬 방어적입니다.',
 conTypeNon:'반도체 공장|삼성 평택 P5 Fab2 약 13만㎡ · 2026.7 착공 관측|착공·터파기 진행|골조·설비 공사 · 마감자재 견적 시작|P5 Fab1 가동 · 마감 물량 발생|Fab2 2029 가동 · 용인 클러스터 가세|매우 높음|고사양 차열 방화문·특수 방화구획 — 2027년 견적 단계 진입이 관건\n데이터센터|수도권 가동용량 663MW (+10%) · 공실률 1.1%|신규 착공 지속 · 공급 부족|수도권 전력제약 속 증설|AI 수요로 확대 지속|지방 분산 확대 · 안정 성장|높음|전기실·배터리실 방화구획 집약 · 표준화 가능해 수익성 양호\n물류센터|2026 수도권 신규공급 86만㎡ (10년 내 최저)|공급 최저점 · 공실 해소|신규 인허가 재개|공급 회복 시작|완만한 성장|중간|층별 방화구획 대량 · 단가 낮으나 로트 확보 유리\n지식산업센터|2022~24 준공 65곳 평균 미분양률 37% (서울 43%)|신규 발주 급감|바닥 · LH 주거전환 시작|제한적 회복|구조적 축소|낮음(리스크)|발주 감소 + 시행사 부실 → 견적 전 신용 확인 필수\n오피스|2026 서울 신규공급 24만㎡ · A급 공실률 2.8%|공백기 지속|공백기 · 인허가 준비|대량 공급 시작|2028~30 누적 90만평 · 최대 기회|중간→높음|2028년 물량은 2027년 스펙 진입으로 결정\n공장·일반산업|상반기 공업용 허가면적 +12.5% (유일 증가)|증가 지속|완만 증가|증가|안정 성장|중간|표준규격 비중 높아 소량 다품종 부담 적음 · 수익성 방어처\n산업소음 저감·특수시설|독립 시장통계는 제한적 · 공장·기계실·발전기실·데이터센터·방송/스튜디오의 소음저감·차음 설비 수요 중심 · 85dB 이상 소음작업은 공학적 저감대책 대상|반도체·데이터센터·공장 설비투자와 연동해 방음·차음문 및 특수문 견적 증가 예상|산업용 기계실·비상발전기실 중심 완만 성장|AI 데이터센터·반도체 증설로 차음·방화 복합 특수문 수요 확대|고부가 산업소음 저감·특수시설 시장으로 안정 성장|중간→높음|방음문을 단독 시장으로 보지 않고 산업소음 저감·특수시설 수요에 접근 · 방화+차음 복합사양 개발 · 차음성능 시험성적서 확보 · 특수문 공동 스펙 영업\n콘테이너·모듈러|LH 2026 모듈러 공동주택 3지구 2,076호 발주 발표 · 재난용 모듈러주택 조달도 진행|공공 모듈러주택·재난주택 발주 확대 · 표준규격 부품 수요 증가|LH·GH OSC 로드맵 따라 공동주택 발주 확대 지속|고층 모듈러·공공임대·학교/기숙사 등 적용처 확산|2030 전후 공공주도 모듈러 시장 본격 확대 예상|높음|모듈러 제작사·납품 방화문업체 대상 도어/문틀 세트 표준화 · OEM 패키지 공급 · 공장 선조립 대응',
-conTypeIns:'<b>1. 우리 매출 절벽의 실체는 아파트입니다</b><br>주택 준공의 <b>87%가 아파트</b>인데, 2026년 상반기 아파트 준공이 90,276호로 <b>-52.8%</b> 반토막 났습니다. 비아파트는 13,459호(-5.1%)로 잘 버텼지만 절대량이 전체의 13%라 아파트 공백을 메우지 못합니다. <b>아파트 준공 회복 없이는 우리 물량 회복도 없습니다.</b>\n<b>2. 더 큰 걱정은 아파트 인허가입니다</b><br>착공은 +14.4%로 돌아섰지만 아파트 인허가는 <b>-18.5%</b>로 계속 줄고 있습니다. 인허가는 착공보다 1~2년 앞서므로, 지금의 인허가 감소는 <b>2029년 이후 물량이 다시 비는 것</b>을 뜻합니다. 착공 반등이 인허가 회복으로 이어지는지를 <b>분기마다</b> 확인해야 합니다.\n<b>3. 비주거가 유일한 성장 축입니다</b><br>2026년 6월 비주거 착공면적은 <b>+31.6%</b>, 상반기 공업용 허가면적은 <b>+12.5%</b>로 전 부문 중 유일하게 늘었습니다. 같은 달 주거용 착공면적은 -9.7%였습니다. 반도체·데이터센터가 끌고 있습니다.\n<b>4. 비주거는 계산법이 다릅니다</b><br>아파트는 <b>세대당 5~7세트</b>로 계산하지만, 비주거는 <b>연면적 1,000㎡마다 방화구획</b>이 걸립니다. 세대수가 아니라 <b>면적</b>이 물량을 결정하고, 대형 단일 현장에서 한 번에 큰 물량이 나옵니다. 영업 방식도 달라야 합니다 — 다수 거래처 관리가 아니라 <b>소수 대형 프로젝트 스펙 진입</b>입니다.\n<b>5. 비주거는 고사양·고단가 시장입니다</b><br>데이터센터 전기실·배터리실, 반도체 클린룸 부속실은 차열·차연 성능과 인증 이력을 요구합니다. 진입은 어렵지만 <b>단가 협상력이 주거용보다 훨씬 높습니다</b>. 2026년 2월 품질인정기준 개정(복합 방화셔터 신설)은 우리에게 진입장벽이자 <b>차별화 근거</b>입니다.\n<b>6. 지식산업센터는 피할 구간입니다</b><br>2022~24년 준공 65곳의 평균 미분양률이 <b>37%</b>(서울 43%)입니다. 신규 발주가 줄 뿐 아니라 시행사 부실로 <b>대금회수 위험</b>이 큽니다. 견적 전에 시행사·시공사 신용을 먼저 확인해야 합니다.\n<b>7. 결론 — 시기별 영업 배분</b><br><b>2026~2027년</b>은 비주거(반도체·데이터센터·공장) 비중을 늘려 아파트 공백을 메우는 시기입니다. 공장·일반산업은 표준규격 비중이 높아 소량 다품종 부담이 적으므로 <b>수익성 방어처</b>로 활용하십시오. <b>2028년 이후</b>는 아파트 준공 회복과 오피스 대량 공급(2028~30년 누적 90만평)이 겹칩니다. 그 물량은 <b>2027년 스펙 진입으로 결정</b>되므로, 지금부터 2027년까지가 준비 기간입니다.',
-trendRegion:'인허가 · 수도권|-|-|22.7만|22.3만 -4.9%|6.8만|20.5만 -8%|22.0만 +7%|24.0만 +9%|공표치 · 서울 2.1만호(-9.8%)\n인허가 · 지방|-|-|20.1만|15.7만 -21.9%|4.9만|11.9만 -24%|12.0만 +1%|13.0만 +8%|★ 2년째 20%대 급감 — 구조적 축소\n착공 · 수도권|-|-|16.3만(역산)|16.7만 +2.2%|6.5만|16.5만 -1%|17.0만 +3%|18.5만 +9%|2025년 유일하게 증가한 지표\n착공 · 지방|-|-|14.0만(역산)|10.6만 -24.5%|5.3만|14.9만 +41%|15.0만 +1%|15.5만 +3%|★ 2026 상반기 +40.7% 급반등\n준공 · 수도권|-|-|20.4만|16.6만 -13.5%|5.3만|10.1만 -39%|12.5만 +24%|16.0만 +28%|★ 2026 상반기 -47.6%\n준공 · 지방|-|-|24.6만|17.7만 -21.4%|5.1만|9.7만 -45%|12.5만 +29%|15.0만 +20%|★ 2026 상반기 -51.4% — 더 심각',
-trendRegionNote:'단위 만호. 2024·2025년은 국토교통부 주택통계 공표치이며 <b>2024년 착공의 수도권/지방 분해는 미공표</b>라 2025년 증감률로 역산했습니다. 2022~2023년 지역 분해는 국토부 원문 접근이 막혀 <b>확인 불가</b>입니다. 2026년은 상반기 실적을 전년 상반기 비중으로 연환산했고, 2027년 이후는 자체 전망입니다. <b>준공(우리 납품 직결) 기준으로 지방이 수도권보다 감소폭이 큽니다</b>(-51.4% vs -47.6%). 다만 2026년 상반기 <b>지방 착공이 +40.7%</b>로 급반등해 2028~29년 지방 물량 회복 가능성이 열렸습니다.',
+conTypeIns:'<b>1. 우리 매출 절벽의 실체는 아파트입니다</b><br>주택 준공의 <b>88%가 아파트</b>인데, 2026년 1~7월 아파트 준공이 119,682호로 <b>-44.2%</b> 반토막 났습니다. 비아파트는 15,831호(-5.1%)로 잘 버텼지만 절대량이 전체의 13%라 아파트 공백을 메우지 못합니다. <b>아파트 준공 회복 없이는 우리 물량 회복도 없습니다.</b>\n<b>2. 더 큰 걱정은 아파트 인허가입니다</b><br>착공은 +11.1%로 돌아섰지만 아파트 인허가는 <b>-18.5%</b>로 계속 줄고 있습니다. 인허가는 착공보다 1~2년 앞서므로, 지금의 인허가 감소는 <b>2029년 이후 물량이 다시 비는 것</b>을 뜻합니다. 착공 반등이 인허가 회복으로 이어지는지를 <b>분기마다</b> 확인해야 합니다.\n<b>3. 비주거가 유일한 성장 축입니다</b><br>2026년 6월 비주거 착공면적은 <b>+31.6%</b>, 상반기 공업용 허가면적은 <b>+12.5%</b>로 전 부문 중 유일하게 늘었습니다. 같은 달 주거용 착공면적은 -9.7%였습니다. 반도체·데이터센터가 끌고 있습니다.\n<b>4. 비주거는 계산법이 다릅니다</b><br>아파트는 <b>세대당 5~7세트</b>로 계산하지만, 비주거는 <b>연면적 1,000㎡마다 방화구획</b>이 걸립니다. 세대수가 아니라 <b>면적</b>이 물량을 결정하고, 대형 단일 현장에서 한 번에 큰 물량이 나옵니다. 영업 방식도 달라야 합니다 — 다수 거래처 관리가 아니라 <b>소수 대형 프로젝트 스펙 진입</b>입니다.\n<b>5. 비주거는 고사양·고단가 시장입니다</b><br>데이터센터 전기실·배터리실, 반도체 클린룸 부속실은 차열·차연 성능과 인증 이력을 요구합니다. 진입은 어렵지만 <b>단가 협상력이 주거용보다 훨씬 높습니다</b>. 2026년 2월 품질인정기준 개정(복합 방화셔터 신설)은 우리에게 진입장벽이자 <b>차별화 근거</b>입니다.\n<b>6. 지식산업센터는 피할 구간입니다</b><br>2022~24년 준공 65곳의 평균 미분양률이 <b>37%</b>(서울 43%)입니다. 신규 발주가 줄 뿐 아니라 시행사 부실로 <b>대금회수 위험</b>이 큽니다. 견적 전에 시행사·시공사 신용을 먼저 확인해야 합니다.\n<b>7. 결론 — 시기별 영업 배분</b><br><b>2026~2027년</b>은 비주거(반도체·데이터센터·공장) 비중을 늘려 아파트 공백을 메우는 시기입니다. 공장·일반산업은 표준규격 비중이 높아 소량 다품종 부담이 적으므로 <b>수익성 방어처</b>로 활용하십시오. <b>2028년 이후</b>는 아파트 준공 회복과 오피스 대량 공급(2028~30년 누적 90만평)이 겹칩니다. 그 물량은 <b>2027년 스펙 진입으로 결정</b>되므로, 지금부터 2027년까지가 준비 기간입니다.',
+trendRegion:'인허가 · 수도권|-|-|22.7만|22.3만 -4.9%|8.06만 -3.9%|21.4만 -4%|22.5만 +5%|24.0만 +7%|공표치 · 서울 2.86만호(+6.1%)\n인허가 · 지방|-|-|20.1만|15.7만 -21.9%|6.17만 -12.7%|13.7만 -13%|14.0만 +2%|15.0만 +7%|★ 3년째 두 자릿수 감소 — 구조적 축소\n착공 · 수도권|-|-|16.3만(역산)|16.7만 +2.2%|7.79만 +2.0%|17.0만 +2%|17.5만 +3%|18.5만 +6%|서울 1.95만호(+44.4%)로 반등\n착공 · 지방|-|-|14.0만(역산)|10.6만 -24.5%|6.05만 +25.5%|13.3만 +26%|14.0만 +5%|15.0만 +7%|★ 1~7월 +25.5% 급반등 — 2029년 지방 물량 회복 기대\n준공 · 수도권|-|-|20.4만|16.6만 -13.5%|7.12만 -38.7%|12.2만 -27%|14.0만 +15%|16.5만 +18%|★ 1~7월 -38.7%\n준공 · 지방|-|-|24.6만|17.7만 -21.4%|6.43만 -44.1%|11.0만 -38%|13.0만 +18%|15.0만 +15%|★ 1~7월 -44.1% — 더 심각',
+trendRegionNote:'단위 만호. 2024·2025년은 국토교통부 주택통계 공표치이며 <b>2024년 착공의 수도권/지방 분해는 미공표</b>라 2025년 증감률로 역산했습니다. 2022~2023년 지역 분해는 국토부 원문 접근이 막혀 <b>확인 불가</b>입니다. 2026년은 <b>1~7월 누적 실적</b>(국토교통부 2026년 7월 주택통계, 2026.8.31 공표)을 전년 동기 비중으로 연환산했고, 2027년 이후는 자체 전망입니다. <b>준공(우리 납품 직결) 기준으로 지방이 수도권보다 감소폭이 큽니다</b>(-44.1% vs -38.7%). 다만 1~7월 <b>지방 착공이 +25.5%</b>로 급반등해 2029년 지방 물량 회복 가능성이 열렸습니다.',
+lhMixAsOf:'2026-08-24 · LH 「2026년 업무계획」 발주계획 및 국토교통부 공표치 기준 · 3기 신도시 지구별 물량은 지구계획 총 세대수',
+lhOrder:'주택 건축|8.7|아파트 등 주택 건축공사\n주택 부대공사|3.3|단지 내 토목·조경·설비\n비주택·기타 공사|3.8|산업단지·도시재생 등\n용역|2.1|설계·감리 등 용역',
+lhRegion:'수도권·3기 신도시|12.8|발주계획의 71%\n비수도권|5.1|나머지 29%',
+lhStart:'수도권|4.6|LH 건설형 착공 목표\n지방|0.6|전국 5.2만호 − 수도권 4.6만호',
+lh3rd:'남양주왕숙|6.6|최대 지구\n고양창릉|3.8|\n하남교산|3.3|\n부천대장|2.0|\n인천계양|1.7|★ 2026.12 최초 입주',
+lhYrStart:'LH 건설형(공공분양·공공임대)|5.2|5.5|5.8|6.0|6.0|6.0|LH 「2026년 업무계획」 5.2만호 공표 · 이후 정부 공공확대 기조 반영\nLH 신축매입임대|4.3|4.0|4.0|4.0|4.0|4.0|민간이 지은 물량을 LH가 매입 — 아래 민간 일반에서 차감해 중복 제거\n기타 공공(SH·GH·iH·지방공사)|1.0|1.5|1.2|1.0|1.0|1.0|수도권 공공주택 착공 공표치에서 LH 몫을 뺀 나머지\n민간 정비사업(재건축·재개발·리모델링)|6.0|7.0|8.0|9.0|9.5|10.0|★ 서울 30년초과 30.5% · 재건축진단 완화로 2028년부터 본격화\n민간 일반(분양·도급·임대)|14.0|14.0|15.0|15.0|15.5|16.0|시장의 최대 축 · 우리 거래처 물량의 실체',
+lhYrDone:'LH 건설형(공공분양·공공임대)|1.5|2.0|2.5|5.2|5.5|5.8|착공 3년 시차 환산 · 2023 착공 1.1만호 바닥이 2026 준공에 반영\nLH 신축매입임대|2.0|3.0|4.0|4.3|4.0|4.0|매입임대는 준공 후 매입이라 시차가 짧음\n기타 공공(SH·GH·iH·지방공사)|0.5|0.7|1.0|1.0|1.5|1.2|착공 3년 시차 환산\n민간 정비사업(재건축·재개발·리모델링)|4.0|4.8|6.0|6.0|7.0|8.0|★ 세대당 방화문 100% 신규 — 우리 단가 방어에 유리\n민간 일반(분양·도급·임대)|15.0|15.5|17.5|16.5|17.0|17.0|2023 착공 바닥(24.6만호)이 2026 준공을 끌어내림',
+lhYrRegS:'수도권|17.0|17.5|18.5|19.0|19.5|20.0|공공+민간 전체 · 전국 착공의 약 55%\n지방|13.5|14.5|15.5|16.0|16.5|17.0|2026 1~7월 +25.5% 급반등 — 2029년 물량 회복 기대',
+lhYrRegD:'수도권|12.2|13.5|16.3|17.5|18.5|19.0|공공+민간 전체 · 2026 1~7월 -38.7%\n지방|10.8|12.5|14.7|15.5|16.5|17.0|2026 1~7월 -44.1% — 수도권보다 더 깊은 골',
+lhYrLhS:'수도권|4.6|4.9|5.2|5.4|5.4|5.4|2026년 공표치 4.6만호\n지방|0.6|0.6|0.6|0.6|0.6|0.6|전국 5.2만호 − 수도권 4.6만호',
+lhYrLhD:'수도권|1.3|1.8|2.2|4.6|4.9|5.2|착공 3년 시차 환산\n지방|0.2|0.2|0.3|0.6|0.6|0.6|착공 3년 시차 환산',
+lhYr3rdS:'남양주왕숙|0.68|0.76|0.76|0.57|0.38|0.19|지구 계획 6.6만호 비중 38%\n고양창릉|0.39|0.44|0.44|0.33|0.22|0.11|지구 계획 3.8만호\n하남교산|0.34|0.38|0.38|0.29|0.19|0.10|지구 계획 3.3만호\n부천대장|0.21|0.23|0.23|0.17|0.12|0.06|지구 계획 2.0만호\n인천계양|0.18|0.20|0.20|0.15|0.10|0.05|지구 계획 1.7만호',
+fdLagAsOf:'2026-09-05 · 주택은 국토교통부 주택통계 착공·준공 전망 × 세대당 5세트, 비주거는 대한건설협회 면적통계 × 1,000㎡당 3세트로 환산한 사내 추정치입니다. 세트 환산계수는 표에서 직접 고쳐 쓰십시오.',
+fdStartSets:'아파트 · 수도권|74.3|78.0|82.2|84.5|86.9|89.4|착공 수도권 물량 × 아파트 87.5% × 5세트\n아파트 · 지방|59.1|62.0|66.6|68.6|70.6|72.5|지방 착공 1~7월 +25.5% 반등분 반영\n비아파트(다세대·오피스텔)|19.1|20.0|21.2|21.9|22.5|23.1|세대당 세트가 적지만 물량은 꾸준\n비주거(연면적 환산)|16.7|17.4|18.3|18.9|19.5|20.1|착공 면적 × 1,000㎡당 3세트 · 방화구획 기준',
+fdDoneSets:'아파트 · 수도권|53.8|59.4|71.7|77.0|81.4|83.6|★ 그 해 우리 실제 납품 · 2026 준공 -38.7% 직격\n아파트 · 지방|47.7|55.0|64.7|68.2|72.6|74.8|★ 2026 준공 -44.1% — 수도권보다 깊은 골\n비아파트(다세대·오피스텔)|13.5|15.6|18.6|19.8|21.0|21.6|아파트 공백을 메우기엔 절대량 부족\n비주거(연면적 환산)|15.9|14.7|15.9|16.5|17.4|18.0|반도체·데이터센터·물류 — 유일한 방어 축',
+fdLagNote:'<b>왼쪽(착공 기준)은 미래의 일감, 오른쪽(준공 기준)이 그 해의 실제 매출</b>입니다. 방화문·PD커버는 <b>착공 후 18~30개월</b>, <b>준공 6~12개월 전</b>에 투입되므로 <b>2026년 착공 169만세트는 2028~29년</b>에야 납품으로 도달합니다. 2026년 준공 기준 131만세트가 이번 사이클의 바닥이고, <b>2028년 171만세트(+31%)</b>부터 회복 구간에 들어갑니다. 세트 환산계수(주택 세대당 5세트 · 비주거 1,000㎡당 3세트)는 사내 추정치이니 실제 감각에 맞게 표에서 고쳐 쓰십시오.',
+lhYr3rdD:'남양주왕숙|0|0.10|0.50|0.95|1.14|1.14|최대 지구 · 2028년부터 본격 입주\n고양창릉|0|0|0.30|0.55|0.65|0.65|\n하남교산|0|0.15|0.40|0.48|0.57|0.57|\n부천대장|0|0|0.15|0.29|0.35|0.35|\n인천계양|0.13|0.25|0.15|0.23|0.29|0.29|★ 2026.12 최초 입주',
+lhMixNote:'<b>주택공급 비중</b>의 공공 3계열은 LH 「2026년 업무계획」·국토교통부 공표 계획치이고, <b>민간 정비사업·민간 일반은 공표 통계가 없어</b> 전국 주택 착공·준공 전망(각각 2026년 30.5만호·23.0만호)에서 공공분을 뺀 잔여를 정비사업 확대 속도로 나눈 추정치입니다. <b>착공</b>은 공표 계획치이고, <b>준공</b>은 <b>LH 연도별 준공(입주) 공표 통계가 없어</b> 착공 대비 3년 시차로 환산한 추정치입니다(매입임대는 시차가 짧아 별도 적용). 방화문 납품은 준공 6~12개월 전에 투입되므로, <b>준공 그래프가 곧 그 해의 우리 매출</b>이고 착공 그래프는 3년 뒤 물량입니다. 발주액 구성과 지역별 비중은 LH 「2026년 업무계획」 공표치(공사 15.8조 + 용역 2.1조 = 17.9조 · 주택사업 68% · 수도권 71%)를 항목으로 나눈 것이고, LH 건설형 착공은 2026년 목표 전국 5.2만호 중 수도권 4.6만호 공표치입니다. <b>3기 신도시 지구별 물량은 지구계획 기준 총 세대수</b>이므로 연도별 착공·입주 물량과는 다릅니다. 각 항목의 입력칸에서 바로 고칠 수 있습니다.',
 lhH2:'LH 건설형 착공|목표 5.2만호(전국) · 수도권 4.6만호|하반기 집중 착공|2024년 착공의 82%가 연말 집중 — 하반기 발주 폭증 패턴|9~11월 자재 견적 대응 준비\nLH 신축매입임대 착공|6,613호 (목표 4.0만호 대비 16.5%)|하반기 3.3만호 목표|진행률 저조 — 하반기 몰림 불가피|비아파트용 방화문 물량 · 소량 다품종 주의\nLH 민간참여 공공주택|5,938가구 (36블록 중 11블록, 약 26%)|17,156가구 추가 착공|민간 시공사 경유 — 우리 직접 영업 대상|시공사별 스펙 진입 필요\n수도권 공공주택 착공(4개 공사)|1.1만호 (상반기 목표 달성)|5.1만호|연간 6.2만호 — 2020년 이후 최대|LH·SH·GH·iH 합산\n3기 신도시 착공|진행 중|연간 1.7~1.8만호|전체 17만호 중 10% 수준|왕숙·계양·창릉·교산·대장\n3기 신도시 입주|-|★ 2026.12 인천계양 1,285호|3기 신도시 최초 입주|우리 납품은 2026년 상반기에 이미 종료\n3기 신도시 분양|-|2,900호|2027년 9,200호로 3배 확대|분양 → 착공 → 2년 뒤 우리 납품',
 lh5y:'LH 건설형 착공|5.2|5.5|5.8|6.0|6.0|6.0|2023년 1.1만호 바닥 대비 5배 회복 · 정부 공공 확대 기조\nLH 신축매입임대 착공|4.4|4.0|3.5|3.0|3.0|3.0|비아파트 공급 보완용 · 점진 축소 전망\nLH 착공 합계|9.6|9.5|9.3|9.0|9.0|9.0|수도권 비중 90%(8.6만호)\n수도권 공공주택 착공|6.2|7.0|7.0|7.0|7.0|7.0|LH·SH·GH·iH 합산 · 2027년 7만호+ 공표\n3기 신도시 착공|1.8|2.0|2.0|1.5|1.0|0.5|총 17만호 · 2027~28년 정점\n3기 신도시 입주|0.13|0.5|1.5|2.5|3.0|3.0|★ 우리 납품은 입주 6~12개월 전\n서울시 착공(정비사업 중심)|-|4.3|4.3|5.0|5.0|5.0|2031년까지 31만호 · 2년 내 8.5만호 착공 목표\n공공 착공 합계(개략)|15.8|20.8|20.6|21.0|21.0|21.0|전국 주택 착공의 약 50~65%',
 lhNote:'2026년 목표는 LH 「2026년 업무계획」과 국토교통부 발표 공표치이고, 2027년 수도권 공공주택 착공 7만호+ 역시 공표치입니다. <b>2028년 이후 연차별 목표는 미공표</b>라 정부의 「2030년까지 공공주택 50만가구」·「5년간 공적주택 110만호」 기조를 균등 배분해 추정했습니다. <b>LH 연도별 준공(입주) 실적은 공표 통계가 없습니다.</b> 서울시는 2031년까지 31만호 착공 목표를 연 5만호로 균등 배분했습니다.',
@@ -15619,17 +15644,23 @@ trendNR:'비주거 허가(백만㎡)|117.0|90.3 -23%|79.3 -12%|72.1 -9%|72.0 -0.
 trendNRNote:'2022~2024년은 대한건설협회 「주요건설통계」 확정치(비주거 = 계 − 주거용)이고, 2025년은 공표 증감률(허가 -10.5% · 착공 -12.2%)로 역산, 2026년은 상반기 누계를 연환산했습니다. <b>비주거 준공면적은 공표 통계가 없어 착공 2년 시차 기반 자체 추정치</b>입니다. 주택은 <b>호</b>, 비주거는 <b>면적(백만㎡)</b>으로 단위가 달라 직접 비교할 수 없으며, <b>증감 방향</b>으로 보십시오.',
 conTrendNR:'2022|117.0|76.2|79.0|확정\n2023|90.3|50.5|84.0|확정\n2024|79.3|56.1|72.0|확정\n2025|72.1|51.9|48.0|추정\n2026|72.0|55.5|53.0|전망\n2027|74.0|58.0|49.0|전망\n2028|77.0|61.0|53.0|전망\n2029|79.0|63.0|55.0|전망\n2030|81.0|65.0|58.0|전망\n2031|83.0|67.0|60.0|전망',
 conTrendNRNote:'단위는 백만㎡(면적)입니다. 2022~2024년 허가·착공은 대한건설협회 「주요건설통계」의 <b>계 − 주거용</b> 산술값(확정치)이고, 2025년은 공표 증감률(허가 -10.5% · 착공 -12.2%)과 2026년 상반기 실적으로 역산했습니다. 2026년은 상반기 누계(허가 32,980천㎡ -0.1% · 착공 25,868천㎡ +2.2%)를 연환산했습니다. <b>비주거 준공면적은 공표 통계가 없어 착공 2년 시차 기반 자체 추정치</b>이며, 참고용으로만 보시기 바랍니다.',
-conTrend3:'2022|52.2|38.3|41.4|확정\n2023|42.9|24.6|43.6|확정\n2024|42.8|30.5|41.6|확정\n2025|38.0|27.3|34.2|잠정\n2026|32.0|31.0|20.0|전망\n2027|34.0|32.0|25.0|전망\n2028|37.0|34.0|31.0|전망\n2029|39.0|35.0|33.0|전망\n2030|41.0|36.0|35.0|전망\n2031|42.0|37.0|36.0|전망',
-conTrend3Note:'2022~2024년은 국토교통부 확정치(2025.9 재정비 기준), 2025년은 잠정치, 2026~2031년은 자체 전망입니다. 2026년은 상반기 실적(인허가 11.7만·착공 11.8만·준공 10.4만호)을 연환산했습니다. 2029~2031년은 3기 신도시 본격 입주와 정비사업 확대를 반영해 준공이 2031년 36만호(성수기 2022년의 87%)까지 회복하는 경로로 봤습니다.',
+conTrend3:'2022|52.2|38.3|41.4|확정\n2023|42.9|24.6|43.6|확정\n2024|42.8|30.5|41.6|확정\n2025|38.0|27.3|34.2|잠정\n2026|35.0|30.5|23.0|전망\n2027|36.0|32.0|26.0|전망\n2028|38.0|34.0|31.0|전망\n2029|39.0|35.0|33.0|전망\n2030|41.0|36.0|35.0|전망\n2031|42.0|37.0|36.0|전망',
+conTrend3Note:'2022~2024년은 국토교통부 확정치(2025.9 재정비 기준), 2025년은 잠정치, 2026~2031년은 자체 전망입니다. 2026년은 <b>1~7월 누적 실적</b>(인허가 14.2만·착공 13.8만·준공 13.6만호, 국토교통부 2026년 7월 주택통계)을 연환산했습니다. 2029~2031년은 3기 신도시 본격 입주와 정비사업 확대를 반영해 준공이 2031년 36만호(성수기 2022년의 87%)까지 회복하는 경로로 봤습니다.',
 years:'2022|전조|착공 38.3만 · 준공 41.4만|실적|철판가 폭등;마진 급감;수익성 악화\n2023|충격|착공 24.6만 -36%|역대 최저 착공|미래 일감 증발;저가 경쟁 심화;2026 납품절벽의 원인\n2024|착시|착공 30.5만 +24%|기저 반등|착시 현상;준공 41.6만 유지;위기 체감 낮음\n2025|심화|착공 27.3만 -10%|준공 34.2만 -18%|경고등 점등;준공 감소 시작;지방 부실화\n2026|절벽|착공 31만 · 준공 20만|E 준공 -42%|후행지표 붕괴;매출 최저점;취업자 -6.7만명\n2027|생존|착공 32만 · 준공 25만|E 준공 +25%|바닥 탈출 시작;공공·비주거로 버티기;업계 구조조정 마무리\n2028|전환|착공 34만 · 준공 31만|E 준공 +24%|2024~26 착공분 도달;3기 신도시 물량;정비사업 본격 가세',
 lhsh:'LH|17.9조원|2026 발주계획 — 공사 15.8조(88.5%) + 용역 2.1조|주택사업 비중 68% (건축 8.7조 + 부대공사 3.3조)|수도권·3기 신도시 71%(12.8조) · 공공주택 5.2만호 착공 목표\nSH|31만 가구(~2031)|서울시 2031년까지 31만 가구 착공 목표 지원|정비사업 관리처분 타당성 검증 확대|재개발·재건축 정비사업 중심 · 시니어주택 1,000가구',
-h1:'주택 인허가|116,611호|-15.8%|67,946호|-8.1%|장기 선행 — 2028년 이후 물량 축소 경고\n주택 착공|118,005호|+14.4%|65,204호|-0.7%|핵심 선행 — 2028년 납품 회복 신호\n주택 분양|109,186호|+60.7%|63,586호|+55.1%|수도권 중심 회복 · 지방 온기 미약\n주택 준공|103,735호|-49.5%|52,925호|-47.6%|납품 직결 — 올해 매출 절벽의 실체\n미분양(6월말)|67,464호|+3.4% (전월비)|18,770호|+0.9%|지방 48,694호 · 대금회수 리스크\n준공후 미분양|29,786호|+1.5% (전월비)|-|-|악성 재고 3만호 육박 · 신규 착공 억제',
-trend:'주택 인허가(만호)|52.2만|42.9만 -18%|42.8만 -0.1%|38.0만 -13%|32.0만 -16%|34만 +6%|37만 +9%|2026 상반기 -15.8%\n주택 착공(만호)|38.3만|24.6만 -36%|30.5만 +24%|27.3만 -10%|31.0만 +14%|32만 +3%|34만 +6%|2026 상반기 +14.4%\n주택 준공(만호)|41.4만|43.6만 +5%|41.6만 -5%|34.2만 -18%|20.0만 -42%|25만 +25%|31만 +24%|★ 방화문 납품 직결\n미분양(전국)|4.7만|6.2만 +32%|7.2만 +16%|6.4만 -11%|6.8만 +6%|6.2만 -9%|5.6만 -10%|지방 72% 집중\n건설투자(조원)|317조|307조 -3.2%|290조 -5.5%|265조 -8.8%|266조 +0.3%|272조 +2%|280조 +3%|CERIK 26.6 수정\n건설수주(조원)|202조|196조 -3.0%|218조 +11%|221조 +1.4%|241조 +8.9%|250조 +4%|258조 +3%|CERIK 26.6 수정\n건설기성|-|-|-|-|-5.3% 상반기|+2% 회복 시작|+4% 정상화|현장 진행률',
-reno:'서울 준공 30년 초과 아파트 <b>477,596가구 = 30.5%</b> (2026.4, 부동산R114) — 노원 61%·도봉 60%\n재건축진단 완화(2025.6 시행) — D등급 요건 폐지, 절차 병행 허용으로 사업기간 <b>약 3년 단축</b>\n리모델링은 재건축 규제완화에 밀려 위축 — 조합 해산·시공계약 해지 확산, 인허가·공사비·사업성 3중고\n리모델링·재건축 모두 방화문·PD커버 <b>전량 교체</b> — 세대당 방화문 5~7세트 + PD커버 2~4세트\n2028년 이후 정비사업이 신축을 대체하는 주력 수요처로 전환 — 지금이 정비사업 시공사 스펙 진입 시기',
+h1:'주택 인허가|142,328호|-7.9%|80,586호|-3.9%|장기 선행 — 7월 단월 +59.6% 반등으로 누적 낙폭 축소\n주택 착공|138,383호|+11.1%|77,894호|+2.0%|핵심 선행 — 지방 +25.5%가 견인 · 2028년 납품 회복 신호\n주택 분양(상반기)|109,186호|+60.7%|63,586호|+55.1%|수도권 중심 회복 · 1~7월 누적은 미공표\n주택 준공|135,513호|-41.4%|71,204호|-38.7%|납품 직결 — 아파트 -44.2% · 올해 매출 절벽의 실체\n미분양(7월말)|68,217호|+1.1% (전월비)|19,459호|+3.7%|지방 48,758호 · 대금회수 리스크\n준공후 미분양|29,152호|-2.1% (전월비)|-|-|3만호 육박에서 첫 감소 — 소폭 개선 신호',
+trend:'주택 인허가(만호)|52.2만|42.9만 -18%|42.8만 -0.1%|38.0만 -13%|35.0만 -8%|36만 +3%|38만 +6%|2026 1~7월 -7.9%\n주택 착공(만호)|38.3만|24.6만 -36%|30.5만 +24%|27.3만 -10%|30.5만 +12%|32만 +5%|34만 +6%|2026 1~7월 +11.1%\n주택 준공(만호)|41.4만|43.6만 +5%|41.6만 -5%|34.2만 -18%|23.0만 -33%|26만 +13%|31만 +19%|★ 방화문 납품 직결 · 1~7월 -41.4%\n미분양(전국)|4.7만|6.2만 +32%|7.2만 +16%|6.4만 -11%|6.8만 +7%|6.3만 -8%|5.7만 -10%|7월말 6.82만호 · 지방 71% 집중\n건설투자(조원)|317조|307조 -3.2%|290조 -5.5%|265조 -8.8%|266조 +0.3%|272조 +2%|280조 +3%|CERIK 26.6 수정\n건설수주(조원)|202조|196조 -3.0%|218조 +11%|221조 +1.4%|241조 +8.9%|250조 +4%|258조 +3%|CERIK 26.6 수정\n건설기성|-|-|-|-|-5.3% 상반기|+2% 회복 시작|+4% 정상화|현장 진행률',
+rbStage:'정비구역 지정|1~2년|1~2년|-|기본계획 수립·구역 지정\n추진위·조합 설립|1~2년|2~4년|-|토지등소유자 동의율 75%\n사업시행인가|1~2년|4~6년|스펙 진입 시작|건축·교통·환경 심의\n관리처분인가|1~2년|6~8년|시공사 자재 발주 준비|이주·철거 확정 · 분담금 확정\n철거·착공|0.5~1년|7~9년|★ 견적·수주|착공 = 물량 확정 시점\n골조·마감|2~3년|9~12년|★★ 납품(준공 6~12개월 전)|우리 매출 발생 구간\n준공·입주|-|10~13년|A/S·추가 납품|하자보수 2년',
+rbStageNote:'단계별 소요기간은 서울시 정비사업 통상 사례 기준의 <b>개략치</b>이며, 조합 갈등·공사비 분쟁·인허가 지연에 따라 편차가 큽니다. <b>우리 접점은 사업시행인가 이후</b>입니다. 착공 3~4년 전인 <b>사업시행인가 단계에서 시공사·설계사에 스펙을 넣어야</b> 착공 시점에 견적 기회가 옵니다. 관리처분인가 구역 목록은 서울시 「정비사업 정보몽땅」에서 공개되므로 영업 타깃 리스트로 쓸 수 있습니다.',
+rbType:'재건축|준공 30년↑ 노후 아파트|전량 신규 · 세대당 5~7세트 + PD 2~4|신축과 동일 · 브랜드 스펙으로 사양 상향|높음\n재개발|노후 단독·다세대 밀집지|전량 신규 · 세대수 증가폭 큼|공공기여 비중 높아 단가 압박|중간\n리모델링|15~30년 아파트|세대 현관문 + 방화구획문 교체 · PD커버 동반|기존 개구부 실측 → 비규격 다품종|중간\n소규모정비(가로주택·자율주택)|노후 저층 주거지|단지 규모 작아 로트 소량|셋업 부담 큼 · 할증 필수|낮음\n노후계획도시(1기 신도시)|분당·일산·평촌·산본·중동|2028년 이후 대량 발생|선도지구 스펙 선점 경쟁|높음(2028~)',
+rbTypeNote:'물량은 <b>세대당 방화문 5~7세트 + PD커버 2~4개</b> 기준의 사내 추정치이며 단지 구조(계단실형/복도형·층수·코어 수)에 따라 달라집니다. <b>재건축·재개발은 전량 신규</b>라 신축 현장과 동일하게 접근하면 되고, <b>리모델링은 기존 개구부에 맞춘 실측 특주</b>가 대부분이라 소량 다품종 원가 구조가 됩니다. 리모델링 건은 <b>특주 할증을 단가표에 문서화</b>한 뒤 받는 것이 원칙입니다.',
+rbReg:'2024.03|재건축초과이익환수제 재시행|면제기준 3,000만 → <b>8,000만원</b> · 부과구간 2,000만 → 5,000만원|사업성 개선폭 제한적 · 도입 후 실제 납부 사업장 0곳|착공 지연 요인 잔존\n2024.09|재건축·재개발 촉진 특례법 발의|절차 통합·간소화 · 공포 3개월 후 시행|인허가 기간 단축 기대|2028년 이후 물량의 선행지표\n2025.06|재건축진단 완화 시행|D등급 요건 폐지 · 절차 병행 허용|사업기간 <b>약 3년 단축</b>|2028~29년 착공 증가 요인\n2026~2031|서울시 정비사업 착공 확대|2031년까지 31만호 착공 목표(연 5만호 수준)|수도권 정비사업이 신축을 대체|지금이 시공사 스펙 진입 시기',
+rbRegNote:'재초환은 <b>폐지되지 않았습니다</b>(2019년 헌재 합헌). 2024년 3월 재시행 때 면제기준이 3,000만원에서 8,000만원으로 올라 부담은 줄었지만, 도입 이후 실제로 부담금을 납부한 사업장은 아직 없고 산식·공공기여 중복 문제로 논란이 계속되고 있습니다. 재건축·재개발 촉진 특례법은 2024년 9월 발의된 제정안으로 <b>세부 시행 수치는 확인되지 않았습니다</b>. 서울시 관리처분·착공 구역별 세대수 실적은 「정비사업 정보몽땅」·「서울주택 정보마당」에서 공표되나 이 도구에는 자동 연동돼 있지 않으니 영업 타깃 선정 시 직접 조회하십시오.',
+reno:'서울 준공 30년 초과 아파트 <b>477,596가구 = 30.5%</b> (2026.4, 부동산R114) — 노원 61%·도봉 60%\n재건축진단 완화(2025.6 시행) — D등급 요건 폐지, 절차 병행 허용으로 사업기간 <b>약 3년 단축</b>\n리모델링은 재건축 규제완화에 밀려 위축 — 조합 해산·시공계약 해지 확산, 인허가·공사비·사업성 3중고\n리모델링·재건축 모두 방화문·PD커버 <b>전량 교체</b> — 세대당 방화문 5~7세트 + PD커버 2~4세트\n재건축초과이익환수제는 <b>폐지되지 않음</b>(2019 헌재 합헌) — 2024.3 면제기준 3,000만→<b>8,000만원</b> 상향 · 도입 후 실제 납부 사업장 0곳\n재건축·재개발 촉진 특례법(2024.9 발의) — 절차 통합·간소화 · 공포 3개월 후 시행 · 세부 시행수치 미확인\n정비사업은 <b>사업시행인가 → 착공까지 3~4년</b> — 착공 뉴스를 보고 영업하면 이미 늦음, <b>인가 단계에서 스펙 진입</b> 필요\n1기 신도시(분당·일산·평촌·산본·중동) 노후계획도시 정비 — 2028년 이후 대량 발생, 선도지구 스펙 선점 경쟁 구간\n2028년 이후 정비사업이 신축을 대체하는 주력 수요처로 전환 — 지금이 정비사업 시공사 스펙 진입 시기',
 reg:'건설안전특별법|발주자 적정공사비·공기 보장, 사망사고 시 매출액 3% 과징금(상한 1,000억)|국회 계류 중|공기지연·비용↑\n노란봉투법|하도급 근로자 원청 교섭권. 시행 첫 달 216개 원청·616개 하청노조 교섭 요구|2026.03 시행|노무관리 부담↑\n안전보건 현황 공시제|연 공사액 1,200억원 이상 건설업체 공시 의무. 위반 시 과태료 1천만원|2026.08.01 시행|관리비용↑\n위험성평가 강화|근로자 참여·결과 공개 의무화. 미실시 1천만원 이하 과태료|2026.06.01 시행|현장비용↑\n부동산PF 구조조정|유의·부실 사업장 18.9조원 정리 완료. PF 익스포저 169.8조원|2026 지속|중견사 유동성↓\n건축자재 품질인정|복합 방화셔터 품목 신설, 성능시험 면제 확대, 시료채취 기준 명확화|2026.02.20 개정|인증 정비·기회↑\n건축자재 통합관리 플랫폼|QR코드·앱 기반 자재 이력관리 도입 추진|2027 목표|이력관리 의무↑',
 risk:'<b>PF 연체율 급등</b> — 금융권 PF대출 연체율 4.65%(+0.77%p), 중소금융 토담대 연체율 31.88%. 4분기 만기 PF 13.5조원\n<b>건설사 폐업 12년 만에 최다</b> — 2026 상반기 2,092곳(+23%), 7월 이후 하루 13곳. 삼일건설(시평 111위) 회생 신청\n<b>건설 고용 붕괴</b> — 2026.7 취업자 -5.7만명, 2022년 정점 대비 -26만명. 고용보험 36개월 연속 감소\n<b>원가 상승 지속</b> — 건설공사비지수 138.22(+5.5%), 포스코 전 제품 톤당 5만원 인상, 동국씨엠 컬러강판 10만원 인상\n<b>지방 시장 소멸 구간</b> — 준공후 미분양 대구 3,575·부산 3,292·경남 3,226호. 지방 분양 미달 사례 속출\n<b>규제 비용 삼중고</b> — 노란봉투법 + 안전보건 공시제 + 위험성평가 강화가 2026년에 동시 적용',
-pos:'LH 17.9조 발주 · 공공주택 5.2만호 착공\n2026 상반기 착공 +14.4% → 2028년 납품 회복\n3기 신도시 첫 입주(인천계양) 2026.12 시작\n건설수주 상반기 +25.8% · 공공 +49.6%\n분양 +60.7% (서울 +110%) — 수도권 회복\n서울 30년초과 아파트 30.5% → 정비사업 확대\n재건축진단 완화로 사업기간 3년 단축\n복합 방화셔터 신설 등 자재 인정품목 확대',
-neg:'2026 상반기 준공 -49.5% — 현재 매출 직격\n인허가 -15.8% → 2028년 이후 물량 재축소 우려\n건설사 폐업 2,092곳 · 회생 신청 확산 → 미수금\n PF 연체율 4.65% · 토담대 31.88% 위험 수위\n건설공사비지수 +5.5% · 철강 톤당 5~10만원 인상\n준공후 미분양 29,786호 — 지방 집중\n건설업 취업자 4년간 -26만명, 현장 인력난\n규제 3종 동시 적용(노란봉투·공시제·위험성평가)',
+pos:'LH 17.9조 발주 · 공공주택 5.2만호 착공\n2026 1~7월 착공 +11.1% → 2028년 납품 회복\n3기 신도시 첫 입주(인천계양) 2026.12 시작\n건설수주 상반기 +25.8% · 공공 +49.6%\n분양 +60.7% (서울 +110%) — 수도권 회복\n서울 30년초과 아파트 30.5% → 정비사업 확대\n재건축진단 완화로 사업기간 3년 단축\n복합 방화셔터 신설 등 자재 인정품목 확대',
+neg:'2026 1~7월 준공 -41.4% — 현재 매출 직격\n인허가 -7.9% → 2028년 이후 물량 재축소 우려\n건설사 폐업 2,092곳 · 회생 신청 확산 → 미수금\n PF 연체율 4.65% · 토담대 31.88% 위험 수위\n건설공사비지수 +5.5% · 철강 톤당 5~10만원 인상\n준공후 미분양 29,152호 — 지방 집중\n건설업 취업자 4년간 -26만명, 현장 인력난\n규제 3종 동시 적용(노란봉투·공시제·위험성평가)',
 
 /* ── 철강시세 전망 ── */
 stScCard:'생철A|#ea580c|482|492|가공 전 철판 스크랩 (프레스 타발 잔재)|495|현대제철 직납|하락|08.19|429.8,433.2,438.0,438.5,441.6,444.9,445.6,450.3,453.8,457.6,456.7,460.7,462.4,469.3,471.5,470.7,479.0,481.8,482\n중량A|#0891b2|460|470|레이저 절단 잔재 (6mm 이상)|470|제강사 직납|하락|08.19|414.1,416.9,419.3,417.9,423.1,424.9,428.2,428.8,431.7,435.7,437.2,441.1,441.5,444.4,450.5,451.6,454.7,458.6,460\n경량A|#7c3aed|440|450|NCT 펀칭 잔재 (3mm 이하)|450|제강사 직납|하락|08.19|389.9,396.0,397.8,400.8,403.3,407.6,407.3,411.9,412.7,416.4,419.5,420.4,421.9,426.5,430.5,432.5,434.4,438.1,440\nSTS304계|#db2777|1,430|1,435|STS 방화문·프레임 가공 잔재|1,470|STS 전문 매입상|보합|08.19|1352,1349,1351,1364,1361,1367,1372,1373,1385,1389,1400,1399,1406,1408,1415,1416,1417,1434,1430',
@@ -15643,8 +15674,8 @@ stScSrc:'다이렉트스크랩(directscrap.co.kr) · 스틸링크(steellink.kr) 
 stGloss:'AD|Anti-Dumping Duty · 반덤핑관세|수출국이 자국 내수가보다 싸게 파는(덤핑) 물량에 부과하는 관세. 국내 산업 피해가 인정되면 부과되며, 조사 중 임시로 매기는 것이 「잠정관세」, 최종판정 후 확정되는 것이 「확정관세」입니다. AD가 붙으면 그 품목의 수입 저가재가 줄어 국내 가격이 오르고, AD에서 제외되면 저가재가 계속 들어와 가격이 눌립니다.\n잠정관세|Provisional Duty|조사 기간 중 한시적으로 부과(보통 4개월). 만료일 전에 최종판정이 나오면 확정관세로 전환되고, 안 나오면 관세가 사라집니다. 중국산 도금·컬러는 2026.10.11 만료 — 4분기 조달의 최대 변수입니다.\nMIP|Minimum Import Price · 최저수출가격|정률 관세 대신 「이 가격 밑으로는 못 판다」는 하한선을 정하는 방식. 열연에 적용 중이며(중국산 $530~570/톤), 국내 열연 가격의 하방을 받쳐 줍니다.\n232조|미국 무역확장법 232조|국가안보를 이유로 부과하는 관세. 철강 완제품 50%, 파생품 25%. 대미 수출길이 막히면 그 물량이 내수로 돌아 국내 공급과잉을 만듭니다.\nHDG|Hot-Dip Galvanized · 용융아연도금|우리 HGI와 같은 품목. 일본이 한국산 HDG에 AD를 걸면 대일 수출 물량이 내수로 유입됩니다.\nEGI · HGI · GA · GL|전기아연도금 · 용융아연도금 · 갈바아닐 · 갈바륨|방화문 주력 도금재. GA는 HGI를 열처리한 것, GL은 알루미늄-아연 합금 도금.\nPO · CR · HR|산세강판 · 냉연강판 · 열연강판|HR(열연)이 원판, 산세(PO)·냉연(CR)은 그 후공정. 열연이 오르내리면 시차를 두고 따라옵니다.\nLME Cash|London Metal Exchange 현물가|아연·니켈·알루미늄 국제 기준가격. 도금비·STS 원가에 직접 연동됩니다.\nCFR · FOB|운임포함 인도가격 · 본선인도가격|CFR은 운임 포함, FOB는 선적항 기준. 철광석은 통상 CFR(중국 도착) 기준으로 봅니다.\nHCC|Hard Coking Coal · 강점결탄|제철용 원료탄 중 최상급. 철광석과 함께 쇳물 원가(제선원가)를 결정합니다.',
 stH2Sc:'기본 시나리오|55%|원료 조정 + 건설 수요 공백 지속 + 중국산 도금 AD 확정|930~950 약보합|EGI 1,040~1,060 · HGI 1,080~1,100|3,700~3,800 하락|조달가 큰 변화 없음 · 도금재만 소폭 상승분 흡수 필요\n상방 시나리오|25%|중국 감산 강화 + AD 확정 + 원화 1,430원 + 동절기 스크랩 반등|970~990 반등|EGI 1,080~1,100 · HGI 1,110~1,130|3,850~3,950 반등|도금재 톤당 +30~55천원 · 2027 입찰 견적에 반드시 선반영\n하방 시나리오|20%|10.11 잠정관세 종료 + 중국 저가재 재유입 + 건설 추가 악화|900~920 추가 하락|EGI 1,000~1,020 · HGI 1,040~1,060|3,600~3,650 하락|조달단가 인하 요구 시점 · 장기계약은 이때 체결',
 stH2Path:'2026.09|940|935|1,050|1,080|945|3,800|478|추석 전 가수요 · 열연 하락 일단락 · AD 최종판정 관망\n2026.10|935|930|1,045|1,085|940|3,760|470|★ 10.11 도금 AD 판정 — 확정 시 GI·컬러 즉시 반영, 종료 시 저가재 유입\n2026.11|935|930|1,045|1,090|940|3,750|478|원료탄 조정 반영 · 동절기 스크랩 반등 시작 · 환율 1,412원 부담\n2026.12|940|930|1,055|1,095|940|3,720|490|연말 밀어내기 vs 재고조정 · 12.7 일본 HDG AD 확정 여부 · 내수 공급과잉 리스크',
-stH2Key:'중국산 도금·컬러 AD 최종판정|잠정 22.34~33.67% · 2026.10.11 만료|확정이냐 종료냐로 GI·컬러 가격이 한 단계 갈립니다|확정 시 HGI·컬러 +2~4% / 종료 시 저가재 재유입|4분기 물량은 9월 말 판정 확인 후 확정 · EGI는 어차피 대상 제외\n아연 LME $3,865|역사적 고가권|고가 유지 시 도금비가 구조적으로 눌러붙습니다|EGI·HGI·GA 원가 하방 경직|도금재는 「내려갈 자리가 없다」 전제로 견적 · 소재가 연동조항 필수\n원료탄 $249 (월간 +12.7%)|급등 후 $180~210 조정 전망|조정 속도가 4분기 열연 가격을 좌우|조정되면 PO·CR 조달가 인하 여지|열연 연동 품목은 분할 발주 · 인하 근거자료로 활용\n환율 1,386원|3Q말 1,412 · 6개월 1,430 전망|지금이 원화 강세 구간의 끝자락|수입 견적 원가가 4분기부터 올라감|수입 대안 견적은 지금 확보 · 국산 인상 요구를 누르는 카드로 사용\n일본의 한국산 HDG AD|잠정 29.2~55.3% · 2026.12.7 만료|확정 시 대일 수출분이 내수로 회귀|국내 GI 공급과잉 → 가격 하락 압력|12월 이후 GI 조달 협상은 이 카드를 근거로 진행\n건설 준공 -49.5%|착공은 +14.4% 반등|수요 공백은 2027년까지 이어집니다|메이커 인상 발표의 전가율이 낮음|「인상 발표 = 인상 실현」이 아님 · 실거래가 기준으로 협상',
-stH2Ins:'<b>① 하반기는 「원가는 눌러붙고 판가는 안 오르는」 구간입니다.</b> 아연 $3,865가 도금비의 바닥을 만들고, 건설 준공 -49.5%가 판가의 천장을 만듭니다. 방향은 <b>보합 ~ 약보합</b>이지만, 우리가 사는 도금재는 안 내려가고 우리가 파는 부자재 단가는 못 올리는 <b>비대칭 구간</b>입니다.\n<b>② 품목을 두 그룹으로 나눠서 다르게 대응해야 합니다.</b> <b>열연 연동군(HR·PO·CR)</b>은 하락 국면이므로 <b>분할 발주 + 조달단가 인하 요구</b>가 맞습니다. <b>도금군(EGI·HGI·GA·컬러)</b>은 상방 압력이므로 <b>3개월 이내 물량만 확정</b>하고 그 이상은 소재가 연동으로 넘겨야 합니다. 한 장의 단가표로 두 그룹을 같이 협상하면 손해 봅니다.\n<b>③ 10월 11일이 하반기 최대 분기점입니다.</b> 중국산 도금·컬러 잠정 AD가 이날 만료됩니다. <b>확정</b>되면 GI·컬러 국내가가 한 단계 올라가고, <b>종료</b>되면 저가 수입재가 다시 들어와 가격이 눌립니다. 4분기 대량 계약은 <b>9월 말 최종판정 확인 후</b>로 미루는 것이 원칙입니다.\n<b>④ 컬러강판 +10만원은 절반만 붙습니다.</b> 동국씨엠이 8월 1일자로 톤당 10만원 인상을 고시했지만, 2026년 3월 인상 때 유통단계 반영률은 50% 안팎이었습니다. <b>인상분 전액 수용 전에 반드시 협상 여지를 확인</b>하십시오. 3개월 후 50~60%, 6개월 후 60~70% 반영을 기준으로 잡는 것이 현실적입니다.\n<b>⑤ 환율은 지금이 유리한 구간의 끝입니다.</b> 1,386원은 한 달 새 6% 절상된 수치이고, 3분기 말 1,412원·6개월 후 1,430원 전망입니다. <b>수입 견적은 지금 확보</b>해 두어야 4분기에 국산 인상 요구를 누를 카드가 생깁니다.\n<b>⑥ 2027년 입찰 견적에 하반기 상승분을 반영해야 합니다.</b> 지금 받는 2027년 물량 견적에 2026년 8월 소재가를 그대로 쓰면, 도금재가 상방 시나리오(+30~55천원/톤)로 갈 때 그 차액이 통째로 우리 손실이 됩니다. <b>견적 유효기간 30일 명시 + 소재가 에스컬레이션 조항</b>이 하반기 최우선 과제입니다.',
+stH2Key:'중국산 도금·컬러 AD 최종판정|잠정 22.34~33.67% · 2026.10.11 만료|확정이냐 종료냐로 GI·컬러 가격이 한 단계 갈립니다|확정 시 HGI·컬러 +2~4% / 종료 시 저가재 재유입|4분기 물량은 9월 말 판정 확인 후 확정 · EGI는 어차피 대상 제외\n아연 LME $3,865|역사적 고가권|고가 유지 시 도금비가 구조적으로 눌러붙습니다|EGI·HGI·GA 원가 하방 경직|도금재는 「내려갈 자리가 없다」 전제로 견적 · 소재가 연동조항 필수\n원료탄 $249 (월간 +12.7%)|급등 후 $180~210 조정 전망|조정 속도가 4분기 열연 가격을 좌우|조정되면 PO·CR 조달가 인하 여지|열연 연동 품목은 분할 발주 · 인하 근거자료로 활용\n환율 1,386원|3Q말 1,412 · 6개월 1,430 전망|지금이 원화 강세 구간의 끝자락|수입 견적 원가가 4분기부터 올라감|수입 대안 견적은 지금 확보 · 국산 인상 요구를 누르는 카드로 사용\n일본의 한국산 HDG AD|잠정 29.2~55.3% · 2026.12.7 만료|확정 시 대일 수출분이 내수로 회귀|국내 GI 공급과잉 → 가격 하락 압력|12월 이후 GI 조달 협상은 이 카드를 근거로 진행\n건설 준공 -41.4%|착공은 +11.1% 반등|수요 공백은 2027년까지 이어집니다|메이커 인상 발표의 전가율이 낮음|「인상 발표 = 인상 실현」이 아님 · 실거래가 기준으로 협상',
+stH2Ins:'<b>① 하반기는 「원가는 눌러붙고 판가는 안 오르는」 구간입니다.</b> 아연 $3,865가 도금비의 바닥을 만들고, 건설 준공 -41.4%가 판가의 천장을 만듭니다. 방향은 <b>보합 ~ 약보합</b>이지만, 우리가 사는 도금재는 안 내려가고 우리가 파는 부자재 단가는 못 올리는 <b>비대칭 구간</b>입니다.\n<b>② 품목을 두 그룹으로 나눠서 다르게 대응해야 합니다.</b> <b>열연 연동군(HR·PO·CR)</b>은 하락 국면이므로 <b>분할 발주 + 조달단가 인하 요구</b>가 맞습니다. <b>도금군(EGI·HGI·GA·컬러)</b>은 상방 압력이므로 <b>3개월 이내 물량만 확정</b>하고 그 이상은 소재가 연동으로 넘겨야 합니다. 한 장의 단가표로 두 그룹을 같이 협상하면 손해 봅니다.\n<b>③ 10월 11일이 하반기 최대 분기점입니다.</b> 중국산 도금·컬러 잠정 AD가 이날 만료됩니다. <b>확정</b>되면 GI·컬러 국내가가 한 단계 올라가고, <b>종료</b>되면 저가 수입재가 다시 들어와 가격이 눌립니다. 4분기 대량 계약은 <b>9월 말 최종판정 확인 후</b>로 미루는 것이 원칙입니다.\n<b>④ 컬러강판 +10만원은 절반만 붙습니다.</b> 동국씨엠이 8월 1일자로 톤당 10만원 인상을 고시했지만, 2026년 3월 인상 때 유통단계 반영률은 50% 안팎이었습니다. <b>인상분 전액 수용 전에 반드시 협상 여지를 확인</b>하십시오. 3개월 후 50~60%, 6개월 후 60~70% 반영을 기준으로 잡는 것이 현실적입니다.\n<b>⑤ 환율은 지금이 유리한 구간의 끝입니다.</b> 1,386원은 한 달 새 6% 절상된 수치이고, 3분기 말 1,412원·6개월 후 1,430원 전망입니다. <b>수입 견적은 지금 확보</b>해 두어야 4분기에 국산 인상 요구를 누를 카드가 생깁니다.\n<b>⑥ 2027년 입찰 견적에 하반기 상승분을 반영해야 합니다.</b> 지금 받는 2027년 물량 견적에 2026년 8월 소재가를 그대로 쓰면, 도금재가 상방 시나리오(+30~55천원/톤)로 갈 때 그 차액이 통째로 우리 손실이 됩니다. <b>견적 유효기간 30일 명시 + 소재가 에스컬레이션 조항</b>이 하반기 최우선 과제입니다.',
 stScFc:'2026.09|478|455|435|하락|추석 연휴로 발생량·입고 모두 감소하나 봉형강 수요 부진이 더 큼 · 제강사 재고 여유\n2026.10|470|448|428|하락|건설 비수기 진입 · 봉형강 감산 지속 · 8월 전 등급 -1만원 인하분 정착\n2026.11|478|455|435|상승|동절기 진입으로 발생량 감소 시작 · 제강사 월동 재고 확보 수요\n2026.12|490|468|448|상승|혹한기 입고 급감 + 연말 재고 확보 · 계절적 강세 구간 진입\n2027.01|498|475|455|상승|연중 최강세 구간 · 조업일수 감소로 발생량 최저\n2027.02|492|470|450|보합|설 연휴 이후 점진 완화 · 봄철 발생량 회복 대기',
 stScDrv:'제강사 감산|하락|건설 부진으로 봉형강(철근·형강) 수요가 줄면 스크랩 소비도 함께 줄어듭니다|2026.8.19 현대·포스코·동국·한국철강 전 등급 -1만원 일제 인하 · 특별구매 중단\n동절기 발생량 감소|상승|11월~1월은 해체·가공 물량이 줄어 입고가 급감합니다 — 매년 반복되는 계절 패턴|통상 11월부터 반등 시작, 1월 정점\n일본산 H2 수입가·엔화|하락|엔화 약세 구간에서는 일본산 수입이 늘어 국내가를 누릅니다|엔화·해상운임 동반 확인 필요\n튀르키예 수입 스크랩|보합|국제 스크랩의 기준 지표 — 여기가 오르면 동아시아도 따라 오릅니다|국제 벤치마크 · 미국·유럽 발생량과 연동\n전기료·탄소비용|상승|전기로 원가가 오르면 제강사가 스크랩 매입가를 눌러 원가를 방어합니다|장기적으로 스크랩 매입가에 하방 압력\n제선원가(철광석·원료탄)|상승|고로 원가가 오르면 전기로 대비 경쟁력이 낮아져 스크랩 수요가 늘어납니다|원료탄 $249 급등은 스크랩에 상방 요인',
 stScIns:'<b>① 우리에게 스크랩은 「사는 것」이 아니라 「파는 것」입니다.</b> 프레스·NCT·레이저 가공에서 나오는 부산물(생철A·경량A 등급)을 매각하는 입장이므로, <b>스크랩 가격 상승은 우리에게 유리</b>합니다. 강판 조달가가 오를 때 부산물 매각대가 같이 올라 실질 원자재비를 일부 상쇄해 줍니다.\n<b>② 지금은 그 완충장치가 약해진 구간입니다.</b> 8월 19일 제강 4사가 전 등급 톤당 1만원을 일제히 인하했고 특별구매도 중단됐습니다. 생철A 482천원은 연중 저점권이며, <b>10월까지 470선까지 추가 하락</b>할 가능성이 높습니다. 소재가는 눌러붙는데 부산물 수익은 줄어드는 <b>이중 압박 구간</b>입니다.\n<b>③ 매각 타이밍은 11월 이후로 미루는 것이 유리합니다.</b> 철스크랩은 <b>11월~1월이 연중 최강세</b>입니다. 동절기에는 해체·가공 물량이 줄어 입고가 급감하고 제강사는 월동 재고를 확보해야 하기 때문입니다. 9~10월 저점에 급하게 털기보다, <b>보관 여력이 있는 만큼은 12월~1월(490~500천원 예상) 매각</b>이 톤당 15~25천원 유리합니다.\n<b>④ 다만 보관비용과 현금흐름을 함께 봐야 합니다.</b> 톤당 20천원을 더 받자고 3개월치 야적 공간과 자금을 묶는 것은, 미수금 회수가 최우선인 지금 국면에서는 손해일 수 있습니다. <b>기준을 정해 두십시오</b> — 월 발생량의 1개월분은 정기 매각(현금흐름 확보), 나머지는 계절 강세 구간 매각.\n<b>⑤ 등급 관리가 단가입니다.</b> 생철A(482)와 경량A(440)의 차이가 톤당 42천원입니다. 도장재·이물질이 섞여 등급이 한 단계 내려가면 그만큼 그대로 손실입니다. <b>가공 스크랩은 도장 전 소재와 분리 배출</b>하고, 매각 시 등급 판정 입회를 원칙으로 하십시오.\n<b>⑥ 스크랩은 봉형강 수요의 선행지표이기도 합니다.</b> 스크랩 가격이 계절 요인 없이 오르기 시작하면 건설 물량이 실제로 움직이기 시작했다는 신호입니다. <b>2027년 봄(3~4월) 스크랩이 계절 하락을 하지 않고 버티는지</b>가 방화문 시장 회복의 조기 확인 지표가 됩니다.',
@@ -15668,38 +15699,43 @@ stTrade:'중국산 도금·컬러강판 잠정 AD|아연/아연알루미늄 도�
 stSens:'철광석 +$10/톤|상승|+15~20|+15~20|+20~30|+10~15|+8~12\n철광석 -$10/톤|하락|-15~20|-15~20|-20~30|-10~15|-8~12\n아연 +$100/톤|상승|+15~25|+20~30|—|—|—\n아연 -$100/톤|하락|-15~25|-20~30|—|—|—\n니켈 +$1,000/톤|상승|—|—|—|+60~80|+10~15\n니켈 -$1,000/톤|하락|—|—|—|-60~80|-10~15\nUSD +10원|상승|+8~12|+8~12|+8~12|+15~20|+10~15\nUSD -10원|하락|-8~12|-8~12|-8~12|-15~20|-10~15\n원료탄 +$20/톤|상승|+8~12|+8~12|+12~18|+6~10|+5~8\n스크랩 +10원/kg|상승|+3~5|+3~5|+3~5|+8~12|+5~8',
 stCost:'PO 산세강판|940|40~50|25~35|10~15|1,030|1,020|1,015|하락\nEGI 전기아연도금|1,050|40~55|25~35|10~15|1,145|1,140|1,150|보합\nHGI 용융아연도금|1,075|45~55|25~35|10~15|1,175|1,180|1,195|상승\nCR 냉연강판|950|40~50|25~35|10~15|1,040|1,030|1,025|하락\nHR 열연강판|950|35~50|25~35|10~15|1,040|1,025|1,030|하락\nSTS304|3,850|70~90|35~50|15~20|4,000|3,900|3,850|하락',
 stVendor:'제조사|포스코|열연·냉연·도금·STS 전품목|고로|포항·광양\n제조사|현대제철|열연·냉연·도금·후판·형강|고로|당진·인천\n제조사|동국제강(동국씨엠)|냉연·도금·칼라·후판 · 컬러강판 8/1 +10만원|재압연|부산·인천\n제조사|KG스틸|냉연·도금·칼라 전제품|재압연|아산\n제조사|세아제강|STS냉연·열연·강관|STS|군산·창원\n제조사|아주스틸|도금·칼라·방화문도장강판(Atex)|도금/칼라|구미\n코일센터|포스코스틸리온|포스코계열 SSC · 슬리팅·샤링·레벨링 전공정|포스코|전국 8거점\n코일센터|경남스틸|냉연·EGI·PO·HGI 가공 · 가전·자동차향|포스코|창원\n코일센터|대창스틸|냉연도금 SSC · 알루미늄 겸업|포스코·동국|인천·부산\n코일센터|키보스틸(KIBO)|시화 초고속 슬리팅·샤링 · 칼라도금 대응|포스코·현대제철|시화·안산\n코일센터|삼부강업|슬리팅·샤링·NCT·레이저·절곡 일괄가공|포스코·동국|안산\n코일센터|해강스틸|EGI·CR 전기도금강판 전문|포스코|화성\n코일센터|태극스틸|EGI·STS 코일가공·유통|포스코|화성\n코일센터|원스틸|각종 코일 슬리팅 · 소량 대응|포스코·현대·동국|화성\n코일센터|한신칼라스틸|컬러강판·도금강판 유통·가공|포스코·동국|서울 금천·대구\n열연 SSC|한일철강|후판·열연 · 인천코일센터·평택공장|현대제철·포스코|서울·평택·인천\n열연 SSC|문배철강|판재·형강 종합유통 + 열연코일센터|현대제철·포스코|서울·인천\nSTS SSC|SM스틸|국내 최초 포스코 STS 지정가공센터|포스코|창원\n유통|영진종합철강|EGI·PO 코일유통 · 방화문업계 주력거래처|포스코·현대제철|경기\n온라인|철강정보원|국내외 철강시황·뉴스·가격정보|-|steelinfosys.com\n온라인|이야드(eYard)|철강 B2B · GPS 기반 업체검색·견적|-|eyard.net\n온라인|마이포스코|포스코 온라인 주문|포스코|my.posco.com',
-stIns:'<b>① 원가↑ · 판가↓ 협공 국면</b> — 아연 $3,865(고가)·원료탄 +12.7%로 원가는 오르는데, 건설 붕괴와 원화 6% 강세로 열연은 3주 연속 하락했습니다. 메이커의 인상 발표(컬러강판·H형강)는 <b>가격 방어용 선제 인상</b> 성격이라 전가율이 낮습니다.\n<b>② EGI가 가장 취약합니다</b> — 중국산 도금 반덤핑(22.34~33.67%)에서 <b>EGI·GA는 제외</b>됐습니다. 중국산 EGI는 무관세로 계속 들어오므로, EGI 조달가는 국산 인상 요구를 수입 견적으로 눌러야 합니다.\n<b>③ 열연 연동 품목은 지금 재협상</b> — PO·CR은 열연 하락분이 아직 유통가에 덜 반영됐습니다. 8월 열연 -3만원(3주 누적)을 근거로 조달단가 인하를 요구할 시점입니다.\n<b>④ 10월 11일이 분기점</b> — 중국산 도금 잠정관세가 만료됩니다. 확정되면 GI·컬러 국내가가 한 단계 오르고, 종료되면 저가재가 다시 들어옵니다. 4분기 물량은 <b>9월 말 최종판정 확인 후</b> 확정하십시오.\n<b>⑤ 6개월 뒤 환율이 복병</b> — 지금은 1,386원 원화강세가 수입원가를 낮춰 주지만, 3Q말 1,412원·6개월 1,430원 전망입니다. <b>원화강세 구간인 지금이 수입 견적을 확보해 둘 시점</b>입니다.\n<b>⑥ 판가 전가는 시차로 설득</b> — 우리 매출 절벽(준공 -49.5%)과 원가 상승이 겹칩니다. 방화문 업체에 단가 인상을 요구할 때는 아연·원료탄 지표와 컬러강판 +10만원 고시를 근거자료로 쓰는 편이 설득력 있습니다.',
+stIns:'<b>① 원가↑ · 판가↓ 협공 국면</b> — 아연 $3,865(고가)·원료탄 +12.7%로 원가는 오르는데, 건설 붕괴와 원화 6% 강세로 열연은 3주 연속 하락했습니다. 메이커의 인상 발표(컬러강판·H형강)는 <b>가격 방어용 선제 인상</b> 성격이라 전가율이 낮습니다.\n<b>② EGI가 가장 취약합니다</b> — 중국산 도금 반덤핑(22.34~33.67%)에서 <b>EGI·GA는 제외</b>됐습니다. 중국산 EGI는 무관세로 계속 들어오므로, EGI 조달가는 국산 인상 요구를 수입 견적으로 눌러야 합니다.\n<b>③ 열연 연동 품목은 지금 재협상</b> — PO·CR은 열연 하락분이 아직 유통가에 덜 반영됐습니다. 8월 열연 -3만원(3주 누적)을 근거로 조달단가 인하를 요구할 시점입니다.\n<b>④ 10월 11일이 분기점</b> — 중국산 도금 잠정관세가 만료됩니다. 확정되면 GI·컬러 국내가가 한 단계 오르고, 종료되면 저가재가 다시 들어옵니다. 4분기 물량은 <b>9월 말 최종판정 확인 후</b> 확정하십시오.\n<b>⑤ 6개월 뒤 환율이 복병</b> — 지금은 1,386원 원화강세가 수입원가를 낮춰 주지만, 3Q말 1,412원·6개월 1,430원 전망입니다. <b>원화강세 구간인 지금이 수입 견적을 확보해 둘 시점</b>입니다.\n<b>⑥ 판가 전가는 시차로 설득</b> — 우리 매출 절벽(준공 -41.4%)과 원가 상승이 겹칩니다. 방화문 업체에 단가 인상을 요구할 때는 아연·원료탄 지표와 컬러강판 +10만원 고시를 근거자료로 쓰는 편이 설득력 있습니다.',
 stSrc:'철강금속신문 주간시장동향(2026.8.21) · 철강정보원(2026.7.22, 8.22) · 스틸데일리(2026.6.23~24) · 페로타임즈 스크랩 인하 릴레이(2026.8.10~13) · Westmetall LME(2026.8.20) · AISU Steel Prices(2026.8.15) · Steel Market Update(2026.8.13) · 중국 국가통계국(2026.8.13) · Trading Economics · worldsteel SRO(2026.4) · 대신증권 철강산업(2026.7.14)',
 /* ── 방화문시장 분석 ── */
-fdSizeAsOf:'2026-08-24 · 준공 물량은 국토교통부 주택통계(2026 상반기 실적 연환산)와 방화문부자재 수요 전망 기준 · 세대당 세트·세트단가·구성비는 사내 추정치이므로 실제 감각에 맞게 수정해 사용하십시오',
-fdSize:'2024|41.4|5|35|성수기 잔여 물량\n2025|33.0|5|35|감소 국면\n2026|21.0|5|35|바닥 — 상반기 준공 -49.5% 연환산\n2027|24.0|5|35|저점 횡보\n2028|30.0|5|35|회복 전환 — 2026 착공 +14.4% 도달\n2029|34.0|5|35|성장 가속 — 3기 신도시 입주 피크',
+fdSizeAsOf:'2026-09-05 · 준공 물량은 국토교통부 주택통계(2026년 1~7월 누적 실적 연환산)와 방화문부자재 수요 전망 기준 · 세대당 세트·세트단가·구성비는 사내 추정치이므로 실제 감각에 맞게 수정해 사용하십시오',
+fdSize:'2024|41.4|5|35|성수기 잔여 물량\n2025|33.0|5|35|감소 국면\n2026|23.0|5|35|바닥 — 1~7월 준공 -41.4% 연환산\n2027|26.0|5|35|저점 횡보 — 2025 착공 급감분 도달\n2028|31.0|5|35|회복 전환 — 2026 착공 +11.1% 도달\n2029|34.0|5|35|성장 가속 — 3기 신도시 입주 본격화\n2030|36.0|5|35|고점 근접 — 공공 준공 정점(LH 건설형 5.5만호)\n2031|35.0|5|35|안정 — 3기 신도시 입주 후반부',
 fdMixTop:'주택|72\n비주거|28',
 fdMixRes:'수도권 민간 아파트|30\n공공주택·3기 신도시|20\n지방 민간 아파트|18\n재개발·재건축|17\n연립·다세대(비아파트)|8\n모아주택·소규모정비|4\n일반주택(단독·다가구)|3',
 fdMixNon:'공장·일반산업|20\n오피스|15\n반도체 공장|14\n데이터센터|13\n물류센터|12\n산업소음 저감·특수시설|10\n콘테이너·모듈러|10\n지식산업센터|6',
 fdMixNote:'세부 구분은 🏗️ 건설동향의 <b>주택 세부 시장</b>·<b>비주거 세부 시장</b>과 동일합니다. 주택은 준공 세대수, 비주거는 연면적(1,000㎡마다 방화구획) 기준이라 수요 단위가 달라 같은 잣대로 더할 수 없으므로 ②의 주택:비주거 비율로 환산했습니다. 구성비 기본값은 건설동향의 <b>기회도</b> 등급과 착공·준공 동향을 반영한 추정치이며, 각 항목의 입력칸에서 바로 고칠 수 있습니다(합계 100% 권장).',
-fdKw:'2026년 현황|후행 절벽|준공 -49.5% 직격|매출 최저점|#dc2626\n2027년 전망|생존 경쟁|착공 반등 미도달 구간|버티기|#ea580c\n2028년 전환|납품 회복|착공 +14.4% 온기 도달|반등 기대|#16a34a\n국내 방화문 업체|약 120개사|품질인정 업체·한계기업 퇴출|구조조정|#0f766e\n대금회수 리스크|PF 연체 4.65%|폐업 2,092곳·회생 확산|최우선 관리|#7c3aed',
-fdMonthAsOf:'2026-08-22 · 국토교통부 주택통계 기준(2022~2024 확정치 · 2025 잠정치 · 2026 상반기 실적) · 월별 배분은 연간 실적을 계절패턴으로 나눈 추정치이며 납품지수는 자체 전망입니다',
+fdKw:'2026년 현황|후행 절벽|준공 -41.4% 직격|매출 최저점|#dc2626\n2027년 전망|생존 경쟁|착공 반등 미도달 구간|버티기|#ea580c\n2028년 전환|납품 회복|착공 +11.1% 온기 도달|반등 기대|#16a34a\n국내 방화문 업체|약 120개사|품질인정 업체·한계기업 퇴출|구조조정|#0f766e\n대금회수 리스크|PF 연체 4.65%|폐업 2,092곳·회생 확산|최우선 관리|#7c3aed',
+fdMonthAsOf:'2026-09-05 · 국토교통부 주택통계 기준(2022~2024 확정치 · 2025 잠정치 · 2026년 1~7월 누적 실적) · 월별 배분은 연간 실적을 계절패턴으로 나눈 추정치, 납품지수는 자체 전망',
 fdMonthly:'2026.09|94|2.44|바닥|19|추석 9/24~26 · 대체 9/28|2024.09 착공(30.5만호 회복분) 도달 · 연휴로 조업일수 감소\n2026.10|100|2.75|바닥|20|개천절 대체 10/5 · 한글날 10/9|가을 마감공사 성수기 진입 · 준공 물량 소폭 증가\n2026.11|106|3.05|바닥|21|공휴일 없음|연말 준공 목표 현장 자재 투입 집중\n2026.12|112|3.05|바닥|22|성탄절 12/25|★ 연말 준공 몰림 — 2026년 최대 출하월\n2027.01|92|1.37|최저|20|신정 1/1|★ 연중 최저 — 2025.01 착공 급감 + 동절기 공사중단\n2027.02|96|1.64|최저|17|★ 구정 2/5~2/7 · 대체 2/8~2/9|조업일수 연중 최소 17일 · 재고 조정 구간\n2027.03|114|2.46|회복|22|삼일절 3/1|해빙기 현장 재가동 · 2025 봄 착공분 진입\n2027.04|121|2.46|회복|22|공휴일 없음|봄 성수기 · 발주 정상화 · 월 최대 조업일\n2027.05|123|2.46|회복|19|어린이날 5/5 · 석가탄신일 5/13|물량은 늘고 조업일은 줄어 일 부하 최대\n2027.06|132|2.73|회복|22|현충일 6/6(일)|상반기 마감 · 준공 목표 현장 집중\n2027.07|112|2.18|회복|22|장마철|강우로 현장 진도 지연 · 출하 이연 주의\n2027.08|103|1.91|회복|21|★ 여름휴가 8월 초 · 광복절 대체 8/16|하계휴가·폭염 — 실질 조업 15~17일\n2027.09|123|2.18|개선|19|★ 추석 9/14~9/16|2024~25 착공 회복분 본격 진입\n2027.10|132|2.46|개선|19|개천절 대체 10/4 · 한글날 대체 10/11|가을 성수기 · 3기 신도시 초기 현장 가세\n2027.11|141|2.73|개선|22|공휴일 없음|연말 준공 대비 자재 투입 본격화 · 증산 구간\n2027.12|152|2.73|개선|22|성탄절 대체 12/27|★ 전 구간 최대 — 2028 회복장의 출발점',
-fdPhase:'바닥 다지기|2026.09~12|4개월|준공 -49.5%의 여파가 이어지는 구간. 연말 준공 몰림으로 12월만 일시 개선|재고 최소 운영 · 미수금 회수 최우선 · 12월 출하 대비 원자재 선확보\n최저점|2027.01~02|2개월|2025년 초 착공 급감분 도달 + 동절기 겹침. 전 구간 최저|설비 보수·재고 실사 · 고정비 절감 · 신규 스펙 영업에 인력 투입\n완만한 회복|2027.03~08|6개월|L자 바닥에서 우상향 시작. 2026년 상반기 착공 +14.4%는 아직 미도달|가동률 기준 수주 선별 · 단가 정상화 협상 · 정비사업 진입\n회복 가시화|2027.09~12|4개월|2025 하반기~2026 착공 반등분 진입. 3기 신도시 초기 물량 가세|증산 대비 설비·인력 사전 확보 · 핵심 거래처 물량 선점',
-fdMonthIns:'<b>① 지금 보이는 매출은 2년 전 착공이 결정합니다</b> — 2026년 9월~12월 물량은 <b>2024년 하반기 착공(연 30.5만호, +24% 반등)</b>이 만들어 낸 것입니다. 2026년 착공이 +14.4%로 돌아섰다는 뉴스는 <b>2028년</b>에야 우리 매출로 들어옵니다.\n<b>② 2027년 1~2월이 이번 사이클의 바닥입니다</b> — 2025년 1~2월 착공이 연중 최저(월 1.1~1.3만호)였고 동절기 공사중단이 겹칩니다. 지수 92·96으로 2026년 상반기 월평균 아래입니다. <b>이 두 달을 버티는 것이 관건</b>이며, 12월에 벌어들인 현금을 여기에 써야 합니다.\n<b>③ 12월이 연중 최대 출하월입니다</b> — 준공 목표 현장이 몰리는 구조상 2026.12(지수 112), 2027.12(지수 152)가 각 해의 정점입니다. <b>10~11월에 원자재·재고를 미리 확보</b>하지 않으면 12월 물량을 놓칩니다.\n<b>④ 2027년 연간은 2026년 대비 약 +19% 수준</b> — 준공 21만호 → 25만호 회복분입니다. 다만 성수기(2022~23년)의 60% 수준이라 <b>정상화가 아닌 바닥 탈출</b>이며, 목표는 손익분기 방어와 점유율 확보로 세워야 합니다.\n<b>⑤ 진짜 전환은 2027년 9월부터</b> — 2025년 하반기~2026년 착공 반등분이 이때 들어옵니다. 증산 대비 설비·인력은 <b>2027년 상반기(비수기)</b>에 준비해야 하고, 그 시점의 스펙 영업이 2028년 물량을 가릅니다.\n<b>⑥ 2027년 2월·5월·8월은 조업일수까지 불리합니다</b> — 2월은 구정으로 <b>17일</b>(연중 최소), 5월은 19일인데 지수는 123으로 <b>일 부하가 최대</b>, 8월은 21일이지만 하계휴가를 빼면 실질 15~17일입니다. 물량과 조업일을 함께 보고 잔업·교대를 미리 계획해야 합니다.\n<b>⑦ 변동성이 실적보다 위험합니다</b> — 최저 92 ~ 최대 152로 <b>약 1.7배</b> 차이가 납니다. 평균만 보고 인력·재고를 잡으면 1~2월엔 놀고 12월엔 못 만듭니다. <b>월 단위 생산계획과 탄력 인력 운영</b>이 필요합니다.',
+fdPhase:'바닥 다지기|2026.09~12|4개월|준공 -41.4%의 여파가 이어지는 구간. 연말 준공 몰림으로 12월만 일시 개선|재고 최소 운영 · 미수금 회수 최우선 · 12월 출하 대비 원자재 선확보\n최저점|2027.01~02|2개월|2025년 초 착공 급감분 도달 + 동절기 겹침. 전 구간 최저|설비 보수·재고 실사 · 고정비 절감 · 신규 스펙 영업에 인력 투입\n완만한 회복|2027.03~08|6개월|L자 바닥에서 우상향 시작. 2026년 1~7월 착공 +11.1%는 아직 미도달|가동률 기준 수주 선별 · 단가 정상화 협상 · 정비사업 진입\n회복 가시화|2027.09~12|4개월|2025 하반기~2026 착공 반등분 진입. 3기 신도시 초기 물량 가세|증산 대비 설비·인력 사전 확보 · 핵심 거래처 물량 선점',
+fdMonthIns:'<b>① 지금 매출은 2년 전 착공의 결과</b> — 2026년 9~12월 물량의 원천은 <b>2024년 하반기 착공</b>(연 30.5만호, +24% 반등). 2026년 착공 +11.1%는 <b>2028년</b>에 우리 매출로 도달. 착공 반등 뉴스와 현재 실적은 별개.\n<b>② 2027년 1~2월 = 이번 사이클 바닥</b> — 원인: 2025년 1~2월 착공 연중 최저(월 1.1~1.3만호) + 동절기 공사중단. 지수 <b>92·96</b>으로 2026년 상반기 월평균 이하. 대응: 12월 확보 현금을 이 두 달의 운전자금으로 배정.\n<b>③ 12월 = 연중 최대 출하월</b> — 준공 목표 현장 집중. 정점 2026.12 지수 <b>112</b>, 2027.12 지수 <b>152</b>. 대응: <b>10~11월 원자재·재고 선확보</b>. 미확보 시 12월 물량 상실.\n<b>④ 2027년 연간 = 2026년 대비 +19%</b> — 준공 23만호 → 26만호 회복분. 단, 성수기(2022~23년) 대비 <b>60% 수준</b>. 성격은 정상화가 아닌 <b>바닥 탈출</b>. 목표 설정 기준: 손익분기 방어 + 점유율 확보.\n<b>⑤ 실질 전환 시점 = 2027년 9월</b> — 2025년 하반기~2026년 착공 반등분 유입 구간. 증산 대비 설비·인력은 <b>2027년 상반기(비수기)</b>에 선행 준비. 이 시점의 스펙 영업이 2028년 물량을 결정.\n<b>⑥ 2027년 2·5·8월 — 조업일수 불리</b> — 2월 <b>17일</b>(구정 · 연중 최소), 5월 19일에 지수 123으로 <b>일 부하 최대</b>, 8월 21일이나 하계휴가 제외 시 실질 15~17일. 물량과 조업일을 함께 놓고 잔업·교대 사전 계획.\n<b>⑦ 실적보다 변동성이 위험</b> — 최저 92 ~ 최대 152, <b>약 1.7배</b> 격차. 평균 기준으로 인력·재고를 잡으면 1~2월 유휴, 12월 생산 부족. 필요한 것은 <b>월 단위 생산계획 + 탄력 인력 운영</b>.',
 fdRiskAsOf:'2026-08-22 · 시뮬레이션은 2026년 매출 100 기준의 가정치이며 실제 원가구조는 사내 실적으로 대체해 보십시오',
-fdRiskLead:'<b>우리는 방화문 업체에 부자재를 납품합니다.</b> 건설사 → 방화문 업체 → 부자재로 이어지는 단가 압력의 <b>맨 끝</b>에 있어, 수주 협상 테이블에 앉지 않고도 결과는 그대로 떠안습니다. 2026년 방화문 업체가 저가로 수주한 현장의 부자재 단가가 곧 <b>2027년 우리 매출의 단가</b>입니다. 2027년 납품 물량은 2026년 대비 약 +19%(지수 100 → 120) 늘지만, 단가는 이미 고정됐고 도금·컬러 원자재 상승분과 비규격 소량 다품종·단납기 대응 비용이 원가로 얹힙니다. <b>매출은 늘고 이익은 사라지는 구조</b>가 2027년의 실체입니다.',
+fdProc:'생산 방식|금형 프레스 양산 — 동일 규격 대량 타발|<b>금형 양산 불가</b> — 비규격 사양이 현장마다 달라 금형 제작이 성립하지 않음|금형 상각 이익 소멸 · 타발 단가의 저원가 구조 자체가 사라짐|반복 출현 규격만 골라 <b>표준품 지정 → 금형 전환</b> · 그 외는 별도 단가체계\n주공정|프레스 (1공정)|<b>레이저가공</b> — 도면 그대로 절단, 금형 없이 대응|시간당 원가 높음(전력·가스·렌즈·노즐) · 도면 검토와 <b>프로그램 작성 공수</b>가 건마다 발생|네스팅 최적화로 소재 수율 관리 · 반복 도면 <b>프로그램 라이브러리화</b>\n후공정|없음 또는 1회|<b>후공정 프레스 증가</b> — 절곡·버링·탭·성형이 뒤따름|공정이 2단계 이상 — <b>2차 셋업 + 반제품 이동·식별·재투입</b> 공수 추가|반제품 식별표·중간 재고 위치 고정 · 연속 투입 단위 로트 설정\n소재 수율|정형 코일 · 스크랩 최소|레이저 네스팅 잔재 발생 — <b>투입중량 대비 제품중량 비율 하락</b>|재료비가 제품 중량이 아니라 <b>투입 판재 기준</b>으로 올라감|잔재 활용 소품목 배정 · 판재 규격 표준화 · 수율을 견적에 명시\n납기|계획 생산 · 여유 리드타임|<b>단납기 발주</b> — 현장 발주 지연에도 준공일은 고정|잔업·특근·긴급 물류 · 로트 쪼개기로 셋업 횟수 증가|표준 리드타임 공표 · 초과분 <b>긴급오더 할증</b> 명문화',
+fdProcNote:'현장 일감이 줄면서 <b>표준 대량 오더가 사라지고 현장별 특주만 남았습니다.</b> 사양이 현장마다 달라 금형 제작이 성립하지 않으므로 <b>레이저가공으로 받아 후공정 프레스로 마무리</b>하는 구조로 바뀌었습니다. 문제는 단가가 아니라 <b>원가 구조 자체가 바뀐 것</b>입니다 — 금형 양산의 저원가(타발 1회, 셋업 1회)가 사라지고 그 자리에 <b>레이저 시간당 원가 + 프로그램 작성 + 2차 셋업 + 반제품 관리 + 네스팅 잔재</b>가 들어왔습니다. 같은 품목을 같은 단가로 받으면 그 차액이 그대로 손실입니다. 우선 <b>반복 출현 규격을 뽑아 표준품으로 지정</b>하고, 나머지는 <b>레이저·후공정 기준의 별도 단가체계</b>로 분리해야 합니다.',
+fdLogi:'생산 기준|재고성 생산 — 규격품을 만들어 두고 출고|<b>현장별 생산·출고</b> — 품질인정 이력관리로 현장 단위 분리|현장별 로트 분리로 <b>재고 통합 불가</b> · 여유 생산분을 다른 현장에 못 씀|현장코드 단위 로트 관리 체계화 · 잔량 재사용 가능 품목 별도 지정\n포장 단위|파렛트 단위 대량 포장|<b>현장별 소량 포장</b> — 품목·수량이 현장마다 다름|포장 인원·자재비가 물량 대비 급증 · 파렛트 적재효율 하락|현장별 <b>표준 포장 세트</b> 규격화 · 포장 자재 사전 재단 · 포장비 견적 반영\n출하 빈도|정기 · 대량 · 소수 회차|<b>소량 다회 출하</b> — 현장 공정에 맞춰 분할 납품|건당 운임 단가 상승 · 차량 회전 비효율 · 배차 난이도 증가|지역별 합적 배송 · 최소 출하 단위 설정 · <b>분할 납품 횟수 초과 시 할증</b>\n식별·이력|품번 단위|<b>현장 + 품번 + 로트</b> 3중 식별 — 성적서·이력 요구|라벨·서류 작업 공수 증가 · 오출고 시 현장 클레임 직결|라벨 자동 출력 · 출하 검수 이중화 · 성적서 발행 절차 표준화\n반품·잔량|규격품이라 재판매 가능|<b>현장 전용 사양</b> — 잔량이 곧 사장 재고|취소·설계변경 시 전량 손실 위험|발주서에 <b>취소·변경 시 기성 정산 조항</b> 명시 · 선투입 최소화',
+fdLogiNote:'<b>품질인정제도가 재고 운영 방식을 바꿨습니다.</b> 인정 대상 자재는 현장 단위로 이력·성적서가 따라붙기 때문에 예전처럼 규격품을 만들어 두고 아무 현장에나 내보내기 어렵습니다. 결과적으로 <b>현장별 생산 → 현장별 소량 포장 → 소량 다회 출하</b>가 되고, 물량은 그대로여도 <b>포장·물류·서류 공수만 늘어납니다.</b> 이 비용은 제품 단가에 들어 있지 않은 <b>순수 추가 원가</b>이므로, 최소 출하 단위와 분할 납품 할증을 단가표에 문서화하지 않으면 계속 우리 몫으로 남습니다. 잔량 사장 위험은 발주서의 취소·설계변경 정산 조항으로 막아야 합니다.',
+fdRiskLead:'<b>2027년의 실체 — 매출은 늘고 이익은 사라진다.</b> 우리 거래는 <b>계약수주가 아니라 발주 기반 주문생산</b>. 방화문 업체가 현장별로 발주를 내면 우리가 받아 제조·납품하는 구조라, 장기 단가계약으로 묶여 있지 않고 <b>발주 건마다 비교견적으로 재경쟁</b>. 단가를 못 맞추면 그 건만 잃는 것이 아니라 <b>거래처 자체가 다른 업체로 넘어감</b>. 지금은 주문생산 비중이 높고 시장이 어려워 <b>단가 이탈 압력이 상시</b>. 2027년 물량 <b>+19%</b>(지수 100 → 120)는 오지만, 매 발주마다 비교견적을 통과해야 하고 여기에 도금·컬러 원자재 상승분과 비규격 소량 다품종·단납기 대응 비용이 원가로 가산.',
 fdRiskMat:'산세강판 PO|940천원/톤|열연 3주 연속 하락 전이|하락(-2%)|유리|열연 -3만원(8월 누적) 하락분을 조달단가에 반영 요구\n전기아연도금 EGI|1,050천원/톤|아연 고가 vs 중국산 AD 제외|보합|중립|국산 인상 요구는 중국산 견적으로 방어 가능\n용융아연도금 GI|1,075천원/톤|아연 $3,865 고가 + 중국산 AD 적용|상승(+2%)|불리|3~6개월 뒤 1,095까지 · 견적에 선반영 필요\n컬러강판(도장)|톤당 +10만원|동국씨엠 8/1 출고분부터 인상|부분 전가|불리|3월 인상 때 절반만 반영 — 협상 여지 확인\n아연 (LME)|$3,865/톤|역사적 고가권|하락 조정|중립|도금 서차지 전가 명분이자 원가 부담\n원료탄|$249/톤|월간 +12.7% 급등|하락(-18%)|중립|제선원가 상승분이 4분기 판가에 지연 반영\nUSD/KRW|1,386원|한 달 -6.2% 원화강세|1,430원(6개월)|불리|지금이 수입 견적 확보 적기 · 내년 재약세 리스크',
-fdRisk:'저가수주의 이연 인식|2026년 준공 -49.5%로 일감이 없어 가동률 방어용 저가 낙찰이 누적|그 물량이 2027년 매출로 인식 — 물량 +19%인데 단가는 2026년 수준 고정|3|수주 시점 기준 원가대장 관리 · 낙찰단가별 한계이익 집계 · 적자수주 사전 승인제\n원자재 상승분 미반영|2026 3분기 GI·컬러 상승분이 총액 입찰 견적에 반영되지 않음|납품 시점에 원가만 오르고 판가는 고정 — 건별 마진 3~5%p 잠식|3|견적서에 소재가 연동조항(에스컬레이션) 삽입 · 유효기간 30일 명시\n비규격 소량 다품종|표준 대량 오더 소멸 · 현장별 특주만 잔존|셋업·프로그램·검사 공수 증가로 실질 가공비 상승, 손익분기 물량 상승|3|최소 로트·특주 할증 단가표 도입 · 반복 규격의 표준품 전환 추진\n단가 인상 저항|한 번 내린 단가는 앵커로 굳고, 방화문 업체도 건설사에 눌려 전가 여력 없음|2027년 물량 회복기에도 단가 회복이 지연|3|일괄 인상 대신 소재 연동·물량 구간별 단가로 전환 · 컬러강판 고시 활용\n단납기 압박|일감 부족으로 현장이 발주를 미루나 준공일은 고정|잔업·특근·긴급물류 발생 — 실질 원가 상승, 납기 지연 리스크|2|긴급오더 할증 명문화 · 표준 리드타임 공표 · 조업일 적은 달 사전 통보\n기술자·인력 부족|건설업 취업자 2022 정점 대비 -26만명 · 고용보험 36개월 연속 감소|2027 하반기 증산 국면에 사람이 없어 물량을 못 받는 역설|2|비수기(27.1~2)에 채용·교육 선행 · 다능공화 · 자동화 투자\n대금회수 위험|건설사 폐업 상반기 2,092곳 · PF 연체율 4.65%|저가로 판 물량의 대금까지 못 받으면 손실이 두 배|3|신용등급 하락 거래처 여신 축소 · 선수금/현금할인 조건화',
-fdRiskSim:'① 현행 유지 (저가수주 지속)|113.1|66.8|26.2|20.0|0.1|0.1%|물량 +19% · 낙찰단가 -5% · 소재 +2% · 소량다품종 가공비 +10%\n② 단가 방어 (신규 수주 정상단가)|119.0|66.8|26.2|20.0|6.0|5.0%|물량 +19% · 단가 유지 · 나머지 동일\n③ 단가 방어 + 품목 선별|110.0|61.7|22.4|20.0|5.9|5.4%|적자 특주 20% 거절 → 물량 +10%지만 가공비율 정상화\n참고: 2026년 기준|100.0|55.0|20.0|20.0|5.0|5.0%|재료비 55% · 가공비 20% · 고정비 20% 가정',
-fdRiskAct:'2026.09~10|지금 당장|① 진행 중인 견적에 <b>소재가 연동조항</b>과 유효기간 30일 삽입 ② 열연 하락분(-3만원) 근거로 PO·CR 조달단가 인하 요구 ③ 2026년 낙찰건 <b>단가별 한계이익 전수 집계</b>\n2026.10~11|4분기 조달|① 중국산 도금 확정관세(10.11 만료) 결과 확인 후 GI·컬러 물량 확정 ② 12월 최대 출하월(지수 112) 대비 원자재·재고 선확보 ③ 원화강세 구간(1,386원) 활용해 수입 견적 확보\n2026.12~2027.02|비수기 준비|① 최소 로트·특주 할증 단가표 확정 후 거래처 사전 통보 ② 적자 품목 리스트업 및 <b>수주 거절 기준</b> 수립 ③ 조업 17일(2월) 대비 재고·인력 계획 ④ 채용·교육 선행\n2027.03~08|단가 정상화|① 신규 수주부터 정상단가 적용 — 기존 저가건과 분리 관리 ② 반복 규격의 표준품 전환으로 셋업 공수 절감 ③ 정비사업·비주거 시공사 스펙 진입\n2027.09~12|증산 대응|① 지수 123→152 구간, 조업일 19일(9·10월) — <b>사전 증산·외주 확보</b> ② 물량이 늘 때가 단가 협상의 유일한 기회 ③ 2028년 물량 선점 스펙 영업',
-fdRiskIns:'<b>1. 우리 위치 — 단가 압력의 맨 끝</b><br>건설사가 방화문 업체를 누르고, 방화문 업체가 우리를 누릅니다. 우리는 낙찰 협상에 참여하지 않지만 결과는 100% 떠안습니다. 방화문 업체가 2026년에 저가로 따낸 현장이 2027년에 시공되므로 <b>2027년 우리 단가는 이미 결정된 상태</b>입니다. 따라서 2027년에 할 수 있는 일은 <b>기존 저가건의 원가를 지키는 것</b>과 <b>신규 건부터 단가를 분리하는 것</b> 두 가지뿐입니다.\n<b>2. 물량 착시를 경계할 것</b><br>2027년 납품 물량은 2026년 대비 약 +19% 늘어납니다(월별 지수 100 → 120). 매출도 두 자릿수로 증가할 가능성이 높습니다. 그러나 그 매출의 단가는 <b>일감이 가장 없던 2026년 수준</b>입니다. 매출 증가를 회복 신호로 읽고 인력·설비를 선제 확대하면 <b>이익 없는 성장</b>이 됩니다. 판단 기준은 매출액이 아니라 <b>품목별 한계이익</b>이어야 합니다.\n<b>3. 원자재 — 전면 상승이 아니라 품목별로 갈림</b><br>2026년 3분기 원자재는 방향이 엇갈립니다. <b>열연 연동 품목(PO·CR)은 하락</b>했고(열연 3주 연속 -3만원, 국산 95만원), 원화도 한 달 새 6% 절상됐습니다. 반면 <b>도금·컬러(GI·컬러강판)는 상승</b>했습니다(아연 $3,865 역사적 고가, 컬러강판 8/1 톤당 +10만원). 「원자재가 올라 이익이 준다」는 진단은 <b>우리 소재 구성비로 다시 계산</b>해야 합니다. 하락 품목은 <b>조달단가 인하를 요구</b>하고, 상승 품목은 <b>견적에 선반영</b>하는 것이 맞습니다.\n<b>4. 비규격 소량 다품종 — 단가가 아니라 원가 문제</b><br>로트가 1/5로 줄어도 셋업, 레이저·NCT 프로그램 작성, 초·중·종물 검사 공수는 그대로 들어갑니다. 표준품 대비 <b>실질 가공비가 30~50% 더</b> 듭니다. 같은 단가로 받으면 그 차이가 그대로 손실입니다. <b>최소 로트</b>와 <b>특주 할증</b>을 단가표에 문서화하지 않으면 <b>수주할수록 손해나는 품목</b>이 계속 늘어납니다.\n<b>5. 단가 회복 — 근거 있는 방식으로만 가능</b><br>일괄 인상 통보는 실패합니다. 컬러강판이 2026년 3월 인상 때 유통단계에서 절반만 반영된 것이 증거입니다. 통과되는 방식은 넷입니다 — <b>① 소재가 연동조항</b>(아연·GI 지수 연동, 견적 유효기간 30일 명시) <b>② 물량 구간별 단가</b>(최소 로트 미만 할증) <b>③ 긴급오더 할증</b>(표준 리드타임 공표 후 초과분) <b>④ 인증·성능 근거</b>(품질인정 대응 부자재의 차별 단가).\n<b>6. 납기 압박 — 일감이 없을수록 촉박해짐</b><br>현장은 발주를 미루는데 준공일은 고정입니다. 마감자재 리드타임만 압축되어 잔업·특근·긴급물류가 발생합니다. 판가에 반영되지 않는 <b>순수 원가 증가</b>이며, 조업일이 적은 2027년 2월(17일)·5월(19일)·9~10월(각 19일)에 집중됩니다. 표준 리드타임을 공표하고 <b>조업일이 적은 달을 거래처에 미리 통보</b>해야 합니다.\n<b>7. 인력 — 비수기에 준비해야 함</b><br>건설업 취업자는 2022년 정점 대비 26만명 줄었고 고용보험 가입자는 36개월 연속 감소 중입니다. 2027년 하반기에 지수가 123 → 152로 뛰는데 <b>그때 사람을 구하면 늦습니다</b>. 조업일이 가장 적은 <b>2027년 1~2월(17~20일)</b>이 채용·교육·다능공화의 적기이며, 이 시기 인건비는 투자로 보아야 합니다.\n<b>8. 최후의 방어선 — 선별 수주</b><br>원가 시뮬레이션 ③처럼 적자 특주를 20% 거절하면 매출은 9포인트 줄지만 <b>영업이익률은 0.1% → 5.4%</b>가 됩니다. 물량이 없을 때 수주를 거절하는 것은 가장 어려운 결정입니다. 그러나 지금 국면에서 생존을 결정하는 것은 <b>가동률이 아니라 한계이익</b>입니다. <b>수주 거절 기준을 문서로 만들어 두어야</b> 현장에서 실행됩니다.',
+fdRisk:'★ 비교견적 이탈|일감 부족으로 방화문 업체가 발주 건마다 복수 견적을 돌림 — 단가 낮은 곳으로 즉시 전환|건 단위 손실이 아니라 거래처 통째로 상실 — 한 번 넘어가면 회복에 수년|3|주력 거래처 이탈 조기신호 감시(발주 빈도·품목 수 감소) · 방어 우선순위 등급화 · 단가 외 무기(납기·품질·소량대응) 문서화\n발주단가 하향 압력의 이연|2026년 준공 -41.4%로 일감이 없어 가동률 방어용 저단가 수용이 누적|그 단가가 앵커로 굳어 2027년 물량 +19% 구간에도 그대로 적용|3|발주단가별 한계이익 집계 · 품목별 하한단가 설정 · 하한 이하 견적은 사전 승인제\n원자재 상승분 미반영|2026 3분기 GI·컬러 상승분이 견적 제출 시점에 반영되지 않음|납품 시점에 원가만 오르고 판가는 고정 — 건별 마진 3~5%p 잠식|3|견적서에 소재가 연동조항(에스컬레이션) 삽입 · 유효기간 30일 명시\n비규격 → 금형 양산 불가|현장마다 사양이 달라 금형 제작 불성립 — 레이저가공 + 후공정 프레스로 전환|금형 상각 이익 소멸 · 레이저 시간당 원가 + 프로그램 작성 + 2차 셋업 + 네스팅 잔재가 원가에 추가|3|반복 출현 규격 표준품 지정·금형 전환 · 레이저/후공정 기준 별도 단가체계 · 프로그램 라이브러리화\n★ 물류·포장 소량 대응|품질인정 이력관리로 재고성 생산 불가 — 현장별 생산·소량 포장·다회 출하|포장 인원·자재비 급증 · 건당 운임 상승 · 라벨/성적서 공수 · 잔량은 사장 재고|3|최소 출하 단위 설정 · 분할 납품 초과 할증 · 현장별 표준 포장 세트 · 발주서에 취소·변경 정산 조항\n단가 인상 저항|한 번 내린 단가는 앵커로 굳고, 방화문 업체도 건설사에 눌려 전가 여력 없음|2027년 물량 회복기에도 단가 회복이 지연 · 인상 시도 시 이탈 위험 동반|3|일괄 인상 대신 소재 연동·물량 구간별 단가로 전환 · 컬러강판 고시 활용 · 인상은 거래 비중 낮은 곳부터 시험\n단납기 압박|일감 부족으로 현장이 발주를 미루나 준공일은 고정 — 발주가 촉박하게 몰림|잔업·특근·긴급물류 발생 — 실질 원가 상승, 납기 지연 시 이탈 사유가 됨|3|긴급오더 할증 명문화 · 표준 리드타임 공표 · 조업일 적은 달 사전 통보\n기술자·인력 부족|건설업 취업자 2022 정점 대비 -26만명 · 고용보험 36개월 연속 감소|2027 하반기 증산 국면에 사람이 없어 물량을 못 받는 역설|2|비수기(27.1~2)에 채용·교육 선행 · 다능공화 · 자동화 투자\n대금회수 위험|건설사 폐업 상반기 2,092곳 · PF 연체율 4.65%|저가로 판 물량의 대금까지 못 받으면 손실이 두 배|3|신용등급 하락 거래처 여신 축소 · 선수금/현금할인 조건화',
+fdRiskSimNote:'<b>실적이 아니라 가정 계산.</b><br><b>· 기준선(참고 행)</b> — 2026년 매출 100 기준, 재료비 55 · 가공비 20 · 고정비 20 · 영업이익 5(5%). <b>일반적인 금속가공업 원가구조 가정</b>이며 <b>사내 결산 실적 아님</b>.<br><b>· 적용 변수 4개</b> — <b>물량 +19%</b>(월별 납품지수 100→120 · <b>유일한 외부 근거</b>, 국토교통부 준공 전망) / <b>발주단가 -5%</b>(비교견적 압박에 따른 단가 하향 · 사내 가정) / <b>소재 +2%</b>(GI·컬러 상승분) / <b>가공비 +10%</b>(금형 양산 불가 → 레이저 + 후공정 프레스 · 프로그램 작성 · 2차 셋업 · 네스팅 잔재 · 사내 가정). 고정비는 20 고정.<br><b>· 빠진 것 ①</b> — <b>거래처 이탈</b>. ②·③은 단가를 지킨 경우의 이익만 계산. 계약이 아니라 발주 건마다 비교견적으로 경쟁하는 구조이므로, 단가를 지키면 이익률은 오르되 <b>그 거래처 발주가 끊길 수 있음</b>. 실제 판단은 이 표의 이익률 + <b>거래처별 이탈 확률 × 연 매출 비중</b>.<br><b>· 빠진 것 ②</b> — <b>물류·포장 원가</b>. 품질인정 현장별 출고로 늘어난 포장·운임·서류 공수가 별도 항목으로 없음 → 가공비 또는 고정비에 포함해 재계산 필요.<br><b>· 사용법</b> — 방향(매출은 늘고 이익은 사라짐)은 유효, <b>절대 수치는 그대로 쓰지 말 것</b>. 재료비·가공비·고정비 비율을 <b>우리 손익계산서 실적으로 교체</b> 후 재계산. 표의 모든 숫자 직접 수정 가능.',
+fdRiskSim:'① 현행 유지 (비교견적에 계속 맞춤)|113.1|66.8|26.2|20.0|0.1|0.1%|물량 +19% · 발주단가 -5% · 소재 +2% · 소량다품종 가공비 +10%\n② 단가 방어 (하한단가 적용)|119.0|66.8|26.2|20.0|6.0|5.0%|물량 +19% · 단가 유지 · 나머지 동일 · 이탈 위험 감수\n③ 단가 방어 + 품목 선별|110.0|61.7|22.4|20.0|5.9|5.4%|적자 특주 20% 사양 → 물량 +10%지만 가공비율 정상화 · 이탈 위험 최대\n참고: 2026년 기준|100.0|55.0|20.0|20.0|5.0|5.0%|재료비 55% · 가공비 20% · 고정비 20% 가정',
+fdRiskAct:'2026.09~10|지금 당장|① 진행 중인 견적에 <b>소재가 연동조항</b>과 유효기간 30일 삽입 ② 열연 하락분(-3만원) 근거로 PO·CR 조달단가 인하 요구 ③ 2026년 납품건 <b>발주단가별 한계이익 전수 집계</b> ④ 거래처별 <b>발주 빈도·품목수 추이</b> 점검(이탈 조기신호)\n2026.10~11|4분기 조달|① 중국산 도금 확정관세(10.11 만료) 결과 확인 후 GI·컬러 물량 확정 ② 12월 최대 출하월(지수 112) 대비 원자재·재고 선확보 ③ 원화강세 구간(1,386원) 활용해 수입 견적 확보\n2026.12~2027.02|비수기 준비|① 최소 로트·특주 할증 단가표 확정 후 거래처 사전 통보 ② 적자 품목 리스트업 및 <b>품목별 하한단가</b> 수립(이탈 감수 등급 병기) ⑤ <b>반복 출현 규격 추출 → 표준품·금형 전환 후보</b> 선정 ⑥ 최소 출하 단위·분할 납품 할증 문서화 ③ 조업 17일(2월) 대비 재고·인력 계획 ④ 채용·교육 선행\n2027.03~08|단가 정상화|① 신규 발주분부터 하한단가 적용 — 기존 저단가건과 분리 관리 · 거래 비중 낮은 곳부터 시험 ② 반복 규격의 표준품 전환으로 셋업 공수 절감 ③ 정비사업·비주거 시공사 스펙 진입\n2027.09~12|증산 대응|① 지수 123→152 구간, 조업일 19일(9·10월) — <b>사전 증산·외주 확보</b> ② 물량이 늘 때가 단가 협상의 유일한 기회 ③ 2028년 물량 선점 스펙 영업',
+fdRiskIns:'<b>1. 우리 거래 구조 — 계약이 아니라 발주 · 매 건이 재경쟁</b><br>장기 단가계약이 아니라 <b>발주 기반 주문생산</b>. 방화문 업체가 현장별로 발주를 내면 받아서 제조·납품. 따라서 우리를 지켜 주는 계약이 없고, <b>발주 건마다 비교견적으로 다시 경쟁</b>. 단가를 못 맞추면 그 건만 잃는 것이 아니라 <b>거래처가 통째로 다른 업체로 넘어감</b>. 대응의 축은 「단가 방어」가 아니라 <b>「단가 방어 + 이탈 방어」 두 축</b>.\n<b>2. 물량 착시 경계 — 물량은 오지만 우리 몫은 보장되지 않음</b><br>2027년 시장 물량 <b>+19%</b>(지수 100 → 120). 단, 계약 물량이 아니라 <b>발주가 늘어나는 것</b>일 뿐이며 그 발주가 우리에게 온다는 보장은 없음. 단가는 <b>일감이 가장 없던 2026년 수준</b>이 앵커. 매출 증가를 회복 신호로 읽고 인력·설비를 선제 확대하면 <b>이익 없는 성장</b>. 판단 기준 둘 — <b>품목별 한계이익</b>과 <b>거래처별 발주 점유율</b>.\n<b>3. 원자재 — 전면 상승 아님, 품목별로 갈림</b><br>하락: <b>열연 연동(PO·CR)</b> 3주 연속 -3만원, 국산 95만원 · 원화 한 달 6% 절상. 상승: <b>도금·컬러(GI·컬러강판)</b> 아연 $3,865 역사적 고가 · 컬러강판 8/1 톤당 +10만원. → 「원자재 상승 = 이익 감소」는 <b>우리 소재 구성비로 재계산</b>. 하락 품목은 <b>조달단가 인하 요구</b>, 상승 품목은 <b>견적 선반영</b>.\n<b>4. 비규격 소량 다품종 — 단가가 아니라 원가 구조가 바뀐 문제</b><br>핵심은 로트 축소가 아니라 <b>금형 양산이 불가능해진 것</b>. 현장마다 사양이 달라 금형 제작이 성립하지 않으므로 <b>레이저가공 + 후공정 프레스</b> 구조로 전환됨. 사라진 것 — 금형 상각 이익, 타발 1회·셋업 1회의 저원가. 새로 들어온 것 — <b>레이저 시간당 원가</b>(전력·가스·렌즈·노즐) + <b>건별 프로그램 작성</b> + <b>2차 셋업과 반제품 이동·식별·재투입</b> + <b>네스팅 잔재</b>(투입중량 대비 제품중량 하락 → 재료비가 판재 기준으로 상승). 표준품 대비 <b>실질 가공비 30~50% 증가</b>. 동일 단가 수용 시 그 차이가 그대로 손실. 대응 셋 — <b>① 반복 출현 규격을 뽑아 표준품 지정 후 금형 전환</b> <b>② 나머지는 레이저·후공정 기준 별도 단가체계로 분리</b> <b>③ 반복 도면 프로그램 라이브러리화로 건별 공수 절감</b>.\n<b>5. 단가 회복 — 근거 있는 방식만, 그리고 순서를 지켜서</b><br>일괄 인상 통보는 실패(2026년 3월 컬러강판 인상, 유통단계 절반만 반영). 비교견적 구조에서는 인상 통보가 곧 <b>이탈 유발</b>이 되므로 근거와 순서가 함께 필요. 통과되는 넷 — <b>① 소재가 연동조항</b>(아연·GI 지수 연동 · 견적 유효기간 30일 명시) <b>② 물량 구간별 단가</b>(최소 로트 미만 할증) <b>③ 긴급오더 할증</b>(표준 리드타임 공표 후 초과분) <b>④ 인증·성능 근거</b>(품질인정 대응 부자재 차별 단가). 적용 순서는 <b>거래 비중이 낮은 거래처부터 시험 → 반응 확인 → 주력으로 확대</b>.\n<b>6. 납기 압박 — 일감이 없을수록 촉박</b><br>발주는 지연, 준공일은 고정 → 마감자재 리드타임만 압축 → 잔업·특근·긴급물류. 판가 미반영 <b>순수 원가 증가</b>. 집중 시기: 2027년 2월(17일)·5월(19일)·9~10월(각 19일). 대응: 표준 리드타임 공표 + <b>조업일 부족 월 사전 통보</b>.\n<b>7. 인력 — 비수기에 선행 확보</b><br>건설업 취업자 2022년 정점 대비 <b>-26만명</b>, 고용보험 가입자 36개월 연속 감소. 2027년 하반기 지수 123 → 152 급등 구간에서 <b>그때 채용하면 늦음</b>. 적기: 조업일 최소인 <b>2027년 1~2월(17~20일)</b>. 채용·교육·다능공화 비용은 투자로 처리.\n<b>8. 최후의 방어선 — 선별 수주, 단 이탈 위험을 계산에 넣고</b><br>시뮬레이션 ③ 기준, 적자 특주 20% 사양 시 매출 -9p, <b>영업이익률 0.1% → 5.4%</b>. 단 이 계산에는 <b>거래처 이탈로 사라지는 매출이 빠져 있음</b>. 우리는 계약으로 묶인 물량이 아니라 발주 건마다 경쟁하므로, 한 건을 사양하면 그 거래처의 후속 발주까지 끊길 수 있음. 실행 방법 — <b>① 거래처를 「사수 / 조건부 / 선별」 3등급으로 분류</b>(연 매출 비중 · 대체 가능성 · 결제 조건 기준) <b>② 사수 등급은 한계이익이 낮아도 방어</b> <b>③ 선별 등급부터 하한단가 적용</b> <b>④ 단가 외 무기</b>(납기·소량 대응·품질인정 대응·재고 보유)를 문서화해 비교견적에서 가격만으로 비교되지 않게 만들 것. 생존을 가르는 기준은 가동률도, 한계이익 하나도 아닌 <b>「한계이익 × 거래 지속성」</b>.\n<b>9. 물류·포장 — 품질인정이 바꾼 숨은 원가</b><br>품질인정 대상 자재는 <b>현장 단위 이력·성적서</b>가 따라붙어 예전처럼 규격품을 만들어 두고 아무 현장에나 내보낼 수 없음. 결과는 <b>현장별 생산 → 현장별 소량 포장 → 소량 다회 출하</b>. 물량이 같아도 늘어나는 것 — 포장 인원·자재비, 건당 운임(파렛트 적재효율 하락), 라벨·성적서 서류 공수, 오출고 클레임 위험, 그리고 <b>현장 전용 사양이라 취소·설계변경 시 잔량이 곧 사장 재고</b>. 이 비용은 제품 단가에 들어 있지 않은 <b>순수 추가 원가</b>. 대응 넷 — <b>① 최소 출하 단위 설정</b> <b>② 분할 납품 횟수 초과 시 할증</b> <b>③ 현장별 표준 포장 세트 규격화</b>(자재 사전 재단으로 공수 절감) <b>④ 발주서에 취소·설계변경 시 기성 정산 조항 명시</b>.',
 fdQual:'<b>근거법령</b> — 건축법 제52조의5·6, 국토부 고시 「건축자재등 품질인정 및 관리기준」\n<b>인정기관</b> — 한국건설기술연구원(KICT). 제조현장 확인점검 + 품질시험 통과 시 인정서 발급\n<b>2026.02.20 개정</b> — ① 방화문+자동방화셔터 일체 「복합 방화셔터」 품목 신설(내충격·개폐 성능 기준 신설) ② 공장 이전·동등 이상 설비 교체 시 성능시험 면제 ③ 시료채취 기준 명확화, 중소기업 청문 시 협회 참관 허용\n<b>승강기 방화문</b> — 2025.6 행정예고: 문짝·문틀 <b>모두</b> 직접 생산 업체로 제한 + 차연(遮煙) 성능 시험 신설. 2026년 최종 고시 확정 여부 미확인 → 동향 주시 필요\n<b>2027 예정</b> — QR코드·앱 기반 「건축자재 통합관리 플랫폼」 도입. 부자재도 이력관리 대상 편입 가능성\n<b>부자재 영향</b> — 개스킷·유리관측창·피벗힌지 등은 품질시험 시 성능 확인 대상. 인정 대응력이 곧 진입장벽',
-fdReno:'방화문 내용연수 <b>약 15~20년</b> — 도장 열화·개폐 불량·차열 성능 저하로 교체 필요\n재건축(30년↑) — 전면 철거 후 신축. 방화문·부자재 100% 신규 물량\n리모델링(15~30년) — 세대 현관문·방화구획 방화문 교체 의무, 배관 PD커버 동반 교체\n서울 30년 초과 아파트 <b>477,596가구(30.5%)</b> — 노원 61%·도봉 60%로 지역 편중\n재건축진단 완화(2025.6)로 사업기간 3년 단축 → 2028년 이후 정비사업 물량 본격화',
-fdDemand:'2026 하반기|최저점|정량 전망 보류|준공 -49.5% 여파가 하반기 내내 지속. 신규 현장 부족\n2027년|저점 횡보|보합|착공 반등분 미도달 구간. 공공·비주거로 버티는 해\n2028년|회복 시작|+10~15%|2026 착공 +14.4%분 납품 도달 + 3기 신도시 초기 물량\n2029년|성장 가속|+15~20%|3기 신도시 입주 피크 + 정비사업 본격화\n2030년~|안정 성장|+5~10%|성수기(22~23년)의 85~90% 수준 회복 전망',
-fdIdx:'주택 준공 실적|지금 이 순간의 납품 물량|2026 상반기 103,735호 (-49.5%)\n주택 착공 세대수|2년 뒤 물량의 핵심 선행지표|2026 상반기 118,005호 (+14.4%)\n주택 인허가|3년 뒤 물량 · 장기 선행|2026 상반기 116,611호 (-15.8%)\n건설기성|현장 진행률·자재 투입 시점|2026 상반기 -5.3% · 6월 전월비 +4.1%\n건축부문 건설수주|건설사 투자심리·신규 현장|2026.6 -36.9% · 상반기 +20.1%\n미분양·PF 리스크|납품 지연·대금회수 위험|미분양 67,464호 · PF 연체율 4.65%\n철판·아연도강판 가격|부자재 원가·마진 직결|GI 1,075 · EGI 1,050 · PO 940 천원/톤 (2026.7)\n방화문 성능·인증 규제|고품질 부자재 수요 근거|2026.2 품질인정기준 개정 · 복합셔터 신설',
+fdReno:'방화문 내용연수 <b>약 15~20년</b> — 도장 열화·개폐 불량·차열 성능 저하로 교체 필요\n재건축(30년↑) — 전면 철거 후 신축. 방화문·부자재 100% 신규 물량\n리모델링(15~30년) — 세대 현관문·방화구획 방화문 교체 의무, 배관 PD커버 동반 교체\n서울 30년 초과 아파트 <b>477,596가구(30.5%)</b> — 노원 61%·도봉 60%로 지역 편중\n재건축진단 완화(2025.6)로 사업기간 3년 단축 → 2028년 이후 정비사업 물량 본격화\n재건축 2,000세대 단지 1곳 = 현관 방화문 2,000 + 공용 방화문 2,800 + PD커버 6,000 + 부자재 세트 12,000 (사내 추정)\n브랜드 아파트 스펙 — 차열·차연 성능 요구가 높아 <b>단가 방어에 유리한 시장</b>\n리모델링은 기존 개구부 실측 특주 — <b>소량 다품종 원가 구조</b>라 특주 할증 문서화가 전제\n재초환 미폐지·공사비 분쟁으로 착공 지연 상존 — 관리처분인가 구역을 타깃 리스트로 관리',
+fdDemand:'2026 하반기|최저점|정량 전망 보류|준공 -41.4% 여파가 하반기 내내 지속. 신규 현장 부족\n2027년|저점 횡보|보합|착공 반등분 미도달 구간. 공공·비주거로 버티는 해\n2028년|회복 시작|+10~15%|2026 착공 +11.1%분 납품 도달 + 3기 신도시 초기 물량\n2029년|성장 가속|+15~20%|3기 신도시 입주 피크 + 정비사업 본격화\n2030년~|안정 성장|+5~10%|성수기(22~23년)의 85~90% 수준 회복 전망',
+fdIdx:'주택 준공 실적|지금 이 순간의 납품 물량|2026 1~7월 135,513호 (-41.4%)\n주택 착공 세대수|2년 뒤 물량의 핵심 선행지표|2026 1~7월 138,383호 (+11.1%)\n주택 인허가|3년 뒤 물량 · 장기 선행|2026 1~7월 142,328호 (-7.9%)\n건설기성|현장 진행률·자재 투입 시점|2026 1~7월 -5.3% · 6월 전월비 +4.1%\n건축부문 건설수주|건설사 투자심리·신규 현장|2026.6 -36.9% · 상반기 +20.1%\n미분양·PF 리스크|납품 지연·대금회수 위험|미분양 68,217호 · PF 연체율 4.65%\n철판·아연도강판 가격|부자재 원가·마진 직결|GI 1,075 · EGI 1,050 · PO 940 천원/톤 (2026.7)\n방화문 성능·인증 규제|고품질 부자재 수요 근거|2026.2 품질인정기준 개정 · 복합셔터 신설',
 fdLink:'주택 인허가|전국·지역별 인허가 세대수|장기 선행. 3년 뒤 착공 가능 물량 판단\n주택 착공|아파트·연립·오피스텔 착공 세대수|2년 뒤 방화문 수요의 핵심 선행지표\n주택 준공|실제 준공 세대수|현재 납품 물량과 가장 직접 연동\n건설수주|민간/공공, 건축/토목 수주|건설사 투자심리와 신규 현장 흐름\n건설기성|실제 공사가 진행된 금액|현장 진행률·자재 투입 시점 판단\n미분양·PF|미분양 증가, 자금경색, 현장 중단|납품 지연·대금회수 리스크\n원자재 가격|철판, HGI/EGI, 아연도강판, 운송비|방화문 부자재 단가·마진 분석\n지역별 착공/준공|수도권, 충청, 영남, 호남|영업 집중 지역 선정\n비주거 건축|학교, 병원, 공장, 물류, 지식산업센터|주택 외 방화문 수요 판단\n정책·인증|품질인정, 차연 성능, 건축안전 규제|고품질 부자재 수요 확대 근거',
-fdImpact:'수주 감소|준공 반토막으로 방화문 발주 물량 자체가 축소|3\n대금회수 위험|PF 연체율 4.65%, 폐업 2,092곳·회생 신청 확산|3\n납기 경쟁|적은 물량을 두고 업체 간 수주 경쟁 심화|3\n단가 인하 압박|건설사·방화문업체의 원가절감 요구 증가|2\n원가 상승|철강 톤당 5~10만원 인상 vs 단가 인하 압박 협공|3\n재고 부담|현장 진행 지연 시 선투입 재고가 그대로 적체|2',
+fdImpact:'수주 감소|준공 반토막으로 방화문 발주 물량 자체가 축소|3\n대금회수 위험|PF 연체율 4.65%, 폐업 2,092곳·회생 신청 확산|3\n납기 경쟁|적은 물량을 두고 업체 간 수주 경쟁 심화|3\n단가 인하 압박|건설사·방화문업체의 원가절감 요구 증가|2\n원가 상승|철강 톤당 5~10만원 인상 vs 단가 인하 압박 협공|3\n재고 부담|현장 진행 지연 시 선투입 재고가 그대로 적체 · 현장 전용 사양이라 전용 불가|3\n생산방식 전환|금형 양산 불가 → 레이저 + 후공정 프레스로 원가 구조 자체가 상승|3\n물류·포장 부담|품질인정 현장별 출고로 소량 포장·다회 출하 · 단가에 없는 순수 추가 원가|3',
 fdConv:'공식: 준공(입주) 세대수 × 세대당 방화문 5~7세트 = 대략적 시장 규모\n2026년 준공 약 21만호(상반기 실적 연환산) × 5세트 = 약 <b>105만 세트</b> (바닥 구간)\n2027년 준공 약 24만호 × 5세트 = 약 <b>120만 세트</b> (저점 횡보)\n2028년 준공 약 30만호 × 5세트 = 약 <b>150만 세트</b> (회복 전환)\n참고: 성수기 2022년 약 46만호 × 5세트 = 약 230만 세트 → 현재 대비 <b>-54%</b> 수준',
 fdRegion:'수도권|착공 -0.7% 보합 · 3기 신도시 진행|2026 감소 → 2028 회복|대형 시공사 선제 스펙 영업. 핵심 시장\n충청권|세종·천안 공공물량 지속|안정적|LH 납품 집중. 공공 발주 비중↑\n영남권|부산 3,292·대구 3,575호 준공후 미분양|급감 중|여신 축소·현금거래. 비주거 산업시설 집중\n호남권|착공 급감 · 삼일건설 회생 등 지역사 부실|급감 중|영업망 선별 축소. 신용등급 상시 점검\n비주거|반도체·데이터센터·물류 확대|지속 성장|고사양 차열 방화문·특수 부자재 고부가 시장',
-fdNews:'2026.08|중립|규제 강화|안전보건 현황 공시제 시행(연 공사액 1,200억원 이상)\n2026.08|부정|리스크|7월 이후 건설사 폐업 하루 13곳 · 상반기 2,092곳 12년 만에 최다\n2026.07|부정|리스크|2026 상반기 주택 준공 -49.5% · 수도권 -47.6%\n2026.07|긍정|수주 기회|2026 상반기 건설수주 +25.8% · 공공 +49.6%\n2026.07|부정|원가 변동|건설공사비지수 138.22 · 전년동월비 +5.5% 역대 최고\n2026.06|긍정|수주 기회|CERIK 2026 건설수주 240.8조원(+8.9%)로 상향 수정\n2026.03|중립|규제 강화|노란봉투법 시행 — 216개 원청·616개 하청노조 교섭 요구\n2026.02|긍정|규제 강화|건축자재 품질인정기준 개정 — 복합 방화셔터 품목 신설',
-fdStrat:'리스크 관리|최우선|부실채권 제로화 최우선;신용등급·PF 노출 상시 모니터링;여신한도 축소·선수금 조건 강화;회생·폐업 징후 조기 경보\nR&D·품질|높음|복합 방화셔터 대응 부자재 선제 개발;차연 성능 대응 개스킷 라인업;단열·결로방지 부자재;특허제품 → 독점 스펙 영업\n원가·생산성|높음|철강 톤당 5~10만원 인상분 판가 반영 협상;레이저·NCT 가동률 기준 수주 선별;적정 안전재고 재설정;장기재고 현금화\n시장 전환|중간|정비사업(재건축·리모델링) 시공사 스펙 진입;비주거(반도체·DC·물류) 고사양 시장;LH·공공 발주 등록·납품 확대;지방 영업망 선별 재편',
-fdIns:'<b>① 착공 반등에 속지 말 것</b> — 2026 상반기 착공 +14.4%는 좋은 뉴스지만 우리 매출과는 2년 시차입니다. 지금 매출을 결정하는 건 <b>준공 -49.5%</b>입니다.\n<b>② 2026 하반기~2027이 진짜 바닥</b> — 준공 반토막의 여파가 온전히 반영되는 구간. 매출 목표는 회복이 아니라 <b>손익분기 방어</b>로 세워야 합니다.\n<b>③ 원가·단가 협공</b> — 철강 인상(톤당 5~10만원)과 단가 인하 압박이 동시에 옵니다. 품목별 한계이익 기준 <b>수주 선별</b>이 필수입니다.\n<b>④ 미수금이 이익보다 중요</b> — 폐업 2,092곳·PF 연체 4.65% 국면에서는 매출 1억보다 미수 1억 회수가 우선입니다.\n<b>⑤ 2028년을 위한 스펙 영업은 지금</b> — 3기 신도시·정비사업은 착공 시점에 자재가 결정됩니다. 납품은 2028년이어도 <b>영업은 2026년에</b> 끝나야 합니다.'
+fdNews:'2026.08|중립|규제 강화|안전보건 현황 공시제 시행(연 공사액 1,200억원 이상)\n2026.08|부정|리스크|7월 이후 건설사 폐업 하루 13곳 · 상반기 2,092곳 12년 만에 최다\n2026.07|부정|리스크|2026 상반기 주택 준공 -41.4% · 수도권 -38.7%\n2026.07|긍정|수주 기회|2026 상반기 건설수주 +25.8% · 공공 +49.6%\n2026.07|부정|원가 변동|건설공사비지수 138.22 · 전년동월비 +5.5% 역대 최고\n2026.06|긍정|수주 기회|CERIK 2026 건설수주 240.8조원(+8.9%)로 상향 수정\n2026.03|중립|규제 강화|노란봉투법 시행 — 216개 원청·616개 하청노조 교섭 요구\n2026.02|긍정|규제 강화|건축자재 품질인정기준 개정 — 복합 방화셔터 품목 신설',
+fdStrat:'리스크 관리|최우선|부실채권 제로화 최우선;신용등급·PF 노출 상시 모니터링;여신한도 축소·선수금 조건 강화;회생·폐업 징후 조기 경보\nR&D·품질|높음|복합 방화셔터 대응 부자재 선제 개발;차연 성능 대응 개스킷 라인업;단열·결로방지 부자재;특허제품 → 독점 스펙 영업\n원가·생산성|높음|철강 톤당 5~10만원 인상분 판가 반영 협상;반복 출현 규격 표준품 지정 → 금형 전환;레이저 프로그램 라이브러리화·네스팅 수율 관리;후공정 프레스 2차 셋업 축소(연속 투입 로트);현장별 표준 포장 세트·최소 출하 단위 도입;레이저·NCT 가동률 기준 발주 선별\n시장 전환|중간|정비사업(재건축·리모델링) 시공사 스펙 진입;비주거(반도체·DC·물류) 고사양 시장;LH·공공 발주 등록·납품 확대;지방 영업망 선별 재편',
+fdIns:'<b>① 착공 반등에 속지 말 것</b> — 2026 1~7월 착공 +11.1%는 좋은 뉴스지만 우리 매출과는 2년 시차입니다. 지금 매출을 결정하는 건 <b>준공 -41.4%</b>입니다.\n<b>② 2026 하반기~2027이 진짜 바닥</b> — 준공 반토막의 여파가 온전히 반영되는 구간. 매출 목표는 회복이 아니라 <b>손익분기 방어</b>로 세워야 합니다.\n<b>③ 원가·단가 협공</b> — 철강 인상(톤당 5~10만원)과 단가 인하 압박이 동시에 옵니다. 품목별 한계이익 기준 <b>수주 선별</b>이 필수입니다.\n<b>④ 미수금이 이익보다 중요</b> — 폐업 2,092곳·PF 연체 4.65% 국면에서는 매출 1억보다 미수 1억 회수가 우선입니다.\n<b>⑤ 2028년을 위한 스펙 영업은 지금</b> — 3기 신도시·정비사업은 착공 시점에 자재가 결정됩니다. 납품은 2028년이어도 <b>영업은 2026년에</b> 끝나야 합니다.'
 };
 
 function mkState(){ state.market=state.market||{}; if(!state.market.d)state.market.d={}; return state.market; }
@@ -15914,7 +15950,7 @@ function conTrendChart(){
   }).join('')+'<span class="mk-serhint">버튼을 누르면 그 지표만 부각됩니다 · 다시 누르면 전체</span></div>';
  return '<div class="mk-card">'+
   '<div class="mk-h mk-hrow"><span>'+CFG.title+'<span class="mk-hs">'+esc(CFG.sub)+'</span></span>'+
-   modeBtns+'<span class="mk-asof">📅 기준일 2026.8.22</span></div>'+
+   modeBtns+'<span class="mk-asof">📅 기준일 2026.9.5</span></div>'+
   btns+
   '<div id="conTrendWrap" style="width:100%"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;font-family:inherit;font-weight:400">'+g+'</svg></div>'+
   '<div class="mk-note">'+CFG.note+'</div>'+
@@ -15945,6 +15981,449 @@ function mkPaint(page,html){
   try{ window.scrollTo(0,0); }catch(_e2){}
  }
 }
+
+/* ═══ v627 : 🏛️ LH·SH 공사 공급 계획 — 주택공급 비중 · 지역별 그래프 ═══
+   ① 2026 LH 발주 구성에서 주택사업이 차지하는 비중
+   ② 지역별 : 발주액(수도권/비수도권) · LH 건설형 착공(수도권/지방) · 3기 신도시 지구별
+   수치는 화면에서 직접 수정할 수 있고 state.market.d 에 저장됩니다. */
+var LH_C1='#1d4ed8', LH_C2='#0d9488', LH_C3='#d97706';   /* 검증 통과 3색 팔레트 */
+
+function lhNum(v){ var n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:0; }
+function lhList(key){ return mkRows(key).map(function(r){ return {n:String(r[0]||''),v:lhNum(r[1]),memo:String(r[2]||'')}; }).filter(function(o){return o.n;}); }
+function lhSetVal(key,i,v){
+  var rows=mkRows(key); if(!rows[i])return;
+  rows[i][1]=String(Math.max(0,lhNum(v)));
+  mkState().d[key]=rows.map(function(r){return r.join('|');}).join('\n');
+  if(typeof saveSettings==='function')saveSettings();
+  if(typeof marketConstruction==='function')marketConstruction();
+}
+var LH_IN='width:64px;text-align:right;font-family:inherit;font-size:11.5px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px';
+
+/* 100% 가로 스택 바 */
+function lhStack(list,colors,unit){
+  var tot=list.reduce(function(a,o){return a+o.v;},0)||1;
+  return '<div style="display:flex;gap:2px;height:40px;border-radius:9px;overflow:hidden;border:1px solid #e2e8f0">'
+    +list.map(function(o,i){ var p=o.v/tot*100;
+      return '<div title="'+esc(o.n)+' '+o.v+unit+' ('+p.toFixed(1)+'%)" style="width:'+p+'%;background:'+colors[i%colors.length]
+        +';color:#fff;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;min-width:0;white-space:nowrap;overflow:hidden">'
+        +(p>=9?esc(o.n)+' '+p.toFixed(0)+'%':(p>=4?p.toFixed(0)+'%':''))+'</div>'; }).join('')
+    +'</div>';
+}
+/* 가로 막대 목록 (입력칸 포함) */
+function lhBars(key,color,unit,labelW){
+  var list=lhList(key); if(!list.length)return '<div class="mk-note">자료가 없습니다.</div>';
+  var max=Math.max.apply(null,list.map(function(o){return o.v;}))||1;
+  var tot=list.reduce(function(a,o){return a+o.v;},0);
+  return list.map(function(o,i){
+    var w=Math.max(1,o.v/max*100), share=tot>0?(o.v/tot*100):0;
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      +'<div style="width:'+(labelW||150)+'px;flex:none;font-size:11.5px;color:#334155;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+esc(o.n)+'">'+esc(o.n)+'</div>'
+      +'<div style="flex:1;min-width:0;height:17px;background:#f1f5f9;border-radius:5px;overflow:hidden">'
+        +'<div title="'+esc(o.n)+' '+o.v+unit+'" style="height:100%;width:'+w.toFixed(1)+'%;background:'+color+';border-radius:5px"></div></div>'
+      +'<div style="width:74px;flex:none;text-align:right;font-size:12px;font-weight:800;color:'+color+'">'+o.v+unit+'</div>'
+      +'<div style="width:44px;flex:none;text-align:right;font-size:10.5px;color:#94a3b8">'+share.toFixed(0)+'%</div>'
+      +'<input value="'+o.v+'" onchange="lhSetVal(\''+key+'\','+i+',this.value)" style="'+LH_IN+';flex:none"></div>';
+  }).join('')+'<div style="margin-top:5px;font-size:11.5px;font-weight:700;color:#475569">합계 '+(Math.round(tot*10)/10)+unit+'</div>';
+}
+/* ① 주택공급 비중 */
+function lhHousingShare(){
+  var list=lhList('lhOrder'); if(!list.length)return '';
+  var tot=list.reduce(function(a,o){return a+o.v;},0)||1;
+  var house=list.filter(function(o){return /주택/.test(o.n)&&!/비주택/.test(o.n);}).reduce(function(a,o){return a+o.v;},0);
+  var kpi='<div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px">'
+    +['<div style="border:1px solid #e2e8f0;border-left:4px solid #0f172a;border-radius:9px;padding:8px 12px;background:#fff;flex:1;min-width:150px"><div style="font-size:11px;color:#64748b">2026 LH 발주 총액</div><div style="font-size:18px;font-weight:900;color:#0f172a;margin-top:2px">'+(Math.round(tot*10)/10)+'조원</div><div style="font-size:10.5px;color:#64748b;margin-top:2px">공사 + 용역</div></div>',
+      '<div style="border:1px solid #e2e8f0;border-left:4px solid '+LH_C1+';border-radius:9px;padding:8px 12px;background:#fff;flex:1;min-width:150px"><div style="font-size:11px;color:#64748b">🏠 주택사업</div><div style="font-size:18px;font-weight:900;color:'+LH_C1+';margin-top:2px">'+(Math.round(house*10)/10)+'조원</div><div style="font-size:10.5px;color:#64748b;margin-top:2px">비중 '+(house/tot*100).toFixed(1)+'% · 건축+부대공사</div></div>',
+      '<div style="border:1px solid #e2e8f0;border-left:4px solid '+LH_C3+';border-radius:9px;padding:8px 12px;background:#fff;flex:1;min-width:150px"><div style="font-size:11px;color:#64748b">그 외</div><div style="font-size:18px;font-weight:900;color:'+LH_C3+';margin-top:2px">'+(Math.round((tot-house)*10)/10)+'조원</div><div style="font-size:10.5px;color:#64748b;margin-top:2px">비중 '+((tot-house)/tot*100).toFixed(1)+'% · 비주택·용역</div></div>'
+     ].join('')+'</div>';
+  var cols=[LH_C1,LH_C1,LH_C3,LH_C2];
+  return kpi+lhStack(list,cols,'조')
+    +'<div style="margin-top:10px">'+lhBars('lhOrder',LH_C1,'조',150)+'</div>';
+}
+/* ② 지역별 */
+function lhRegionSection(){
+  var reg=lhList('lhRegion'), tot=reg.reduce(function(a,o){return a+o.v;},0)||1;
+  var kp=reg.map(function(o,i){
+    var c=i===0?LH_C1:LH_C2;
+    return '<div style="border:1px solid #e2e8f0;border-left:4px solid '+c+';border-radius:9px;padding:8px 12px;background:#fff;flex:1;min-width:150px">'
+      +'<div style="font-size:11px;color:#64748b">'+esc(o.n)+'</div>'
+      +'<div style="font-size:18px;font-weight:900;color:'+c+';margin-top:2px">'+o.v+'조원</div>'
+      +'<div style="font-size:10.5px;color:#64748b;margin-top:2px">발주액 비중 '+(o.v/tot*100).toFixed(1)+'%</div></div>';
+  }).join('');
+  return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:9px">'+kp+'</div>'
+    +lhStack(reg,[LH_C1,LH_C2],'조')
+    +'<div style="margin-top:9px">'+lhBars('lhRegion',LH_C1,'조',150)+'</div>'
+    +'<div class="mk-h" style="font-size:12.5px;margin:16px 0 7px">🏗️ LH 건설형 착공 물량 — 수도권 · 지방'
+      +'<span class="mk-hs">단위 만호 · 2026년 목표</span></div>'
+    +lhBars('lhStart',LH_C2,'만호',150)
+    +'<div class="mk-h" style="font-size:12.5px;margin:16px 0 7px">🏘️ 3기 신도시 지구별 계획 물량'
+      +'<span class="mk-hs">단위 만호 · 지구별 총 계획 세대</span></div>'
+    +lhBars('lh3rd',LH_C1,'만호',150);
+}
+
+/* ═══ v627 : LH·SH 공급계획 — 2026~2031 착공·준공 시계열 ═══
+   착공은 공표 계획치, 준공은 착공 대비 3년 시차 환산(연도별 준공 공표 통계 없음).
+   모든 수치는 화면에서 직접 수정할 수 있습니다. */
+var LH_YRS=['2026','2027','2028','2029','2030','2031'];
+var LH_C5=['#1e3a8a','#1d4ed8','#3b82f6','#60a5fa','#93c5fd'];
+/* 공공(파랑 계열) vs 민간(청록·주황)이 한눈에 구분되는 5색 */
+var LH_SUP=['#1e3a8a','#1d4ed8','#60a5fa','#0d9488','#d97706'];
+/* 이전 버전(공공 3계열)으로 저장된 값이 있으면 민간 포함 기본값으로 되돌립니다. */
+function lhMig5(){
+  try{ var st=mkState(); if(!st||!st.d)return;
+    ['lhYrStart','lhYrDone'].forEach(function(k){
+      if(st.d[k]&&String(st.d[k]).indexOf('민간')<0) delete st.d[k];
+    });
+    ['lhYrRegS','lhYrRegD'].forEach(function(k){
+      if(st.d[k]&&String(st.d[k]).indexOf('공공+민간')<0) delete st.d[k];
+    });
+  }catch(_e){}
+}
+/* 100% 누적 세로막대 : 연도별 구성비 */
+function lhShareCols(rows,colors,title){
+  if(!rows.length)return '<div class="mk-note">자료가 없습니다.</div>';
+  var tot=LH_YRS.map(function(_,i){ return rows.reduce(function(a,o){return a+o.v[i];},0)||1; });
+  var W=880,H=232,L=34,R=14,T=18,B=42,iw=W-L-R,ih=H-T-B;
+  var n=LH_YRS.length, slot=iw/n, bw=Math.min(64,slot*0.6);
+  var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="'+esc(title||'')+'">';
+  for(var g=0;g<=4;g++){ var gy=T+ih-ih*g/4;
+    s+='<line x1="'+L+'" y1="'+gy.toFixed(1)+'" x2="'+(W-R)+'" y2="'+gy.toFixed(1)+'" stroke="#eef2f7"/>'
+      +'<text x="'+(L-6)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9.5" fill="#94a3b8">'+(g*25)+'</text>'; }
+  LH_YRS.forEach(function(y,i){
+    var cx=L+slot*i+slot/2, x=cx-bw/2, acc=0;
+    rows.forEach(function(o,k){
+      var p=o.v[i]/tot[i]*100; if(p<=0){return;}
+      var y0=T+ih-(acc+p)/100*ih, hh=Math.max(1,p/100*ih);
+      s+='<rect x="'+x.toFixed(1)+'" y="'+y0.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+hh.toFixed(1)+'" fill="'+colors[k%colors.length]+'">'
+        +'<title>'+y+' '+esc(o.n)+' '+(Math.round(o.v[i]*10)/10)+'만호 ('+p.toFixed(1)+'%)</title></rect>';
+      if(p>=8)s+='<text x="'+cx.toFixed(1)+'" y="'+(y0+hh/2+3.5).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="800" fill="#fff">'+p.toFixed(0)+'%</text>';
+      acc+=p;
+    });
+    s+='<text x="'+cx.toFixed(1)+'" y="'+(T+ih+16)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="#475569">'+y+'</text>'
+      +'<text x="'+cx.toFixed(1)+'" y="'+(T+ih+29)+'" text-anchor="middle" font-size="9.5" fill="#94a3b8">'+(Math.round(tot[i]*10)/10)+'만호</text>';
+  });
+  return s+'</svg>';
+}
+/* 공공 vs 민간 요약 KPI */
+function lhPubPrv(key,cap){
+  var rows=lhYrRows(key); if(!rows.length)return '';
+  var isPrv=function(nm){ return /민간/.test(nm); };
+  var pub=LH_YRS.map(function(_,i){ return rows.reduce(function(a,o){return a+(isPrv(o.n)?0:o.v[i]);},0); });
+  var prv=LH_YRS.map(function(_,i){ return rows.reduce(function(a,o){return a+(isPrv(o.n)?o.v[i]:0);},0); });
+  var card=function(l,v,sub,c){ return '<div style="border:1px solid #e2e8f0;border-left:4px solid '+c+';border-radius:9px;padding:7px 11px;background:#fff;flex:1;min-width:130px">'
+    +'<div style="font-size:10.5px;color:#64748b">'+l+'</div>'
+    +'<div style="font-size:16px;font-weight:900;color:'+c+';margin-top:1px">'+v+'</div>'
+    +'<div style="font-size:10px;color:#64748b;margin-top:1px">'+sub+'</div></div>'; };
+  var t0=pub[0]+prv[0], t5=pub[5]+prv[5];
+  return '<div style="display:flex;flex-wrap:wrap;gap:7px;margin:7px 0 9px">'
+    +card(cap+' 2026 합계',(Math.round(t0*10)/10)+'만호','공공 '+(Math.round(pub[0]*10)/10)+' · 민간 '+(Math.round(prv[0]*10)/10),'#0f172a')
+    +card('2026 공공 비중',(t0?(pub[0]/t0*100):0).toFixed(1)+'%','LH·SH·지방공사','#1d4ed8')
+    +card('2026 민간 비중',(t0?(prv[0]/t0*100):0).toFixed(1)+'%','정비사업 + 일반분양·도급','#d97706')
+    +card('2031 전망',(Math.round(t5*10)/10)+'만호','민간 비중 '+(t5?(prv[5]/t5*100):0).toFixed(1)+'%','#0d9488')
+    +'</div>';
+}
+function lhYrRows(key){
+  return mkRows(key).map(function(r){
+    return {n:String(r[0]||''), v:LH_YRS.map(function(_,i){return lhNum(r[i+1]);}), memo:String(r[7]||'')};
+  }).filter(function(o){return o.n;});
+}
+function lhSetYr(key,i,c,v){
+  var rows=mkRows(key); if(!rows[i])return;
+  while(rows[i].length<8)rows[i].push('');
+  rows[i][c+1]=String(Math.max(0,lhNum(v)));
+  mkState().d[key]=rows.map(function(r){return r.join('|');}).join('\n');
+  if(typeof saveSettings==='function')saveSettings();
+  /* 어느 시장 페이지에서 고치든 그 페이지를 다시 그립니다. */
+  try{ if(typeof runAct==='function'&&state&&/^market-/.test(state.act||''))runAct();
+       else if(typeof marketConstruction==='function')marketConstruction(); }catch(_e){}
+}
+/* 누적 세로막대 : 연도 × 계열 */
+function lhStackCols(rows,colors,unit,title){
+  if(!rows.length)return '<div class="mk-note">자료가 없습니다.</div>';
+  var tot=LH_YRS.map(function(_,i){ return rows.reduce(function(a,o){return a+o.v[i];},0); });
+  var max=Math.max.apply(null,tot)*1.18||1;
+  var W=880,H=250,L=48,R=14,T=24,B=42,iw=W-L-R,ih=H-T-B;
+  var n=LH_YRS.length, slot=iw/n, bw=Math.min(58,slot*0.54);
+  var Y=function(v){ return T+ih-(v/max)*ih; };
+  var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="'+esc(title||'')+'">';
+  for(var g=0;g<=3;g++){ var gv=max*g/3, gy=Y(gv);
+    s+='<line x1="'+L+'" y1="'+gy.toFixed(1)+'" x2="'+(W-R)+'" y2="'+gy.toFixed(1)+'" stroke="#eef2f7"/>'
+      +'<text x="'+(L-7)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="10" fill="#94a3b8">'+(Math.round(gv*10)/10)+'</text>'; }
+  LH_YRS.forEach(function(y,i){
+    var cx=L+slot*i+slot/2, x=cx-bw/2, acc=0;
+    rows.forEach(function(o,k){
+      var v=o.v[i]; if(v<=0){acc+=v;return;}
+      var y0=Y(acc+v), y1=Y(acc), h=Math.max(1,y1-y0-2);
+      s+='<rect x="'+x.toFixed(1)+'" y="'+y0.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="3" fill="'+colors[k%colors.length]+'">'
+        +'<title>'+y+' '+esc(o.n)+' '+v+unit+'</title></rect>';
+      acc+=v;
+    });
+    if(tot[i]>0)s+='<text x="'+cx.toFixed(1)+'" y="'+(Y(tot[i])-6).toFixed(1)+'" text-anchor="middle" font-size="10.5" font-weight="800" fill="#334155">'+(Math.round(tot[i]*10)/10)+'</text>';
+    s+='<text x="'+cx.toFixed(1)+'" y="'+(T+ih+16)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="#475569">'+y+'</text>';
+  });
+  s+='<line x1="'+L+'" y1="'+(T+ih)+'" x2="'+(W-R)+'" y2="'+(T+ih)+'" stroke="#cbd5e1"/>'
+    +'<text x="'+L+'" y="'+(T-10)+'" font-size="10" fill="#94a3b8">단위: '+unit+'</text></svg>';
+  var lg='<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 3px;font-size:11px;color:#475569">'
+    +rows.map(function(o,k){ return '<span style="display:inline-flex;align-items:center;gap:5px">'
+      +'<span style="width:10px;height:10px;border-radius:3px;background:'+colors[k%colors.length]+';display:inline-block"></span>'+esc(o.n)+'</span>'; }).join('')+'</div>';
+  return lg+s;
+}
+/* 연도별 입력표 */
+function lhYrTable(key,unit,colors,share,cap){
+  var rows=lhYrRows(key); if(!rows.length)return '';
+  var tot=LH_YRS.map(function(_,i){ return rows.reduce(function(a,o){return a+o.v[i];},0); });
+  var grand=tot.reduce(function(a,v){return a+v;},0)||1;
+  var r1=function(v){ return Math.round(v*10)/10; };
+  return '<div class="mk-tblwrap"><table class="mk-tbl" style="min-width:'+(share?600:520)+'px"><thead><tr><th class="l">'+esc(cap||'구분')+'</th>'
+    +LH_YRS.map(function(y){return '<th>'+y+'</th>';}).join('')
+    +(share?'<th style="background:#f1f5f9">6년 누계</th><th style="background:#f1f5f9">비중</th>':'')
+    +'</tr></thead><tbody>'
+    +rows.map(function(o,i){
+      var sum=o.v.reduce(function(a,v){return a+v;},0);
+      return '<tr><td class="l" style="font-size:11.5px;color:'+colors[i%colors.length]+';font-weight:700">'
+        +(share?'<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+colors[i%colors.length]+';margin-right:5px"></span>':'')
+        +esc(o.n)+'</td>'
+        +LH_YRS.map(function(_,c){
+          var p=tot[c]>0?(o.v[c]/tot[c]*100):0;
+          return '<td><input value="'+o.v[c]+'" onchange="lhSetYr(\''+key+'\','+i+','+c+',this.value)" '
+            +'style="width:52px;text-align:right;font-family:inherit;font-size:11.5px;padding:3px 5px;border:1px solid #cbd5e1;border-radius:6px">'
+            +(share?'<div style="font-size:9.5px;color:'+colors[i%colors.length]+';font-weight:700;text-align:right;padding-right:3px;margin-top:1px;opacity:.85">'+p.toFixed(1)+'%</div>':'')
+            +'</td>';
+        }).join('')
+        +(share?('<td style="background:#f8fafc"><b>'+r1(sum)+'</b></td>'
+                +'<td style="background:#f8fafc"><b style="color:'+colors[i%colors.length]+'">'+(sum/grand*100).toFixed(1)+'%</b></td>'):'')
+        +'</tr>';
+    }).join('')
+    +'<tr style="background:#f1f5f9"><td class="l"><b>합계</b></td>'
+    +tot.map(function(v){return '<td><b>'+r1(v)+'</b>'+(share?'<div style="font-size:9.5px;color:#94a3b8;font-weight:700;text-align:right;padding-right:3px;margin-top:1px">100%</div>':'')+'</td>';}).join('')
+    +(share?('<td><b>'+r1(grand)+'</b></td><td><b>100%</b></td>'):'')
+    +'</tr></tbody></table></div>';
+}
+/* 착공 vs 준공 나란히 */
+function lhPair(startKey,doneKey,colors,unit,t1,t2,share,cap1,cap2){
+  return '<div class="mk-two2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+    +'<div><div style="font-size:12px;font-weight:800;color:#1e3a5f;margin-bottom:4px">🏗️ '+t1+'</div>'
+      +lhStackCols(lhYrRows(startKey),colors,unit,t1)
+      +'<div style="margin-top:7px">'+lhYrTable(startKey,unit,colors,share,cap1)+'</div></div>'
+    +'<div><div style="font-size:12px;font-weight:800;color:#1e3a5f;margin-bottom:4px">🏠 '+t2+'</div>'
+      +lhStackCols(lhYrRows(doneKey),colors,unit,t2)
+      +'<div style="margin-top:7px">'+lhYrTable(doneKey,unit,colors,share,cap2)+'</div></div></div>';
+}
+/* 2026 발주액 지역 구성(단년) */
+function lhRegionOrder(){
+  var reg=lhList('lhRegion');
+  return '<div style="font-size:12px;font-weight:800;color:#1e3a5f;margin-bottom:5px">💰 2026 LH 발주액 지역 구성'
+    +'<span class="mk-hs" style="font-weight:400">단위 조원 · 연도별 발주계획은 미공표</span></div>'
+    +lhStack(reg,[LH_C1,LH_C2],'조')
+    +'<div style="margin-top:8px">'+lhBars('lhRegion',LH_C1,'조',150)+'</div>';
+}
+/* 🏛️ LH·SH 박스 안에 남는 부분 : 발주액 비중 · 지역별 · LH 건설형 */
+function lhSupplyCharts(){
+  lhMig5();
+  return '<div class="mk-h" style="margin:16px 0 8px">🏛️ 2026 LH 발주계획 내 주택사업 비중'
+      +'<span class="mk-hs">단위 조원 · 공공 발주액 기준 · 숫자는 직접 수정</span></div>'
+    +lhHousingShare()
+
+    +'<div class="mk-h" style="margin:20px 0 8px">🗺️ 지역별 주택공급 — 2026~2031 착공 · 준공'
+      +'<span class="mk-hs">단위 만호 · 공공+민간 전국 기준 · 수도권 · 지방</span></div>'
+    +lhPair('lhYrRegS','lhYrRegD',[LH_C1,LH_C2],'만호','지역별 착공','지역별 준공',true)
+    +'<div style="margin-top:14px">'+lhRegionOrder()+'</div>'
+
+    +'<div class="mk-h" style="margin:20px 0 8px">🏗️ LH 건설형 착공 · 준공 물량 — 수도권 · 지방'
+      +'<span class="mk-hs">단위 만호 · 2026~2031</span></div>'
+    +lhPair('lhYrLhS','lhYrLhD',[LH_C1,LH_C2],'만호','LH 건설형 착공','LH 건설형 준공',true)
+    +'<div class="mk-note">'+mkGet('lhMixNote')+'</div>';
+}
+/* 🏛️ 박스 밖 독립 카드 ① : 주택공급 비중 (공공 + 민간 전체 시장) */
+function lhSupplyShareCard(){
+  lhMig5();
+  var r=lhYrRows('lhYrStart'),t26=r.reduce(function(a,o){return a+o.v[0];},0),
+      pv=r.reduce(function(a,o){return a+(/민간/.test(o.n)?o.v[0]:0);},0);
+  return '<details class="mk-card mk-carddet"><summary>'
+      +'<span class="mk-h" style="margin:0">📊 주택공급 비중 — 2026~2031 착공 · 준공'
+      +'<span class="mk-hs">단위 만호 · 공공(LH·SH·지방공사) + 민간(정비사업·일반분양) 전체 시장</span></span>'
+      +'<span class="mk-bsum">2026 착공 '+(Math.round(t26*10)/10)+'만호 · 민간 '+(t26?(pv/t26*100).toFixed(1):'0')+'% · 공공 '+(t26?((t26-pv)/t26*100).toFixed(1):'0')+'%</span>'
+      +'<span class="mk-bmore">펼쳐보기 ▾</span></summary><div style="margin-top:10px">'
+    +'<div class="mk-warn" style="margin-bottom:9px">📌 <b>공공만 보면 시장을 절반도 못 봅니다.</b> 전국 주택 착공의 <b>2/3가 민간</b>이고, 우리 거래처 물량의 대부분도 민간 정비사업·일반분양에서 나옵니다. 아래는 <b>공공 3계열 + 민간 2계열</b>로 전국 주택 착공·준공 100%를 나눈 것입니다. LH 신축매입임대는 민간이 지은 물량을 사는 것이라 민간 일반에서 차감해 중복을 없앴습니다.</div>'
+    +lhPubPrv('lhYrStart','착공')
+    +'<div class="mk-two2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px">'
+      +'<div><div style="font-size:12px;font-weight:800;color:#1e3a5f;margin-bottom:4px">🏗️ 착공 구성비 (100%)</div>'
+        +lhShareCols(lhYrRows('lhYrStart'),LH_SUP,'착공 구성비')+'</div>'
+      +'<div><div style="font-size:12px;font-weight:800;color:#1e3a5f;margin-bottom:4px">🏠 준공 구성비 (100%) — 우리 매출 직결</div>'
+        +lhShareCols(lhYrRows('lhYrDone'),LH_SUP,'준공 구성비')+'</div></div>'
+    +lhPair('lhYrStart','lhYrDone',LH_SUP,'만호','착공 물량 (계획)','준공 물량 (착공 3년 후 환산)',true,
+            '구분/착공 물량 (계획)','구분/준공 물량 (착공 3년 후 환산)')
+    +'<div class="mk-note">표의 각 칸 아래 <b>%</b>는 그 해 전체(합계 100%) 대비 비중이고, 오른쪽 <b>6년 누계·비중</b>은 2026~2031 합계 기준입니다. 숫자는 직접 수정할 수 있습니다.</div>'
+    +'</div></details>';
+}
+/* 🏛️ 박스 밖 독립 카드 ② : 3기 신도시 */
+function lh3rdCard(){
+  var sr=lhYrRows('lhYr3rdS'),dr=lhYrRows('lhYr3rdD');
+  var ss=sr.reduce(function(a,o){return a+o.v.reduce(function(x,v){return x+v;},0);},0);
+  var ds=dr.reduce(function(a,o){return a+o.v.reduce(function(x,v){return x+v;},0);},0);
+  return '<details class="mk-card mk-carddet"><summary>'
+      +'<span class="mk-h" style="margin:0">🏘️ 3기 신도시 지구별 착공 · 입주(준공) — 2026~2031'
+      +'<span class="mk-hs">단위 만호 · 지구별 배분 · 인천계양 2026.12 최초 입주</span></span>'
+      +'<span class="mk-bsum">6년 누계 착공 '+(Math.round(ss*10)/10)+'만호 · 입주 '+(Math.round(ds*10)/10)+'만호</span>'
+      +'<span class="mk-bmore">펼쳐보기 ▾</span></summary><div style="margin-top:10px">'
+    +lhPair('lhYr3rdS','lhYr3rdD',LH_C5,'만호','3기 신도시 착공','3기 신도시 입주(준공)',true,'구분(착공)','구분(준공)')
+    +'<div style="margin-top:14px"><div style="font-size:12px;font-weight:800;color:#1e3a5f;margin-bottom:5px">🏘️ 3기 신도시 지구별 총 계획 물량<span class="mk-hs" style="font-weight:400">단위 만호 · 지구계획 기준 총 세대수</span></div>'
+      +lhBars('lh3rd',LH_C1,'만호',150)+'</div></div></details>';
+}
+/* 🚪 방화문시장 : 착공 기준(미래 일감) vs 준공 기준(그 해 매출) 납품 물량 */
+var FD_SETC=['#1e3a8a','#1d4ed8','#0d9488','#d97706'];
+function fdLagCard(){
+  var S=lhYrRows('fdStartSets'),D=lhYrRows('fdDoneSets');
+  var sum=function(rows,i){ return rows.reduce(function(a,o){return a+o.v[i];},0); };
+  var r1=function(v){ return Math.round(v*10)/10; };
+  var s26=sum(S,0),d26=sum(D,0),d28=sum(D,2),d31=sum(D,5);
+  var card=function(l,v,sub,c){ return '<div style="border:1px solid #e2e8f0;border-left:4px solid '+c+';border-radius:9px;padding:7px 11px;background:#fff;flex:1;min-width:140px">'
+    +'<div style="font-size:10.5px;color:#64748b">'+l+'</div>'
+    +'<div style="font-size:16px;font-weight:900;color:'+c+';margin-top:1px">'+v+'</div>'
+    +'<div style="font-size:10px;color:#64748b;margin-top:1px">'+sub+'</div></div>'; };
+  return '<details class="mk-card mk-carddet" open><summary>'
+      +'<span class="mk-h" style="margin:0">🚪 방화문 납품 시점 — 착공 · 준공 기준 물량 (2026~2031)'
+      +'<span class="mk-hs">단위 만세트 · 착공 = 2~3년 뒤 일감 · 준공 = 그 해 우리 매출</span></span>'
+      +'<span class="mk-bsum">2026 준공기준 '+r1(d26)+'만세트(바닥) · 2028 '+r1(d28)+'만세트</span>'
+      +'<span class="mk-bmore">펼쳐보기 ▾</span></summary><div style="margin-top:10px">'
+    +'<div class="mk-warn" style="margin-bottom:9px">📌 방화문·PD커버는 <b>착공 후 18~30개월</b>, <b>준공 6~12개월 전</b>에 투입됩니다. '
+      +'따라서 <b>왼쪽 착공 그래프는 2~3년 뒤 일감</b>이고, <b>오른쪽 준공 그래프가 그 해 우리 매출</b>입니다. '
+      +'착공 반등 뉴스를 지금 실적 회복 신호로 읽으면 안 됩니다.</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">'
+      +card('2026 착공 기준',r1(s26)+'만세트','2028~29년 납품될 일감','#1d4ed8')
+      +card('2026 준공 기준 (올해 매출)',r1(d26)+'만세트','★ 이번 사이클 바닥','#dc2626')
+      +card('2028 준공 기준',r1(d28)+'만세트',(d26?'2026 대비 +'+((d28/d26-1)*100).toFixed(0)+'%':'')+' · 회복 진입','#16a34a')
+      +card('2031 준공 기준',r1(d31)+'만세트',(d26?'2026 대비 +'+((d31/d26-1)*100).toFixed(0)+'%':'')+' · 정상화','#0d9488')
+    +'</div>'
+    +'<div class="mk-two2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px">'
+      +'<div><div style="font-size:12px;font-weight:800;color:#1e3a5f;margin-bottom:4px">🏗️ 착공 기준 구성비 (100%)</div>'
+        +lhShareCols(S,FD_SETC,'착공 기준 구성비')+'</div>'
+      +'<div><div style="font-size:12px;font-weight:800;color:#1e3a5f;margin-bottom:4px">🏠 준공 기준 구성비 (100%) — 우리 매출 직결</div>'
+        +lhShareCols(D,FD_SETC,'준공 기준 구성비')+'</div></div>'
+    +lhPair('fdStartSets','fdDoneSets',FD_SETC,'만세트',
+            '착공 기준 물량 (2~3년 뒤 납품)','준공 기준 물량 (그 해 납품)',true,
+            '구분/착공 기준 (2~3년 뒤 납품)','구분/준공 기준 (그 해 납품)')
+    +'<div class="mk-note">'+mkGet('fdLagNote')+'</div>'
+    +'<div class="mk-note" style="margin-top:6px">📅 '+esc(mkGet('fdLagAsOf'))+'</div>'
+    +'</div></details>';
+}
+
+
+/* ═══ v633 : 🏚️ 재건축·정비사업 심층 (건설동향) ═══
+   정비사업은 착공 뉴스를 보고 움직이면 이미 늦습니다. 사업시행인가 → 착공까지
+   3~4년이 걸리므로 그 사이가 스펙 진입 구간입니다. 아래 표는 그 시점을 보여줍니다. */
+var RB_C1='#1d4ed8', RB_C2='#0d9488', RB_C3='#d97706';
+function rbTbl(head,body,minw){
+  return '<div class="mk-tblwrap"><table class="mk-tbl"'+(minw?(' style="min-width:'+minw+'px"'):'')+'><thead><tr>'
+    +head.map(function(h){ var l=h.charAt(0)==='<'; return '<th'+(l?' class="l"':'')+'>'+esc(l?h.slice(1):h)+'</th>'; }).join('')
+    +'</tr></thead><tbody>'+body+'</tbody></table></div>';
+}
+/* 단계별 진행 막대 : 누적 연차를 가로 타임라인으로 */
+function rbTimeline(){
+  var rows=mkRows('rbStage').filter(function(r){return r[0];});
+  if(!rows.length)return '';
+  var yr=function(t){ var m=String(t||'').match(/(\d+(?:\.\d+)?)\s*~\s*(\d+(?:\.\d+)?)/); if(m)return (parseFloat(m[1])+parseFloat(m[2]))/2;
+    var n=parseFloat(String(t||'').replace(/[^0-9.]/g,'')); return isFinite(n)?n:0; };
+  var acc=0,seg=rows.map(function(r){ var d=yr(r[1]); var o={n:r[0],d:d,s:acc,hot:/★/.test(r[3]||'')}; acc+=d; return o; });
+  var tot=acc||1, W=880,H=112,L=8,R=8,T=26,iw=W-L-R;
+  var cols=[RB_C1,RB_C1,RB_C2,RB_C2,RB_C3,RB_C3,'#64748b'];
+  var g='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="정비사업 단계별 소요기간">';
+  for(var y=0;y<=Math.ceil(tot);y+=2){ var x=L+iw*y/tot;
+    g+='<line x1="'+x.toFixed(1)+'" y1="'+T+'" x2="'+x.toFixed(1)+'" y2="'+(T+40)+'" stroke="#eef2f7"/>'
+      +'<text x="'+x.toFixed(1)+'" y="'+(T+55)+'" text-anchor="middle" font-size="10" fill="#94a3b8">'+y+'년</text>'; }
+  seg.forEach(function(o,i){
+    if(o.d<=0)return;
+    var x=L+iw*o.s/tot, w=Math.max(2,iw*o.d/tot-2), c=cols[i%cols.length];
+    g+='<rect x="'+x.toFixed(1)+'" y="'+T+'" width="'+w.toFixed(1)+'" height="40" rx="4" fill="'+c+'" opacity="'+(o.hot?1:0.55)+'">'
+      +'<title>'+esc(o.n)+' · 약 '+o.d+'년 (누적 '+(Math.round((o.s+o.d)*10)/10)+'년)</title></rect>';
+    if(w>58)g+='<text x="'+(x+w/2).toFixed(1)+'" y="'+(T+24)+'" text-anchor="middle" font-size="10.5" font-weight="800" fill="#fff">'+esc(String(o.n).slice(0,7))+'</text>';
+    if(o.hot)g+='<text x="'+(x+w/2).toFixed(1)+'" y="'+(T-8)+'" text-anchor="middle" font-size="10.5" font-weight="900" fill="#dc2626">★ 우리 구간</text>';
+  });
+  return g+'</svg>';
+}
+function rbSection(){
+  var st=mkRows('rbStage').map(function(r){
+    var hot=/★/.test(r[3]||'');
+    return '<tr'+(hot?' style="background:#fff7ed"':'')+'><td class="k">'+esc(r[0]||'')+'</td>'
+      +'<td>'+esc(r[1]||'')+'</td><td style="color:#64748b">'+esc(r[2]||'')+'</td>'
+      +'<td class="l" style="font-weight:'+(hot?'800':'600')+';color:'+(hot?'#b45309':'#475569')+'">'+esc(r[3]||'')+'</td>'
+      +'<td class="l" style="font-size:11.5px;color:#64748b">'+esc(r[4]||'')+'</td></tr>';
+  }).join('');
+  var OP={'높음':['#16a34a','높음'],'중간':['#d97706','중간'],'낮음':['#94a3b8','낮음']};
+  var ty=mkRows('rbType').map(function(r){
+    var o=OP[String(r[4]||'').replace(/\(.*/,'')]||['#64748b',esc(r[4]||'')];
+    return '<tr><td class="k">'+esc(r[0]||'')+'</td><td class="l" style="font-size:11.5px;color:#475569">'+esc(r[1]||'')+'</td>'
+      +'<td class="l" style="font-size:11.5px;color:#0f172a">'+esc(r[2]||'')+'</td>'
+      +'<td class="l" style="font-size:11.5px;color:#64748b">'+esc(r[3]||'')+'</td>'
+      +'<td><span class="mk-tag" style="background:'+o[0]+'1a;color:'+o[0]+'">'+esc(r[4]||'')+'</span></td></tr>';
+  }).join('');
+  var rg=mkRows('rbReg').map(function(r){
+    return '<tr><td class="k" style="color:#1d4ed8">'+esc(r[0]||'')+'</td><td class="l"><b>'+esc(r[1]||'')+'</b></td>'
+      +'<td class="l" style="font-size:11.5px;color:#334155">'+(r[2]||'')+'</td>'
+      +'<td class="l" style="font-size:11.5px;color:#64748b">'+(r[3]||'')+'</td>'
+      +'<td class="l" style="font-size:11.5px;color:#0f766e;font-weight:600">'+esc(r[4]||'')+'</td></tr>';
+  }).join('');
+  return '<details class="mk-card mk-carddet"><summary>'
+      +'<span class="mk-h" style="margin:0">🏚️ 재건축·정비사업 심층'
+      +'<span class="mk-hs">단계별 소요기간 · 유형별 방화문 물량 · 규제 타임라인</span></span>'
+      +'<span class="mk-bsum">서울 30년초과 47.8만가구(30.5%) · 인가→착공 3~4년 · 2028년 주력 수요처</span>'
+      +'<span class="mk-bmore">펼쳐보기 ▾</span></summary><div style="margin-top:10px">'
+    +'<div class="mk-warn" style="margin-bottom:10px">📌 <b>착공 뉴스를 보고 영업하면 이미 늦습니다.</b> 정비사업은 <b>사업시행인가 → 착공까지 3~4년</b>이 걸립니다. '
+      +'우리 견적 기회는 착공 시점에 오지만, 그때 스펙에 들어가 있으려면 <b>사업시행인가·관리처분인가 단계에서 시공사·설계사에 진입</b>해 두어야 합니다.</div>'
+    +'<div class="mk-h" style="margin:12px 0 6px">🗓️ 정비사업 단계별 소요기간과 우리 접점<span class="mk-hs">구역지정부터 준공까지 통상 10~13년</span></div>'
+    +rbTimeline()
+    +rbTbl(['<단계','소요','누적','<우리 접점','<비고'],st,900)
+    +'<div class="mk-note">'+mkGet('rbStageNote')+'</div>'
+    +'<div class="mk-h" style="margin:18px 0 6px">🏗️ 정비사업 유형별 방화문 물량<span class="mk-hs">재건축 · 재개발 · 리모델링 · 소규모 · 노후계획도시</span></div>'
+    +rbTbl(['<유형','<대상','<방화문 물량','<단가 특성','기회도'],ty,1000)
+    +'<div class="mk-note">'+mkGet('rbTypeNote')+'</div>'
+    +'<div class="mk-h" style="margin:18px 0 6px">⚖️ 재건축 규제·제도 타임라인<span class="mk-hs">재초환 · 촉진 특례법 · 진단 완화</span></div>'
+    +rbTbl(['시점','<제도','<내용','<정비사업 영향','<우리 영향'],rg,1080)
+    +'<div class="mk-note">'+mkGet('rbRegNote')+'</div>'
+    +'</div></details>';
+}
+/* ═══ v633 : 🚪 재건축 단지 1곳 방화문 물량 (방화문시장 분석) ═══ */
+function rbSetSection(){
+  var rows=mkRows('rbSet').filter(function(r){return r[0];});
+  if(!rows.length)return '';
+  var num=function(v){ var n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:0; };
+  var tot=rows.reduce(function(a,r){return a+num(r[2]);},0);
+  var per=rows.reduce(function(a,r){return a+num(r[1]);},0);
+  var max=Math.max.apply(null,rows.map(function(r){return num(r[2]);}))||1;
+  var bars=rows.map(function(r,i){
+    var v=num(r[2]), star=/★/.test(r[3]||''), c=star?RB_C3:RB_C1;
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      +'<div style="width:210px;flex:none;font-size:11.5px;color:'+(star?'#b45309':'#334155')+';font-weight:'+(star?'800':'400')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+esc(r[0])+'">'+esc(r[0])+'</div>'
+      +'<div style="flex:1;min-width:0;height:17px;background:#f1f5f9;border-radius:5px;overflow:hidden">'
+        +'<div title="'+esc(r[0])+' '+v.toLocaleString()+'개" style="height:100%;width:'+Math.max(1,v/max*100).toFixed(1)+'%;background:'+c+';border-radius:5px"></div></div>'
+      +'<div style="width:86px;flex:none;text-align:right;font-size:12px;font-weight:800;color:'+c+'">'+v.toLocaleString()+'</div>'
+      +'<div style="width:52px;flex:none;text-align:right;font-size:10.5px;color:#94a3b8">세대당 '+num(r[1])+'</div></div>';
+  }).join('');
+  var body=rows.map(function(r){
+    var star=/★/.test(r[3]||'');
+    return '<tr'+(star?' style="background:#fffbeb"':'')+'><td class="k">'+esc(r[0]||'')+'</td>'
+      +'<td><b>'+num(r[1])+'</b></td><td><b style="color:'+(star?'#b45309':'#1e3a5f')+'">'+num(r[2]).toLocaleString()+'</b></td>'
+      +'<td class="l" style="font-size:11.5px;color:#64748b">'+esc(r[3]||'')+'</td></tr>';
+  }).join('');
+  var card=function(l,v,sub,c){ return '<div style="border:1px solid #e2e8f0;border-left:4px solid '+c+';border-radius:9px;padding:8px 12px;background:#fff;flex:1;min-width:150px">'
+    +'<div style="font-size:11px;color:#64748b">'+l+'</div>'
+    +'<div style="font-size:18px;font-weight:900;color:'+c+';margin-top:2px">'+v+'</div>'
+    +'<div style="font-size:10.5px;color:#64748b;margin-top:2px">'+sub+'</div></div>'; };
+  return '<details class="mk-card mk-carddet"><summary>'
+      +'<span class="mk-h" style="margin:0">🚪 재건축 단지 1곳의 방화문 물량'
+      +'<span class="mk-hs">2,000세대 가정 · 품목별 산출 · 숫자는 직접 수정</span></span>'
+      +'<span class="mk-bsum">총 '+tot.toLocaleString()+'개 · 세대당 '+(Math.round(per*10)/10)+'개</span>'
+      +'<span class="mk-bmore">펼쳐보기 ▾</span></summary><div style="margin-top:10px">'
+    +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:11px">'
+      +card('단지 1곳 총 물량',tot.toLocaleString()+'개','2,000세대 기준 · 방화문+부자재+PD','#0f172a')
+      +card('세대당 합계',(Math.round(per*10)/10)+'개','전용·공용 합산',RB_C1)
+      +card('★ 우리 직결 품목',(num(rows.filter(function(r){return /★/.test(r[3]||'');}).map(function(r){return r[2];})[0]||0)+num(rows.filter(function(r){return /★/.test(r[3]||'');}).map(function(r){return r[2];})[1]||0)).toLocaleString()+'개','PD커버 + 부자재 세트',RB_C3)
+    +'</div>'
+    +'<div style="margin-bottom:12px">'+bars+'</div>'
+    +rbTbl(['<품목','세대당','단지 물량(2,000세대)','<비고'],body,760)
+    +'<div class="mk-note">'+mkGet('rbSetNote')+'</div>'
+    +'</div></details>';
+}
+
 function marketConstruction(){
  var YC=['#f59e0b','#dc2626','#0891b2','#ea580c','#b91c1c','#7c3aed','#16a34a'];
  var chain=mkRows('chain').map(function(r,i,arr){
@@ -16020,19 +16499,23 @@ function marketConstruction(){
    '<div class="mk-tblwrap"><table class="mk-tbl" style="min-width:1000px"><thead><tr>'+['<항목','<2026 상반기 실적','<2026 하반기 계획','<판단','<우리 시사점'].map(function(h){var l=h.charAt(0)==='<';return '<th'+(l?' class="l"':'')+'>'+esc(l?h.slice(1):h)+'</th>';}).join('')+'</tr></thead><tbody>'+lhA+'</tbody></table></div>'+
    '<div class="mk-h" style="margin:15px 0 8px">📈 LH·SH 착공·입주 5년 전망<span class="mk-hs">단위 만호 · 2026~2031</span></div>'+
    '<div class="mk-tblwrap"><table class="mk-tbl" style="min-width:960px"><thead><tr>'+['<구분','2026','2027','2028','2029','2030','2031','<비고'].map(function(h){var l=h.charAt(0)==='<';return '<th'+(l?' class="l"':'')+'>'+esc(l?h.slice(1):h)+'</th>';}).join('')+'</tr></thead><tbody>'+lhB+'</tbody></table></div>'+
-   '<div class="mk-note">'+mkGet('lhNote')+'</div></div></details>'+
-  '<div class="mk-card"><div class="mk-h">📊 2026년 상반기 주택공급 실적<span class="mk-hs">국토교통부 주택통계 · 2026.7.31 공표 (검증치)</span></div>'+
+   '<div class="mk-note">'+mkGet('lhNote')+'</div>'+
+   lhSupplyCharts()+'</div></details>'+
+  lhSupplyShareCard()+
+  lh3rdCard()+
+  '<div class="mk-card"><div class="mk-h">📊 2026년 1~7월 누적 주택공급 실적<span class="mk-hs">국토교통부 「2026년 7월 주택통계」 · 2026.8.31 공표 (검증치)</span></div>'+
    '<div class="mk-tblwrap"><table class="mk-tbl"><thead><tr>'+h1head.map(function(h,i){return '<th'+(i===0||i===5?' class="l"':'')+'>'+esc(h)+'</th>';}).join('')+'</tr></thead><tbody>'+h1+'</tbody></table></div></div>'+
   '<div class="mk-card"><div class="mk-h">🏠 주택 착공·준공 추이 및 전망<span class="mk-hs">단위 만호 · 2026 이후는 전망치 · 전년대비 %</span></div>'+
    '<div class="mk-tblwrap"><table class="mk-tbl" style="min-width:900px"><thead><tr>'+trHead.map(function(h,i){return '<th'+(i===0||i===8?' class="l"':'')+'>'+esc(h)+'</th>';}).join('')+'</tr></thead><tbody>'+tr+'</tbody></table></div>'+
    '<div class="mk-h" style="margin:15px 0 8px">🗺️ 수도권 · 지방 구분<span class="mk-hs">단위 만호 · 준공(붉은 행)이 우리 납품 직결</span></div>'+
-   '<div class="mk-tblwrap"><table class="mk-tbl" style="min-width:1120px"><thead><tr>'+['<구분','2022','2023','2024','2025','2026 상반기','2026(E)','2027(E)','2028(E)','<비고'].map(function(h){var l=h.charAt(0)==='<';return '<th'+(l?' class="l"':'')+'>'+esc(l?h.slice(1):h)+'</th>';}).join('')+'</tr></thead><tbody>'+trR+'</tbody></table></div>'+
+   '<div class="mk-tblwrap"><table class="mk-tbl" style="min-width:1120px"><thead><tr>'+['<구분','2022','2023','2024','2025','2026 1~7월','2026(E)','2027(E)','2028(E)','<비고'].map(function(h){var l=h.charAt(0)==='<';return '<th'+(l?' class="l"':'')+'>'+esc(l?h.slice(1):h)+'</th>';}).join('')+'</tr></thead><tbody>'+trR+'</tbody></table></div>'+
    '<div class="mk-note">'+mkGet('trendRegionNote')+'</div></div>'+
   conResSection()+
-  '<div class="mk-card"><div class="mk-h mk-hrow"><span>🏭 비주거 착공·준공 추이 및 전망<span class="mk-hs">단위 백만㎡ · 2026 이후는 전망치 · 전년대비 %</span></span><span class="mk-asof">📅 기준일 2026.8.22</span></div>'+
+  '<div class="mk-card"><div class="mk-h mk-hrow"><span>🏭 비주거 착공·준공 추이 및 전망<span class="mk-hs">단위 백만㎡ · 2026 이후는 전망치 · 전년대비 %</span></span><span class="mk-asof">📅 기준일 2026.9.5</span></div>'+
    '<div class="mk-tblwrap"><table class="mk-tbl" style="min-width:900px"><thead><tr>'+trHead.map(function(h,i){return '<th'+(i===0||i===8?' class="l"':'')+'>'+esc(h)+'</th>';}).join('')+'</tr></thead><tbody>'+trN+'</tbody></table></div>'+
    '<div class="mk-note">'+mkGet('trendNRNote')+'</div></div>'+
   conNonResSection()+
+  rbSection()+
   '<div class="mk-card"><div class="mk-h">🔄 재개발·재건축·리모델링 전망</div><ul class="mk-ul">'+reno+'</ul></div>'+
   '<div class="mk-card"><div class="mk-h">⚖️ 2026 건축법·부동산·안전 규제 이슈</div>'+
    '<div class="mk-tblwrap"><table class="mk-tbl"><thead><tr><th class="l">이슈</th><th class="l">내용</th><th>시행</th><th>영향</th></tr></thead><tbody>'+reg+'</tbody></table></div></div>'+
@@ -16150,8 +16633,8 @@ function fdMonthSection(){
 
  return '<div class="mk-card">'+
   '<div class="mk-h mk-hrow"><span>📉 월별 방화문 납품 시장 방향<span class="mk-hs">2026.09 ~ 2027.12 · 착공 기준 시차 모델</span></span>'+
-   '<span class="mk-asof">📅 기준일 2026.8.22</span></div>'+
-  '<div class="mk-warn" style="margin-bottom:10px">📌 방화문·부자재는 <b>착공 후 18~30개월</b>(중심 24개월), <b>준공 6~12개월 전</b>에 투입됩니다. 월별 납품지수 = <b>24개월 전 주택 착공</b> × <b>준공·마감 계절계수</b>로 산정했고, 기준 100은 2026년 상반기 월평균 실적입니다.</div>'+
+   '<span class="mk-asof">📅 기준일 2026.9.5</span></div>'+
+  '<div class="mk-warn" style="margin-bottom:10px">📌 방화문·부자재는 <b>착공 후 18~30개월</b>(중심 24개월), <b>준공 6~12개월 전</b>에 투입됩니다. 월별 납품지수 = <b>24개월 전 주택 착공</b> × <b>준공·마감 계절계수</b>로 산정했고, 기준 100은 2026년 1~7월 월평균 실적입니다.</div>'+
   '<div class="mk-kws" style="margin-bottom:12px">'+kpi+'</div>'+
   fdMonthChart(rows)+
   '<div class="mk-tblwrap" style="margin-top:12px"><table class="mk-tbl" style="min-width:1020px"><thead><tr>'+
@@ -16164,6 +16647,43 @@ function fdMonthSection(){
  '</div>';
 }
 /* ═══ v376: 2027년 수익성 리스크 진단 ═══ */
+/* ═══ v636 : 🏭 생산·물류 원가 구조 변화 ═══
+   현장 일감이 줄며 금형 양산 → 레이저 + 후공정 프레스로,
+   품질인정 이력관리로 재고성 생산 → 현장별 소량 출고로 바뀐 구조를 정리합니다. */
+function fdProcSection(){
+  var TW=function(head,body,minw){
+    return '<div class="mk-tblwrap"><table class="mk-tbl"'+(minw?(' style="min-width:'+minw+'px"'):'')+'><thead><tr>'
+      +head.map(function(h){ var l=h.charAt(0)==='<'; return '<th'+(l?' class="l"':'')+'>'+esc(l?h.slice(1):h)+'</th>'; }).join('')
+      +'</tr></thead><tbody>'+body+'</tbody></table></div>'; };
+  var row=function(r){
+    return '<tr><td class="k">'+esc(r[0]||'')+'</td>'
+      +'<td class="l" style="font-size:11.5px;color:#94a3b8">'+esc(r[1]||'')+'</td>'
+      +'<td class="l" style="font-size:11.5px;color:#0f172a">'+(r[2]||'')+'</td>'
+      +'<td class="l" style="font-size:11.5px;color:#b91c1c">'+(r[3]||'')+'</td>'
+      +'<td class="l" style="font-size:11.5px;color:#0f766e;font-weight:600">'+(r[4]||'')+'</td></tr>'; };
+  var pr=mkRows('fdProc').filter(function(r){return r[0];}).map(row).join('');
+  var lg=mkRows('fdLogi').filter(function(r){return r[0];}).map(row).join('');
+  if(!pr&&!lg)return '';
+  return '<details class="mk-card mk-carddet"><summary>'
+      +'<span class="mk-h" style="margin:0">🏭 생산·물류 원가 구조 변화'
+      +'<span class="mk-hs">금형 양산 → 레이저+후공정 프레스 · 재고성 생산 → 현장별 소량 출고</span></span>'
+      +'<span class="mk-bsum">단가가 아니라 원가 구조가 바뀐 구간 · 단가표에 없는 추가 원가</span>'
+      +'<span class="mk-bmore">펼쳐보기 ▾</span></summary><div style="margin-top:10px">'
+    +'<div class="mk-warn" style="margin-bottom:10px">📌 <b>같은 품목을 같은 단가로 받으면 손실이 나는 이유가 여기 있습니다.</b> '
+      +'일감이 줄며 표준 대량 오더가 사라지고 <b>단납기 · 현장별 비규격 특주</b>만 남았습니다. '
+      +'금형 제작이 성립하지 않아 <b>레이저가공 + 후공정 프레스</b>로 전환됐고, 품질인정 이력관리 때문에 '
+      +'<b>재고성 생산이 아니라 현장별 생산·출고</b>가 됐습니다. 두 변화 모두 <b>제품 단가에 반영돼 있지 않은 원가</b>입니다.</div>'
+    +'<div class="mk-h" style="margin:12px 0 6px">⚙️ 생산공정 — 금형 양산 → 레이저 + 후공정 프레스'
+      +'<span class="mk-hs">사라진 저원가와 새로 들어온 원가</span></div>'
+    +TW(['<구분','<과거(표준 양산기)','<현재(2026~)','<원가 영향','<대응'],pr,1120)
+    +'<div class="mk-note">'+mkGet('fdProcNote')+'</div>'
+    +'<div class="mk-h" style="margin:18px 0 6px">📦 물류·포장 — 재고성 생산 → 현장별 소량 출고'
+      +'<span class="mk-hs">품질인정 이력관리가 만든 숨은 원가</span></div>'
+    +TW(['<구분','<과거(재고성 생산)','<현재(현장별 출고)','<원가 영향','<대응'],lg,1120)
+    +'<div class="mk-note">'+mkGet('fdLogiNote')+'</div>'
+    +'</div></details>';
+}
+
 function fdRiskSection(){
  var rows=mkRows('fdRisk'); if(!rows.length)return '';
  var sev=function(n){ n=Math.max(1,Math.min(3,+n||1));
@@ -16211,22 +16731,34 @@ function fdRiskSection(){
 
  var ins=mkLines('fdRiskIns').map(function(t){ return '<div>'+t+'</div>'; }).join('');
 
- return '<div class="mk-card" style="border-color:#fecaca">'+
-  '<div class="mk-h mk-hrow"><span style="color:#b91c1c">⚠️ 2027년 수익성 리스크 진단<span class="mk-hs">물량은 늘고 이익은 준다</span></span>'+
-   '<span class="mk-asof">📅 기준일 2026.8.22</span></div>'+
+ var _sev3=rows.filter(function(r){return (+r[3]||0)>=3;}).length;
+  return '<details class="mk-card mk-carddet" style="border-color:#fecaca">'+
+  '<summary><span class="mk-h" style="margin:0;color:#b91c1c">⚠️ 2027년 수익성 리스크 진단'
+   +'<span class="mk-hs">물량은 늘고 이익은 준다</span></span>'
+   +'<span class="mk-bsum">리스크 '+rows.length+'건(심각도 최고 '+_sev3+'건) · 원가 시뮬레이션 · 소재별 원가 방향 · 시기별 실행 과제</span>'
+   +'<span class="mk-bmore">펼쳐보기 ▾</span></summary><div style="margin-top:10px">'+
   '<div class="mk-warn" style="margin-bottom:11px">'+mkGet('fdRiskLead')+'</div>'+
   '<div class="mk-h" style="margin:2px 0 8px">🧾 원가 시뮬레이션<span class="mk-hs">2026년 매출 100 기준 · 지수</span></div>'+
   TW(['시나리오','매출','재료비','가공비','고정비','영업이익','이익률','<가정'],sim,900)+
-  '<div class="mk-note">※ <b>①</b>과 <b>②</b>의 차이는 오직 <b>낙찰단가 5%</b>입니다. 그 5%가 영업이익률 <b>0.1% ↔ 5.0%</b>를 가릅니다. <b>③</b>은 적자 특주를 거절해 매출을 줄이는 대신 이익률을 지키는 선택입니다.</div>'+
+  '<div class="mk-note">※ <b>①</b>과 <b>②</b>의 차이는 오직 <b>발주단가 5%</b>. 그 5%가 영업이익률 <b>0.1% ↔ 5.0%</b>를 가름. 단 <b>②·③은 거래처 이탈 위험을 반영하지 않은 수치</b> — 단가를 지킨 대가로 그 거래처 발주가 끊기면 매출 자체가 사라짐.</div>'+
+  '<div class="mk-warn" style="margin:8px 0 0;border-left-color:#d97706">📐 <b>산출 근거</b> — '+mkGet('fdRiskSimNote')+'</div>'+
   '<div class="mk-h" style="margin:15px 0 8px">🧱 소재별 원가 방향<span class="mk-hs">2026 3분기 → 2027</span></div>'+
   TW(['소재','현재','<2026 3분기 동향','2027 전망','우리 영향','<대응'],mat,940)+
   '<div class="mk-h" style="margin:15px 0 8px">🚨 리스크 항목별 진단</div>'+
   TW(['리스크','<2026년 현상','<2027년 영향','심각도','<대응'],risk,1020)+
   '<div class="mk-h" style="margin:15px 0 8px">🗓️ 시기별 실행 과제</div>'+
   TW(['시기','구분','<해야 할 일'],act,860)+
-  '<details class="mk-ins mk-insdet" style="margin-top:13px"><summary><span class="ih">💡 전문가 진단 — 2027년 수익성을 지키기 위한 8가지 판단</span><span class="mk-bsum">우리 위치 · 물량 착시 · 원자재 · 소량다품종 · 단가회복 · 납기 · 인력 · 선별수주</span><span class="mk-bmore">펼쳐보기 ▾</span></summary><div class="il" style="margin-top:8px">'+ins+'</div></details>'+
-  '<div class="mk-note">'+esc(mkGet('fdRiskAsOf'))+'</div>'+
- '</div>';
+  '</div></details>';
+}
+/* ═══ v638 : 💡 9가지 판단 — 리스크 진단에서 분리한 독립 카드 ═══ */
+function fdInsSection(){
+  var ins=mkLines('fdRiskIns').map(function(t){ return '<div>'+t+'</div>'; }).join('');
+  if(!ins)return '';
+  return '<details class="mk-card mk-carddet mk-ins mk-insdet"><summary>'
+    +'<span class="ih">💡 진단 — 2027년 수익성을 지키기 위한 9가지 판단</span>'
+    +'<span class="mk-bsum">거래구조 · 물량 착시 · 원자재 · 금형불가 · 단가회복 · 납기 · 인력 · 선별수주 · 물류포장</span>'
+    +'<span class="mk-bmore">펼쳐보기 ▾</span></summary>'
+    +'<div class="il" style="margin-top:8px">'+ins+'</div></details>';
 }
 /* ═══ 방화문시장 분석 ═══ */
 
@@ -16373,9 +16905,11 @@ function fdMarketSection(){
     +'<div style="font-size:11px;color:#64748b">'+l+'</div>'
     +'<div style="font-size:18px;font-weight:900;color:'+c+';margin-top:2px">'+v+'</div>'
     +'<div style="font-size:10.5px;color:#64748b;margin-top:2px">'+s+'</div></div>'; };
-  return '<div class="mk-card"><div class="mk-h mk-hrow"><span>📊 방화문 시장 규모·구성'
-    +'<span class="mk-hs">준공 물량 → 세트 → 금액으로 환산한 시장 규모와 구성비. 모든 숫자는 직접 수정할 수 있습니다.</span></span>'
-    +'<span class="mk-asof">📅 '+esc(mkGet('fdSizeAsOf'))+'</span></div>'
+  return '<details class="mk-card mk-carddet"><summary>'
+    +'<span class="mk-h" style="margin:0">📊 방화문 시장 규모·구성'
+    +'<span class="mk-hs">준공 물량 → 세트 → 금액으로 환산한 시장 규모와 구성비 · 숫자는 직접 수정</span></span>'
+    +'<span class="mk-bsum">2026 전체 '+fdMoney(curTot)+'억원 · 주택 '+mix.res+'% · 비주거 '+mix.non+'%</span>'
+    +'<span class="mk-bmore">펼쳐보기 ▾</span></summary><div style="margin-top:10px">'
     +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">'
       +kpi('2026 전체 시장',fdMoney(curTot)+'억원','주택+비주거 추정','#0f172a')
       +kpi('🏠 주택',fdMoney(cur.res)+'억원',mix.res+'% · 준공 '+cur.ho+'만호 × '+cur.set+'세트 × '+cur.pr+'만원',FD_C_RES)
@@ -16394,7 +16928,9 @@ function fdMarketSection(){
       +'<div><div class="mk-h" style="font-size:13px">④ 🏭 비주거 세부 시장 비율'
         +'<span class="mk-hs">🏗️ 건설동향 · 비주거 세부 시장과 같은 구분</span></div>'+fdMixChart('fdMixNon',FD_C_NON,'🏭')+'</div>'
     +'</div>'
-    +'<div class="mk-note">'+mkGet('fdMixNote')+'</div></div>';
+    +'<div class="mk-note">'+mkGet('fdMixNote')+'</div>'
+    +'<div class="mk-note" style="margin-top:6px">📅 '+esc(mkGet('fdSizeAsOf'))+'</div>'
+    +'</div></details>';
 }
 
 function marketFiredoor(){
@@ -16439,8 +16975,11 @@ function marketFiredoor(){
   '<div class="mk-sub">품질인정제도 · 내용연수·정비사업 · 수요 환산 · 사업 전략</div>'+
   '<div class="mk-kws">'+kw+'</div>'+
   fdMarketSection()+
+  fdLagCard()+
   fdMonthSection()+
   fdRiskSection()+
+  fdProcSection()+
+  fdInsSection()+
   '<div class="mk-card"><div class="mk-h">📋 방화문 품질인정제도<span class="mk-hs">건축법 제52조의5 · 2026.02.20 기준 개정</span></div><ul class="mk-ul">'+qual+'</ul></div>'+
   '<div class="mk-card"><div class="mk-h">🔄 내용연수·재개발·리모델링과 방화문 수요</div><ul class="mk-ul">'+reno+'</ul></div>'+
   '<div class="mk-card"><div class="mk-h">📊 방화문부자재 수요 전망</div>'+
@@ -25750,17 +26289,22 @@ try{ clsSales=sgClsSales; }catch(_e){}
 #result:has(#fcCustSearch) .tablewrap:has(>table.fc-cust-annual-table){overflow-x:hidden!important}
 #result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important}
 #result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(1){width:3.5%!important}
-#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(2){width:20%!important}
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(2){width:18%!important}
 #result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(3){width:5.5%!important}
-#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(4){width:7%!important}
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(4){width:6.5%!important}
 #result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(5){width:6.5%!important}
-#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(6){width:7.2%!important}
-#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(7){width:8.5%!important}
-#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(8){width:7.5%!important}
-#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(9){width:5%!important}
-#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(10){width:5.5%!important}
-#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(11){width:5.5%!important}
-#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(12){width:18.3%!important}
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(6){width:6.8%!important}
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(7){width:8%!important}
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(8){width:7%!important}
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(9){width:7%!important}
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(10){width:4.8%!important}
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(11){width:6.2%!important}
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(12){width:6.2%!important}
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table>colgroup>col:nth-child(13){width:14%!important}
+/* v630 : 메모 열이 0px 로 찌그러지지 않도록 최소 폭 확보 · PD 링크 줄바꿈 방지 */
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table th:nth-child(13),
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table td:nth-child(13){width:16%!important;min-width:150px!important}
+#result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table td .fc-pd-month-link{white-space:nowrap!important;display:inline-block}
 #result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table th:nth-child(2),
 #result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table td:nth-child(2){width:auto!important;min-width:0!important;max-width:none!important}
 #result:has(#fcCustSearch) .tablewrap>table.fc-cust-annual-table td:nth-child(2){white-space:normal!important;overflow:hidden!important;text-overflow:ellipsis!important;word-break:break-word}
