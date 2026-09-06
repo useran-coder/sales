@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v638</title>
-<script>window.APP_BUILD='v638';</script>
+<title>동방파스텍 매출 분석 도구 v640</title>
+<script>window.APP_BUILD='v640';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1711,7 +1711,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v638</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v640</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -9984,10 +9984,75 @@ function forecast(){ state._inDrill=false;
   for(const m of fcMonths){ fcCustProdMon[m].forEach((pm,c)=>pm.forEach((e,pk)=>{ const k=c+'\u0001'+pk,o=futurePairs.get(k)||{c,pk,total:0};o.total+=e.amt||0;futurePairs.set(k,o); })); }
   futurePairs.forEach(o=>{ const ov=cpOverride[o.c+'│'+o.pk]; if(ov==null||ov==='')return; let prev=0,actual=0; for(let m=1;m<=12;m++){ const pe=(pyMonCustProd[m].get(o.c)||new Map()).get(o.pk);if(pe)prev+=pe.amt||0;if(m<=lastAct){const ae=(cyMonCustProd[m].get(o.c)||new Map()).get(o.pk);if(ae)actual+=ae.amt||0;} } const desired=Math.max(0,prev*(1+(+ov||0)/100)),remain=Math.max(0,desired-actual),factor=o.total>0?remain/o.total:0; for(const m of fcMonths){const e=(fcCustProdMon[m].get(o.c)||new Map()).get(o.pk);if(e){e.amt*=factor;e.qty*=factor;}} });
   for(const m of fcMonths){ fcCustProdMon[m].forEach((pm,c)=>pm.forEach((e,pk)=>{ const v=cpOverride['@M│'+c+'│'+pk+'│'+m]; if(v==null||v==='')return; const factor=Math.max(0,1+(+v||0)/100);e.amt*=factor;e.qty*=factor; })); }
-  /* 거래처별 월목표 조정%는 해당 거래처의 해당 미래월 목표액에만 적용합니다. */
-  for(const m of fcMonths){ fcCustProdMon[m].forEach((pm,c)=>{ const cm=state.fc.custMonthPct&&state.fc.custMonthPct[c]; const v=cm&&cm[m]; if(v==null||v==='')return; const factor=Math.max(0,1+(+v||0)/100); pm.forEach(e=>{e.amt*=factor;e.qty*=factor;}); }); }
-  /* 제품별 월목표 조정%는 모든 거래처의 해당 제품·해당 미래월 목표에 동일하게 적용합니다. */
-  for(const m of fcMonths){ fcCustProdMon[m].forEach(pm=>pm.forEach((e,pk)=>{ const mm=state.fc.prodMonthPct&&state.fc.prodMonthPct[pk]; const v=mm&&mm[m]; if(v==null||v==='')return; const factor=Math.max(0,1+(+v||0)/100);e.amt*=factor;e.qty*=factor; })); }
+  /* 거래처별 월목표 조정%는 해당 거래처의 해당 미래월 목표액에만 적용합니다.
+     v639 : 그 달 목표가 <b>0원</b>이면 몇 %를 넣어도 0×(1+%)=0 이라 반영되지 않았습니다.
+            0원인 달에 한해 기준을 그 거래처의 <b>미래월 평균 목표액</b>으로 바꿔 %를 적용하고,
+            금액은 그 거래처의 제품 구성비대로 나눠 넣습니다. (평균은 조정 전 기본목표 기준) */
+  (function(){
+    const cmAll=state.fc.custMonthPct||{};
+    const sumC=new Map(), mixC=new Map();          /* 거래처별 미래월 합계 · 제품 구성비 */
+    for(const m of fcMonths) fcCustProdMon[m].forEach((pm,c)=>{
+      let t=0; const mx=mixC.get(c)||new Map();
+      pm.forEach((e,pk)=>{ const a=+e.amt||0,q=+e.qty||0; t+=a; const o=mx.get(pk)||{a:0,q:0}; o.a+=a; o.q+=q; mx.set(pk,o); });
+      if(mx.size)mixC.set(c,mx); sumC.set(c,(sumC.get(c)||0)+t);
+    });
+    const nMon=fcMonths.length||1;
+    const custKeys=Object.keys(cmAll);
+    for(const m of fcMonths){
+      for(const c of custKeys){
+        const row=cmAll[c]; const v=row&&row[m];
+        if(v==null||v==='')continue;
+        const pct=+v||0;
+        const pm=fcCustProdMon[m].get(c);
+        let base=0; if(pm)pm.forEach(e=>base+=(+e.amt||0));
+        if(base>0){ const f=Math.max(0,1+pct/100); pm.forEach(e=>{e.amt*=f;e.qty*=f;}); continue; }
+        /* ── 0원 달 : 월평균 × % 를 제품 구성비로 배분 ── */
+        if(pct<=0)continue;
+        const avg=(sumC.get(c)||0)/nMon, add=avg*pct/100;
+        if(!(add>0))continue;
+        const mx=mixC.get(c); if(!mx||!mx.size)continue;
+        let tot=0; mx.forEach(o=>tot+=o.a); if(!(tot>0))continue;
+        const dst=pm||new Map();
+        mx.forEach((o,pk)=>{ const r=o.a/tot; const e=dst.get(pk)||{amt:0,qty:0};
+          e.amt=(+e.amt||0)+add*r; e.qty=(+e.qty||0)+(o.q/nMon)*(pct/100); dst.set(pk,e); });
+        fcCustProdMon[m].set(c,dst);
+      }
+    }
+  })();
+  /* 제품별 월목표 조정%는 모든 거래처의 해당 제품·해당 미래월 목표에 동일하게 적용합니다.
+     v639 : 위와 같은 이유로, 그 달 그 제품 목표가 0원이면 기준을 그 제품의
+            <b>미래월 평균 목표액</b>으로 바꿔 적용하고 거래처 구성비대로 나눠 넣습니다. */
+  (function(){
+    const pmAll=state.fc.prodMonthPct||{};
+    const sumP=new Map(), mixP=new Map();          /* 제품별 미래월 합계 · 거래처 구성비 */
+    for(const m of fcMonths) fcCustProdMon[m].forEach((pm,c)=>pm.forEach((e,pk)=>{
+      const a=+e.amt||0,q=+e.qty||0;
+      sumP.set(pk,(sumP.get(pk)||0)+a);
+      const mx=mixP.get(pk)||new Map(); const o=mx.get(c)||{a:0,q:0}; o.a+=a; o.q+=q; mx.set(c,o); mixP.set(pk,mx);
+    }));
+    const nMon=fcMonths.length||1;
+    const prodKeys=Object.keys(pmAll);
+    for(const m of fcMonths){
+      for(const pk of prodKeys){
+        const row=pmAll[pk]; const v=row&&row[m];
+        if(v==null||v==='')continue;
+        const pct=+v||0;
+        let base=0; fcCustProdMon[m].forEach(pm=>{ const e=pm.get(pk); if(e)base+=(+e.amt||0); });
+        if(base>0){ const f=Math.max(0,1+pct/100);
+          fcCustProdMon[m].forEach(pm=>{ const e=pm.get(pk); if(e){e.amt*=f;e.qty*=f;} }); continue; }
+        if(pct<=0)continue;
+        const avg=(sumP.get(pk)||0)/nMon, add=avg*pct/100;
+        if(!(add>0))continue;
+        const mx=mixP.get(pk); if(!mx||!mx.size)continue;
+        let tot=0; mx.forEach(o=>tot+=o.a); if(!(tot>0))continue;
+        mx.forEach((o,c)=>{ const r=o.a/tot;
+          const dst=fcCustProdMon[m].get(c)||new Map();
+          const e=dst.get(pk)||{amt:0,qty:0};
+          e.amt=(+e.amt||0)+add*r; e.qty=(+e.qty||0)+(o.q/nMon)*(pct/100); dst.set(pk,e);
+          fcCustProdMon[m].set(c,dst); });
+      }
+    }
+  })();
   /* 조정된 제품 합계로 업체·제품·월 목표를 다시 집계해 상위 표와 월별 표를 일치시킵니다. */
   for(const m of fcMonths){ fcCustMon[m].clear();fcProdMon[m].clear();fcMonTot[m]=0;fcCustProdMon[m].forEach((pm,c)=>{let custTotal=0;pm.forEach((e,pk)=>{custTotal+=e.amt||0;addP(fcProdMon[m],pk,e.amt||0,e.qty||0);});fcCustMon[m].set(c,custTotal);fcMonTot[m]+=custTotal;}); }
   state._fc={PY,CY,lastAct,fcMonths,prodMeta,pyMonTot,cyMonTot,fcMonTot,pyMonCust,cyMonCust,fcCustMon,pyMonProd,cyMonProd,fcProdMon,pyMonCustProd,cyMonCustProd,fcCustProdMon};
@@ -11374,12 +11439,47 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
   function updateHistoryBtn(){var b=id('headerElogBtn');if(!b)return;var n=typeof elogUnseen==='function'?elogUnseen():0;b.textContent='🕘 수정이력'+(n?' ('+n+'건)':'');b.classList.toggle('has-unseen',n>0)}
   function bindHistory(){var b=id('headerElogBtn');if(!b)return;b.onclick=function(){if(typeof elogMarkSeen==='function')elogMarkSeen();if(typeof openEditLog==='function')openEditLog();updateHistoryBtn()};updateHistoryBtn()}
   function renderVersion(){var v=id('appVer');if(v){var user=state.gsync&&state.gsync.user?' · '+state.gsync.user:'';v.textContent='버전 '+APP_VERSION+user;v.title='현재 파일 버전'}document.title='동방파스텍 매출 분석 도구 '+APP_VERSION}
-  var _gsFocusPullAt=0;
-  function gsPullOnReturn(){
-    if(document.hidden||Date.now()-_gsFocusPullAt<30000)return;
+  var _gsFocusPullAt=0,_gsReturnT=null;
+  /* v639 : 탭 복귀 동기화가 화면을 멈춘 것처럼 보이게 하던 문제를 줄입니다.
+     ① focus·visibilitychange 가 함께 터지므로 400ms 로 한 번만 묶어 실행
+     ② 재호출 간격 30초 → 120초
+     ③ 실행 직전 '동기화 중' 표시를 띄우고 한 프레임 양보해, 멈춘 화면이 아니라
+        진행 중임을 알 수 있게 합니다(표시는 클릭을 막지 않습니다). */
+  function gsBusyBadge(on){
+    try{
+      var el=document.getElementById('gsBusyBadge');
+      if(on){
+        if(!el){ el=document.createElement('div'); el.id='gsBusyBadge';
+          el.style.cssText='position:fixed;right:14px;bottom:14px;z-index:99999;pointer-events:none;'
+            +'background:#0f172a;color:#fff;font:800 12px/1.4 inherit;padding:8px 14px;border-radius:999px;'
+            +'box-shadow:0 6px 18px rgba(15,23,42,.28);opacity:.94;display:flex;align-items:center;gap:7px';
+          el.innerHTML='<span style="width:11px;height:11px;border:2px solid #38bdf8;border-top-color:transparent;'
+            +'border-radius:50%;display:inline-block;animation:gsSpin .8s linear infinite"></span>서버 자료 동기화 중…';
+          document.body.appendChild(el);
+          if(!document.getElementById('gsBusyBadgeCss')){ var st=document.createElement('style'); st.id='gsBusyBadgeCss';
+            st.textContent='@keyframes gsSpin{to{transform:rotate(360deg)}}'; document.head.appendChild(st); }
+        }
+        el.style.display='flex';
+      } else if(el){ el.style.display='none'; }
+    }catch(_e){}
+  }
+  window.gsBusyBadge=gsBusyBadge;
+  function gsPullNow(){
+    if(document.hidden)return;
     if(!state.gsync||!state.gsync.auto||!state.gsync.url||!state.gsync.key||_gsBusy||_gsPendingPush)return;
     var a=document.activeElement;if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable))return;
-    _gsFocusPullAt=Date.now();try{gsLoad(true)}catch(_){}
+    _gsFocusPullAt=Date.now();
+    gsBusyBadge(true);
+    /* 배지가 먼저 그려지도록 두 프레임 양보한 뒤 무거운 작업을 시작합니다. */
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      var done=function(){ gsBusyBadge(false); };
+      try{ Promise.resolve(gsLoad(true)).then(done,done); }catch(_){ done(); }
+    });});
+  }
+  function gsPullOnReturn(){
+    if(document.hidden||Date.now()-_gsFocusPullAt<120000)return;
+    clearTimeout(_gsReturnT);
+    _gsReturnT=setTimeout(gsPullNow,400);   /* focus + visibilitychange 중복 호출을 하나로 */
   }
   async function install(){state.gsync=state.gsync||{};renderVersion();removeHistoryDuplicates();bindHistory();gsUpdateBtn();gsStartPoll()}
   if(!window.__gsFocusPullV427){window.__gsFocusPullV427=true;window.addEventListener('focus',gsPullOnReturn);document.addEventListener('visibilitychange',()=>{if(!document.hidden)gsPullOnReturn();});}
@@ -15164,7 +15264,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 9가지 판단 카드 분리 (2026-09-05)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 재고 월별보기 추가 (2026-09-05)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
@@ -20023,6 +20123,54 @@ function mvDeadData(){
   arr.sort(function(a,b){return b.amt-a.amt;});
   return {arr:arr,SI:SI,base:base,md:MD};
 }
+/* ═══ v640 : 재고 월별보기 ═══
+   등록된 달(MV.months)의 스냅샷을 품번│규격 기준으로 모아 1~12월 재고수량을 만듭니다.
+   보관장소가 여러 곳인 품목은 그 달의 전 보관장소 합계입니다. */
+function mvMonKey(o){ return (o&&o.code||'')+'│'+((o&&o.spec)||''); }
+function mvMonYear(){ var y=String(MV.ui.cur||'').split('-')[0]; return y||String(new Date().getFullYear()); }
+function mvMonIdx(){
+  var yr=mvMonYear(), yms=mvYms();
+  var ck='monstock:'+yr+':'+yms.join(',');
+  if(MV._cache[ck])return MV._cache[ck];
+  var map={}, has=[];
+  for(var m=1;m<=12;m++){
+    var ym=yr+'-'+(m<10?'0':'')+m;
+    if(!(MV.months&&MV.months[ym]))continue;
+    has.push(m);
+    var rows=[]; try{ rows=mvRows(ym,true); }catch(_e){ rows=[]; }
+    rows.forEach(function(r){
+      var k=mvMonKey(r); var a=map[k]||(map[k]=new Array(13).fill(null));
+      a[m]=(a[m]||0)+(+r.stock||0);
+    });
+  }
+  var idx={yr:yr,has:has,get:function(o){ return map[mvMonKey(o)]||null; }};
+  MV._cache[ck]=idx; return idx;
+}
+/* 1~12월 열 (재고수량) */
+function mvMonCols(MI){
+  var out=[];
+  for(var m=1;m<=12;m++)(function(mm){
+    var live=MI.has.indexOf(mm)>=0;
+    out.push({k:'mon'+mm, t:mm+'월',
+      cell:function(o){ var a=MI.get(o); var v=a?a[mm]:null;
+        if(v==null)return '<span style="color:#e2e8f0">'+(live?'0':'-')+'</span>';
+        return '<span style="font-weight:'+(v>0?'700':'400')+';color:'+(v>0?'#0f172a':'#94a3b8')+'">'+mvNum(v)+'</span>'; },
+      sortVal:function(o){ var a=MI.get(o); return a&&a[mm]!=null?a[mm]:-1; }});
+  })(m);
+  return out;
+}
+function mvMonBtn(id,on){
+  return '<button class="btn ghost" id="'+id+'" style="font-size:12.5px;padding:6px 12px;'
+    +(on?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':'color:#1e3a5f;border-color:#c7d2e4')
+    +'">📅 월별보기'+(on?' ✓':'')+'</button>';
+}
+function mvMonNote(MI){
+  var lab=MI.has.length?MI.has.map(function(m){return m+'월';}).join(' · '):'없음';
+  return '<b>📅 월별보기</b> — '+MI.yr+'년 <b>1~12월 재고수량</b>입니다. 등록된 달만 값이 나오고(현재 '+lab
+    +'), 자료가 없는 달은 <b>-</b> 로 둡니다. 보관장소가 여러 곳인 품목은 <b>그 달의 전 보관장소 합계</b>입니다. '
+    +'위 <b>구분</b> 버튼으로 제품·반제품·부자재·상품·OEM 등을 골라 보십시오.';
+}
+
 var MV_DC={'전체':'#475569','출고·소요 없음':'#dc2626','12개월↑ 장기체류':'#ea580c','6~12개월':'#d97706','3~6개월':'#0891b2','정상':'#16a34a'};
 function mvTabDead(){
   var D=mvDeadData(), all=D.arr, ym=MV.ui.cur;
@@ -20052,7 +20200,10 @@ function mvTabDead(){
       return pickChip('mvdcchip',v,on,(v==='전체'?catAllCnt:(catCnt[v]||0)),(v==='전체'?allAmt:(catAmt[v]||0)), v==='전체'?'#475569':mvCatCol(v), allAmt); }).join('');
   var locChips=['전체'].concat(locsAll).map(function(v){ var on=(fl===v);
       return pickChip('mvdlchip',v,on,(v==='전체'?locAllCnt:(locCnt[v]||0)),(v==='전체'?locAllAmt:(locAmt[v]||0)), on?'#1e3a5f':'#475569', locAllAmt); }).join('');
+  var _mon=!!MV.ui.deadMon, _MI=mvMonIdx();
   var pickBar='<div style="display:flex;flex-direction:column;gap:7px;margin:2px 0 8px">'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+mvMonBtn('mvDeadMonBtn',_mon)
+      +'<span class="sub2" style="font-size:11.5px;color:#64748b">'+(_mon?'품명·규격·폐기·재고·판정 + 1~12월 재고수량':'누르면 1~12월 재고수량 표로 바뀝니다')+'</span></div>'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">구분</b>'+catChips+'</div>'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">보관장소</b>'+locChips+'</div>'
     +'<div class="sub2" style="font-size:11.5px;color:#64748b">구분·보관장소를 고르면 아래 판정 버튼과 표가 <b>그 범위</b>로 다시 계산됩니다. 보관장소를 고르면 <b>그 장소의 재고금액·수량</b>만 표시됩니다.</div></div>';
@@ -20097,6 +20248,19 @@ function mvTabDead(){
     {k:'note',t:'비고',cls:'l',cell:function(o){return '<span class="sub2" title="'+mvEsc(o.note||'')+'">'+mvEsc(String(o.note||'').slice(0,26))+'</span>';},sortVal:function(o){return o.note||'';}},
     {k:'verdict',t:'판정',cell:function(o){return '<span style="display:inline-block;padding:2px 9px;border-radius:8px;font-size:11.5px;font-weight:800;background:'+MV_DC[o.verdict]+'1a;color:'+MV_DC[o.verdict]+'">'+o.verdict+'</span>';},sortVal:function(o){return o.verdict;}}
   ];
+  if(_mon){
+    cols=[
+      {k:'rank',t:'순위',cls:'rank',cell:function(o,i){return mvRkCell(o,i,(o.code||'')+'\u2502'+(o.spec||''));},nosort:true},
+      {k:'label',t:'품명',cls:'l',cell:function(o){return mvEsc(o.name||o.code||'');},sortVal:function(o){return o.name||'';}},
+      {k:'spec',t:'규격',cls:'l',cell:function(o){return mvEsc(o.spec||'');},sortVal:function(o){return o.spec||'';}},
+      {k:'dispose',t:'폐기',cell:function(o){ var k=mvDispKey(o), on=!!(mvDispMap()[k]);
+          return '<span onclick="event.stopPropagation()"><input type="checkbox" class="mvdispck" data-k="'+mvEsc(k)+'"'+(on?' checked':'')
+            +' style="cursor:pointer;width:15px;height:15px;accent-color:#dc2626"></span>'; },
+        sortVal:function(o){ return mvDispMap()[mvDispKey(o)]?1:0; }},
+      {k:'stock',t:'재고',cell:function(o){return mvNum(o.stock);},sortVal:function(o){return o.stock;}},
+      {k:'verdict',t:'판정',cell:function(o){return '<span style="display:inline-block;padding:1px 7px;border-radius:8px;font-weight:800;background:'+MV_DC[o.verdict]+'1a;color:'+MV_DC[o.verdict]+'">'+o.verdict+'</span>';},sortVal:function(o){return o.verdict;}}
+    ].concat(mvMonCols(_MI));
+  }
   var byCat={}; risk.forEach(function(o){byCat[o.cat]=(byCat[o.cat]||0)+o.amt;});
   var catList=Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];}).map(function(k){return k+' '+mvWon(byCat[k])+'원';}).join(' · ');
   var note=(!D.SI.ok)?'<b style="color:#dc2626">매출(출고) 자료가 없습니다.</b> 매출 파일을 불러오면 품번별 최종출고일과 원자재 월 소요량으로 장기체류 재고를 자동 판정합니다.'
@@ -20112,8 +20276,8 @@ function mvTabDead(){
   render('💀 악성·장기체류 재고 ('+mvYmLabel(ym)+')',
     (fc==='전체'?'전체 구분':fc)+' · '+(fl==='전체'?'전체 보관장소':fl)+' · '
       +(f==='폐기'?'🗑 폐기 체크':(f==='전체'?'전체':f))+' '+mvWon(show.length)+'품목 · '+mvWon(tot)+'원',
-    show, cols, 'amt', note,
-    {controlsHtml:mvTabBar()+pickBar+chips, pageLimit:200, tableClass:'mv-tbl',
+    show, cols, 'amt', (_mon?(mvMonNote(_MI)+'<br>'+note):note),
+    {controlsHtml:mvTabBar()+pickBar+chips, pageLimit:200, tableClass:(_mon?'mv-tbl mv-mon-tbl':'mv-tbl'),
      total:{label:'합 계',amt:tot,cells:{amt:mvWon(tot),share:mvPct(tot,totAll).toFixed(1)+'%'}},
      afterDraw:function(){
        document.querySelectorAll('#result .mvdispck').forEach(function(ck){
@@ -20142,6 +20306,8 @@ function mvTabDead(){
        document.querySelectorAll('#result .mvdchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.deadFilter=b.dataset.v; mvSave(); mvRender(); }); });
        document.querySelectorAll('#result .mvdcchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.deadCat=b.dataset.v; MV.ui.deadLoc='전체'; MV.ui.deadFilter='전체'; mvSave(); mvRender(); }); });
        document.querySelectorAll('#result .mvdlchip').forEach(function(b){ b.addEventListener('click',function(){ MV.ui.deadLoc=b.dataset.v; MV.ui.deadFilter='전체'; mvSave(); mvRender(); }); });
+       var _dmb=document.getElementById('mvDeadMonBtn');
+       if(_dmb)_dmb.addEventListener('click',function(){ MV.ui.deadMon=!MV.ui.deadMon; mvSave(); mvRender(); });
      }});
 }
 
@@ -20864,7 +21030,10 @@ function mvTabItems(){
       return chipBtn('mvicchip',v,on,(v==='전체'?rows.length:(cntC[v]||0)),(v==='전체'?allAmt:(amtC[v]||0)), v==='전체'?'#475569':mvCatCol(v), allAmt); }).join('');
   var locChips=locs.map(function(v){ var on=(fl===v);
       return chipBtn('mvilchip',v,on,(v==='전체'?catRows.length:(cntL[v]||0)),(v==='전체'?catAmt:(amtL[v]||0)), on?'#1e3a5f':'#475569', catAmt); }).join('');
+  var _imon=!!MV.ui.itemMon, _IMI=mvMonIdx();
   var controls='<div style="display:flex;flex-direction:column;gap:7px;margin:2px 0 8px">'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+mvMonBtn('mvItemsMonBtn',_imon)
+      +'<span class="sub2" style="font-size:11.5px;color:#64748b">'+(_imon?'구분·품명·규격·재고·자재품목 + 1~12월 재고수량':'누르면 1~12월 재고수량 표로 바뀝니다')+'</span></div>'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><button class="btn ghost" id="mvItemsSafetyView" style="font-size:12.5px;padding:6px 12px;'+(safetyOnly?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488;border-color:#99f6e4')+'">안전재고 제품보기'+(safetyCount?(' ('+mvWon(safetyCount)+'종)'):'')+(safetyOnly?' ✓':'')+'</button><button class="btn ghost" id="mvItemsExMode" style="font-size:12.5px;padding:6px 12px;'+(exMode?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe')+'">🚫 제외품 지정'+(exMode?' ✓':'')+'</button><button class="btn ghost" id="mvItemsExView" style="font-size:12.5px;padding:6px 12px;'+(exOnly?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe')+'">🚫 제외품 보기'+(exclCount?(' ('+mvWon(exclCount)+'종)'):'')+(exOnly?' ✓':'')+'</button><span class="sub2">안전재고 제품 보기와 제외품 지정을 품목 기준으로 함께 사용할 수 있습니다.</span></div>'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">구분</b>'+catChips+'</div>'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">보관장소</b>'+locChips+'</div>'
@@ -20904,13 +21073,25 @@ function mvTabItems(){
       sortVal:function(o){ var lk=_rawOf(o); return lk?_rawTxt(lk[0]):(o.mat||''); }},
     {k:'note',t:'비고',cls:'l',cell:function(o){return '<span class="sub2" title="'+mvEsc(o.note)+'">'+mvEsc(String(o.note||'').slice(0,30))+'</span>';},sortVal:function(o){return o.note;}}
   ];
+  if(_imon){
+    var _matCol=cols.filter(function(c){return c.k==='mat';})[0];
+    cols=[
+      {k:'rank',t:'순위',cls:'rank',cell:function(o,i){return i+1;},nosort:true},
+      {k:'cat',t:'구분',cell:function(o){return '<span style="color:'+mvCatCol(o.cat)+';font-weight:800">'+mvEsc(o.cat)+'</span>';},sortVal:function(o){return o.cat;}},
+      {k:'label',t:'품명',cls:'l',cell:function(o){return mvEsc(o.name);},sortVal:function(o){return o.name;}},
+      {k:'spec',t:'규격',cls:'l',cell:function(o){return mvEsc(o.spec);},sortVal:function(o){return o.spec;}},
+      {k:'stock',t:'재고',cell:function(o){return mvNum(o.stock);},sortVal:function(o){return o.stock;}}
+    ].concat(_matCol?[_matCol]:[]).concat(mvMonCols(_IMI));
+  }
   if(exMode) cols.unshift({k:'_ex',t:'제외',cls:'c',cell:function(o){
     return '<input type="checkbox" class="mvitemexck" data-c="'+mvEsc(o.code||'')+'" data-s="'+mvEsc(o.spec||'')+'"'+(mvIsExcludedProduct(o.code,o.spec)?' checked':'')+' style="width:16px;height:16px;cursor:pointer;accent-color:#7c3aed">';
   },nosort:true});
   render('🔎 품목 상세 ('+mvYmLabel(ym)+')', mvWon(show.length)+'건 · '+mvWon(tot)+'원', show, cols, 'amt',
-    matNote,
-    {controlsHtml:mvTabBar()+controls, pageLimit:300, tableClass:'mv-tbl', total:{label:'합 계',amt:tot,cells:{amt:mvWon(tot)}},
+    (_imon?(mvMonNote(_IMI)+'<br>'+matNote):matNote),
+    {controlsHtml:mvTabBar()+controls, pageLimit:300, tableClass:(_imon?'mv-tbl mv-mon-tbl':'mv-tbl'), total:{label:'합 계',amt:tot,cells:{amt:mvWon(tot)}},
      onMount:function(){ try{setGlobalBar(false);}catch(e){} mvBind();
+       var _imb=document.getElementById('mvItemsMonBtn');
+       if(_imb)_imb.addEventListener('click',function(){ MV.ui.itemMon=!MV.ui.itemMon; mvSave(); mvRender(); });
        var isv=document.getElementById('mvItemsSafetyView'); if(isv)isv.addEventListener('click',function(){ MV.ui.itemSafetyOnly=!MV.ui.itemSafetyOnly; mvSave(); mvRender(); });
        var iem=document.getElementById('mvItemsExMode'); if(iem)iem.addEventListener('click',function(){ MV.ui.itemExclMode=!MV.ui.itemExclMode; mvSave(); mvRender(); });
        var iev=document.getElementById('mvItemsExView'); if(iev)iev.addEventListener('click',function(){ MV.ui.itemExclOnly=!MV.ui.itemExclOnly; mvSave(); mvRender(); });
@@ -21763,6 +21944,10 @@ setTimeout(mvInstallMenu,3500);
 <style id="idle-guard-v473-style">
 #gsSyncBtn{min-width:190px!important;justify-content:center!important}
 #appVer{min-width:0}
+/* v640 : 재고 월별보기 표는 12px 로 고정합니다(열이 많아 한눈에 들어오도록). */
+#result table.mv-mon-tbl,#result table.mv-mon-tbl th,#result table.mv-mon-tbl td,
+#result table.mv-mon-tbl th *,#result table.mv-mon-tbl td *{font-size:12px!important}
+#result table.mv-mon-tbl th,#result table.mv-mon-tbl td{padding:4px 6px!important;white-space:nowrap}
 </style>
 <script id="idle-guard-v473">
 /* ==========================================================
