@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v651</title>
-<script>window.APP_BUILD='v651';</script>
+<title>동방파스텍 매출 분석 도구 v653</title>
+<script>window.APP_BUILD='v653';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v651</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v653</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -1777,6 +1777,7 @@ body.fpopen #fpSum{display:block}
           <button class="btn" id="dsCheckBtn" type="button" style="background:#f1f5f9;color:#475569;border-color:#cbd5e1">🔄 서버 확인</button>
           <span class="sub2 gs-config-status" id="dsStatus" style="font-weight:600"></span>
         </div>
+        <div id="dsSyncGauge" class="sg652-slot" style="width:100%;margin-top:8px"></div>
         <div id="dsInfo" style="width:100%;margin-top:8px;font-size:11.5px;color:#475569"></div>
         <div class="sub2" style="margin-top:6px">위 <b>구글 동기화</b>의 URL·비밀키·내 이름을 그대로 사용합니다. 표 오른쪽 <b style="color:#047857">⬆ 올리기</b>는 서버에 새로 올리기, <b style="color:#1d4ed8">🔄 교체</b>는 서버 자료를 내 PC 자료로 덮어쓰기, <b style="color:#b91c1c">🗑 삭제</b>는 서버에서 그 달만 지우기입니다(내 PC 자료는 그대로 남습니다). 매출 원본은 <b>월별로 나눠 압축(사전압축+gzip)</b>해서 드라이브에 저장하므로, 3년치도 약 1.5MB입니다. <b>받기</b>는 상태가 <b style="color:#dc2626">다름</b>·<b style="color:#1d4ed8">받을 것</b>인 달만 서버 자료로 교체하고, <b style="color:#059669">동일</b>한 달과 내 PC에만 있는 달은 그대로 둡니다(담당자·등급 등 설정은 유지). 앱스스크립트에 <b>매출자료 공유 코드</b>가 추가되어 있어야 합니다.</div>
       </div>
@@ -15494,7 +15495,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 미수자료 자동 공유 (2026-09-06)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 진행 막대 상시 표시 (2026-09-06)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
@@ -18168,6 +18169,7 @@ async function dsPull(){
   var got=[],recv=0;
   for(var i=0;i<need.length;i++){
    var ym=need[i],info=rm[ym]||{}; dsSet('받는 중… '+(i+1)+'/'+need.length+' ('+ym+') · 검증');
+   try{ if(window.SG652)SG652.step(Math.round(i/need.length*100),'매출자료 받는 중',(i+1)+'/'+need.length+'개월 · '+ym); }catch(_e){}
    var d=await dsCall({action:'dsGet',ym:ym});
    if(!d||!d.data)throw new Error(ym+' 서버 파일 데이터가 비어 있습니다.');
    var packed=await dsDecode(d.enc||'gz',d.data||'');
@@ -26788,10 +26790,13 @@ try{ clsSales=sgClsSales; }catch(_e){}
    '미수자료 현황' 줄이 항상 보이도록 목록이 다시 그려질 때마다 붙입니다. */
 (function(){
   function build(el){
-    if(!el||document.getElementById('arShareDiagBox'))return;
+    if(!el)return;
+    /* v652 : 예전 버전 함수가 만든 옛 박스는 새 것으로 갈아 끼웁니다. */
+    var _ex=document.getElementById('arShareDiagBox');
+    if(_ex){ if(_ex.getAttribute('data-v')==='652')return; try{_ex.remove();}catch(_x){} }
     var d=null; try{ d=(typeof arShareDiagV649==='function')?arShareDiagV649():null; }catch(_e){}
     if(!d)return;
-    var box=document.createElement('div'); box.id='arShareDiagBox';
+    var box=document.createElement('div'); box.id='arShareDiagBox'; box.setAttribute('data-v','652');
     box.style.cssText='margin:6px 0 8px;padding:8px 10px;border:1px solid #bfdbfe;border-radius:8px;background:#f8fbff;font-size:11.5px;line-height:1.7;color:#334155';
     box.innerHTML='<b>\ud83d\udd0e 이 기기의 미수자료 현황</b> · 수금 <b>'+d.rc.toLocaleString()+'행</b>'
       +' · 업로드 파일 <b>'+d.up+'개</b>(내장 '+d.bd+'개)'
@@ -26802,12 +26807,22 @@ try{ clsSales=sgClsSales; }catch(_e){}
          +(d.canGz?'':' \u2014 이 브라우저가 내장자료 압축 해제를 지원하지 않습니다(구형 사파리 등)')
          +'. 자료가 정상인 기기에서 동기화가 한 번 돌면 자동으로 올라갑니다. 그 뒤 이 기기에서 \u2b07 불러오기를 하십시오.</b>')
       +'<br><span style="color:#64748b">두 기기의 <b>수금 행수</b>가 같아야 정상입니다. 다르면 자료가 있는 기기에서 아래 버튼을 누르고, 받는 기기에서 \u2b07 불러오기를 하십시오.</span>'
-      +'<div style="margin-top:6px"><button type="button" id="arResendAllBtn" class="btn" style="font-size:11.5px;padding:5px 11px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">\u2b06 미수자료 전체 다시 보내기</button>'
-      +'<label style="margin-left:9px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="arSendSeedChk" checked style="vertical-align:-1px"> 내장 기본자료 포함<span style="color:#64748b">(용량 큼)</span></label></div>';
+      +'<div style="margin-top:6px"><button type="button" id="arPullBtn" class="btn" style="font-size:11.5px;padding:5px 11px;background:#dbeafe;color:#1e40af;border-color:#93c5fd">\u2b07 미수자료 받기</button>'
+      +'<button type="button" id="arResendAllBtn" class="btn" style="font-size:11.5px;padding:5px 11px;margin-left:6px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">\u2b06 미수자료 전체 다시 보내기</button>'
+      +'<label style="margin-left:9px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="arSendSeedChk" checked style="vertical-align:-1px"> 내장 기본자료 포함<span style="color:#64748b">(용량 큼)</span></label></div>'
+      +'<div id="arSyncGauge" class="sg652-slot" style="margin-top:6px"></div>';
     var h=el.querySelector('.ar-file-head');
     if(h&&h.parentNode===el)h.insertAdjacentElement('afterend',box); else el.insertBefore(box,el.firstChild);
     var rb=document.getElementById('arResendAllBtn');
     if(rb)rb.addEventListener('click',function(){ if(typeof arResendAllV649==='function')arResendAllV649(rb); });
+    var pb=document.getElementById('arPullBtn');
+    if(pb)pb.addEventListener('click',async function(){
+      pb.disabled=true; var t0=pb.textContent; pb.textContent='받는 중…';
+      try{ if(typeof gsLoad==='function')await gsLoad(false); }catch(_e){}
+      pb.disabled=false; pb.textContent=t0;
+      try{ var bx=document.getElementById('arShareDiagBox'); if(bx)bx.remove(); }catch(_e){}
+      try{ if(typeof arRenderFileList==='function')arRenderFileList(); }catch(_e){}
+    });
   }
   function tick(){ try{ build(document.getElementById('arFileList')); }catch(_e){} }
   var mo=null;
@@ -26820,6 +26835,129 @@ try{ clsSales=sgClsSales; }catch(_e){}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',arm,{once:true}); else arm();
   setInterval(function(){ if(!document.getElementById('arShareDiagBox'))arm(); },2000);
+})();
+</script>
+<style id="sg652-css">
+.sg652{border:1px solid #dbe3ee;border-radius:9px;background:#fff;padding:7px 10px;font-size:11.5px;color:#334155}
+.sg652 .sg652-top{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.sg652 .sg652-ic{font-size:13px}
+.sg652 .sg652-lab{font-weight:800}
+.sg652 .sg652-pct{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+.sg652 .sg652-bar{height:11px;border-radius:999px;background:#e8eef6;overflow:hidden;position:relative}
+.sg652 .sg652-fill{height:100%;width:0%;border-radius:999px;transition:width .25s ease}
+.sg652.up .sg652-fill{background:linear-gradient(90deg,#0d9488,#14b8a6)}
+.sg652.down .sg652-fill{background:linear-gradient(90deg,#1d4ed8,#60a5fa)}
+.sg652.ok .sg652-fill{background:linear-gradient(90deg,#15803d,#4ade80)}
+.sg652.err .sg652-fill{background:linear-gradient(90deg,#b91c1c,#f87171)}
+.sg652.idle{background:#f8fafc;border-color:#e2e8f0}
+.sg652.idle .sg652-lab,.sg652.idle .sg652-pct{color:#94a3b8}
+.sg652.idle .sg652-fill{background:#cbd5e1}
+.sg652 .sg652-sub{margin-top:4px;color:#64748b}
+#sg652Fixed{position:fixed;right:14px;bottom:14px;z-index:99998;width:280px;box-shadow:0 8px 22px rgba(15,23,42,.18)}
+@media(max-width:640px){#sg652Fixed{left:14px;right:14px;width:auto}}
+</style>
+<script id="v652-sync-gauge">
+/* v652 : 서버로 보내기·받기가 지금 어디까지 왔는지 막대로 보여 줍니다.
+   구글 동기화(미수관리 포함)와 매출자료 공유의 모든 요청에 자동으로 붙습니다. */
+(function(){
+  var ST={on:false,kind:'down',pct:0,label:'',sub:'',t:0};
+  function kb(n){ n=+n||0; return n<1024?(n+'B'):(n<1048576?((n/1024).toFixed(0)+'KB'):((n/1048576).toFixed(1)+'MB')); }
+  function html(){
+    var cls='sg652 '+(ST.kind||'down');
+    return '<div class="'+cls+'"><div class="sg652-top"><span class="sg652-ic">'
+      +(ST.kind==='up'?'\u2b06':ST.kind==='down'?'\u2b07':ST.kind==='ok'?'\u2705':'\u26a0')
+      +'</span><span class="sg652-lab">'+(ST.label||'')+'</span><span class="sg652-pct">'+Math.round(ST.pct)+'%</span></div>'
+      +'<div class="sg652-bar"><div class="sg652-fill" style="width:'+Math.max(2,Math.min(100,ST.pct))+'%"></div></div>'
+      +(ST.sub?('<div class="sg652-sub">'+ST.sub+'</div>'):'')+'</div>';
+  }
+  /* v653 : 막대는 항상 자리에 있습니다. 전송할 때만 나타났다 사라지면
+     화면이 밀려 어지럽기 때문에, 평소에는 '대기' 상태로 같은 자리에 그대로 둡니다. */
+  function idleHtml(){
+    var last=''; try{ if(state&&state.gsync&&state.gsync.lastSync&&typeof gsFmtTime==='function')last=gsFmtTime(state.gsync.lastSync); }catch(_e){}
+    return '<div class="sg652 idle"><div class="sg652-top"><span class="sg652-ic">\u23f8</span>'
+      +'<span class="sg652-lab">대기 중</span><span class="sg652-pct">0%</span></div>'
+      +'<div class="sg652-bar"><div class="sg652-fill" style="width:0%"></div></div>'
+      +'<div class="sg652-sub">보내거나 받을 때 이 막대가 채워집니다'+(last?(' · 마지막 동기화 '+last):'')+'</div></div>';
+  }
+  function paint(){
+    var h=ST.on?html():idleHtml();
+    ['arSyncGauge','dsSyncGauge'].forEach(function(id){ var el=document.getElementById(id); if(el&&el.innerHTML!==h)el.innerHTML=h; });
+    var fx=document.getElementById('sg652Fixed');
+    if(!ST.on){ if(fx)fx.remove(); return; }
+    var inline=document.getElementById('arSyncGauge')||document.getElementById('dsSyncGauge');
+    var visible=false;
+    try{ visible=!!(inline&&inline.getClientRects().length); }catch(_e){}
+    if(visible){ if(fx)fx.remove(); return; }
+    if(!fx){ fx=document.createElement('div'); fx.id='sg652Fixed'; document.body.appendChild(fx); }
+    if(fx.innerHTML!==h)fx.innerHTML=h;
+  }
+  /* 화면이 다시 그려져도 막대가 사라지지 않도록 주기적으로 자리를 채웁니다. */
+  setInterval(paint,1500);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paint,{once:true}); else setTimeout(paint,300);
+  /* v653 : 응답이 오지 않아 막대가 걸린 채로 남지 않도록, 45초간 변화가 없으면 대기로 돌립니다. */
+  var _stale=0;
+  function touch(){ _stale=Date.now(); }
+  setInterval(function(){ if(ST.on&&_stale&&Date.now()-_stale>45000){ ST.on=false;ST.pct=0;_stale=0;paint(); } },5000);
+  var SG={
+    kb:kb,
+    show:function(kind,label,sub){ touch(); ST.on=true;ST.kind=kind;ST.label=label||'';ST.sub=sub||'';ST.pct=Math.max(3,ST.pct*0);paint(); },
+    set:function(pct,sub){ if(!ST.on)return; touch(); if(pct!=null)ST.pct=Math.max(ST.pct,Math.min(99,pct)); if(sub!=null)ST.sub=sub; paint(); },
+    step:function(pct,label,sub){ touch(); ST.on=true; if(label)ST.label=label; if(pct!=null)ST.pct=Math.min(99,pct); if(sub!=null)ST.sub=sub; paint(); },
+    done:function(sub){ touch(); ST.on=true;ST.kind='ok';ST.pct=100;ST.label='완료';if(sub!=null)ST.sub=sub;paint();
+      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;paint(); },2600); },
+    fail:function(sub){ touch(); ST.on=true;ST.kind='err';ST.pct=100;ST.label='실패';if(sub!=null)ST.sub=sub;paint();
+      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;paint(); },4200); }
+  };
+  window.SG652=SG;
+
+  /* 동기화·매출공유 요청에만 붙는 fetch 래퍼 */
+  var of=window.fetch;
+  if(!of||of.__sg652)return;
+  function syncUrl(u){
+    try{ u=String(u||''); }catch(_e){ return false; }
+    if(!u)return false;
+    var list=[];
+    try{ if(state&&state.gsync&&state.gsync.url)list.push(String(state.gsync.url)); }catch(_e){}
+    try{ if(typeof dsUrl==='function'){ var b=dsUrl(); if(b)list.push(String(b)); } }catch(_e){}
+    try{ if(typeof auUrl==='function'){ var c=auUrl(); if(c)list.push(String(c)); } }catch(_e){}
+    for(var i=0;i<list.length;i++){ if(list[i]&&u.indexOf(list[i])===0)return true; }
+    return /script\.google\.com/.test(u);
+  }
+  function wrap(res,isPost,upBytes){
+    try{
+      if(!res||!res.body||typeof res.body.getReader!=='function'){ SG.done(isPost?('보냄 '+kb(upBytes)):''); return res; }
+      var total=0; try{ total=+res.headers.get('content-length')||0; }catch(_e){}
+      var reader=res.body.getReader(), got=0;
+      var stream=new ReadableStream({start:function(ctrl){
+        (function pump(){
+          reader.read().then(function(r){
+            if(r.done){ ctrl.close();
+              SG.done(isPost?('보냄 '+kb(upBytes)+' · 응답 '+kb(got)):('받음 '+kb(got)));
+              return; }
+            got+=(r.value&&r.value.length)||0;
+            var pct= total?Math.round(got/total*100) : (isPost? Math.min(96,72+got/4096) : Math.min(96,38+got/4096));
+            SG.set(pct,(isPost?'응답 받는 중 ':'받는 중 ')+kb(got)+(total?(' / '+kb(total)):''));
+            ctrl.enqueue(r.value); pump();
+          },function(e){ ctrl.error(e); SG.fail('전송이 끊겼습니다'); });
+        })();
+      }});
+      return new Response(stream,{status:res.status,statusText:res.statusText,headers:res.headers});
+    }catch(_e){ SG.done(''); return res; }
+  }
+  var f=function(input,init){
+    var url=(typeof input==='string')?input:((input&&input.url)||'');
+    if(!syncUrl(url))return of.apply(this,arguments);
+    var m=''; try{ m=String((init&&init.method)||(input&&input.method)||'GET').toUpperCase(); }catch(_e){ m='GET'; }
+    var isPost=(m==='POST');
+    var bytes=0; try{ if(isPost&&init&&typeof init.body==='string')bytes=init.body.length; }catch(_e){}
+    SG.show(isPost?'up':'down', isPost?'서버로 보내는 중':'서버에서 받는 중', isPost?('보낼 자료 '+kb(bytes)):'요청 보냄');
+    SG.step(isPost?30:12);
+    return of.apply(this,arguments).then(function(res){
+      SG.step(isPost?70:36, null, isPost?'서버가 처리 중':'응답 받는 중');
+      return wrap(res,isPost,bytes);
+    },function(e){ SG.fail('연결 실패 — '+(e&&e.message||e)); throw e; });
+  };
+  f.__sg652=true; window.fetch=f;
 })();
 </script>
 <script id="v556-sync-dedupe-performance">
