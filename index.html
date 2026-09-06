@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v640</title>
-<script>window.APP_BUILD='v640';</script>
+<title>동방파스텍 매출 분석 도구 v647</title>
+<script>window.APP_BUILD='v647';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -645,6 +645,9 @@
   /* v632 : 조정%·추가% 입력칸을 칸 폭에 맞춰 넓힙니다(값이 잘려 보이던 문제). */
   #result .fc-cust-annual-table .fcov,#result .fc-cust-annual-table .fcadd,
   #result .fc-prod-annual-table .fcpov,#result .fc-prod-annual-table .fcpadd{width:calc(100% - 16px)!important;min-width:46px;max-width:82px;box-sizing:border-box}
+  /* v642 : 수량보기에서는 앞쪽 열이 이미 수량이므로 메모 왼쪽의 전년수량·올해목표수량 열을 숨깁니다. */
+  #result table.fc-prod-annual-table.fcqv th:nth-child(13),#result table.fc-prod-annual-table.fcqv td:nth-child(13),
+  #result table.fc-prod-annual-table.fcqv th:nth-child(14),#result table.fc-prod-annual-table.fcqv td:nth-child(14){display:none!important}
   .fcmemo.editedm,.fcpmemo.editedm,.rtmemo.editedm,.cmgr-tbl input.editedm{background:#eff6ff;border-color:#60a5fa}
   .fcissue-c th:nth-child(5),.fcissue-c th:nth-child(6),.fcissue-c td:nth-child(5),.fcissue-c td:nth-child(6){display:none}
   .fcissue-c table{width:100%}.fcissue-c table td:last-child,.fcissue-c table th:last-child{width:100%}.fcissue-c .fcmemo{width:100%!important;font-size:12.5px!important;padding:7px 9px!important}
@@ -1711,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v640</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v647</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -2941,7 +2944,7 @@ function wrHeader(model,page){
   const periodMode=model.periodMode||'week',isWeek=periodMode==='week',isMonth=periodMode==='month',isYear=periodMode==='year',isDirect=periodMode==='custom';
   const periodTitle=isYear?`${y}년 연간`:isMonth?`${y}년 ${m}월`:model.isCustom?`${wrDateText(model.rangeStart)} ~ ${wrDateText(model.rangeEnd)}`:`${m}월 ${w}주차`;
   return `<div class="wr-head"><div class="wr-brand">▣ 방화문부자재 사업부 영업팀 실적보고<small><b style="color:#dc2626">업체 신용도·매출순위 표시</b> · 연매출 목표=${fcCutLabel()} 실적+${fcFutLabel()} 목표 · 실적행=조회시점까지 · 고철 80% 기준 반영</small></div><div class="wr-titlebox"><div class="wr-title">${periodTitle}</div><div class="wr-head-actions"><button class="btn ghost" id="wrXlsx">📥 엑셀</button><button class="btn ghost wr-no-print" id="wrPrint">🖨 인쇄</button></div></div></div>
-    <div class="wr-tabs"><button class="wr-tab ${page===1?'on':''}" data-wrpage="1">1. 목표대비 달성</button><button class="wr-tab ${page===2?'on':''}" data-wrpage="2">2. 품목별 매출 현황</button><button class="wr-tab ${page===3?'on':''}" data-wrpage="3">3. 주간이슈사항</button><div class="wr-controls"><span class="sub2" style="font-weight:700;color:#334155">조회 단위</span><label><select id="wrPeriodMode"><option value="week" ${isWeek?'selected':''}>주간</option><option value="month" ${isMonth?'selected':''}>월간</option>${page===1?'':`<option value="year" ${isYear?'selected':''}>연간</option>`}<option value="custom" ${isDirect?'selected':''}>직접기간</option></select></label><label>연도 <select id="wrYear">${ys}</select></label><label>월 <select id="wrMonth" ${isYear?'disabled':''}>${ms}</select></label><label>주차 <select id="wrWeek" ${isWeek?'':'disabled'}>${ws}</select></label><span class="sub2" style="border-left:1px solid #cbd5e1;padding-left:7px">직접 기간</span><label>시작일 <input type="date" id="wrRangeStart" value="${esc(state.weekly.rangeStart||'')}" ${isDirect?'':'disabled'}></label><label>종료일 <input type="date" id="wrRangeEnd" value="${esc(state.weekly.rangeEnd||'')}" ${isDirect?'':'disabled'}></label><button class="btn ghost" id="wrRangeApply" style="font-size:11px;padding:4px 9px" ${isDirect?'':'disabled'}>적용</button><button class="btn ghost" id="wrRangeReset" style="font-size:11px;padding:4px 9px">주간으로</button></div></div>`;
+    <div class="wr-tabs"><button class="wr-tab ${page===1?'on':''}" data-wrpage="1">1. 목표대비 달성</button><button class="wr-tab ${page===2?'on':''}" data-wrpage="2">2. 품목별 매출 현황</button><button class="wr-tab ${page===3?'on':''}" data-wrpage="3">3. 주간이슈사항</button><div class="wr-controls"><span class="sub2" style="font-weight:700;color:#334155">조회 단위</span><label><select id="wrPeriodMode"><option value="week" ${isWeek?'selected':''}>주간</option><option value="month" ${isMonth?'selected':''}>월간</option>${page===1?'':`<option value="year" ${isYear?'selected':''}>연간</option>`}<option value="custom" ${isDirect?'selected':''}>직접기간</option></select></label><label>연도 <select id="wrYear">${ys}</select></label><label>월 <select id="wrMonth" ${isYear?'disabled':''}>${ms}</select></label><label>주차 <select id="wrWeek" ${isWeek?'':'disabled'}>${ws}</select></label><span class="sub2" style="border-left:1px solid #cbd5e1;padding-left:7px">직접 기간</span><label>시작일 <input type="date" id="wrRangeStart" value="${esc(state.weekly.rangeStart||'')}" ${isDirect?'':'disabled'}></label><label>종료일 <input type="date" id="wrRangeEnd" value="${esc(state.weekly.rangeEnd||'')}" ${isDirect?'':'disabled'}></label><button class="btn ghost" id="wrRangeApply" style="font-size:11px;padding:4px 9px" ${isDirect?'':'disabled'}>적용</button><button class="btn ghost" id="wrRangeReset" style="font-size:11px;padding:4px 9px" title="오늘이 속한 주차로 이동합니다">이번주</button></div></div>`;
 }
 function wrRankBar(label,info,tailHtml=''){
   const curTop=Math.max(1,Math.min(500,+state.weekly.topN||20)),curPct=Math.max(1,Math.min(100,+state.weekly.topPct||80));
@@ -3949,7 +3952,21 @@ function wrBind(model,page){
   m&&m.addEventListener('change',()=>{state.weekly.month=+m.value;if(state.weekly.periodMode==='week'){clearRange();state.weekly.week=wrLatestWeek(state.weekly.year,+m.value);}saveSettings();weeklyReport(page);});
   w&&w.addEventListener('change',()=>{state.weekly.periodMode='week';state.weekly.periodModes={1:'week',2:'month',3:'week',...(state.weekly.periodModes||{}),[page]:'week'};clearRange();state.weekly.week=+w.value;saveSettings();weeklyReport(page);});
   ra&&ra.addEventListener('click',()=>{ const s=wrParseDate(rs&&rs.value),e=wrParseDate(re&&re.value); if(!s||!e){alert('시작일과 종료일을 모두 지정해 주세요.');return;} if(s>e){alert('종료일은 시작일 이후로 지정해 주세요.');return;} if(s.getFullYear()!==e.getFullYear()){alert('연 목표 기준을 위해 같은 연도 안에서 기간을 지정해 주세요.');return;} state.weekly.periodMode='custom';state.weekly.periodModes={1:'week',2:'month',3:'week',...(state.weekly.periodModes||{}),[page]:'custom'};state.weekly.rangeStart=rs.value;state.weekly.rangeEnd=re.value;state.weekly.year=s.getFullYear();saveSettings();weeklyReport(page);});
-  rr&&rr.addEventListener('click',()=>{state.weekly.periodMode='week';state.weekly.periodModes={1:'week',2:'month',3:'week',...(state.weekly.periodModes||{}),[page]:'week'};clearRange();saveSettings();weeklyReport(page);});
+  /* v647 : '이번주' — 주간 모드로 되돌리는 것에 더해, 오늘이 속한 연·월·주차로 이동합니다.
+     올해 자료가 없으면 자료가 있는 마지막 해로 맞춥니다. */
+  rr&&rr.addEventListener('click',()=>{
+    state.weekly.periodMode='week';
+    state.weekly.periodModes={1:'week',2:'month',3:'week',...(state.weekly.periodModes||{}),[page]:'week'};
+    clearRange();
+    try{
+      const t=new Date(); let yy=t.getFullYear(), mm=t.getMonth()+1;
+      const ys=(typeof dataYears==='function')?dataYears():[];
+      if(ys.length&&ys.indexOf(yy)<0){ yy=ys[ys.length-1]; mm=12; }
+      const rg=wrRanges(yy,mm), dd=t.getDate(), hit=rg.find(r=>dd>=r.s&&dd<=r.e);
+      state.weekly.year=yy; state.weekly.month=mm;
+      state.weekly.week=hit?hit.n:Math.min(rg.length,Math.max(1,Math.ceil(dd/7)));
+    }catch(_e){}
+    saveSettings();weeklyReport(page);});
   const setTop=v=>{state.weekly.rankMode='count';state.weekly.topN=Math.max(1,Math.min(500,Math.round(+v||20)));weeklyReport(page);};
   const setPct=v=>{state.weekly.rankMode='pct';state.weekly.topPct=Math.max(1,Math.min(100,Math.round(+v||80)));weeklyReport(page);};
   n&&n.addEventListener('change',()=>setTop(n.value));
@@ -9984,6 +10001,32 @@ function forecast(){ state._inDrill=false;
   for(const m of fcMonths){ fcCustProdMon[m].forEach((pm,c)=>pm.forEach((e,pk)=>{ const k=c+'\u0001'+pk,o=futurePairs.get(k)||{c,pk,total:0};o.total+=e.amt||0;futurePairs.set(k,o); })); }
   futurePairs.forEach(o=>{ const ov=cpOverride[o.c+'│'+o.pk]; if(ov==null||ov==='')return; let prev=0,actual=0; for(let m=1;m<=12;m++){ const pe=(pyMonCustProd[m].get(o.c)||new Map()).get(o.pk);if(pe)prev+=pe.amt||0;if(m<=lastAct){const ae=(cyMonCustProd[m].get(o.c)||new Map()).get(o.pk);if(ae)actual+=ae.amt||0;} } const desired=Math.max(0,prev*(1+(+ov||0)/100)),remain=Math.max(0,desired-actual),factor=o.total>0?remain/o.total:0; for(const m of fcMonths){const e=(fcCustProdMon[m].get(o.c)||new Map()).get(o.pk);if(e){e.amt*=factor;e.qty*=factor;}} });
   for(const m of fcMonths){ fcCustProdMon[m].forEach((pm,c)=>pm.forEach((e,pk)=>{ const v=cpOverride['@M│'+c+'│'+pk+'│'+m]; if(v==null||v==='')return; const factor=Math.max(0,1+(+v||0)/100);e.amt*=factor;e.qty*=factor; })); }
+  /* v646 : 제품 조정%·추가% 를 미래월 목표에 먼저 반영합니다.
+     목표 = (조정% 있으면 전년×(1+조정%), 없으면 기본목표) × (1+추가%)
+     이 값에서 확정월 실적을 뺀 나머지를 미래월에 비례 배분합니다. */
+  const _prodFut0=new Map();
+  (function(){
+    const po=state.fc.prodOverride||{}, pa=state.fc.prodAddPct||{};
+    const keys=new Set(Object.keys(po).concat(Object.keys(pa)));
+    if(!keys.size)return;
+    const exS=(typeof fcTargetExcludedCustSet==='function')?fcTargetExcludedCustSet():new Set();
+    keys.forEach(pk=>{
+      const ov=po[pk], ad=pa[pk];
+      const hasOv=(ov!=null&&ov!==''), hasAd=(ad!=null&&ad!==''&&+ad!==0);
+      if(!hasOv&&!hasAd)return;
+      let prev=0, ytdP=0, fut0=0;
+      for(let m=1;m<=12;m++){ const pe=pyMonProd[m].get(pk); if(pe)prev+=pe.amt||0; }
+      for(let m=1;m<=lastAct;m++) cyMonCustProd[m].forEach((pm,c)=>{ if(exS.has(c))return; const e=pm.get(pk); if(e)ytdP+=e.amt||0; });
+      for(const m of fcMonths) fcCustProdMon[m].forEach((pm,c)=>{ if(exS.has(c))return; const e=pm.get(pk); if(e)fut0+=e.amt||0; });
+      _prodFut0.set(pk,fut0);
+      if(!(fut0>0))return;
+      const base=hasOv?Math.max(0,prev*(1+(+ov)/100)):(ytdP+fut0);
+      const want=base*(1+(hasAd?+ad:0)/100)-ytdP;
+      const f=Math.max(0,want)/fut0;
+      if(!isFinite(f)||f===1)return;
+      for(const m of fcMonths) fcCustProdMon[m].forEach(pm=>{ const e=pm.get(pk); if(e){e.amt*=f;e.qty*=f;} });
+    });
+  })();
   /* 거래처별 월목표 조정%는 해당 거래처의 해당 미래월 목표액에만 적용합니다.
      v639 : 그 달 목표가 <b>0원</b>이면 몇 %를 넣어도 0×(1+%)=0 이라 반영되지 않았습니다.
             0원인 달에 한해 기준을 그 거래처의 <b>미래월 평균 목표액</b>으로 바꿔 %를 적용하고,
@@ -9996,7 +10039,27 @@ function forecast(){ state._inDrill=false;
       pm.forEach((e,pk)=>{ const a=+e.amt||0,q=+e.qty||0; t+=a; const o=mx.get(pk)||{a:0,q:0}; o.a+=a; o.q+=q; mx.set(pk,o); });
       if(mx.size)mixC.set(c,mx); sumC.set(c,(sumC.get(c)||0)+t);
     });
-    const nMon=fcMonths.length||1;
+    /* v641 : 미래월이 전부 0원인 거래처(예: 8월에만 실적이 있는 품목)는 미래월 평균도 0이라
+       여전히 %가 먹지 않았습니다. 그래서 기준을 ① 미래월 평균 → ② 올해 실적 월평균 →
+       ③ 전년 실적 월평균 순으로 내려가며 찾습니다. */
+    const accC=(mons,src)=>{ const sum=new Map(), mix=new Map();
+      for(const m of mons){ const S=src[m]; if(!S)continue;
+        S.forEach((pm,c)=>{ let t=0; const mx=mix.get(c)||new Map();
+          pm.forEach((e,pk)=>{ const a=+e.amt||0,q=+e.qty||0; t+=a; const o=mx.get(pk)||{a:0,q:0}; o.a+=a; o.q+=q; mx.set(pk,o); });
+          if(mx.size)mix.set(c,mx); sum.set(c,(sum.get(c)||0)+t); });
+      }
+      return {sum,mix,n:mons.length||1};
+    };
+    const actMons=[]; for(let m=1;m<=lastAct;m++)actMons.push(m);
+    const allMons=[]; for(let m=1;m<=12;m++)allMons.push(m);
+    const T1={sum:sumC,mix:mixC,n:fcMonths.length||1};
+    let T2=null,T3=null;
+    const pickC=(c)=>{
+      const cand=[T1,(T2||(T2=accC(actMons,cyMonCustProd))),(T3||(T3=accC(allMons,pyMonCustProd)))];
+      for(const t of cand){ const s=t.sum.get(c)||0, mx=t.mix.get(c);
+        if(s>0&&mx&&mx.size)return {avg:s/t.n,mix:mx,n:t.n}; }
+      return null;
+    };
     const custKeys=Object.keys(cmAll);
     for(const m of fcMonths){
       for(const c of custKeys){
@@ -10008,13 +10071,13 @@ function forecast(){ state._inDrill=false;
         if(base>0){ const f=Math.max(0,1+pct/100); pm.forEach(e=>{e.amt*=f;e.qty*=f;}); continue; }
         /* ── 0원 달 : 월평균 × % 를 제품 구성비로 배분 ── */
         if(pct<=0)continue;
-        const avg=(sumC.get(c)||0)/nMon, add=avg*pct/100;
-        if(!(add>0))continue;
-        const mx=mixC.get(c); if(!mx||!mx.size)continue;
+        const bs=pickC(c); if(!bs)continue;
+        const add=bs.avg*pct/100; if(!(add>0))continue;
+        const mx=bs.mix;
         let tot=0; mx.forEach(o=>tot+=o.a); if(!(tot>0))continue;
         const dst=pm||new Map();
         mx.forEach((o,pk)=>{ const r=o.a/tot; const e=dst.get(pk)||{amt:0,qty:0};
-          e.amt=(+e.amt||0)+add*r; e.qty=(+e.qty||0)+(o.q/nMon)*(pct/100); dst.set(pk,e); });
+          e.amt=(+e.amt||0)+add*r; e.qty=(+e.qty||0)+(o.q/bs.n)*(pct/100); dst.set(pk,e); });
         fcCustProdMon[m].set(c,dst);
       }
     }
@@ -10030,7 +10093,25 @@ function forecast(){ state._inDrill=false;
       sumP.set(pk,(sumP.get(pk)||0)+a);
       const mx=mixP.get(pk)||new Map(); const o=mx.get(c)||{a:0,q:0}; o.a+=a; o.q+=q; mx.set(c,o); mixP.set(pk,mx);
     }));
-    const nMon=fcMonths.length||1;
+    /* v641 : 제품도 동일하게 ① 미래월 → ② 올해 실적 → ③ 전년 실적 월평균 순으로 기준을 찾습니다. */
+    const accP=(mons,src)=>{ const sum=new Map(), mix=new Map();
+      for(const m of mons){ const S=src[m]; if(!S)continue;
+        S.forEach((pm,c)=>pm.forEach((e,pk)=>{ const a=+e.amt||0,q=+e.qty||0;
+          sum.set(pk,(sum.get(pk)||0)+a);
+          const mx=mix.get(pk)||new Map(); const o=mx.get(c)||{a:0,q:0}; o.a+=a; o.q+=q; mx.set(c,o); mix.set(pk,mx); }));
+      }
+      return {sum,mix,n:mons.length||1};
+    };
+    const actMonsP=[]; for(let m=1;m<=lastAct;m++)actMonsP.push(m);
+    const allMonsP=[]; for(let m=1;m<=12;m++)allMonsP.push(m);
+    const P1={sum:sumP,mix:mixP,n:fcMonths.length||1};
+    let P2=null,P3=null;
+    const pickP=(pk)=>{
+      const cand=[P1,(P2||(P2=accP(actMonsP,cyMonCustProd))),(P3||(P3=accP(allMonsP,pyMonCustProd)))];
+      for(const t of cand){ const s=t.sum.get(pk)||0, mx=t.mix.get(pk);
+        if(s>0&&mx&&mx.size)return {avg:s/t.n,mix:mx,n:t.n}; }
+      return null;
+    };
     const prodKeys=Object.keys(pmAll);
     for(const m of fcMonths){
       for(const pk of prodKeys){
@@ -10041,14 +10122,14 @@ function forecast(){ state._inDrill=false;
         if(base>0){ const f=Math.max(0,1+pct/100);
           fcCustProdMon[m].forEach(pm=>{ const e=pm.get(pk); if(e){e.amt*=f;e.qty*=f;} }); continue; }
         if(pct<=0)continue;
-        const avg=(sumP.get(pk)||0)/nMon, add=avg*pct/100;
-        if(!(add>0))continue;
-        const mx=mixP.get(pk); if(!mx||!mx.size)continue;
+        const bs=pickP(pk); if(!bs)continue;
+        const add=bs.avg*pct/100; if(!(add>0))continue;
+        const mx=bs.mix;
         let tot=0; mx.forEach(o=>tot+=o.a); if(!(tot>0))continue;
         mx.forEach((o,c)=>{ const r=o.a/tot;
           const dst=fcCustProdMon[m].get(c)||new Map();
           const e=dst.get(pk)||{amt:0,qty:0};
-          e.amt=(+e.amt||0)+add*r; e.qty=(+e.qty||0)+(o.q/nMon)*(pct/100); dst.set(pk,e);
+          e.amt=(+e.amt||0)+add*r; e.qty=(+e.qty||0)+(o.q/bs.n)*(pct/100); dst.set(pk,e);
           fcCustProdMon[m].set(c,dst); });
       }
     }
@@ -10197,16 +10278,39 @@ function forecast(){ state._inDrill=false;
   // products (ALL)
   const prodKeys=new Set(); for(let m=m1;m<=m2;m++){ pyMonProd[m].forEach((_,pk)=>prodKeys.add(pk)); cyMonProd[m].forEach((_,pk)=>prodKeys.add(pk)); if(m>lastAct)fcProdMon[m].forEach((_,pk)=>prodKeys.add(pk)); }
   const fcProdTargetEntry=(m,pk)=>{ let amt=0,qty=0; const src=m<=lastAct?cyMonCustProd[m]:fcCustProdMon[m]; src.forEach((pm,c)=>{ if(fcExSet.has(c))return; const e=pm&&pm.get(pk); if(e){amt+=e.amt;qty+=e.qty;} }); return {amt,qty}; };
-  let prodArr=[...prodKeys].map(pk=>{ let prev=0,pq=0,proj0=0,cq=0,ytd=0; for(let m=m1;m<=m2;m++){ const pe=pyMonProd[m].get(pk); if(pe){prev+=pe.amt;pq+=pe.qty;} const te=fcProdTargetEntry(m,pk); if(te){proj0+=te.amt;cq+=te.qty;} const ae=cyMonProd[m].get(pk); if(m<=lastAct&&ae)ytd+=ae.amt; } const meta=prodMeta.get(pk)||{code:pk,name:'',spec:''}; const ov=state.fc.prodOverride[pk]; const ad=state.fc.prodAddPct[pk]; let proj=(ov!=null&&ov!=='')?prev*(1+(+ov)/100):proj0; proj*=1+((ad!=null&&ad!=='')?+ad:0)/100; const cqAdj=proj0>0?cq*(proj/proj0):(prev>0?pq*(proj/prev):cq); const diff=proj-prev; const pct=prev?diff/prev*100:(proj>0?null:0); return {pk,...meta,prev,proj0,proj,diff,pct,pq,cq:cqAdj,ytd,ov:(ov==null?'':ov),ad:(ad==null?'':ad)}; }).filter(o=>o.prev>0||o.proj>0||o.ytd>0);
-  prodArr.forEach(o=>{ if(exP[o.pk]){ o.proj=0; o.diff=-o.prev; o.pct=o.prev?-100:0; o.excl=true; } });
+  let prodArr=[...prodKeys].map(pk=>{ let prev=0,pq=0,proj0=0,cq=0,ytd=0,ytdQ=0,ytdP=0,futP=0; for(let m=m1;m<=m2;m++){ const pe=pyMonProd[m].get(pk); if(pe){prev+=pe.amt;pq+=pe.qty;} const te=fcProdTargetEntry(m,pk); if(te){proj0+=te.amt;cq+=te.qty; if(m<=lastAct)ytdP+=te.amt; else futP+=te.amt;} const ae=cyMonProd[m].get(pk); if(m<=lastAct&&ae){ytd+=ae.amt;ytdQ+=ae.qty||0;} } const meta=prodMeta.get(pk)||{code:pk,name:'',spec:''}; const ov=state.fc.prodOverride[pk]; const ad=state.fc.prodAddPct[pk];
+    /* v646 : 조정%·추가% 는 위에서 월별 목표에 이미 반영했으므로 여기서 다시 곱하지 않습니다.
+       (예전에는 표에서만 곱해 월별 합계와 숫자가 달랐습니다.) */
+    const _fut0=_prodFut0.has(pk)?_prodFut0.get(pk):futP;
+    const proj=proj0; const cqAdj=cq; const diff=proj-prev; const pct=prev?diff/prev*100:(proj>0?null:0);
+    /* v644 : 업체별 표의 '추가증감액'과 같은 기준으로 통일했습니다.
+       기준선(_bpP·_bpQ) = 전년 미래월 실적 × (1+월별 목표%). 조정%·추가%·월별 %가
+       만든 증감이 모두 이 열에 잡히고, 월별보기에서 월을 고쳐도 즉시 반영됩니다. */
+    let _bpP=0,_bpQ=0;
+    for(let _b=Math.max(m1,lastAct+1);_b<=m2;_b++){ const _pe=pyMonProd[_b].get(pk); if(!_pe)continue;
+      const _pc=(state.fc.pct[_b]!=null&&state.fc.pct[_b]!=='')?+state.fc.pct[_b]:0; const _f=1+_pc/100;
+      _bpP+=(_pe.amt||0)*_f; _bpQ+=(_pe.qty||0)*_f; }
+    const addAmt=(proj-ytd)-_bpP, addQty=(cqAdj-ytdQ)-_bpQ; const _cq0=cq;
+    const qdiff=cqAdj-pq; return {pk,...meta,prev,proj0,proj,diff,pct,pq,cq:cqAdj,qdiff,addAmt,addQty,_bpP,_bpQ,_cq0,_p0:proj0,_q0:cq,_ytdP:ytdP,_fut0,ytd,ytdQ,ov:(ov==null?'':ov),ad:(ad==null?'':ad)}; }).filter(o=>o.prev>0||o.proj>0||o.ytd>0);
+  prodArr.forEach(o=>{ if(exP[o.pk]){ o.proj=0; o.diff=-o.prev; o.pct=o.prev?-100:0; o.cq=0; o.qdiff=-o.pq;
+    o.addAmt=(0-o.ytd)-(o._bpP||0); o.addQty=(0-o.ytdQ)-(o._bpQ||0); o.excl=true; } });
   applyFcSort(prodArr);
   const newProdArr=Object.entries(state.fc.newProds||{}).map(([pk,o])=>{ const ad=state.fc.prodAddPct[pk]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; const amt=+o.amt||0; const base=adjustScrapProductAmount(o,amt); return {pk,code:o.code,name:o.name,spec:o.spec,prev:0,proj:base*af,diff:base*af,pct:null,pq:0,cq:0,ov:'',ad:(ad==null?'':ad),amt}; });
   const pTotPrev=prodArr.reduce((a,o)=>a+o.prev,0); const pTotProj=prodArr.reduce((a,o)=>a+o.proj,0)+newProdArr.reduce((a,o)=>a+o.proj,0)+lineProdTotal+pdYearNet;
-  let prodRows=prodArr.map((o,i)=>`<tr class="fcprow${o.excl?' fcexcluded':''}" data-pk="${esc(o.pk)}"><td class="rank">${i+1}</td><td class="l">${esc(o.code)} <label class="exclbox" onclick="event.stopPropagation()" title="올해 제외"><input type="checkbox" class="fcpexcl" data-pk="${esc(o.pk)}" ${o.excl?'checked':''}>제외</label></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>${disp(o.prev)}</td><td>${disp(o.ytd)}</td><td>${disp(o.proj)}</td><td>${diffSpan(o.diff)}</td><td>${pctSpan(o.pct)}</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcpov" data-pk="${esc(o.pk)}" value="${fcPctInputValue(o.ov)}" placeholder="${o.excl?'제외':fcAutoPctText(o)}" title="자동 적용값 ${fcAutoPctText(o)}% · 직접 입력하면 제품 조정%로 고정" step="0.1" style="width:54px"> %</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcpadd" data-pk="${esc(o.pk)}" value="${fcPctInputValue(o.ad)}" placeholder="0.0" step="0.1" style="width:54px"> %</td><td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.cq))}</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(o.pk)}" value="${esc(state.fc.prodMemo[o.pk]||'')}" placeholder="이슈 메모" style="width:150px;font-size:11px"></td></tr>`).join('');
-  const newProdRows=newProdArr.map(o=>`<tr class="fcnewprow" data-pk="${esc(o.pk)}"><td class="rank" style="color:#7c3aed;font-weight:700">신규</td><td class="l">${esc(o.code)} <button class="fcpdel" data-pk="${esc(o.pk)}" title="삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" inputmode="numeric" class="fcnewp numfmt" data-pk="${esc(o.pk)}" value="${o.amt.toLocaleString('en-US')}" style="width:110px;text-align:right" title="연 목표액(원)"></td><td>${diffSpan(o.proj)}</td><td><span class="sub2" style="color:#7c3aed;font-weight:700">신규</span></td><td onclick="event.stopPropagation()"><input type="number" value="" placeholder="-" style="width:54px" disabled> %</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcpadd" data-pk="${esc(o.pk)}" value="${fcPctInputValue(o.ad)}" placeholder="0.0" step="0.1" style="width:54px"> %</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(o.pk)}" value="${esc(state.fc.prodMemo[o.pk]||'')}" placeholder="이슈 메모" style="width:150px;font-size:11px"></td></tr>`).join('');
-  const lineProdRows=Object.entries(lineProdNet).map(([pk,o])=>{ const brk=o.lines.map(l=>`${l.cust} ${won(l.qty)}개×${won(Math.round(l.price))}`).join(' · '); const tq=o.lines.reduce((a,l)=>a+(+l.qty||0),0); return `<tr class="fcnewprow" data-pk="${esc(pk)}"><td class="rank" style="color:#0d9488;font-weight:700">신규</td><td class="l">${esc(o.code)} <button class="fcplinedel" data-pk="${esc(pk)}" title="이 제품 라인 삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>-</td><td>-</td><td><b>${disp(o.amt)}</b> <span class="sub2" title="${esc(brk)}" style="color:#0d9488">🧾라인 ${o.lines.length}</span></td><td>${diffSpan(o.amt)}</td><td><span class="sub2" style="color:#0d9488;font-weight:700">신규</span></td><td>-</td><td>-</td><td>-</td><td>${won(tq)}</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(pk)}" value="${esc(state.fc.prodMemo[pk]||'')}" placeholder="이슈 메모" style="width:150px;font-size:11px"></td></tr>`; }).join('');
+  /* v641 : 수량보기 — 연간 제품표의 전년·실적·목표·증감 열을 수량으로 바꿔 보여줍니다. */
+  const _pQty=!!state.fc._prodQtyView;
+  const _qspan=(d)=>`<span style="color:${d>=0?'var(--green)':'var(--red)'}">${d>=0?'+':''}${won(Math.round(d))}</span>`;
+  /* v643 : 추가% 를 넣지 않은 행은 '-' 로 비워 둡니다. */
+  const _addval=(o)=>{ const v=_pQty?Math.round(o.addQty||0):Math.round(o.addAmt||0); return Math.abs(v)<1?0:v; };
+  const _addcell=(o)=>{ const v=_addval(o); if(!v)return '<span style="color:#cbd5e1">-</span>';
+    return `<span style="color:${v>=0?'var(--green)':'var(--red)'};font-weight:700">${v>=0?'+':''}${_pQty?won(v):disp(v)}</span>`; };
+  let prodRows=prodArr.map((o,i)=>`<tr class="fcprow${o.excl?' fcexcluded':''}" data-pk="${esc(o.pk)}"><td class="rank">${i+1}</td><td class="l">${esc(o.code)} <label class="exclbox" onclick="event.stopPropagation()" title="올해 제외"><input type="checkbox" class="fcpexcl" data-pk="${esc(o.pk)}" ${o.excl?'checked':''}>제외</label></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td>${_pQty?`<td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.ytdQ||0))}</td><td>${won(Math.round(o.cq))}</td><td>${_qspan((o.cq||0)-(o.pq||0))}</td><td>${_addcell(o)}</td><td>${pctSpan(o.pq?((o.cq||0)-o.pq)/o.pq*100:((o.cq||0)>0?null:0))}</td>`:`<td>${disp(o.prev)}</td><td>${disp(o.ytd)}</td><td>${disp(o.proj)}</td><td>${diffSpan(o.diff)}</td><td>${_addcell(o)}</td><td>${pctSpan(o.pct)}</td>`}<td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcpov" data-pk="${esc(o.pk)}" value="${fcPctInputValue(o.ov)}" placeholder="${o.excl?'제외':fcAutoPctText(o)}" title="자동 적용값 ${fcAutoPctText(o)}% · 직접 입력하면 제품 조정%로 고정" step="0.1" style="width:54px"> %</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcpadd" data-pk="${esc(o.pk)}" value="${fcPctInputValue(o.ad)}" placeholder="0.0" step="0.1" style="width:54px"> %</td><td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.cq))}</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(o.pk)}" value="${esc(state.fc.prodMemo[o.pk]||'')}" placeholder="이슈 메모" style="width:150px;font-size:11px"></td></tr>`).join('');
+  const newProdRows=newProdArr.map(o=>`<tr class="fcnewprow" data-pk="${esc(o.pk)}"><td class="rank" style="color:#7c3aed;font-weight:700">신규</td><td class="l">${esc(o.code)} <button class="fcpdel" data-pk="${esc(o.pk)}" title="삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" inputmode="numeric" class="fcnewp numfmt" data-pk="${esc(o.pk)}" value="${o.amt.toLocaleString('en-US')}" style="width:110px;text-align:right" title="연 목표액(원)"></td><td>${diffSpan(o.proj)}</td><td>-</td><td><span class="sub2" style="color:#7c3aed;font-weight:700">신규</span></td><td onclick="event.stopPropagation()"><input type="number" value="" placeholder="-" style="width:54px" disabled> %</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcpadd" data-pk="${esc(o.pk)}" value="${fcPctInputValue(o.ad)}" placeholder="0.0" step="0.1" style="width:54px"> %</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(o.pk)}" value="${esc(state.fc.prodMemo[o.pk]||'')}" placeholder="이슈 메모" style="width:150px;font-size:11px"></td></tr>`).join('');
+  const lineProdRows=Object.entries(lineProdNet).map(([pk,o])=>{ const brk=o.lines.map(l=>`${l.cust} ${won(l.qty)}개×${won(Math.round(l.price))}`).join(' · '); const tq=o.lines.reduce((a,l)=>a+(+l.qty||0),0); return `<tr class="fcnewprow" data-pk="${esc(pk)}"><td class="rank" style="color:#0d9488;font-weight:700">신규</td><td class="l">${esc(o.code)} <button class="fcplinedel" data-pk="${esc(pk)}" title="이 제품 라인 삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>-</td><td>-</td><td><b>${disp(o.amt)}</b> <span class="sub2" title="${esc(brk)}" style="color:#0d9488">🧾라인 ${o.lines.length}</span></td><td>${diffSpan(o.amt)}</td><td>-</td><td><span class="sub2" style="color:#0d9488;font-weight:700">신규</span></td><td>-</td><td>-</td><td>-</td><td>${won(tq)}</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(pk)}" value="${esc(state.fc.prodMemo[pk]||'')}" placeholder="이슈 메모" style="width:150px;font-size:11px"></td></tr>`; }).join('');
   const pdProdRow = pdYearNet!==0?`<tr class="fcnewprow"><td class="rank" style="color:#b45309;font-weight:800">PD</td><td class="l">PD</td><td class="l">PD사업부 임가공</td><td class="l">(임가공)</td><td>-</td><td>-</td><td><b>${disp(pdYearNet)}</b></td><td>${diffSpan(pdYearNet)}</td><td><span class="sub2" style="color:#b45309;font-weight:700">PD</span></td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>`:'';
-  prodRows = pdProdRow + lineProdRows + newProdRows + prodRows;
+  /* v642 : PD 임가공은 제품(규격)이 아니므로 제품별 표에서는 행을 표시하지 않습니다.
+     (합계는 업체별 표와 맞추기 위해 PD 임가공비를 그대로 포함합니다.) */
+  prodRows = lineProdRows + newProdRows + prodRows;
   state._fcExport={custArr,prodArr,PY,CY,lastAct};
   const _CAT=prodCatalog(); state._fcCat=_CAT; state._fcCatMap={}; _CAT.forEach(p=>{state._fcCatMap[p.label]=p;}); const _prodDL=_CAT.map(p=>`<option value="${esc(p.label)}">평균 ${won(Math.round(p.price))}</option>`).join(''); const _custDL=custCatalog().map(c=>`<option value="${esc(c)}">`).join('');
   const _codeDL=[...new Set(_CAT.map(p=>p.code))].map(c=>`<option value="${esc(c)}">`).join(''); const _nameDL=[...new Set(_CAT.map(p=>p.name).filter(Boolean))].map(c=>`<option value="${esc(c)}">`).join(''); const _specDL=[...new Set(_CAT.map(p=>p.spec).filter(Boolean))].map(c=>`<option value="${esc(c)}">`).join(''); state._fcByCode={}; _CAT.forEach(p=>{ (state._fcByCode[p.code]=state._fcByCode[p.code]||[]).push(p); });
@@ -10269,7 +10373,7 @@ function forecast(){ state._inDrill=false;
       </div>
       <span class="sub2">기존 제품 선택 시 <b>단가=평균단가 자동</b>(수정가능) · 거래처 입력/선택 + 수량·단가 → <b>업체·제품 목표 동시 연동</b>.</span></div>
     <div class="note" style="margin:0 0 8px"><b>조정%</b>: 입력 시 그 제품을 전년 比 해당%로 고정. <b>추가%</b>: 그 제품 목표에 가산. 칸에 <i style="color:#b6c0cc">흐린 기울임</i>으로 보이는 숫자는 <b>자동 계산값</b>이고, 직접 입력하면 <b style="background:#fff7e6;padding:0 3px;border-radius:3px">노란 칸</b>이 됩니다(<b>Enter</b>로 확정). <b>품번·규격 행 클릭</b> 시 거래처별 증감이 나옵니다. <span class="sub2">(제품 조정/추가%는 제품 목록 기준이며, 상단 그래프·연매출 카드는 거래처 기준입니다.)</span></div>
-    <div class="tablewrap ${state.fc.showExcl?'fcshowexcl':''} ${state.fc.issP?'fcissue-p':''}" style="max-height:1120px"><table class="fc-prod-annual-table"><thead><tr><th>순위</th><th class="l fcsort" data-sk="code">품번${fcArrow('code')}</th><th class="l fcsort" data-sk="name">품명${fcArrow('name')}</th><th class="l fcsort" data-sk="spec">규격${fcArrow('spec')}</th><th class="fcsort" data-sk="prev">전년매출${fcArrow('prev')}</th><th class="fcsort" data-sk="ytd">실적(1~${lastAct}월)${fcArrow('ytd')}</th><th class="fcsort" data-sk="proj">올해목표${fcArrow('proj')}</th><th class="fcsort" data-sk="diff">증감액${fcArrow('diff')}</th><th class="fcsort" data-sk="pct">증감%${fcArrow('pct')}</th><th title="전년 比 해당%로 고정">조정%</th><th title="제품 목표에 가산">추가%</th><th class="fcsort" data-sk="pq">전년수량${fcArrow('pq')}</th><th class="fcsort" data-sk="cq">올해목표수량${fcArrow('cq')}</th><th class="l">메모(조정·추가% 이슈)</th></tr></thead><tbody>${prodRows}<tr class="total-row"><td></td><td class="l">합 계</td><td></td><td></td><td>${disp(pTotPrev)}</td><td>${disp(prodArr.reduce((a,o)=>a+(o.ytd||0),0))}</td><td>${disp(pTotProj)}</td><td>${diffSpan(pTotProj-pTotPrev)}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></div>`}`;
+    <div class="tablewrap ${state.fc.showExcl?'fcshowexcl':''} ${state.fc.issP?'fcissue-p':''}" style="max-height:1120px"><table class="fc-prod-annual-table${_pQty?' fcqv':''}"><thead><tr><th>순위</th><th class="l fcsort" data-sk="code">품번${fcArrow('code')}</th><th class="l fcsort" data-sk="name">품명${fcArrow('name')}</th><th class="l fcsort" data-sk="spec">규격${fcArrow('spec')}</th><th class="fcsort" data-sk="prev">${_pQty?'전년수량':'전년매출'}${fcArrow('prev')}</th><th class="fcsort" data-sk="ytd">${_pQty?'실적수량':'실적'}(1~${lastAct}월)${fcArrow('ytd')}</th><th class="fcsort" data-sk="proj">${_pQty?'올해목표수량':'올해목표'}${fcArrow('proj')}</th><th class="fcsort" data-sk="diff">${_pQty?'증감수량':'증감액'}${fcArrow('diff')}</th><th class="fcsort" data-sk="${_pQty?'addQty':'addAmt'}" title="조정%·추가%·월별 %로 늘거나 줄어든 금액(수량)입니다. 기준은 전년 미래월 실적에 월별 목표%만 적용한 기본 목표입니다.">${_pQty?'추가증감수':'추가증감액'}${fcArrow(_pQty?'addQty':'addAmt')}</th><th class="fcsort" data-sk="pct">증감%${fcArrow('pct')}</th><th title="전년 比 해당%로 고정">조정%</th><th title="제품 목표에 가산">추가%</th><th class="fcsort" data-sk="pq">전년수량${fcArrow('pq')}</th><th class="fcsort" data-sk="cq">올해목표수량${fcArrow('cq')}</th><th class="l">메모(조정·추가% 이슈)</th></tr></thead><tbody>${prodRows}<tr class="total-row"><td></td><td class="l">합 계</td><td></td><td></td>${_pQty?`<td>${won(Math.round(prodArr.reduce((a,o)=>a+(o.pq||0),0)))}</td><td>${won(Math.round(prodArr.reduce((a,o)=>a+(o.ytdQ||0),0)))}</td><td>${won(Math.round(prodArr.reduce((a,o)=>a+(o.cq||0),0)))}</td><td>${_qspan(prodArr.reduce((a,o)=>a+((o.cq||0)-(o.pq||0)),0))}</td>`:`<td>${disp(pTotPrev)}</td><td>${disp(prodArr.reduce((a,o)=>a+(o.ytd||0),0))}</td><td>${disp(pTotProj)}</td><td>${diffSpan(pTotProj-pTotPrev)}</td>`}<td>${(()=>{const v=Math.round(prodArr.reduce((a,o)=>a+(_pQty?(o.addQty||0):(o.addAmt||0)),0));return v?`<b style="color:${v>=0?'var(--green)':'var(--red)'}">${v>=0?'+':''}${_pQty?won(v):disp(v)}</b>`:'';})()}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></div>`}`;
   renderCustom(html,()=>{
     setGlobalBar(false); bindFcCutoffSelector(fcFastForecast);
     if(fcCutoffMonth()===0)document.querySelectorAll('#result th').forEach(th=>{if(th.textContent.includes('실적(1~0월)'))th.innerHTML=th.innerHTML.replace('실적(1~0월)','실적(없음)');});
@@ -10305,31 +10409,53 @@ function forecast(){ state._inDrill=false;
       const head=$('#result').querySelector('h4.fch');
       const annualWrap=[...$('#result').querySelectorAll('.tablewrap')].find(w=>w.querySelector('tr.fcprow'));
       if(head&&annualWrap){
-        const monOn=!!state.fc._prodMonView;
+        const monOn=!!state.fc._prodMonView, _qv=!!state.fc._prodQtyView;
         const prodSearch=head.querySelector('#fcProdSearch');
         const modeSel=head.querySelector('#fcProdSearchMode');
         const searchMode=modeSel&&modeSel.value==='customer'?'customer':'product';
         const mb=document.createElement('button');mb.type='button';mb.id='fcProdMonBtn';mb.className='btn ghost';mb.textContent='📅 월별보기'+(monOn?' ✓':'');mb.style.cssText='font-size:12px;padding:4px 10px;margin:0 7px 0 0;'+(monOn?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488;border-color:#99f6e4');
-        const unified=head.querySelector('.fc-prod-unified-search');if(unified)head.insertBefore(mb,unified);else head.appendChild(mb);
+        const qb=document.createElement('button');qb.type='button';qb.id='fcProdQtyBtn';qb.className='btn ghost';qb.textContent='📦 수량보기'+(_qv?' ✓':'');
+        qb.title='금액 대신 수량으로 봅니다. 연간 표와 월별보기에 함께 적용됩니다.';
+        qb.style.cssText='font-size:12px;padding:4px 10px;margin:0 7px 0 0;'+(_qv?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe');
+        const unified=head.querySelector('.fc-prod-unified-search');
+        if(unified){head.insertBefore(mb,unified);head.insertBefore(qb,unified);}else{head.appendChild(mb);head.appendChild(qb);}
+        qb.addEventListener('click',()=>{ state.fc._prodQtyView=!state.fc._prodQtyView;
+          if(typeof saveSettings==='function')saveSettings(); fcFastForecast(); });
         const ci=prodSearch;
         const norm=v=>{try{return String(v||'').normalize('NFKC').toLocaleLowerCase('ko-KR').replace(/\s+/g,'');}catch(_e){return String(v||'').toLowerCase().replace(/\s+/g,'');}};
         const allCust=custCatalog(),cq=searchMode==='customer'?norm(ci&&ci.value):'',pq=searchMode==='product'?norm(ci&&ci.value):'';
         const matched=cq?allCust.filter(c=>norm(c).includes(cq)):allCust.slice(),matchedSet=new Set(matched);
         const productKeysForSet=set=>{const keys=new Set();if(!set||!set.size)return keys;for(let m=1;m<=12;m++){pyMonCustProd[m].forEach((pm,c)=>{if(set.has(c))pm.forEach((_,pk)=>keys.add(pk));});cyMonCustProd[m].forEach((pm,c)=>{if(set.has(c))pm.forEach((_,pk)=>keys.add(pk));});fcCustProdMon[m].forEach((pm,c)=>{if(set.has(c))pm.forEach((_,pk)=>keys.add(pk));});}return keys;};
         const allowed=productKeysForSet(matchedSet),monthPct=state.fc.prodMonthPct||(state.fc.prodMonthPct={});
-        const monthEntry=(pk,m)=>{let amt=0,qty=0;if(cq){const src=m<=lastAct?cyMonCustProd[m]:fcCustProdMon[m];src.forEach((pm,c)=>{if(!matchedSet.has(c))return;const e=pm&&pm.get(pk);if(e){amt+=e.amt||0;qty+=e.qty||0;}});}else{const e=(m<=lastAct?cyMonProd[m]:fcProdMon[m]).get(pk);if(e){amt=e.amt||0;qty=e.qty||0;}}return{amt,qty};};
+        /* v641 : 같은 (품목,월) 을 셀·자동%·합계에서 네 번씩 다시 계산하던 것을 캐시로 한 번만 계산합니다. */
+        const _meCache=new Map();
+        const monthEntry=(pk,m)=>{
+          let row=_meCache.get(pk);
+          if(!row){ row=new Array(13);
+            for(let mm=1;mm<=12;mm++){ let amt=0,qty=0;
+              if(cq){ const src=mm<=lastAct?cyMonCustProd[mm]:fcCustProdMon[mm];
+                src.forEach((pm,c)=>{ if(!matchedSet.has(c))return; const e=pm&&pm.get(pk); if(e){amt+=e.amt||0;qty+=e.qty||0;} }); }
+              else { const e=(mm<=lastAct?cyMonProd[mm]:fcProdMon[mm]).get(pk); if(e){amt=e.amt||0;qty=e.qty||0;} }
+              row[mm]={amt:amt,qty:qty};
+            }
+            _meCache.set(pk,row);
+          }
+          return row[m]||{amt:0,qty:0};
+        };
         const pct=(pk,m)=>monthPct[pk]&&monthPct[pk][m]!=null?monthPct[pk][m]:'';
         const autoPctText=(pk,m)=>{const p=pyMonProd[m].get(pk),prev=p&&p.amt||0,target=monthEntry(pk,m).amt;const v=prev>0?(target/prev-1)*100:0;return(v>=0?'+':'')+v.toFixed(1);};
         let mArr=prodArr.filter(o=>!cq||allowed.has(o.pk));
         if(pq)mArr=mArr.filter(o=>norm([o.code,o.name,o.spec].join(' ')).includes(pq));
-        const cell=(o,m)=>{const e=monthEntry(o.pk,m),editable=m>lastAct&&fcMonths.includes(m),pv=pct(o.pk,m),amount=e.amt?disp(e.amt):'-';return '<td>'+(m<=lastAct?'<span class="fc-cust-month-actual">'+amount+'</span>':'<b>'+amount+'</b>')+(editable?'<div><input type="text" inputmode="decimal" class="fc-prod-month-pct'+(pv!==''&&+pv<0?' fc-prod-month-pct-neg':'')+'" data-pk="'+esc(o.pk)+'" data-m="'+m+'" value="'+esc(pv)+'" placeholder="'+autoPctText(o.pk,m)+'" onclick="event.stopPropagation()"> %</div>':'<div class="sub2">'+(m<=lastAct?'실적':'목표')+'</div>')+'</td>';};
-        const rows=mArr.map((o,i)=>{let total=0;for(let m=1;m<=12;m++)total+=monthEntry(o.pk,m).amt;return '<tr class="fc-prod-month-row" data-pk="'+esc(o.pk)+'"><td class="rank">'+(i+1)+'</td><td class="l">'+esc(o.name)+'</td><td class="l">'+esc(o.spec||'(규격없음)')+'</td>'+Array.from({length:12},(_,k)=>cell(o,k+1)).join('')+'<td><b>'+disp(total)+'</b></td></tr>';}).join('')||'<tr><td colspan="16" style="padding:18px;text-align:center;color:#94a3b8">'+(cq?'검색 업체에 해당하는 제품 목표가 없습니다.':'표시할 제품 목표가 없습니다.')+'</td></tr>';
-        const totals=Array.from({length:13},()=>0);mArr.forEach(o=>{for(let m=1;m<=12;m++)totals[m]+=monthEntry(o.pk,m).amt;});
-        const totalRow=mArr.length?'<tr class="total-row"><td></td><td class="l">합 계</td><td></td>'+Array.from({length:12},(_,k)=>'<td><b>'+disp(totals[k+1])+'</b></td>').join('')+'<td><b>'+disp(totals.reduce((s,v)=>s+v,0))+'</b></td></tr>':'';
-        const monBox=document.createElement('div');monBox.id='fcProdMonthlyView';monBox.className='tablewrap';monBox.style.cssText='max-height:1120px;margin-bottom:8px;'+(monOn?'':'display:none');monBox.innerHTML='<table class="fc-prod-month-table"><colgroup><col><col><col>'+Array.from({length:12},()=>'<col>').join('')+'<col></colgroup><thead><tr><th>순위</th><th>품명</th><th>규격</th>'+Array.from({length:12},(_,k)=>'<th>'+((k+1)+'월')+'</th>').join('')+'<th>합계</th></tr></thead><tbody>'+rows+totalRow+'</tbody></table><div class="note" style="margin:0">월별보기에서는 품번을 숨기고 1~12월 열을 동일 너비로 표시합니다. 확정실적 월은 실제 매출, 미래월은 제품 목표이며 <b>월 조정%</b>는 해당 제품의 모든 거래처 목표에 반영됩니다.'+(cq?' 현재 업체 검색: <b>'+esc(ci.value)+'</b> ('+matched.length+'개사)':'')+'</div>';
+        const cell=(o,m)=>{const e=monthEntry(o.pk,m),editable=m>lastAct&&fcMonths.includes(m),pv=pct(o.pk,m),_v=_qv?e.qty:e.amt,amount=_v?(_qv?won(Math.round(_v)):disp(_v)):'-';return '<td>'+(m<=lastAct?'<span class="fc-cust-month-actual">'+amount+'</span>':'<b>'+amount+'</b>')+(editable?'<div><input type="text" inputmode="decimal" class="fc-prod-month-pct'+(pv!==''&&+pv<0?' fc-prod-month-pct-neg':'')+'" data-pk="'+esc(o.pk)+'" data-m="'+m+'" value="'+esc(pv)+'" placeholder="'+autoPctText(o.pk,m)+'" onclick="event.stopPropagation()"> %</div>':'<div class="sub2">'+(m<=lastAct?'실적':'목표')+'</div>')+'</td>';};
+        const rows=(!monOn)?'':mArr.map((o,i)=>{let total=0;for(let m=1;m<=12;m++)total+=monthEntry(o.pk,m)[_qv?'qty':'amt'];return '<tr class="fc-prod-month-row" data-pk="'+esc(o.pk)+'"><td class="rank">'+(i+1)+'</td><td class="l">'+esc(o.name)+'</td><td class="l">'+esc(o.spec||'(규격없음)')+'</td>'+Array.from({length:12},(_,k)=>cell(o,k+1)).join('')+'<td><b>'+(_qv?won(Math.round(total)):disp(total))+'</b></td></tr>';}).join('')||'<tr><td colspan="16" style="padding:18px;text-align:center;color:#94a3b8">'+(cq?'검색 업체에 해당하는 제품 목표가 없습니다.':'표시할 제품 목표가 없습니다.')+'</td></tr>';
+        const totals=Array.from({length:13},()=>0);if(monOn)mArr.forEach(o=>{for(let m=1;m<=12;m++)totals[m]+=monthEntry(o.pk,m)[_qv?'qty':'amt'];});
+        const totalRow=(monOn&&mArr.length)?'<tr class="total-row"><td></td><td class="l">합 계</td><td></td>'+Array.from({length:12},(_,k)=>'<td><b>'+(_qv?won(Math.round(totals[k+1])):disp(totals[k+1]))+'</b></td>').join('')+'<td><b>'+(_qv?won(Math.round(totals.reduce((s,v)=>s+v,0))):disp(totals.reduce((s,v)=>s+v,0)))+'</b></td></tr>':'';
+        const monBox=document.createElement('div');monBox.id='fcProdMonthlyView';monBox.className='tablewrap';monBox.style.cssText='max-height:1120px;margin-bottom:8px;'+(monOn?'':'display:none');monBox.innerHTML='<table class="fc-prod-month-table"><colgroup><col><col><col>'+Array.from({length:12},()=>'<col>').join('')+'<col></colgroup><thead><tr><th>순위</th><th>품명</th><th>규격</th>'+Array.from({length:12},(_,k)=>'<th>'+((k+1)+'월')+'</th>').join('')+'<th>합계'+(_qv?'(수량)':'')+'</th></tr></thead><tbody>'+rows+totalRow+'</tbody></table><div class="note" style="margin:0">월별보기에서는 품번을 숨기고 1~12월 열을 동일 너비로 표시합니다. 확정실적 월은 실제 매출, 미래월은 제품 목표이며 <b>월 조정%</b>는 해당 제품의 모든 거래처 목표에 반영됩니다.'+(cq?' 현재 업체 검색: <b>'+esc(ci.value)+'</b> ('+matched.length+'개사)':'')+'</div>';
         monBox.querySelectorAll('.fc-prod-month-pct').forEach(inp=>{inp.step='0.1';const v=parseFloat(inp.value);if(isFinite(v))inp.value=v.toFixed(1);});
         annualWrap.parentNode.insertBefore(monBox,annualWrap);if(monOn)annualWrap.style.display='none';
-        mb.addEventListener('click',()=>{const on=state.fc._prodMonView=!state.fc._prodMonView;monBox.style.display=on?'':'none';annualWrap.style.display=on?'none':'';mb.textContent='📅 월별보기'+(on?' 끄기':'');mb.style.background=on?'var(--navy)':'';mb.style.color=on?'#fff':'';mb.style.borderColor=on?'var(--navy)':'';});
+        /* v641 : 켤 때 그 시점에 표를 만들도록 다시 그립니다(꺼져 있을 때 미리 만들지 않아 훨씬 빠릅니다). */
+        mb.addEventListener('click',()=>{ state.fc._prodMonView=!state.fc._prodMonView;
+          if(typeof saveSettings==='function')saveSettings(); fcFastForecast(); });
         const searchBtn=head.querySelector('#fcProdSearchBtn');
         const submitProdSearch=()=>{if(!ci)return;const mode=modeSel&&modeSel.value==='customer'?'customer':'product';state.fc._prodSearchMode=mode;if(mode==='customer')state.fc._prodCustSearch=ci.value||'';else state.fc._psearch=ci.value||'';if(typeof saveSettings==='function')saveSettings();forecast();};
         if(modeSel&&ci)modeSel.addEventListener('change',()=>{const mode=modeSel.value==='customer'?'customer':'product';ci.value=mode==='customer'?(state.fc._prodCustSearch||''):(state.fc._psearch||'');ci.placeholder=mode==='customer'?'업체명 포함 검색':'품번·품명·규격 포함 검색';ci.focus();ci.dispatchEvent(new Event('input'));});
@@ -10396,7 +10522,11 @@ function forecast(){ state._inDrill=false;
     $('#result').querySelectorAll('.fcprow').forEach(tr=>{ tr.style.cursor='pointer'; tr.addEventListener('click',e=>{ if(typeof _fieldDrag!=='undefined'&&_fieldDrag){_fieldDrag=false;return;} if(e.target.closest('input,textarea,select,button,label'))return; if(window.getSelection&&String(window.getSelection()).trim().length>0)return; fcDrillProd(tr.dataset.pk); }); });
     const fcPMap={}; prodArr.forEach(o=>fcPMap[o.pk]=o);
     const _rowMapP={}; $('#result').querySelectorAll('tr.fcprow').forEach(tr=>{_rowMapP[tr.dataset.pk]=tr;});
-    const recalcProd=pk=>{ const o=fcPMap[pk]; if(!o)return; if(!o.excl){ const ov=state.fc.prodOverride[pk], ad=state.fc.prodAddPct[pk]; let pj=(ov!=null&&ov!=='')?o.prev*(1+(+ov)/100):o.proj0; pj*=1+((ad!=null&&ad!=='')?+ad:0)/100; o.proj=pj; o.diff=o.proj-o.prev; o.pct=o.prev?o.diff/o.prev*100:(o.proj>0?null:0); } const tr=_rowMapP[pk]; if(tr){ if(tr.children[6])tr.children[6].innerHTML=disp(o.proj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(o.diff); if(tr.children[8])tr.children[8].innerHTML=pctSpan(o.pct); } const tot=$('#result .total-row'); if(tot){ const all=prodArr.reduce((a,o)=>a+o.proj,0)+newProdArr.reduce((a,o)=>a+o.proj,0)+lineProdTotal+pdYear; if(tot.children[6])tot.children[6].innerHTML=disp(all); if(tot.children[7])tot.children[7].innerHTML=diffSpan(all-pTotPrev); } if(typeof saveSettings==='function')saveSettings(); };
+    const recalcProd=pk=>{ const o=fcPMap[pk]; if(!o)return; if(!o.excl){ const ov=state.fc.prodOverride[pk], ad=state.fc.prodAddPct[pk]; const base=(ov!=null&&ov!=='')?o.prev*(1+(+ov)/100):((o._ytdP||0)+(o._fut0||0)); let pj=base*(1+((ad!=null&&ad!=='')?+ad:0)/100); o.proj=pj; o.diff=o.proj-o.prev; o.pct=o.prev?o.diff/o.prev*100:(o.proj>0?null:0);
+      /* v643 : 추가% 를 고치면 추가증감액·추가증감수도 그 자리에서 다시 계산합니다. */
+      o.cq=(o._p0>0)?(o._q0||0)*(o.proj/o._p0):(o._q0||0);
+      o.addAmt=(o.proj-o.ytd)-(o._bpP||0); o.addQty=(o.cq-o.ytdQ)-(o._bpQ||0); o.qdiff=o.cq-o.pq;
+    } const tr=_rowMapP[pk]; if(tr){ if(tr.children[6])tr.children[6].innerHTML=disp(o.proj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(o.diff); if(tr.children[8])tr.children[8].innerHTML=_addcell(o); if(tr.children[9])tr.children[9].innerHTML=pctSpan(o.pct); } const tot=$('#result .total-row'); if(tot){ const all=prodArr.reduce((a,o)=>a+o.proj,0)+newProdArr.reduce((a,o)=>a+o.proj,0)+lineProdTotal+pdYear; if(tot.children[6])tot.children[6].innerHTML=disp(all); if(tot.children[7])tot.children[7].innerHTML=diffSpan(all-pTotPrev); } if(typeof saveSettings==='function')saveSettings(); };
     const _psel=pk=>$('#result').querySelector('tr.fcprow[data-pk="'+(window.CSS&&CSS.escape?CSS.escape(pk):pk.replace(/"/g,'\\"'))+'"]');
     const fcTotProd=()=>{ const tr=$('#result .total-row'); if(!tr)return; const allProj=prodArr.reduce((a,o)=>a+o.proj,0)+newProdArr.reduce((a,o)=>a+o.proj,0)+lineProdTotal+pdYear; if(tr.children[6])tr.children[6].innerHTML=disp(allProj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(allProj-pTotPrev); };
     const fcUpdProd=pk=>{ const o=fcPMap[pk]; if(o&&!o.excl){ const ov=state.fc.prodOverride[pk], ad=state.fc.prodAddPct[pk]; let pj=(ov!=null&&ov!=='')?o.prev*(1+(+ov)/100):o.proj0; pj*=1+((ad!=null&&ad!=='')?+ad:0)/100; o.proj=pj; o.diff=o.proj-o.prev; o.pct=o.prev?o.diff/o.prev*100:(o.proj>0?null:0); const tr=_psel(pk); if(tr){ if(tr.children[6])tr.children[6].innerHTML=disp(o.proj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(o.diff); if(tr.children[8])tr.children[8].innerHTML=pctSpan(o.pct); } } fcTotProd(); };
@@ -10439,7 +10569,10 @@ function forecast(){ state._inDrill=false;
       const saveSel=()=>{ const s=window.getSelection(); if(s&&s.rangeCount&&ed.contains(s.anchorNode)) savedRange=s.getRangeAt(0).cloneRange(); };
       const restoreSel=()=>{ if(savedRange){ const s=window.getSelection(); s.removeAllRanges(); s.addRange(savedRange); } };
       ed.addEventListener('keyup',saveSel); ed.addEventListener('mouseup',saveSel); ed.addEventListener('blur',saveSel);
-      try{document.execCommand('styleWithCSS',false,true);}catch(_){}
+      /* v641 : 렌더 시점의 execCommand 호출을 제거했습니다(전체 레이아웃 강제 재계산 → 수 초 정지의 원인).
+         서식 버튼들이 실행 직전에 각자 styleWithCSS 를 부르므로 동작에는 변화가 없습니다. */
+      let _swc=false; const swcOnce=()=>{ if(_swc)return; _swc=true; try{document.execCommand('styleWithCSS',false,true);}catch(_){} };
+      ed.addEventListener('focus',swcOnce,{once:true});
       $('#result').querySelectorAll('.fcnb').forEach(b=>b.addEventListener('mousedown',e=>{ e.preventDefault(); ed.focus(); restoreSel(); try{document.execCommand('styleWithCSS',false,true);}catch(_){} document.execCommand(b.dataset.cmd,false,null); saveSel(); commit(); save(); }));
       $('#result').querySelectorAll('.fchl').forEach(b=>b.addEventListener('mousedown',e=>{ e.preventDefault(); ed.focus(); restoreSel(); document.execCommand('styleWithCSS',false,true); if(b.dataset.c==='none'){ document.execCommand('hiliteColor',false,'transparent'); document.execCommand('backColor',false,'transparent'); } else { document.execCommand('hiliteColor',false,b.dataset.c); } saveSel(); save(); }));
       const sz=$('#fcNoteSize'); sz&&sz.addEventListener('change',()=>{ ed.focus(); restoreSel(); const pt=sz.value+'pt'; document.execCommand('styleWithCSS',false,false); document.execCommand('fontSize',false,'7'); ed.querySelectorAll('font[size="7"]').forEach(f=>{ const sp=document.createElement('span'); sp.style.fontSize=pt; while(f.firstChild)sp.appendChild(f.firstChild); f.replaceWith(sp); sp.querySelectorAll('[style]').forEach(d=>{ if(d.style&&d.style.fontSize)d.style.fontSize=''; }); sp.querySelectorAll('font[size]').forEach(d=>d.removeAttribute('size')); }); saveSel(); save(); });
@@ -15264,7 +15397,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 재고 월별보기 추가 (2026-09-05)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 재고 월별추이 오류·버튼 정리 (2026-09-06)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
@@ -20202,8 +20335,6 @@ function mvTabDead(){
       return pickChip('mvdlchip',v,on,(v==='전체'?locAllCnt:(locCnt[v]||0)),(v==='전체'?locAllAmt:(locAmt[v]||0)), on?'#1e3a5f':'#475569', locAllAmt); }).join('');
   var _mon=!!MV.ui.deadMon, _MI=mvMonIdx();
   var pickBar='<div style="display:flex;flex-direction:column;gap:7px;margin:2px 0 8px">'
-    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+mvMonBtn('mvDeadMonBtn',_mon)
-      +'<span class="sub2" style="font-size:11.5px;color:#64748b">'+(_mon?'품명·규격·폐기·재고·판정 + 1~12월 재고수량':'누르면 1~12월 재고수량 표로 바뀝니다')+'</span></div>'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">구분</b>'+catChips+'</div>'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">보관장소</b>'+locChips+'</div>'
     +'<div class="sub2" style="font-size:11.5px;color:#64748b">구분·보관장소를 고르면 아래 판정 버튼과 표가 <b>그 범위</b>로 다시 계산됩니다. 보관장소를 고르면 <b>그 장소의 재고금액·수량</b>만 표시됩니다.</div></div>';
@@ -20213,7 +20344,9 @@ function mvTabDead(){
   /* v474 : 🗑 폐기 필터 — 폐기검토 분석의 «폐기» 목록과 같은 체크를 씁니다 */
   var dispArr=arr.filter(function(o){ return mvDispMap()[mvDispKey(o)]; });
   var dispAmt=dispArr.reduce(function(a,o){return a+o.amt;},0);
-  var chips='<div class="chips" style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px">'+order.map(function(l){
+  /* v647 : 월별보기 버튼을 판정 '전체' 버튼 바로 왼쪽으로 옮겼습니다. */
+  var chips='<div class="chips" style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px;align-items:center">'
+    +mvMonBtn('mvDeadMonBtn',_mon)+order.map(function(l){
       var c=(l==='전체')?arr.length:(cnt[l]||0), am=(l==='전체')?totAll:(amtBy[l]||0); var on=(f===l);
       return '<button class="mvdchip chip" data-v="'+l+'" title="'+l+' · '+mvWon(c)+'품목 · '+mvWon(am)+'원" style="border:1px solid '+MV_DC[l]+';background:'+(on?MV_DC[l]:'#fff')+';color:'+(on?'#fff':MV_DC[l])+';font-weight:700;font-size:12px;padding:5px 11px;border-radius:14px;font-family:inherit">'+l+' <b>'+mvWon(c)+'</b><span style="font-weight:600;opacity:.8">품목</span> <span style="font-weight:600;opacity:.85">· '+mvMan(am)+'</span></button>';}).join('')
     +'<button class="mvdchip chip" data-v="폐기" title="폐기검토 분석의 «폐기» 체크와 같은 목록입니다 · '+mvWon(dispArr.length)+'품목 · '+mvWon(dispAmt)+'원" style="border:1px solid #dc2626;background:'+(f==='폐기'?'#dc2626':'#fff')+';color:'+(f==='폐기'?'#fff':'#dc2626')+';font-weight:700;font-size:12px;padding:5px 11px;border-radius:14px;font-family:inherit">🗑 폐기 <b>'+mvWon(dispArr.length)+'</b><span style="font-weight:600;opacity:.8">품목</span> <span style="font-weight:600;opacity:.85">· '+mvMan(dispAmt)+'</span></button>'
@@ -20525,7 +20658,9 @@ function mvTabTrend(){
   })();
 
   /* ── v471 : 구분별 · 보관장소별 비중 (그래프 + 표) ── */
-  var shareYm=_lastS?_lastS.ym:ym;
+  /* v647 : 그 해에 재고 자료가 없으면 _lastS 가 비어 정의되지 않은 ym 을 참조해
+     '월별 추이' 화면 전체가 오류로 멈췄습니다. 선택된 기준월 → 마지막 달 순으로 대체합니다. */
+  var shareYm=_lastS?_lastS.ym:((MV.ui&&MV.ui.cur)||months[months.length-1]||'');
   var shareLoc=(function(){ var o={}; try{ mvRows(shareYm).forEach(function(r){
       if(cat!=='전체'&&r.cat!==cat) return; var L=r.loc||'(미지정)'; o[L]=(o[L]||0)+r.amt; }); }catch(e){} return o; })();
   var shareCat=(function(){ var o={}; try{ mvRows(shareYm).forEach(function(r){
@@ -21032,9 +21167,9 @@ function mvTabItems(){
       return chipBtn('mvilchip',v,on,(v==='전체'?catRows.length:(cntL[v]||0)),(v==='전체'?catAmt:(amtL[v]||0)), on?'#1e3a5f':'#475569', catAmt); }).join('');
   var _imon=!!MV.ui.itemMon, _IMI=mvMonIdx();
   var controls='<div style="display:flex;flex-direction:column;gap:7px;margin:2px 0 8px">'
+    /* v647 : 월별보기 버튼을 '안전재고 제품보기' 바로 왼쪽으로 옮겼습니다. */
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+mvMonBtn('mvItemsMonBtn',_imon)
-      +'<span class="sub2" style="font-size:11.5px;color:#64748b">'+(_imon?'구분·품명·규격·재고·자재품목 + 1~12월 재고수량':'누르면 1~12월 재고수량 표로 바뀝니다')+'</span></div>'
-    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><button class="btn ghost" id="mvItemsSafetyView" style="font-size:12.5px;padding:6px 12px;'+(safetyOnly?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488;border-color:#99f6e4')+'">안전재고 제품보기'+(safetyCount?(' ('+mvWon(safetyCount)+'종)'):'')+(safetyOnly?' ✓':'')+'</button><button class="btn ghost" id="mvItemsExMode" style="font-size:12.5px;padding:6px 12px;'+(exMode?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe')+'">🚫 제외품 지정'+(exMode?' ✓':'')+'</button><button class="btn ghost" id="mvItemsExView" style="font-size:12.5px;padding:6px 12px;'+(exOnly?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe')+'">🚫 제외품 보기'+(exclCount?(' ('+mvWon(exclCount)+'종)'):'')+(exOnly?' ✓':'')+'</button><span class="sub2">안전재고 제품 보기와 제외품 지정을 품목 기준으로 함께 사용할 수 있습니다.</span></div>'
+      +'<button class="btn ghost" id="mvItemsSafetyView" style="font-size:12.5px;padding:6px 12px;'+(safetyOnly?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488;border-color:#99f6e4')+'">안전재고 제품보기'+(safetyCount?(' ('+mvWon(safetyCount)+'종)'):'')+(safetyOnly?' ✓':'')+'</button><button class="btn ghost" id="mvItemsExMode" style="font-size:12.5px;padding:6px 12px;'+(exMode?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe')+'">🚫 제외품 지정'+(exMode?' ✓':'')+'</button><button class="btn ghost" id="mvItemsExView" style="font-size:12.5px;padding:6px 12px;'+(exOnly?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe')+'">🚫 제외품 보기'+(exclCount?(' ('+mvWon(exclCount)+'종)'):'')+(exOnly?' ✓':'')+'</button><span class="sub2">안전재고 제품 보기와 제외품 지정을 품목 기준으로 함께 사용할 수 있습니다.</span></div>'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">구분</b>'+catChips+'</div>'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:12px;color:#64748b;min-width:56px">보관장소</b>'+locChips+'</div>'
     +'<div class="sub2" style="font-size:11.5px;color:#64748b">버튼을 눌러 구분·보관장소를 좁히고, 상단 검색창에 품번·품명·규격·비고로 검색하십시오. 열 제목을 누르면 정렬됩니다.</div></div>';
@@ -24115,29 +24250,43 @@ function sgAnnualTargetMapsV613(){
   try{
     /* 목표표의 조정%·추가%·월% 값이 바뀌면 즉시 다시 계산하도록 값 합계까지 키에 넣습니다. */
     var sum=function(o){var t=0;Object.keys(o||{}).forEach(function(k){var v=+o[k];if(isFinite(v))t+=v;else t+=String(o[k]||'').length;});return Math.round(t*1000)/1000;};
+    /* v644 : 월별 %처럼 두 겹으로 된 값도 합계를 내어 값이 바뀌면 캐시를 버립니다. */
+    var sum2=function(o){var t=0;Object.keys(o||{}).forEach(function(k){var r=o[k]||{};Object.keys(r).forEach(function(m){var v=+r[m];if(isFinite(v))t+=v*(1+ +m);});});return Math.round(t*1000)/1000;};
+    var sumAmt=function(o){var t=0;Object.keys(o||{}).forEach(function(k){var e=o[k]||{};var v=+e.amt;if(!isFinite(v))v=(+e.qty||0)*(+e.price||0);if(isFinite(v))t+=v;});return Math.round(t*1000)/1000;};
     var f=state.fc||{};
     var key=(typeof CUR!=='undefined'?CUR.length:0)+'|'+[f.activePlan||'',fcCutoffMonth(),
       Object.keys(f.addPct||{}).length,sum(f.addPct),Object.keys(f.override||{}).length,sum(f.override),
       Object.keys(f.pct||{}).length,sum(f.pct),Object.keys(f.prodAddPct||{}).length,sum(f.prodAddPct),
       Object.keys(f.custProdOverride||{}).length,sum(f.custProdOverride),
-      Object.keys(f.newCusts||{}).length,sum(f.newCusts),Object.keys(f.newProds||{}).length,
-      Object.keys(f.custMonthPct||{}).length,Object.keys(f.prodMonthPct||{}).length,
+      Object.keys(f.newCusts||{}).length,sum(f.newCusts),Object.keys(f.newProds||{}).length,sumAmt(f.newProds),
+      Object.keys(f.custMonthPct||{}).length,sum2(f.custMonthPct),
+      Object.keys(f.prodMonthPct||{}).length,sum2(f.prodMonthPct),
+      /* v644 : 아래 값들이 빠져 있어 목표표를 고쳐도 ②의 금액이 갱신되지 않았습니다. */
+      Object.keys(f.prodOverride||{}).length,sum(f.prodOverride),
+      Object.keys(f.exclProd||{}).length,Object.keys(f.targetExclCust||{}).length,
+      Object.keys(f.newLines||{}).length,sumAmt(f.newLines),
       Object.keys(f.excludedCusts||{}).length].join(',');
     if(sgTargetMapsCacheV613&&sgTargetMapsCacheV613.key===key&&sgTargetMapsCacheV613.cur===CUR)return sgTargetMapsCacheV613.maps;
     var out={cust:new Map(),prod:new Map(),label:new Map(),ok:false};
     var ys=(typeof dataYears==='function')?dataYears():[];
     if(ys.length<2||typeof fcBaseAgg!=='function'||typeof fcFutureTotals!=='function'){return out;}
     var PY=ys[0],CY=ys[ys.length-1];
-    var base=fcBaseAgg(PY,CY),fut=fcFutureTotals(),last=Math.max(0,+fut.lastAct||0);
+    /* v645 : 목표표가 계산해 둔 값(state._fc)이 있으면 그것을 씁니다.
+       예전에 쓰던 fcFutureTotals() 는 축약본이라 제품 조정%·제품 추가%·
+       거래처 월별%·제품 월별% 가 반영되지 않아 ②의 금액이 목표표와 어긋났습니다. */
+    var _S=(state&&state._fc&&state._fc.fcCustProdMon&&state._fc.cyMonCustProd&&state._fc.cyMonCust)?state._fc:null;
+    var base=fcBaseAgg(PY,CY),fut=_S?null:fcFutureTotals();
+    var last=_S?Math.max(0,+_S.lastAct||0):Math.max(0,+fut.lastAct||0);
+    var _exP=(state.fc&&state.fc.exclProd)||{};
     for(var m=1;m<=12;m++){
-      var cs=(m<=last)?base.cyMonCust[m]:fut.custMon[m];
+      var cs=(m<=last)?(_S?_S.cyMonCust[m]:base.cyMonCust[m]):(_S?_S.fcCustMon[m]:fut.custMon[m]);
       if(cs)cs.forEach(function(v,c){out.cust.set(c,(out.cust.get(c)||0)+(+v||0));});
       if(m<=last){
-        var ps=base.cyMonProd[m];
-        if(ps)ps.forEach(function(e,k){out.prod.set(k,(out.prod.get(k)||0)+(+((e&&e.amt)||0)));});
+        var ps=_S?_S.cyMonProd[m]:base.cyMonProd[m];
+        if(ps)ps.forEach(function(e,k){ if(_exP[k])return; out.prod.set(k,(out.prod.get(k)||0)+(+((e&&e.amt)||0)));});
       }else{
-        var cp=fut.custProdMon[m];
-        if(cp)cp.forEach(function(pm){pm.forEach(function(e,k){out.prod.set(k,(out.prod.get(k)||0)+(+((e&&e.amt)||0)));});});
+        var cp=_S?_S.fcCustProdMon[m]:fut.custProdMon[m];
+        if(cp)cp.forEach(function(pm){pm.forEach(function(e,k){ if(_exP[k])return; out.prod.set(k,(out.prod.get(k)||0)+(+((e&&e.amt)||0)));});});
       }
     }
     /* 신규 등록 목표 반영 : 업체(신규 거래처 목표) · 제품(신규 제품 목표) */
