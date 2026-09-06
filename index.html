@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v648</title>
-<script>window.APP_BUILD='v648';</script>
+<title>동방파스텍 매출 분석 도구 v649</title>
+<script>window.APP_BUILD='v649';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v648</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v649</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -14233,7 +14233,49 @@ arWrapSync('gsLoad');arWrapSync('gsSave');
 
 function arShareConfigured(){return!!(state.gsync&&String(state.gsync.url||'').trim()&&String(state.gsync.key||'').trim());}
 var arHeaderV168=arHeader;arHeader=function(model){var html=arHeaderV168(model),on=arShareConfigured(),badge='<span class="ar-sync-state '+(on?'on':'off')+'">'+(on?'🟢 공유 동기화 설정됨':'⚪ 이 브라우저만 저장')+'</span>';return html.replace('</div></div><div class="ar-actions">',badge+'</div></div><div class="ar-actions">');};
-var arRenderFileListV168=arRenderFileList;arRenderFileList=function(){arRenderFileListV168();var el=document.getElementById('arFileList');if(!el)return;var on=arShareConfigured(),note=document.createElement('div');note.className='ar-file-share-note '+(on?'on':'off');note.innerHTML=on?'<b>🟢 공유 설정됨</b><span>동기화 완료 후 같은 URL·비밀키 사용자에게 파일명과 미수 분석자료가 공유됩니다. 각자 다시 업로드할 필요가 없습니다.</span>':'<b>⚠️ 로컬 저장</b><span>기본 제공 수금파일 2개는 프로그램에 내장되어 모두에게 보입니다. 새로 업로드한 파일과 관리내용은 현재 이 브라우저에만 보관됩니다.</span>';var head=el.querySelector('.ar-file-head');if(head)head.after(note);else el.prepend(note);};
+/* v649 : 이 기기의 미수자료 현황과 '전체 다시 보내기'를 파일 목록 위에 표시합니다.
+   두 기기에서 이 줄을 비교하면 어느 쪽이 덜 받았는지 바로 확인할 수 있습니다. */
+function arShareDiagV649(){
+  var a=(typeof state!=='undefined'&&state.ar)||{};
+  var rc=(a.receipts||[]).length, up=0, bd=0;
+  (a.sources||[]).forEach(function(s2){ if(arIsBundledSource(s2&&s2.name))bd++; else up++; });
+  var send=0; try{ var sh=arBuildShared(); send=Object.keys(sh.receiptsByKey||{}).length; }catch(_e){}
+  var bal=Object.keys(a.balances||{}).length;
+  var last=''; try{ last=(state.gsync&&state.gsync.lastSync)?(typeof gsFmtTime==='function'?gsFmtTime(state.gsync.lastSync):String(state.gsync.lastSync)):''; }catch(_e){}
+  return {rc:rc,up:up,bd:bd,send:send,bal:bal,last:last,build:(window.APP_BUILD||'')};
+}
+window.arShareDiagV649=arShareDiagV649;
+/* 기준본에서 미수 항목을 지우고 저장하면, 다음 업로드에 미수자료 전량이 실립니다. */
+async function arResendAllV649(btn){
+  try{
+    if(btn){btn.disabled=true;btn.textContent='보내는 중…';}
+    try{ if(_gsBase&&typeof _gsBase==='object')delete _gsBase[AR_SYNC_FIELD]; }catch(_e){}
+    try{ var b=await idbGet(AR_SYNC_BASE_KEY); if(b&&typeof b==='object'){ delete b[AR_SYNC_FIELD]; await idbSet(AR_SYNC_BASE_KEY,b); } }catch(_e){}
+    if(typeof gsSave==='function')await gsSave(false);
+    if(btn){btn.textContent='✓ 다시 보냈습니다';setTimeout(function(){btn.disabled=false;btn.textContent='⬆ 미수자료 전체 다시 보내기';},2500);}
+  }catch(e){ if(btn){btn.disabled=false;btn.textContent='⬆ 미수자료 전체 다시 보내기';} alert('전송 실패: '+(e&&e.message||e)); }
+}
+window.arResendAllV649=arResendAllV649;
+var arRenderFileListV168=arRenderFileList;arRenderFileList=function(){arRenderFileListV168();var el=document.getElementById('arFileList');if(!el)return;var on=arShareConfigured(),note=document.createElement('div');note.className='ar-file-share-note '+(on?'on':'off');note.innerHTML=on?'<b>🟢 공유 설정됨</b><span>동기화 완료 후 같은 URL·비밀키 사용자에게 파일명과 미수 분석자료가 공유됩니다. 각자 다시 업로드할 필요가 없습니다.</span>':'<b>⚠️ 로컬 저장</b><span>기본 제공 수금파일 2개는 프로그램에 내장되어 모두에게 보입니다. 새로 업로드한 파일과 관리내용은 현재 이 브라우저에만 보관됩니다.</span>';var head=el.querySelector('.ar-file-head');if(head)head.after(note);else el.prepend(note);
+  try{
+    var d=arShareDiagV649();
+    var box=document.createElement('div');
+    box.id='arShareDiagBox';
+    box.style.cssText='margin:6px 0 8px;padding:8px 10px;border:1px solid #bfdbfe;border-radius:8px;background:#f8fbff;font-size:11.5px;line-height:1.7;color:#334155';
+    box.innerHTML='<b>🔎 이 기기의 미수자료 현황</b> · 수금 <b>'+d.rc.toLocaleString()+'행</b>'
+      +' · 업로드 파일 <b>'+d.up+'개</b>(내장 '+d.bd+'개)'
+      +' · 미수잔액 <b>'+d.bal.toLocaleString()+'개사</b>'
+      +' · 서버로 보낼 수금 <b>'+d.send.toLocaleString()+'행</b>'
+      +(d.last?(' · 마지막 동기화 '+d.last):'')
+      +' · 빌드 '+d.build
+      +'<br><span style="color:#64748b">다른 기기와 이 줄의 숫자가 다르면 그쪽이 아직 받지 못한 것입니다. 자료를 가진 기기에서 아래 버튼을 누른 뒤, 받는 기기에서 <b>⬇ 불러오기</b>를 하십시오.</span>'
+      +'<div style="margin-top:6px"><button type="button" id="arResendAllBtn" class="btn" style="font-size:11.5px;padding:5px 11px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">⬆ 미수자료 전체 다시 보내기</button>'
+      +'<span class="sub2" style="margin-left:8px;color:#64748b">기준본에서 미수 항목을 지우고 전량을 다시 올립니다. 업로드했는데 상대 기기에 안 보일 때 사용하십시오.</span></div>';
+    note.after(box);
+    var rb=document.getElementById('arResendAllBtn');
+    if(rb)rb.addEventListener('click',function(){ arResendAllV649(rb); });
+  }catch(_e){}
+};
 
 var arInstallMenuV168=arInstallMenu;arInstallMenu=function(){arInstallMenuV168();Promise.resolve(arSyncInitPromise).then(function(){arRenderFileList();});};
 function arRenderAppVersionV168(){var el=document.getElementById('appVer');if(!el)return;var user=state.gsync&&String(state.gsync.user||'').trim();el.textContent='Ver45 (2026-08-15)'+(user?' · '+user:'');el.title='앱 릴리스 버전 v45 · 구글시트 동기화 규격(clientVersion) 기준 · 최종수정 2026-08-15';document.title='동방파스텍 매출 분석 도구 v45';}
@@ -15397,7 +15439,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 자동 거래축소 기준 고정 (2026-09-06)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 미수자료 공유 진단·재전송 (2026-09-06)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
@@ -26830,6 +26872,25 @@ try{ clsSales=sgClsSales; }catch(_e){}
       bYears.filter(function(y){return yr==='all'||y===+yr;}).forEach(function(y){var keys=Object.keys(state.ar.balances||{}).filter(function(k){return String(k).indexOf(y+'|')===0;}),amt=keys.reduce(function(a,k){return a+(+state.ar.balances[k]||0);},0);rows+='<div class="ar-file-item"><span class="ar-file-ic">📄</span><div class="ar-file-meta"><b>'+y+'년 '+esc(state.ar.sourceLabel||'연말미수잔액')+'</b><span>연말미수잔액 관련 · '+arMoney(keys.length)+'개 업체 · '+arMoney(amt)+'원</span></div><button class="ar-btn ar-file-del" type="button" data-del-balance="1" title="등록된 연말미수잔액 자료 전체 삭제">전체 삭제</button></div>';});
     }
     el.innerHTML=head+(rows||'<div class="ar-file-empty">선택한 구분·연도의 업로드 자료가 없습니다.</div>');
+    /* v649 : 미수자료 공유 현황 · 전체 재전송 */
+    try{
+      var _d=(typeof arShareDiagV649==='function')?arShareDiagV649():null;
+      if(_d){
+        var _box=document.createElement('div'); _box.id='arShareDiagBox';
+        _box.style.cssText='margin:6px 0 8px;padding:8px 10px;border:1px solid #bfdbfe;border-radius:8px;background:#f8fbff;font-size:11.5px;line-height:1.7;color:#334155';
+        _box.innerHTML='<b>\ud83d\udd0e 이 기기의 미수자료 현황</b> · 수금 <b>'+_d.rc.toLocaleString()+'행</b>'
+          +' · 업로드 파일 <b>'+_d.up+'개</b>(내장 '+_d.bd+'개)'
+          +' · 미수잔액 <b>'+_d.bal.toLocaleString()+'개사</b>'
+          +' · 서버로 보낼 수금 <b>'+_d.send.toLocaleString()+'행</b>'
+          +(_d.last?(' · 마지막 동기화 '+_d.last):'')+' · 빌드 '+_d.build
+          +'<br><span style="color:#64748b">다른 기기와 이 줄의 숫자가 다르면 그쪽이 아직 받지 못한 것입니다. 자료를 가진 기기에서 아래 버튼을 누른 뒤, 받는 기기에서 <b>불러오기</b>를 하십시오.</span>'
+          +'<div style="margin-top:6px"><button type="button" id="arResendAllBtn" class="btn" style="font-size:11.5px;padding:5px 11px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">\u2b06 미수자료 전체 다시 보내기</button>'
+          +'<span class="sub2" style="margin-left:8px;color:#64748b">기준본에서 미수 항목을 지우고 전량을 다시 올립니다. 업로드했는데 상대 기기에 안 보일 때 사용하십시오.</span></div>';
+        el.prepend(_box);
+        var _rb=document.getElementById('arResendAllBtn');
+        if(_rb)_rb.addEventListener('click',function(){ if(typeof arResendAllV649==='function')arResendAllV649(_rb); });
+      }
+    }catch(_e){}
     el.querySelectorAll('[data-ar-file-kind]').forEach(function(b){b.onclick=function(){state.ar.fileListKind=b.dataset.arFileKind;arRenderFileList();};});
     el.querySelectorAll('[data-ar-file-year]').forEach(function(b){b.onclick=function(){state.ar.fileListYears=state.ar.fileListYears||{};state.ar.fileListYears[kind]=b.dataset.arFileYear==='all'?'all':+b.dataset.arFileYear;arRenderFileList();};});
     el.querySelectorAll('[data-del-receipt]').forEach(function(btn){btn.onclick=async function(){var nm=btn.dataset.delReceipt;if(!confirm(nm+' 수금내역을 삭제할까요?'))return;state.ar.receipts=(state.ar.receipts||[]).filter(function(r){return r.source!==nm;});state.ar.sources=(state.ar.sources||[]).filter(function(s){return s.name!==nm;});state.ar.delSources=state.ar.delSources||{};state.ar.delSources[nm]=Date.now();arCache=null;await arSave();arRenderFileList();var st=document.getElementById('arFileStatus');if(st)st.textContent=nm+' 삭제됨 · 남은 수금 '+arMoney(state.ar.receipts.length)+'건';if(state.act==='ar')arRender();};});
@@ -27024,6 +27085,25 @@ try{ clsSales=sgClsSales; }catch(_e){}
       +'<section class="ar-upload-section"><div class="ar-upload-section-head"><b>📄 연말미수잔액</b><span id="arBalanceUploadSlot"></span></div>'+balCard+'</section>'
       +'<section class="ar-upload-section"><div class="ar-upload-section-head"><b>🧾 수금내역</b><span id="arReceiptUploadSlot"></span></div><div class="ar-upload-months">'+monthCards(yr)+'</div><details class="ar-upload-files" '+(rs.length?'':'open')+'><summary>파일별 목록 · '+rs.length+'개</summary>'+(recFiles||'<div class="ar-file-empty">'+yr+'년 수금 파일 없음</div>')+'</details></section></div>';
     moveUploadButtons();
+    /* v649 : 미수자료 공유 현황·전체 재전송 */
+    try{
+      var _d=(typeof arShareDiagV649==='function')?arShareDiagV649():null;
+      if(_d){
+        var _box=document.createElement('div'); _box.id='arShareDiagBox';
+        _box.style.cssText='margin:6px 0 8px;padding:8px 10px;border:1px solid #bfdbfe;border-radius:8px;background:#f8fbff;font-size:11.5px;line-height:1.7;color:#334155';
+        _box.innerHTML='<b>🔎 이 기기의 미수자료 현황</b> · 수금 <b>'+_d.rc.toLocaleString()+'행</b>'
+          +' · 업로드 파일 <b>'+_d.up+'개</b>(내장 '+_d.bd+'개)'
+          +' · 미수잔액 <b>'+_d.bal.toLocaleString()+'개사</b>'
+          +' · 서버로 보낼 수금 <b>'+_d.send.toLocaleString()+'행</b>'
+          +(_d.last?(' · 마지막 동기화 '+_d.last):'')+' · 빌드 '+_d.build
+          +'<br><span style="color:#64748b">다른 기기와 이 줄의 숫자가 다르면 그쪽이 아직 받지 못한 것입니다. 자료를 가진 기기에서 아래 버튼을 누른 뒤, 받는 기기에서 <b>⬇ 불러오기</b>를 하십시오.</span>'
+          +'<div style="margin-top:6px"><button type="button" id="arResendAllBtn" class="btn" style="font-size:11.5px;padding:5px 11px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">⬆ 미수자료 전체 다시 보내기</button>'
+          +'<span class="sub2" style="margin-left:8px;color:#64748b">기준본에서 미수 항목을 지우고 전량을 다시 올립니다. 업로드했는데 상대 기기에 안 보일 때 사용하십시오.</span></div>';
+        var _h=el.querySelector('.ar-file-head'); if(_h)_h.after(_box); else el.prepend(_box);
+        var _rb=document.getElementById('arResendAllBtn');
+        if(_rb)_rb.addEventListener('click',function(){ if(typeof arResendAllV649==='function')arResendAllV649(_rb); });
+      }
+    }catch(_e){}
     el.querySelectorAll('[data-ar-overview-year]').forEach(function(b){b.onclick=function(){state.ar.fileOverviewYear=+b.dataset.arOverviewYear;arRenderFileList();};});
     el.querySelectorAll('[data-del-receipt]').forEach(function(btn){btn.onclick=async function(){var nm=btn.dataset.delReceipt;if(!confirm(nm+' 수금내역을 삭제할까요?'))return;state.ar.receipts=(state.ar.receipts||[]).filter(function(r){return r.source!==nm;});state.ar.sources=(state.ar.sources||[]).filter(function(s){return s.name!==nm;});state.ar.delSources=state.ar.delSources||{};state.ar.delSources[nm]=Date.now();arCache=null;await arSave();arRenderFileList();if(state.act==='ar')arRender();};});
     el.querySelectorAll('[data-del-balance-year]').forEach(function(btn){btn.onclick=async function(){var y=+btn.dataset.delBalanceYear;if(!confirm(y+'년 연말미수잔액을 삭제할까요?'))return;['balances','yearEndBills'].forEach(function(n){Object.keys(state.ar[n]||{}).forEach(function(k){if(String(k).indexOf(y+'|')===0)delete state.ar[n][k];});});Object.keys(state.ar.opening||{}).forEach(function(k){if(String(k).indexOf((y+1)+'|')===0&&!(state.ar.openingManual||{})[k])delete state.ar.opening[k];});Object.keys(state.ar.openingBills||{}).forEach(function(k){if(String(k).indexOf((y+1)+'|')===0)delete state.ar.openingBills[k];});delete state.ar.actualYears[y];if(state.ar.balanceSources)delete state.ar.balanceSources[y];arCache=null;await arSave();arRenderFileList();if(state.act==='ar')arRender();};});
