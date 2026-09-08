@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v654</title>
-<script>window.APP_BUILD='v654';</script>
+<title>동방파스텍 매출 분석 도구 v655</title>
+<script>window.APP_BUILD='v655';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v654</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v655</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -14175,10 +14175,14 @@ function arApplyShared(v){
  var _del=Object.assign({},a.delSources||{});
  if(v.delSources&&typeof v.delSources==='object')Object.keys(v.delSources).forEach(function(nm){
    var t=+v.delSources[nm]||0; if(t>(+_del[nm]||0))_del[nm]=t; });
+ /* v655 : 내장 기본자료는 프로그램에 들어 있는 기준자료이므로 삭제표시로 지우지 않습니다.
+    또 업로드 시각이 없는 행(내장자료·예전 자료)은 삭제표시로 지우지 않습니다.
+    이 두 가지 때문에 '받기'를 눌러도 받은 자료가 곧바로 다시 지워졌습니다. */
+ Object.keys(_del).forEach(function(nm){ if(arIsBundledSource(nm))delete _del[nm]; });
  Object.keys(_del).forEach(function(nm){
    var ts=+_del[nm]||0;
-   a.sources=(a.sources||[]).filter(function(s){ return !(s&&s.name===nm&&!(+s.at>ts)); });
-   a.receipts=(a.receipts||[]).filter(function(r){ return !(r&&r.source===nm&&!(+r.at>ts)); });
+   a.sources=(a.sources||[]).filter(function(s){ return !(s&&s.name===nm&&(+s.at||0)>0&&!(+s.at>ts)); });
+   a.receipts=(a.receipts||[]).filter(function(r){ return !(r&&r.source===nm&&(+r.at||0)>0&&!(+r.at>ts)); });
  });
  a.delSources=_del;
  /* v609 : 내 PC에서 올린 수금파일은 동기화(받기)로 사라지지 않게 항상 유지합니다.
@@ -14190,7 +14194,8 @@ function arApplyShared(v){
    (_prevSources||[]).forEach(function(s2){
      if(!s2||!s2.name||_remoteNames[s2.name])return;
      var _dts=+(_del[s2.name]||0);
-     if(_dts&&!((+s2.at||0)>_dts))return;               /* 다른 PC에서 지운 파일은 되살리지 않습니다 */
+     /* v655 : 업로드 시각이 있는 파일만 삭제표시로 판단합니다(시각이 없으면 유지). */
+     if(_dts&&(+s2.at||0)>0&&!((+s2.at||0)>_dts))return;
      a.sources.push(arSyncClone(s2));_keptLocal++;
      (_prevReceipts||[]).forEach(function(r2){ if(r2&&r2.source===s2.name)a.receipts.push(arSyncClone(r2)); });
    });
@@ -14255,7 +14260,18 @@ async function arAutoSeedPushV651(){
   finally{ arSendSeedV650=false; }
 }
 window.arAutoSeedPushV651=arAutoSeedPushV651;
+/* v655 : 예전에 남은 '내장 기본자료 삭제표시'를 정리합니다. 이것이 남아 있으면
+   서버에서 받은 내장자료가 매번 다시 지워집니다. */
+function arClearSeedDelV655(){
+  try{
+    var a=state.ar; if(!a||!a.delSources)return 0;
+    var n=0; Object.keys(a.delSources).forEach(function(nm){ if(arIsBundledSource(nm)){ delete a.delSources[nm]; n++; } });
+    return n;
+  }catch(_e){ return 0; }
+}
+try{ window.arClearSeedDelV655=arClearSeedDelV655; }catch(_e){}
 var arSyncInitPromise=Promise.resolve(arReady).then(async function(){
+ try{ arClearSeedDelV655(); }catch(_){}
  if(arPendingShared)arApplyShared(arPendingShared);var base=null;try{base=await idbGet(AR_SYNC_BASE_KEY);}catch(_){}var localChanged=arHasLocalSharedChanges();
  var _freshV654=!(base&&typeof base==='object');
  if(!base||typeof base!=='object'){base=typeof gsFullObj==='function'?arSyncClone(gsFullObj()):{};if(localChanged)delete base[AR_SYNC_FIELD];}
@@ -14295,8 +14311,9 @@ function arShareDiagV649(){
   var send=0; try{ var sh=arBuildShared(); send=Object.keys(sh.receiptsByKey||{}).length; }catch(_e){}
   var bal=Object.keys(a.balances||{}).length;
   var last=''; try{ last=(state.gsync&&state.gsync.lastSync)?(typeof gsFmtTime==='function'?gsFmtTime(state.gsync.lastSync):String(state.gsync.lastSync)):''; }catch(_e){}
+  var del=[]; try{ del=Object.keys(a.delSources||{}); }catch(_e){}
   return {rc:rc,up:up,bd:bd,send:send,bal:bal,last:last,build:(window.APP_BUILD||''),
-    seedOk:seedOk,canGz:canGz,loadError:String(a.loadError||'')};
+    seedOk:seedOk,canGz:canGz,loadError:String(a.loadError||''),del:del};
 }
 window.arShareDiagV649=arShareDiagV649;
 /* 기준본에서 미수 항목을 지우고 저장하면, 다음 업로드에 미수자료 전량이 실립니다. */
@@ -14851,7 +14868,9 @@ arRenderFileList=function(){
        +(_d.seedOk?'':'<br><b style="color:#b91c1c">\u26a0 이 기기에서 내장 기본 수금자료가 열리지 않았습니다'
           +(_d.canGz?'':' \u2014 이 브라우저가 내장자료 압축 해제를 지원하지 않습니다(구형 사파리 등)')
           +'. 자료가 정상인 기기에서 동기화를 한 번 돌리면 자동으로 올라갑니다. 그 뒤 이 기기에서 불러오기를 하십시오.</b>')
-       +'<br><span style="color:#64748b">두 기기의 <b>수금 행수</b>가 같아야 정상입니다. 다르면 자료가 있는 기기에서 아래 버튼을 누른 뒤, 받는 기기에서 불러오기를 하십시오.</span>'
+       +(function(){var _x=[];try{_x=(arShareDiagV649().del)||[];}catch(_e){}
+          return _x.length?('<br><span style="color:#b45309">\ud83d\uddd1 삭제표시 '+_x.length+'개 : '+_x.slice(0,4).join(', ')+(_x.length>4?' 외':'')+' \u2014 이 이름의 파일은 받아도 다시 지워집니다. 다시 쓰려면 새로 업로드하십시오.</span>'):'';})()
+      +'<br><span style="color:#64748b">두 기기의 <b>수금 행수</b>가 같아야 정상입니다. 다르면 자료가 있는 기기에서 아래 버튼을 누른 뒤, 받는 기기에서 불러오기를 하십시오.</span>'
        +'<div style="margin-top:6px"><button type="button" id="arResendAllBtn" class="btn" style="font-size:11.5px;padding:5px 11px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">\u2b06 미수자료 전체 다시 보내기</button>'
        +'<label style="margin-left:9px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="arSendSeedChk" checked style="vertical-align:-1px"> 내장 기본자료 포함<span style="color:#64748b">(용량 큼)</span></label></div>';
      var _h=el.querySelector('.ar-file-head'); if(_h)_h.after(_box); else el.prepend(_box);
@@ -15526,7 +15545,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 업로드일시·첫 실행 자동받기 (2026-09-06)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 삭제표시로 자료가 사라지던 문제 (2026-09-08)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
@@ -26837,6 +26856,8 @@ try{ clsSales=sgClsSales; }catch(_e){}
       +(d.seedOk?'':'<br><b style="color:#b91c1c">\u26a0 이 기기에서 내장 기본 수금자료가 열리지 않았습니다'
          +(d.canGz?'':' \u2014 이 브라우저가 내장자료 압축 해제를 지원하지 않습니다(구형 사파리 등)')
          +'. 자료가 정상인 기기에서 동기화가 한 번 돌면 자동으로 올라갑니다. 그 뒤 이 기기에서 \u2b07 불러오기를 하십시오.</b>')
+      +(function(){var _x=[];try{_x=(arShareDiagV649().del)||[];}catch(_e){}
+          return _x.length?('<br><span style="color:#b45309">\ud83d\uddd1 삭제표시 '+_x.length+'개 : '+_x.slice(0,4).join(', ')+(_x.length>4?' 외':'')+' \u2014 이 이름의 파일은 받아도 다시 지워집니다. 다시 쓰려면 새로 업로드하십시오.</span>'):'';})()
       +'<br><span style="color:#64748b">두 기기의 <b>수금 행수</b>가 같아야 정상입니다. 다르면 자료가 있는 기기에서 아래 버튼을 누르고, 받는 기기에서 \u2b07 불러오기를 하십시오.</span>'
       +'<div style="margin-top:6px"><button type="button" id="arPullBtn" class="btn" style="font-size:11.5px;padding:5px 11px;background:#dbeafe;color:#1e40af;border-color:#93c5fd">\u2b07 미수자료 받기</button>'
       +'<button type="button" id="arResendAllBtn" class="btn" style="font-size:11.5px;padding:5px 11px;margin-left:6px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">\u2b06 미수자료 전체 다시 보내기</button>'
@@ -27159,7 +27180,9 @@ try{ clsSales=sgClsSales; }catch(_e){}
              +(_d.canGz?'':' — 이 브라우저가 내장자료 압축 해제를 지원하지 않습니다(구형 사파리 등)')
              +(_d.loadError?(' · '+_d.loadError):'')
              +'. 자료가 정상인 기기에서 아래 <b>내장 기본자료도 함께 보내기</b>를 켜고 다시 보낸 뒤, 이 기기에서 불러오십시오.</b>')
-          +'<br><span style="color:#64748b">두 기기의 <b>수금 행수</b>가 같아야 정상입니다. 다르면 자료가 있는 기기에서 아래 버튼을 누르고, 받는 기기에서 ⬇ 불러오기를 하십시오.</span>'
+          +(function(){var _x=[];try{_x=(arShareDiagV649().del)||[];}catch(_e){}
+          return _x.length?('<br><span style="color:#b45309">\ud83d\uddd1 삭제표시 '+_x.length+'개 : '+_x.slice(0,4).join(', ')+(_x.length>4?' 외':'')+' \u2014 이 이름의 파일은 받아도 다시 지워집니다. 다시 쓰려면 새로 업로드하십시오.</span>'):'';})()
+      +'<br><span style="color:#64748b">두 기기의 <b>수금 행수</b>가 같아야 정상입니다. 다르면 자료가 있는 기기에서 아래 버튼을 누르고, 받는 기기에서 ⬇ 불러오기를 하십시오.</span>'
           +'<div style="margin-top:6px"><button type="button" id="arResendAllBtn" class="btn" style="font-size:11.5px;padding:5px 11px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">\u2b06 미수자료 전체 다시 보내기</button>'
           +'<label style="margin-left:9px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="arSendSeedChk" checked style="vertical-align:-1px"> 내장 기본자료 포함<span style="color:#64748b">(용량 큼)</span></label>'
           +'<span class="sub2" style="margin-left:8px;color:#64748b">기준본에서 미수 항목을 지우고 전량을 다시 올립니다. 업로드했는데 상대 기기에 안 보일 때 사용하십시오.</span></div>';
