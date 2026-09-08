@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v655</title>
-<script>window.APP_BUILD='v655';</script>
+<title>동방파스텍 매출 분석 도구 v657</title>
+<script>window.APP_BUILD='v657';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v655</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v657</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -13642,7 +13642,11 @@ function arBackfillCodesV607(){
   }catch(_e){return 0;}
 }
 async function arDecodeSeed(){return(await arDecodeBlob(AR_SEED_B64)).map(function(x){return arSeedRow(x,AR_SEED26_NAME)});}
-async function arRestore(){try{var saved=await idbGet('ar_management_v150');state.ar=Object.assign(arBase(),saved||{});state.ar.opening=state.ar.opening||{};state.ar.balances=state.ar.balances||{};state.ar.yearEndBills=state.ar.yearEndBills||{};state.ar.openingBills=state.ar.openingBills||{};state.ar.actualYears=state.ar.actualYears||{};var seed26=await arDecodeSeed(),seed25=(await arDecodeBlob(AR_SEED25_B64)).map(function(x){return arSeedRow(x,'25년수금내역.xls')});
+async function arRestore(){try{var saved=await idbGet('ar_management_v150');state.ar=Object.assign(arBase(),saved||{});state.ar.opening=state.ar.opening||{};state.ar.balances=state.ar.balances||{};state.ar.yearEndBills=state.ar.yearEndBills||{};state.ar.openingBills=state.ar.openingBills||{};state.ar.actualYears=state.ar.actualYears||{};/* v656 : 내장자료 해제가 실패해도 나머지 복원은 계속하고, 사유를 남깁니다. */
+ var seed26=[],seed25=[]; state.ar.seedError='';
+ try{ seed26=await arDecodeSeed(); }catch(_s1){ state.ar.seedError='26년 내장자료: '+(_s1&&_s1.message||_s1); }
+ try{ seed25=(await arDecodeBlob(AR_SEED25_B64)).map(function(x){return arSeedRow(x,'25년수금내역.xls')}); }catch(_s2){ state.ar.seedError=(state.ar.seedError?state.ar.seedError+' / ':'')+'25년 내장자료: '+(_s2&&_s2.message||_s2); }
+ state.ar.seedRows26=seed26.length; state.ar.seedRows25=seed25.length;
  /* v611 : 내장 수금자료와 같은 행은 동기화(서버 업로드) 대상에서 제외하기 위한 키 목록입니다.
     같은 자료를 사용자가 직접 올린 경우 파일명만 달라 1MB 넘는 자료가 매번 서버로 올라가
     앱스스크립트가 응답하지 못하는(로그인 25초 타임아웃) 원인이 되었습니다. */
@@ -14162,7 +14166,9 @@ function arBuildShared(){
    var _sz=JSON.stringify(receiptsByKey).length;
    if(_sz>800000&&typeof console!=='undefined'&&console.warn)console.warn('[미수관리] 동기화 수금자료가 큽니다('+Math.round(_sz/1024)+'KB). 서버 응답이 느려질 수 있습니다.');
  }catch(_e){}
- return{schema:1,delSources:arSyncClone(a.delSources||{}),balClearedAt:+a.balClearedAt||0,balAt:+a.balAt||0,balDeletedYears:arSyncClone(a.balDeletedYears||{}),balAtYears:arSyncClone(a.balAtYears||{}),balanceSources:arSyncClone(a.balanceSources||{}),receiptsByKey:receiptsByKey,sourcesByName:sourcesByName,opening:arSyncClone(a.opening||{}),balances:arSyncClone(a.balances||{}),yearEndBills:arSyncClone(a.yearEndBills||{}),openingBills:arSyncClone(a.openingBills||{}),actualYears:arSyncClone(a.actualYears||{}),plans:arSyncClone(a.plans||{}),collectionPlans:arSyncClone(a.collectionPlans||{}),excludedCustomers:arSyncClone(a.excludedCustomers||{}),billStatus:arSyncClone(a.billStatus||{}),focusCustomers:arSyncClone(a.focusCustomers||{}),updatedAt:a.updatedAt||'',asOf:a.asOf||''};
+ /* v657 : 내장 파일명에 걸린 삭제표시는 다른 기기의 내장자료까지 지우므로 내보내지 않습니다. */
+ var _delOut={}; try{ Object.keys(a.delSources||{}).forEach(function(nm){ if(!arIsBundledSource(nm))_delOut[nm]=a.delSources[nm]; }); }catch(_e){ _delOut=a.delSources||{}; }
+ return{schema:1,delSources:arSyncClone(_delOut),balClearedAt:+a.balClearedAt||0,balAt:+a.balAt||0,balDeletedYears:arSyncClone(a.balDeletedYears||{}),balAtYears:arSyncClone(a.balAtYears||{}),balanceSources:arSyncClone(a.balanceSources||{}),receiptsByKey:receiptsByKey,sourcesByName:sourcesByName,opening:arSyncClone(a.opening||{}),balances:arSyncClone(a.balances||{}),yearEndBills:arSyncClone(a.yearEndBills||{}),openingBills:arSyncClone(a.openingBills||{}),actualYears:arSyncClone(a.actualYears||{}),plans:arSyncClone(a.plans||{}),collectionPlans:arSyncClone(a.collectionPlans||{}),excludedCustomers:arSyncClone(a.excludedCustomers||{}),billStatus:arSyncClone(a.billStatus||{}),focusCustomers:arSyncClone(a.focusCustomers||{}),updatedAt:a.updatedAt||'',asOf:a.asOf||''};
 }
 function arApplyShared(v){
  if(!v||typeof v!=='object'){arPendingShared=v;return;}
@@ -14221,6 +14227,8 @@ function arApplyShared(v){
  a.balDeletedYears=_dy;a.balAtYears=_ay;
  try{ if(typeof arRenderFileList==='function')arRenderFileList(); }catch(_e){}
  var latest=a.receipts.map(function(r){return r.date||'';}).filter(Boolean).sort().pop()||'';a.asOf=[a.asOf||'',v.asOf||'',latest].sort().pop()||a.asOf;a.updatedAt=v.updatedAt||a.updatedAt||'';arCache=null;arPendingShared=null;
+ /* v657 : 병합 결과 내장자료가 비었으면 곧바로 다시 채웁니다. */
+ try{ setTimeout(function(){ arEnsureSeedV657('동기화 후'); },300); }catch(_e){}
  /* v651 : 서버 자료에 내장 수금자료가 없는데 내 기기에는 있으면, 한 번 자동으로 전량을 올려
     내장자료를 읽지 못하는 기기(구형 태블릿 등)도 받을 수 있게 합니다. */
  try{
@@ -14260,6 +14268,60 @@ async function arAutoSeedPushV651(){
   finally{ arSendSeedV650=false; }
 }
 window.arAutoSeedPushV651=arAutoSeedPushV651;
+/* v657 : 내장 기본 수금자료가 비어 있으면 자동으로 다시 채웁니다. */
+var _arEnsureAtV657=0, _arEnsureBusyV657=false;
+async function arEnsureSeedV657(why){
+  try{
+    if(_arEnsureBusyV657)return false;
+    if(Date.now()-_arEnsureAtV657<20000)return false;
+    var a=state.ar; if(!a)return false;
+    var has=(a.receipts||[]).some(function(r){return r&&arIsBundledSource(r.source);});
+    if(has)return false;
+    _arEnsureBusyV657=true; _arEnsureAtV657=Date.now();
+    var r=await arSeedRepairV656();
+    _arEnsureBusyV657=false;
+    try{ if(typeof console!=='undefined'&&console.info)console.info('[미수관리] 내장 수금자료 자동 복구('+(why||'')+') :',r); }catch(_e){}
+    try{ if(typeof arRenderFileList==='function')arRenderFileList(); }catch(_e){}
+    return !!(r&&r.ok&&r.added);
+  }catch(_e){ _arEnsureBusyV657=false; return false; }
+}
+try{ window.arEnsureSeedV657=arEnsureSeedV657; }catch(_e){}
+/* v656 : 내장 기본자료를 지금 다시 넣습니다(해제 → 병합 → 저장). */
+async function arSeedRepairV656(){
+  var out={ok:false,n26:0,n25:0,added:0,err:''};
+  try{
+    var s26=[],s25=[];
+    try{ s26=await arDecodeSeed(); }catch(e1){ out.err='26년 내장자료: '+(e1&&e1.message||e1); }
+    try{ s25=(await arDecodeBlob(AR_SEED25_B64)).map(function(x){return arSeedRow(x,'25년수금내역.xls')}); }catch(e2){ out.err=(out.err?out.err+' / ':'')+'25년 내장자료: '+(e2&&e2.message||e2); }
+    out.n26=s26.length; out.n25=s25.length;
+    if(!s26.length&&!s25.length){ return out; }
+    var a=state.ar||(state.ar=arBase());
+    /* 내장 파일명에 걸린 삭제표시를 풉니다. */
+    try{ Object.keys(a.delSources||{}).forEach(function(nm){ if(arIsBundledSource(nm))delete a.delSources[nm]; }); }catch(_e){}
+    var map=new Map((a.receipts||[]).map(function(r){return[arReceiptKey(r),r];}));
+    var before=map.size;
+    s26.concat(s25).forEach(function(r){ if(!map.has(arReceiptKey(r)))map.set(arReceiptKey(r),r); });
+    a.receipts=Array.from(map.values()).sort(function(x,y){return String(x.date||'').localeCompare(String(y.date||''))||String(x.no||'').localeCompare(String(y.no||''));});
+    out.added=map.size-before;
+    [[AR_SEED26_NAME,s26,AR_SEED26_ASOF],['25년수금내역.xls',s25,'2025-12-31']].forEach(function(x){
+      if(!x[1].length)return;
+      a.sources=(a.sources||[]).filter(function(s2){return s2.name!==x[0];});
+      a.sources.push({name:x[0],rows:x[1].length,asOf:x[2],amount:x[1].reduce(function(t,r){return t+(+r.amount||0);},0)});
+    });
+    arCache=null; a.seedError='';
+    /* v656 : 저장(브라우저 보관)까지 성공해야 다음에 열 때도 남습니다. */
+    try{ await arSave(); out.saved=true; }catch(_e){ out.saved=false; out.err=(out.err?out.err+' / ':'')+'저장 실패: '+(_e&&_e.message||_e); }
+    out.ok=true;
+  }catch(e){ out.err=(out.err?out.err+' / ':'')+(e&&e.message||e); }
+  return out;
+}
+try{ window.arSeedRepairV656=arSeedRepairV656; }catch(_e){}
+/* v656 : 삭제표시를 모두 지웁니다(지운 파일을 다시 받을 수 있게). */
+async function arClearAllDelV656(){
+  try{ var a=state.ar; if(!a)return 0; var n=Object.keys(a.delSources||{}).length; a.delSources={};
+    try{ await arSave(); }catch(_e){} return n; }catch(_e){ return 0; }
+}
+try{ window.arClearAllDelV656=arClearAllDelV656; }catch(_e){}
 /* v655 : 예전에 남은 '내장 기본자료 삭제표시'를 정리합니다. 이것이 남아 있으면
    서버에서 받은 내장자료가 매번 다시 지워집니다. */
 function arClearSeedDelV655(){
@@ -14272,6 +14334,7 @@ function arClearSeedDelV655(){
 try{ window.arClearSeedDelV655=arClearSeedDelV655; }catch(_e){}
 var arSyncInitPromise=Promise.resolve(arReady).then(async function(){
  try{ arClearSeedDelV655(); }catch(_){}
+ try{ setTimeout(function(){ arEnsureSeedV657('앱 시작'); },800); }catch(_){}
  if(arPendingShared)arApplyShared(arPendingShared);var base=null;try{base=await idbGet(AR_SYNC_BASE_KEY);}catch(_){}var localChanged=arHasLocalSharedChanges();
  var _freshV654=!(base&&typeof base==='object');
  if(!base||typeof base!=='object'){base=typeof gsFullObj==='function'?arSyncClone(gsFullObj()):{};if(localChanged)delete base[AR_SYNC_FIELD];}
@@ -14312,8 +14375,10 @@ function arShareDiagV649(){
   var bal=Object.keys(a.balances||{}).length;
   var last=''; try{ last=(state.gsync&&state.gsync.lastSync)?(typeof gsFmtTime==='function'?gsFmtTime(state.gsync.lastSync):String(state.gsync.lastSync)):''; }catch(_e){}
   var del=[]; try{ del=Object.keys(a.delSources||{}); }catch(_e){}
+  var sr26=+a.seedRows26||0, sr25=+a.seedRows25||0, sErr=String(a.seedError||'');
   return {rc:rc,up:up,bd:bd,send:send,bal:bal,last:last,build:(window.APP_BUILD||''),
-    seedOk:seedOk,canGz:canGz,loadError:String(a.loadError||''),del:del};
+    seedOk:seedOk,canGz:canGz,loadError:String(a.loadError||''),del:del,
+    sr26:sr26,sr25:sr25,seedError:sErr};
 }
 window.arShareDiagV649=arShareDiagV649;
 /* 기준본에서 미수 항목을 지우고 저장하면, 다음 업로드에 미수자료 전량이 실립니다. */
@@ -14872,7 +14937,9 @@ arRenderFileList=function(){
           return _x.length?('<br><span style="color:#b45309">\ud83d\uddd1 삭제표시 '+_x.length+'개 : '+_x.slice(0,4).join(', ')+(_x.length>4?' 외':'')+' \u2014 이 이름의 파일은 받아도 다시 지워집니다. 다시 쓰려면 새로 업로드하십시오.</span>'):'';})()
       +'<br><span style="color:#64748b">두 기기의 <b>수금 행수</b>가 같아야 정상입니다. 다르면 자료가 있는 기기에서 아래 버튼을 누른 뒤, 받는 기기에서 불러오기를 하십시오.</span>'
        +'<div style="margin-top:6px"><button type="button" id="arResendAllBtn" class="btn" style="font-size:11.5px;padding:5px 11px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">\u2b06 미수자료 전체 다시 보내기</button>'
-       +'<label style="margin-left:9px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="arSendSeedChk" checked style="vertical-align:-1px"> 내장 기본자료 포함<span style="color:#64748b">(용량 큼)</span></label></div>';
+       +'<label style="margin-left:9px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="arSendSeedChk" checked style="vertical-align:-1px"> 내장 기본자료 포함<span style="color:#64748b">(용량 큼)</span></label>'
+      +'<button type="button" id="arSeedFixBtn" class="btn" style="font-size:11.5px;padding:5px 11px;margin-left:8px;background:#fef3c7;color:#b45309;border-color:#fcd34d">\ud83d\udd27 내장 기본자료 복구</button>'
+      +'<button type="button" id="arDelClearBtn" class="btn" style="font-size:11.5px;padding:5px 11px;margin-left:6px;background:#f1f5f9;color:#475569;border-color:#cbd5e1">\ud83d\uddd1 삭제표시 지우기</button></div>';
      var _h=el.querySelector('.ar-file-head'); if(_h)_h.after(_box); else el.prepend(_box);
      var _rb=document.getElementById('arResendAllBtn');
      if(_rb)_rb.addEventListener('click',function(){ if(typeof arResendAllV649==='function')arResendAllV649(_rb); });
@@ -15545,7 +15612,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 삭제표시로 자료가 사라지던 문제 (2026-09-08)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 내장 수금자료 항상 유지 (2026-09-08)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
@@ -26855,18 +26922,39 @@ try{ clsSales=sgClsSales; }catch(_e){}
       +(d.last?(' · 마지막 동기화 '+d.last):'')+' · 빌드 '+d.build
       +(d.seedOk?'':'<br><b style="color:#b91c1c">\u26a0 이 기기에서 내장 기본 수금자료가 열리지 않았습니다'
          +(d.canGz?'':' \u2014 이 브라우저가 내장자료 압축 해제를 지원하지 않습니다(구형 사파리 등)')
-         +'. 자료가 정상인 기기에서 동기화가 한 번 돌면 자동으로 올라갑니다. 그 뒤 이 기기에서 \u2b07 불러오기를 하십시오.</b>')
+         +'. 아래 <b>\ud83d\udd27 내장 기본자료 복구</b>를 눌러 보십시오.</b>'
+         +'<br><span style="color:#64748b">해제 결과 — 26년 '+(d.sr26||0)+'행 · 25년 '+(d.sr25||0)+'행'+(d.seedError?(' · <b style="color:#b91c1c">'+d.seedError+'</b>'):'')+'</span>')
       +(function(){var _x=[];try{_x=(arShareDiagV649().del)||[];}catch(_e){}
           return _x.length?('<br><span style="color:#b45309">\ud83d\uddd1 삭제표시 '+_x.length+'개 : '+_x.slice(0,4).join(', ')+(_x.length>4?' 외':'')+' \u2014 이 이름의 파일은 받아도 다시 지워집니다. 다시 쓰려면 새로 업로드하십시오.</span>'):'';})()
       +'<br><span style="color:#64748b">두 기기의 <b>수금 행수</b>가 같아야 정상입니다. 다르면 자료가 있는 기기에서 아래 버튼을 누르고, 받는 기기에서 \u2b07 불러오기를 하십시오.</span>'
       +'<div style="margin-top:6px"><button type="button" id="arPullBtn" class="btn" style="font-size:11.5px;padding:5px 11px;background:#dbeafe;color:#1e40af;border-color:#93c5fd">\u2b07 미수자료 받기</button>'
       +'<button type="button" id="arResendAllBtn" class="btn" style="font-size:11.5px;padding:5px 11px;margin-left:6px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">\u2b06 미수자료 전체 다시 보내기</button>'
-      +'<label style="margin-left:9px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="arSendSeedChk" checked style="vertical-align:-1px"> 내장 기본자료 포함<span style="color:#64748b">(용량 큼)</span></label></div>'
+      +'<label style="margin-left:9px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="arSendSeedChk" checked style="vertical-align:-1px"> 내장 기본자료 포함<span style="color:#64748b">(용량 큼)</span></label>'
+      +'<button type="button" id="arSeedFixBtn" class="btn" style="font-size:11.5px;padding:5px 11px;margin-left:8px;background:#fef3c7;color:#b45309;border-color:#fcd34d">\ud83d\udd27 내장 기본자료 복구</button>'
+      +'<button type="button" id="arDelClearBtn" class="btn" style="font-size:11.5px;padding:5px 11px;margin-left:6px;background:#f1f5f9;color:#475569;border-color:#cbd5e1">\ud83d\uddd1 삭제표시 지우기</button></div>'
       +'<div id="arSyncGauge" class="sg652-slot" style="margin-top:6px"></div>';
     var h=el.querySelector('.ar-file-head');
     if(h&&h.parentNode===el)h.insertAdjacentElement('afterend',box); else el.insertBefore(box,el.firstChild);
     var rb=document.getElementById('arResendAllBtn');
     if(rb)rb.addEventListener('click',function(){ if(typeof arResendAllV649==='function')arResendAllV649(rb); });
+    var fb=document.getElementById('arSeedFixBtn');
+    if(fb)fb.addEventListener('click',async function(){
+      fb.disabled=true; var t=fb.textContent; fb.textContent='복구 중…';
+      var r=(typeof arSeedRepairV656==='function')?await arSeedRepairV656():{err:'복구 기능 없음'};
+      fb.disabled=false; fb.textContent=t;
+      alert(r&&r.ok?('내장 기본자료를 넣었습니다.\n\n  · 26년 '+r.n26.toLocaleString()+'행 · 25년 '+r.n25.toLocaleString()+'행\n  · 새로 추가 '+r.added.toLocaleString()+'행\n  · 브라우저 보관 '+(r.saved===false?('실패 — '+(r.err||'')):'성공'))
+        :('내장 기본자료를 열지 못했습니다.\n\n'+(r&&r.err||'')+'\n\n자료가 정상인 기기에서 «내장 기본자료 포함»을 켜고 보낸 뒤, 이 기기에서 받기를 하십시오.'));
+      try{ var bx=document.getElementById('arShareDiagBox'); if(bx)bx.remove(); }catch(_e){}
+      try{ if(typeof arRenderFileList==='function')arRenderFileList(); }catch(_e){}
+    });
+    var db=document.getElementById('arDelClearBtn');
+    if(db)db.addEventListener('click',async function(){
+      if(!confirm('삭제표시를 모두 지웁니다.\n지웠던 파일을 다시 받을 수 있게 됩니다.\n\n진행할까요?'))return;
+      var n=(typeof arClearAllDelV656==='function')?await arClearAllDelV656():0;
+      alert('삭제표시 '+n+'개를 지웠습니다. 이제 받기를 하시면 됩니다.');
+      try{ var bx=document.getElementById('arShareDiagBox'); if(bx)bx.remove(); }catch(_e){}
+      try{ if(typeof arRenderFileList==='function')arRenderFileList(); }catch(_e){}
+    });
     var pb=document.getElementById('arPullBtn');
     if(pb)pb.addEventListener('click',async function(){
       pb.disabled=true; var t0=pb.textContent; pb.textContent='받는 중…';
