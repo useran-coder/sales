@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v664</title>
-<script>window.APP_BUILD='v664';</script>
+<title>동방파스텍 매출 분석 도구 v666</title>
+<script>window.APP_BUILD='v666';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v664</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v666</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -7478,9 +7478,17 @@ function custPriceList(cust, rows, back, itemQ){
   const _toks=_iq.toLowerCase().split(/\s+/).filter(Boolean);
   const _hit=_toks.length?arrF.filter(o=>srchMatch(String(o.label||'')+' '+String(o.key||''),_toks)).length:arrF.length;
   const _qChip=_toks.length?`<span style="width:1px;height:24px;background:#dbe2ea;display:inline-block;margin:0 2px"></span><b style="font-size:12px">검색조건</b><span style="display:inline-flex;align-items:center;gap:6px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:12px;font-weight:700;padding:4px 10px;border-radius:9px">🔎 ${esc(_iq)} · ${won(_hit)}건<button type="button" id="cplClearQ" title="검색조건 해제" style="border:0;background:transparent;color:#1d4ed8;font:inherit;font-size:13px;cursor:pointer;padding:0 2px">✕</button></span>`:'';
-  const _ctrl=`<div class="ctrlbar" style="flex-wrap:wrap;gap:8px"><b style="font-size:12px">제품구분</b> ${mixChipsHtml(_pcat,'cplMixCat')} ${_qChip}<span class="sub2">제품구분으로 필터(재클릭 시 전체) · 검색칸에 <b>품명·규격</b>을 띄어쓰기로 여러 개 넣으면 모두 포함된 품목만 남습니다.</span></div>`;
+  /* v665 : 업체 월별 매출 추이 그래프 + 거래내역 버튼 */
+  const _allCustRows=(CUR||[]).filter(r=>r.cust===cust);
+  const _chYrs=[...new Set(_allCustRows.map(r=>r.d?r.d.getFullYear():0).filter(Boolean))].sort((a,b)=>b-a);
+  const _chYr=_chYrs.length?((state.price&&_chYrs.indexOf(+state.price.thYear)>=0)?+state.price.thYear:_chYrs[0]):0;
+  const _chart=_chYr?custMonthChartV665(cust,_chYr,_allCustRows):'';
+  const _thBar=`<div class="ctrlbar" style="flex-wrap:wrap;gap:8px"><button type="button" class="btn" id="cplTradeHist" style="background:#1d4ed8;color:#fff;border-color:#1d4ed8;font-size:12.5px;padding:6px 14px">📒 거래내역</button><span class="sub2">이 업체의 <b>연도·월·일자별 거래내역</b>을 원본 비고와 함께 봅니다.</span></div>`;
+  const _ctrl=`${_chart}${_thBar}<div class="ctrlbar" style="flex-wrap:wrap;gap:8px"><b style="font-size:12px">제품구분</b> ${mixChipsHtml(_pcat,'cplMixCat')} ${_qChip}<span class="sub2">제품구분으로 필터(재클릭 시 전체) · 검색칸에 <b>품명·규격</b>을 띄어쓰기로 여러 개 넣으면 모두 포함된 품목만 남습니다.</span></div>`;
   const _bind=()=>{ $('#result').querySelectorAll('#cplMixCat button').forEach(b=>b.addEventListener('click',()=>{state.price.custMixCat=b.dataset.v;custPriceList(cust,rows,back,state._search);}));
-    const _cq=$('#result').querySelector('#cplClearQ'); if(_cq)_cq.addEventListener('click',()=>custPriceList(cust,rows,back,'')); };
+    const _cq=$('#result').querySelector('#cplClearQ'); if(_cq)_cq.addEventListener('click',()=>custPriceList(cust,rows,back,''));
+    const _th=$('#result').querySelector('#cplTradeHist');
+    if(_th)_th.addEventListener('click',()=>custTradeHistoryV665(cust,()=>custPriceList(cust,rows,back,state._search))); };
   const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
     {k:'gbun',t:'제품구분',cell:o=>mixBadge(mixCatKey(o),o.key),sortVal:o=>mixCats().indexOf(mixCatKey(o))},
     {k:'code',t:'품번',cls:'l',cell:o=>esc(o.code),sortVal:o=>o.code},
@@ -7495,6 +7503,111 @@ function custPriceList(cust, rows, back, itemQ){
   render(`${cust} ▸ 단가표(마지막 출고단가)`, `${_toks.length?won(_hit)+'개 품목 (검색 “'+esc(_iq)+'” 포함 · 전체 '+won(arrF.length)+'개)':won(arrF.length)+'개 품목'}${_pcat!=='all'?' (필터: '+_pcat+')':''} · 품명순 · <b>행 클릭</b> 시 변경이력`, arrF, cols, 'name',
     `${esc(cust)}의 품목·규격별 <b>마지막 출고단가</b>와 <b>타사(다른 거래처) 최고/최저단가</b> 비교입니다. 행을 클릭하면 단가 변경이력이 나옵니다.${_toks.length?` 지금은 <b>품번·품명·규격</b>에 <b>${esc(_iq)}</b>이(가) 모두 포함된 품목만 표시 중입니다. 검색칸을 비우거나 Esc를 누르면 전체가 나옵니다.`:''}`,
     {back:{label:'← 단가표로',fn:back}, controlsHtml:((typeof custProfileHTML==='function'?custProfileHTML(cust):'')+_ctrl), onMount:_bind, drill:{custom:row=>priceHistory(cust, rows.filter(r=>(r.code||'(미상)')+'│'+(r.spec||'')===row.key), row.label, ()=>custPriceList(cust,rows,back,_iq))}});
+}
+/* v665 : 업체 월별 매출 추이 꺾은선 그래프 (제품 월별 수량 추이와 같은 형태) */
+function custMonthChartV665(cust,yr,rows){
+  var mv=new Array(13).fill(0), cnt=new Array(13).fill(0);
+  (rows||[]).forEach(function(r){
+    if(!r.d||r.d.getFullYear()!==+yr)return;
+    var m=r.d.getMonth()+1; mv[m]+=amtOf(r); cnt[m]++;
+  });
+  var vals=mv.slice(1), tot=vals.reduce(function(a,v){return a+v;},0);
+  var mx=Math.max.apply(null,vals.concat([1])), mn=Math.min.apply(null,vals);
+  var avg=tot/12;
+  var W=1180,H=300,L=74,Rr=24,T=34,B=44,iw=W-L-Rr,ih=H-T-B;
+  var y=function(v){ return T+ih-(v/(mx||1))*ih; };
+  var x=function(i){ return L+(iw/11)*i; };
+  var g='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="'+esc(cust)+' 월별 매출 추이">';
+  for(var k=0;k<=4;k++){ var gv=mx*k/4, gy=y(gv);
+    g+='<line x1="'+L+'" y1="'+gy+'" x2="'+(W-Rr)+'" y2="'+gy+'" stroke="#eef2f7"/>'
+      +'<text x="'+(L-8)+'" y="'+(gy+4)+'" text-anchor="end" font-size="10.5" fill="#94a3b8">'+disp(gv)+'</text>'; }
+  var pts=vals.map(function(v,i){ return x(i)+','+y(v); }).join(' ');
+  g+='<polyline points="'+pts+'" fill="none" stroke="#2563eb" stroke-width="2.4" stroke-linejoin="round"/>';
+  vals.forEach(function(v,i){
+    g+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="4" fill="#2563eb"/>'
+      +'<text x="'+x(i)+'" y="'+(y(v)-11)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#1e293b" stroke="#fff" stroke-width="3" paint-order="stroke">'+disp(v)+'</text>'
+      +'<text x="'+x(i)+'" y="'+(T+ih+20)+'" text-anchor="middle" font-size="11" fill="#475569">'+(i+1)+'월</text>';
+  });
+  g+='<line x1="'+L+'" y1="'+(T+ih)+'" x2="'+(W-Rr)+'" y2="'+(T+ih)+'" stroke="#cbd5e1"/></svg>';
+  return '<div style="border:1px solid #dbe4ee;border-radius:10px;background:#fff;padding:10px 12px;margin:0 0 8px">'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
+    +'<b style="font-size:13px;color:#1e3a5f">\ud83d\udcc8 '+esc(cust)+' / '+yr+'년 · 월별 매출 추이</b>'
+    +'<span class="sub2" style="margin-left:auto">합계 '+disp(tot)+' · 월평균 '+disp(avg)+' · 최소 '+disp(mn)+' · 최고 '+disp(mx)+' · 출고 '+won(cnt.reduce(function(a,v){return a+v;},0))+'건</span></div>'
+    +g+'</div>';
+}
+/* v665 : 업체 거래내역 — 연도 탭 · 일자별 원본 행(비고 포함) */
+function custTradeHistoryV665(cust,back){
+  var all=(CUR||[]).filter(function(r){ return r.cust===cust; });
+  var yrs=[...new Set(all.map(function(r){ return r.d?r.d.getFullYear():0; }).filter(Boolean))].sort(function(a,b){return b-a;});
+  if(!yrs.length){ alert(cust+' 의 거래내역이 없습니다.'); return; }
+  state.price=state.price||{};
+  var yr=+state.price.thYear; if(!yr||yrs.indexOf(yr)<0)yr=yrs[0];
+  state.price.thYear=yr;
+  var rows=all.filter(function(r){ return r.d&&r.d.getFullYear()===yr; })
+              .sort(function(a,b){ return (+b.d)-(+a.d)||String(a.code||'').localeCompare(String(b.code||''),'ko'); });
+  var arr=rows.map(function(r,i){
+    return {key:i,d:r.d,ym:(r.d?(r.d.getMonth()+1):0),code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',
+      qty:+r.qty||0,price:unitPrice(r),amt:amtOf(r),bigo:r.bigo||''};
+  });
+  var tabs='<div class="ctrlbar" style="flex-wrap:wrap;gap:6px"><b style="font-size:12px">연도</b>'
+    +yrs.map(function(y2){ return '<button type="button" class="btn'+(y2===yr?'':' ghost')+' thYearBtn" data-y="'+y2+'" style="font-size:12px;padding:5px 12px'+(y2===yr?';background:#1e3a5f;color:#fff;border-color:#1e3a5f':'')+'">'+y2+'년</button>'; }).join('')
+    +'<span style="width:1px;height:24px;background:#dbe2ea;display:inline-block;margin:0 4px"></span>'
+    +'<b style="font-size:12px">표 검색</b>'
+    +'<input type="search" id="thQ" autocomplete="off" spellcheck="false" lang="ko" inputmode="text" placeholder="품번 · 품명 · 규격 · 비고 · 일자 (띄어쓰기로 여러 개)" '
+    +'style="font-family:inherit;font-size:12.5px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;width:330px">'
+    +'<button type="button" class="btn ghost" id="thQClear" style="font-size:12px;padding:5px 10px">\u2715 지우기</button>'
+    +'<span class="sub2" id="thQCnt"></span>'
+    +'<span class="sub2" style="margin-left:8px">연도를 고르면 그래프와 표가 함께 바뀝니다 · 표 제목을 눌러 정렬</span></div>';
+  var chart=custMonthChartV665(cust,yr,all);
+  var totAmt=arr.reduce(function(a,o){return a+o.amt;},0), totQty=arr.reduce(function(a,o){return a+o.qty;},0);
+  var cols=[ {k:'rank',t:'순위',cls:'rank',cell:function(o,i){return i+1;}},
+    {k:'d',t:'일자',cell:function(o){return fmtD(o.d);},sortVal:function(o){return +o.d;}},
+    {k:'ym',t:'월',cell:function(o){return o.ym+'월';},sortVal:function(o){return o.ym;}},
+    {k:'code',t:'품번',cls:'l',cell:function(o){return esc(o.code);},sortVal:function(o){return o.code;}},
+    {k:'name',t:'품명',cls:'l',cell:function(o){return esc(o.name);},sortVal:function(o){return o.name;}},
+    {k:'spec',t:'규격',cls:'l',cell:function(o){return esc(o.spec||'(규격없음)');},sortVal:function(o){return o.spec;}},
+    {k:'qty',t:'수량',cell:function(o){return won(o.qty);},sortVal:function(o){return o.qty;}},
+    {k:'price',t:'단가(원)',cell:function(o){return won(Math.round(o.price));},sortVal:function(o){return o.price;}},
+    {k:'amt',t:'금액',cell:function(o){return '<b style="color:var(--navy)">'+disp(o.amt)+'</b>';},sortVal:function(o){return o.amt;}},
+    {k:'bigo',t:'비고(원본)',cls:'l',cell:function(o){return o.bigo?('<span title="'+esc(o.bigo)+'">'+esc(o.bigo)+'</span>'):'<span class="sub2">-</span>';},sortVal:function(o){return o.bigo;}} ];
+  state.sortKey='d'; state.sortDir=-1; state._search='';
+  render(esc(cust)+' \u25b8 거래내역',
+    yr+'년 '+won(arr.length)+'건 · 수량 '+won(totQty)+' · 금액 '+disp(totAmt),
+    arr, cols, 'd',
+    '<b>'+esc(cust)+'</b>의 <b>'+yr+'년 거래내역</b>입니다. 위 연도 탭으로 연도를 바꾸고, 그래프는 그 연도의 월별 매출입니다. <b>비고(원본)</b>은 업로드한 매출자료의 비고 칸을 그대로 보여 줍니다.',
+    {back:{label:'\u2190 단가표로',fn:back}, controlsHtml:chart+tabs, pageLimit:300,
+     onMount:function(){
+       var root=document.getElementById('result');
+       root.querySelectorAll('.thYearBtn').forEach(function(b){
+         b.addEventListener('click',function(){ state.price.thYear=+b.dataset.y; custTradeHistoryV665(cust,back); });
+       });
+       /* v666 : 표 검색 — 화면을 다시 그리지 않고 행만 숨기므로 한글 입력 중에도 커서가 그대로 있습니다.
+          조합(한글 입력) 중에는 거르지 않고, 조합이 끝난 뒤에 반영합니다. */
+       var q=document.getElementById('thQ'), cl=document.getElementById('thQClear'), cn=document.getElementById('thQCnt');
+       if(!q)return;
+       var composing=false, t=null;
+       var apply=function(){
+         var v=String(q.value||'').normalize('NFC').trim().toLocaleLowerCase('ko-KR');
+         var toks=v.split(/\s+/).filter(Boolean);
+         var trs=root.querySelectorAll('tbody tr'), shown=0, sum=0;
+         trs.forEach(function(tr){
+           if(tr.classList.contains('total-row'))return;
+           var txt=(tr.innerText||'').normalize('NFC').toLocaleLowerCase('ko-KR');
+           var ok=!toks.length||toks.every(function(t2){ return txt.indexOf(t2)>=0; });
+           tr.style.display=ok?'':'none';
+           if(ok){ shown++;
+             try{ var td=tr.children[8]; if(td)sum+=(+String(td.innerText||'').replace(/[^0-9.-]/g,'')||0); }catch(_e){}
+           }
+         });
+         if(cn)cn.innerHTML=toks.length?('<b style="color:#1d4ed8">'+won(shown)+'건</b> 표시 · 금액 '+won(sum)):'';
+       };
+       var sched=function(){ if(composing)return; clearTimeout(t); t=setTimeout(apply,180); };
+       q.addEventListener('compositionstart',function(){ composing=true; });
+       q.addEventListener('compositionend',function(){ composing=false; clearTimeout(t); apply(); });
+       q.addEventListener('input',sched);
+       q.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); composing=false; apply(); } if(e.key==='Escape'){ q.value=''; apply(); } });
+       if(cl)cl.addEventListener('click',function(){ q.value=''; apply(); q.focus(); });
+     }});
 }
 function prodPriceList(prodLabel, rows, back){
   state.sortKey=null; state._search='';
@@ -15634,7 +15747,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 목표표 신규업체 표에 표시 (2026-09-08)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 거래내역 표 검색창 (2026-09-08)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
