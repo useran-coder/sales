@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v657</title>
-<script>window.APP_BUILD='v657';</script>
+<title>동방파스텍 매출 분석 도구 v659</title>
+<script>window.APP_BUILD='v659';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v657</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v659</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -10043,13 +10043,14 @@ function forecast(){ state._inDrill=false;
     /* v641 : 미래월이 전부 0원인 거래처(예: 8월에만 실적이 있는 품목)는 미래월 평균도 0이라
        여전히 %가 먹지 않았습니다. 그래서 기준을 ① 미래월 평균 → ② 올해 실적 월평균 →
        ③ 전년 실적 월평균 순으로 내려가며 찾습니다. */
-    const accC=(mons,src)=>{ const sum=new Map(), mix=new Map();
+    /* v658 : 거래가 있었던 달 수(cnt)를 함께 세어, 평균을 '거래한 달 기준'으로 냅니다. */
+    const accC=(mons,src)=>{ const sum=new Map(), mix=new Map(), cnt=new Map();
       for(const m of mons){ const S=src[m]; if(!S)continue;
         S.forEach((pm,c)=>{ let t=0; const mx=mix.get(c)||new Map();
           pm.forEach((e,pk)=>{ const a=+e.amt||0,q=+e.qty||0; t+=a; const o=mx.get(pk)||{a:0,q:0}; o.a+=a; o.q+=q; mx.set(pk,o); });
-          if(mx.size)mix.set(c,mx); sum.set(c,(sum.get(c)||0)+t); });
+          if(mx.size)mix.set(c,mx); sum.set(c,(sum.get(c)||0)+t); if(t>0)cnt.set(c,(cnt.get(c)||0)+1); });
       }
-      return {sum,mix,n:mons.length||1};
+      return {sum,mix,cnt,n:mons.length||1};
     };
     const actMons=[]; for(let m=1;m<=lastAct;m++)actMons.push(m);
     const allMons=[]; for(let m=1;m<=12;m++)allMons.push(m);
@@ -10058,7 +10059,7 @@ function forecast(){ state._inDrill=false;
     const pickC=(c)=>{
       const cand=[T1,(T2||(T2=accC(actMons,cyMonCustProd))),(T3||(T3=accC(allMons,pyMonCustProd)))];
       for(const t of cand){ const s=t.sum.get(c)||0, mx=t.mix.get(c);
-        if(s>0&&mx&&mx.size)return {avg:s/t.n,mix:mx,n:t.n}; }
+        if(s>0&&mx&&mx.size){ const _n=(t.cnt&&t.cnt.get(c))||t.n; return {avg:s/_n,mix:mx,n:_n}; } }
       return null;
     };
     const custKeys=Object.keys(cmAll);
@@ -10095,13 +10096,16 @@ function forecast(){ state._inDrill=false;
       const mx=mixP.get(pk)||new Map(); const o=mx.get(c)||{a:0,q:0}; o.a+=a; o.q+=q; mx.set(c,o); mixP.set(pk,mx);
     }));
     /* v641 : 제품도 동일하게 ① 미래월 → ② 올해 실적 → ③ 전년 실적 월평균 순으로 기준을 찾습니다. */
-    const accP=(mons,src)=>{ const sum=new Map(), mix=new Map();
+    /* v658 : 제품도 거래가 있었던 달 수로 평균을 냅니다. */
+    const accP=(mons,src)=>{ const sum=new Map(), mix=new Map(), cnt=new Map();
       for(const m of mons){ const S=src[m]; if(!S)continue;
+        const seen=new Set();
         S.forEach((pm,c)=>pm.forEach((e,pk)=>{ const a=+e.amt||0,q=+e.qty||0;
           sum.set(pk,(sum.get(pk)||0)+a);
+          if(a>0&&!seen.has(pk)){ seen.add(pk); cnt.set(pk,(cnt.get(pk)||0)+1); }
           const mx=mix.get(pk)||new Map(); const o=mx.get(c)||{a:0,q:0}; o.a+=a; o.q+=q; mx.set(c,o); mix.set(pk,mx); }));
       }
-      return {sum,mix,n:mons.length||1};
+      return {sum,mix,cnt,n:mons.length||1};
     };
     const actMonsP=[]; for(let m=1;m<=lastAct;m++)actMonsP.push(m);
     const allMonsP=[]; for(let m=1;m<=12;m++)allMonsP.push(m);
@@ -10110,7 +10114,7 @@ function forecast(){ state._inDrill=false;
     const pickP=(pk)=>{
       const cand=[P1,(P2||(P2=accP(actMonsP,cyMonCustProd))),(P3||(P3=accP(allMonsP,pyMonCustProd)))];
       for(const t of cand){ const s=t.sum.get(pk)||0, mx=t.mix.get(pk);
-        if(s>0&&mx&&mx.size)return {avg:s/t.n,mix:mx,n:t.n}; }
+        if(s>0&&mx&&mx.size){ const _n=(t.cnt&&t.cnt.get(pk))||t.n; return {avg:s/_n,mix:mx,n:_n}; } }
       return null;
     };
     const prodKeys=Object.keys(pmAll);
@@ -10398,7 +10402,7 @@ function forecast(){ state._inDrill=false;
         const monTotal=Array.from({length:13},(_,m)=>custArr.reduce((s,o)=>s+amt(o.c,m),0));
         const allPctVals=custArr.flatMap(o=>fcMonths.map(m=>{const v=pct(o.c,m);return v===''?0:(+v||0);})); const avgAllPct=allPctVals.length?allPctVals.reduce((s,v)=>s+v,0)/allPctVals.length:0;
         const monTotalRow='<tr class="total-row"><td></td><td class="l">합 계</td>'+Array.from({length:12},(_,k)=>'<td><b>'+disp(monTotal[k+1])+'</b></td>').join('')+'<td><b>'+disp(monTotal.reduce((s,v)=>s+v,0))+'</b><div class="fc-cust-month-avg">평균 '+avgAllPct.toFixed(1)+'%</div></td></tr>';
-        const monBox=document.createElement('div'); monBox.id='fcCustMonthlyView'; monBox.className='tablewrap'; monBox.style.cssText='max-height:1120px;margin-bottom:8px;'+(monOn?'':'display:none'); monBox.innerHTML='<table class="fc-cust-month-table"><colgroup><col style="width:3%"><col style="width:17%">'+Array.from({length:12},()=>'<col style="width:6%">').join('')+'<col style="width:8%"></colgroup><thead><tr><th>순위</th><th class="l">거래처</th>'+Array.from({length:12},(_,k)=>'<th>'+((k+1)+'월')+'</th>').join('')+'<th style="text-align:right">합계</th></tr></thead><tbody>'+monRows+monTotalRow+'</tbody></table><div class="note" style="margin:0">확정실적 월은 실적액으로 표시하고, 미래 목표월에는 거래처별 <b>월 조정%</b>를 입력할 수 있습니다. 입력값은 해당 거래처·해당 월 목표액에만 적용됩니다.</div>';
+        const monBox=document.createElement('div'); monBox.id='fcCustMonthlyView'; monBox.className='tablewrap'; monBox.style.cssText='max-height:1120px;margin-bottom:8px;'+(monOn?'':'display:none'); monBox.innerHTML='<table class="fc-cust-month-table"><colgroup><col style="width:3%"><col style="width:17%">'+Array.from({length:12},()=>'<col style="width:6%">').join('')+'<col style="width:8%"></colgroup><thead><tr><th>순위</th><th class="l">거래처</th>'+Array.from({length:12},(_,k)=>'<th>'+((k+1)+'월')+'</th>').join('')+'<th style="text-align:right">합계</th></tr></thead><tbody>'+monRows+monTotalRow+'</tbody></table><div class="note" style="margin:0">확정실적 월은 실적액으로 표시하고, 미래 목표월에는 거래처별 <b>월 조정%</b>를 입력할 수 있습니다. 입력값은 해당 거래처·해당 월 목표액에만 적용됩니다.<br><b style="color:#1d4ed8">0원인 달에 %를 넣으면</b> — 그 달 목표가 0원이면 곱할 것이 없으므로 <b>거래가 있었던 달의 월평균</b>을 기준으로 그 %만큼 넣습니다. 기준은 ① 미래월 목표 평균 → ② 올해 실적 평균 → ③ 전년 실적 평균 순으로 찾습니다. <b>-100</b>을 넣으면 그 달은 <b>0원</b>이 됩니다. 모든 거래처·제품에 같은 규칙이 적용됩니다.</div>';
         monBox.querySelectorAll('.fc-cust-month-pct').forEach(inp=>{ inp.step='0.1'; const v=parseFloat(inp.value); if(isFinite(v))inp.value=v.toFixed(1); });
         annualWrap.parentNode.insertBefore(monBox,annualWrap);
         if(monOn)annualWrap.style.display='none';
@@ -10451,7 +10455,7 @@ function forecast(){ state._inDrill=false;
         const rows=(!monOn)?'':mArr.map((o,i)=>{let total=0;for(let m=1;m<=12;m++)total+=monthEntry(o.pk,m)[_qv?'qty':'amt'];return '<tr class="fc-prod-month-row" data-pk="'+esc(o.pk)+'"><td class="rank">'+(i+1)+'</td><td class="l">'+esc(o.name)+'</td><td class="l">'+esc(o.spec||'(규격없음)')+'</td>'+Array.from({length:12},(_,k)=>cell(o,k+1)).join('')+'<td><b>'+(_qv?won(Math.round(total)):disp(total))+'</b></td></tr>';}).join('')||'<tr><td colspan="16" style="padding:18px;text-align:center;color:#94a3b8">'+(cq?'검색 업체에 해당하는 제품 목표가 없습니다.':'표시할 제품 목표가 없습니다.')+'</td></tr>';
         const totals=Array.from({length:13},()=>0);if(monOn)mArr.forEach(o=>{for(let m=1;m<=12;m++)totals[m]+=monthEntry(o.pk,m)[_qv?'qty':'amt'];});
         const totalRow=(monOn&&mArr.length)?'<tr class="total-row"><td></td><td class="l">합 계</td><td></td>'+Array.from({length:12},(_,k)=>'<td><b>'+(_qv?won(Math.round(totals[k+1])):disp(totals[k+1]))+'</b></td>').join('')+'<td><b>'+(_qv?won(Math.round(totals.reduce((s,v)=>s+v,0))):disp(totals.reduce((s,v)=>s+v,0)))+'</b></td></tr>':'';
-        const monBox=document.createElement('div');monBox.id='fcProdMonthlyView';monBox.className='tablewrap';monBox.style.cssText='max-height:1120px;margin-bottom:8px;'+(monOn?'':'display:none');monBox.innerHTML='<table class="fc-prod-month-table"><colgroup><col><col><col>'+Array.from({length:12},()=>'<col>').join('')+'<col></colgroup><thead><tr><th>순위</th><th>품명</th><th>규격</th>'+Array.from({length:12},(_,k)=>'<th>'+((k+1)+'월')+'</th>').join('')+'<th>합계'+(_qv?'(수량)':'')+'</th></tr></thead><tbody>'+rows+totalRow+'</tbody></table><div class="note" style="margin:0">월별보기에서는 품번을 숨기고 1~12월 열을 동일 너비로 표시합니다. 확정실적 월은 실제 매출, 미래월은 제품 목표이며 <b>월 조정%</b>는 해당 제품의 모든 거래처 목표에 반영됩니다.'+(cq?' 현재 업체 검색: <b>'+esc(ci.value)+'</b> ('+matched.length+'개사)':'')+'</div>';
+        const monBox=document.createElement('div');monBox.id='fcProdMonthlyView';monBox.className='tablewrap';monBox.style.cssText='max-height:1120px;margin-bottom:8px;'+(monOn?'':'display:none');monBox.innerHTML='<table class="fc-prod-month-table"><colgroup><col><col><col>'+Array.from({length:12},()=>'<col>').join('')+'<col></colgroup><thead><tr><th>순위</th><th>품명</th><th>규격</th>'+Array.from({length:12},(_,k)=>'<th>'+((k+1)+'월')+'</th>').join('')+'<th>합계'+(_qv?'(수량)':'')+'</th></tr></thead><tbody>'+rows+totalRow+'</tbody></table><div class="note" style="margin:0">월별보기에서는 품번을 숨기고 1~12월 열을 동일 너비로 표시합니다. 확정실적 월은 실제 매출, 미래월은 제품 목표이며 <b>월 조정%</b>는 해당 제품의 모든 거래처 목표에 반영됩니다.<br><b style="color:#1d4ed8">0원인 달에 %를 넣으면</b> — 그 달 목표가 0원이면 곱할 것이 없으므로 <b>거래가 있었던 달의 월평균</b>을 기준으로 그 %만큼 넣습니다. 기준은 ① 미래월 목표 평균 → ② 올해 실적 평균 → ③ 전년 실적 평균 순으로 찾습니다. <b>-100</b>을 넣으면 그 달은 <b>0원</b>이 됩니다. 모든 거래처·제품에 같은 규칙이 적용됩니다.'+(cq?' 현재 업체 검색: <b>'+esc(ci.value)+'</b> ('+matched.length+'개사)':'')+'</div>';
         monBox.querySelectorAll('.fc-prod-month-pct').forEach(inp=>{inp.step='0.1';const v=parseFloat(inp.value);if(isFinite(v))inp.value=v.toFixed(1);});
         annualWrap.parentNode.insertBefore(monBox,annualWrap);if(monOn)annualWrap.style.display='none';
         /* v641 : 켤 때 그 시점에 표를 만들도록 다시 그립니다(꺼져 있을 때 미리 만들지 않아 훨씬 빠릅니다). */
@@ -11322,7 +11326,21 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
        (스크롤이 튀고 새로고침처럼 보임) → 실제로 바뀐 게 있을 때만 다시 그린다.
        재고 화면(월 재고현황·원자재 재고현황)은 동기화 대상이 아니므로 절대 다시 그리지 않는다. */
     try{if(state.act&&typeof CUR!=='undefined'&&CUR.length&&typeof runAct==='function'){
-      var _sig=''; try{ _sig=JSON.stringify(currentFull()); }catch(_e){}
+      /* v658 : 예전에는 여기서 currentFull() 로 전체 설정을 통째로 복제한 뒤 문자열로 바꿔
+         비교했습니다. 미수 수금자료 3,565행까지 매번 세 번씩(만들기·복제·문자열화) 처리하느라
+         동기화가 돌 때마다 화면이 수 초 멈췄습니다(다른 탭 갔다 오면 먹통).
+         → 미수자료는 '행수·파일수·수정시각'만 보고, 나머지도 복제 없이 비교합니다. */
+      var _sig=''; try{
+        var _parts=[]; (typeof gsFields==='function'?gsFields():[]).forEach(function(_f){
+          var _n=_f[0];
+          if(_n==='arShared'){ var _a=(typeof state!=='undefined'&&state.ar)||{};
+            _parts.push('arShared:'+((_a.receipts||[]).length)+':'+((_a.sources||[]).length)+':'
+              +Object.keys(_a.balances||{}).length+':'+(_a.updatedAt||'')+':'+Object.keys(_a.delSources||{}).length);
+            return; }
+          try{ _parts.push(_n+':'+JSON.stringify(_f[1][_f[2]])); }catch(_e3){ _parts.push(_n+':?'); }
+        });
+        _sig=_parts.join('|');
+      }catch(_e){}
       var _same=(!force&&!!_sig&&_sig===_lastRenderSig);
       if(_sig)_lastRenderSig=_sig;
       /* v473 : 작업 중인 화면(재고·안전재고·폐기검토·단가)은 자동 동기화로 절대 다시 그리지 않는다.
@@ -11366,7 +11384,11 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
     /* v462 : '적용 전' 상태를 기준으로 잡아 두면, 서버 자료를 적용해도 달라진 게 없을 때
        rerender() 가 화면을 다시 그리지 않는다(스크롤 튐·새로고침처럼 보이는 현상 방지). */
     try{ _lastRenderSig=JSON.stringify(currentFull()); }catch(_e){}
-    restoreFull(snap);rerender();await saveSettings()}finally{internalPersist=false;_gsApplying=false}}
+    /* v658 : 화면 다시 그리기를 다음 프레임으로 미룹니다. 동기화가 끝나는 순간
+       한꺼번에 그리느라 클릭이 먹지 않던(먹통처럼 보이던) 구간을 없앱니다. */
+    restoreFull(snap);
+    try{ requestAnimationFrame(function(){ requestAnimationFrame(function(){ try{ rerender(); }catch(_e){} }); }); }catch(_e){ rerender(); }
+    await saveSettings()}finally{internalPersist=false;_gsApplying=false}}
 
   function setSuccess(op,meta){
     state.gsync=state.gsync||{};var t=nowIso();state.gsync.lastAttempt=t;state.gsync.lastResult='ok';state.gsync.lastSync=t;
@@ -15612,7 +15634,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 내장 수금자료 항상 유지 (2026-09-08)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 0원 달 % 규칙 안내 (2026-09-08)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
