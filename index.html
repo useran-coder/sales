@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v666</title>
-<script>window.APP_BUILD='v666';</script>
+<title>동방파스텍 매출 분석 도구 v667</title>
+<script>window.APP_BUILD='v667';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v666</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v667</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -6348,12 +6348,22 @@ function catsOf(cust){ const o=state.clsOverride,k=_nm(cust); const ov=o&&(o[cus
 function catBadge(kk){ const cc=CLS_CATS.find(c=>c.k===kk); const ic=cc?cc.ic:''; const col=CLS_COLORS[kk]||'#64748b'; return `<span class="app-class-icon" style="display:inline-block;margin:1px 3px 1px 0;padding:1px 7px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col}1a;color:${col};border:1px solid ${col}55;white-space:nowrap">${ic} ${esc(kk)}</span>`; }
 function catsIcons(cust){ const cs=catsOf(cust); return cs.map(kk=>{ const cc=CLS_CATS.find(c=>c.k===kk); const ic=cc?cc.ic:'🏷️'; const col=CLS_COLORS[kk]||'#64748b'; return `<span class="price-class-icon" title="${esc(kk)}" aria-label="${esc(kk)}" style="background:${col}1a;color:${col};border:1px solid ${col}55">${ic}</span>`; }).join(''); }
 function catsBadges(cust){ const cs=catsOf(cust); return cs.length?cs.map(catBadge).join(''):'<span class="sub2">미분류</span>'; }
-function creditVendorSearch(rows){
+function creditVendorSearch(rows,mode){
+  /* v667 : mode 로 화면 성격을 받습니다. 'region' 지역별 · 'cls' 업체분류별 · 그 외 신용등급별 */
+  mode=mode||'credit';
   const {arr}=aggBy(rows,'cust'); const max=Math.max(1,...arr.map(o=>o.amt));
+  const _extraCols = mode==='region'
+    ? [ {k:'rdo',t:'지역(도)',cls:'l',cell:o=>esc(gradeRec(o.key).do||'-'),sortVal:o=>gradeRec(o.key).do||''},
+        {k:'rsi',t:'지역(시)',cls:'l',cell:o=>esc(gradeRec(o.key).si||'-'),sortVal:o=>gradeRec(o.key).si||''},
+        {k:'rco',t:'코스',cell:o=>{const c=courseOf(o.key); return (c===''||c==null)?'-':courseBadge(c);},sortVal:o=>+gradeRec(o.key).course||0} ]
+    : mode==='cls'
+    ? [ {k:'gcls',t:'업체분류',cls:'l',cell:o=>{const cs=catsOf(o.key); return cs.length?cs.map(catBadge).join(''):'<span class="sub2">미분류</span>';},sortVal:o=>catsOf(o.key).join(' ')} ]
+    : [];
   const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
     {k:'label',t:'거래처',cls:'l',cell:o=>esc(o.label)},
     {k:'_s',t:'영업관리',cls:'mgr',cell:o=>mgrBadge(mgrS(o.label)),sortVal:o=>mgrS(o.label)},
     {k:'_t',t:'기술영업',cls:'mgr',cell:o=>mgrBadge(mgrT(o.label)),sortVal:o=>mgrT(o.label)},
+    ..._extraCols,
     {k:'grade',t:'신용등급(수정)',cell:o=>`<select class="gradeedit" data-c="${esc(o.key)}" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 4px">${GRADE_OPTS.map(v=>`<option value="${v}" ${gradeDisp(gradeRec(o.key).grade)===v?'selected':''}>${v||'-'}</option>`).join('')}</select>`,sortVal:o=>gradeRec(o.key).grade||''},
     {k:'cat',t:'신용상태(수정)',cell:o=>{const cur=(state.gradeOverride[o.key]&&state.gradeOverride[o.key].cat)||''; const col=GRADE_COL[catOf(o.key)]||{bg:'#eef2f8',tx:'#475569'}; return `<select class="catedit" data-c="${esc(o.key)}" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 4px;background:${col.bg};color:${col.tx};font-weight:700;border-radius:6px">${['자동','정상','관리','주의','위험','선결제','거래제한','거래중지'].map(v=>{const val=(v==='자동'?'':v); const sel=(cur===val); return `<option value="${val}" ${sel?'selected':''}>${v==='자동'?'자동('+catOf(o.key)+')':v}</option>`;}).join('')}</select>`;},sortVal:o=>catOf(o.key)},
     {k:'payday',t:'결제일',cell:o=>{const p=gradeRec(o.key).pay; const v=(p===''||p==null)?'':p; return `<input class="payedit" data-c="${esc(o.key)}" value="${esc(String(v))}" placeholder="-" onclick="event.stopPropagation()" style="width:40px;text-align:center;font-family:inherit;font-size:12px;padding:2px 2px;border:1px solid var(--line);border-radius:5px"><span class="sub2"> 일</span>`;},sortVal:o=>+gradeRec(o.key).pay||0},
@@ -6364,7 +6374,12 @@ function creditVendorSearch(rows){
     $('#result').querySelectorAll('.gradeedit').forEach(s=>s.addEventListener('change',e=>{ const c=e.target.dataset.c; const cur=gradeRec(c); state.gradeOverride[c]={...cur,grade:e.target.value}; if(typeof logEdit==='function')logEdit('신용등급',c+' 등급 변경'); saveSettings(); drawTable(); }));
     $('#result').querySelectorAll('.catedit').forEach(s=>s.addEventListener('change',e=>{ const c=e.target.dataset.c; const cur=state.gradeOverride[c]||gradeRec(c); const v=e.target.value; state.gradeOverride[c]={...cur}; if(v)state.gradeOverride[c].cat=v; else delete state.gradeOverride[c].cat; if(typeof logEdit==='function')logEdit('신용등급',c+' 분류 변경'); saveSettings(); drawTable(); }));
   };
-  return {searchData:arr, searchCols:cols, searchAfterDraw:bind, searchDrill:{custom:row=>custProdDrill(row.label, periodRows().filter(r=>r.cust===row.key), ()=>creditSales())}};
+  const _back=()=>{ try{
+      if(mode==='region'&&typeof regionSales==='function')return regionSales();
+      if(mode==='cls'&&typeof clsSales==='function')return clsSales();
+    }catch(_e){}
+    return creditSales(); };
+  return {searchData:arr, searchCols:cols, searchAfterDraw:bind, searchDrill:{custom:row=>custProdDrill(row.label, periodRows().filter(r=>r.cust===row.key), _back)}};
 }
 
 function _grpRender(act, title, groupOf, groupLabel, note, extra){
@@ -6391,7 +6406,7 @@ function _grpRender(act, title, groupOf, groupLabel, note, extra){
     {k:'_bar',t:'',nosort:true,cell:o=>bar(o.amt,max)} ];
   state.sortKey=null; state._search='';
   render(title, `${periodLabel()} · ${arr.length}종 · 거래처 ${won(totCustN)}개 · 합계 ${won(tot)}원${mgrActive()?' · 담당자필터 적용중':''}`, arr, cols, 'amt', note,
-    {controlsHtml:extra.controlsHtml||'', onMount:extra.onMount, fullCsv:extra.fullCsv, ...(extra.searchVendors?creditVendorSearch(rows):{}), total:{label:'합 계',amt:tot,cells:{custN:won(totCustN)}},
+    {controlsHtml:extra.controlsHtml||'', onMount:extra.onMount, fullCsv:extra.fullCsv, ...(extra.searchVendors?creditVendorSearch(rows,act):{}), total:{label:'합 계',amt:tot,cells:{custN:won(totCustN)}},
      drill:{custom:row=>custDrillView(row.label||'(미지정)', periodRows().filter(r=>groupOf(r)===row.key), ()=>runAct(), act)}});
 }
 function custDrillView(label, src, backFn, act, extra2){
@@ -6525,7 +6540,7 @@ function clsSales(){
   } else {
     _grpRender('cls','업체분류별 매출', r=>catsOf(r.cust).join(' · '), '업체분류(조합)',
       '거래처는 <b>최대 4개</b> 분류를 가질 수 있습니다. <b>전체</b>에서는 거래처가 가진 <b>분류 조합</b>별로 묶어 보여줍니다. <b>분류 아이콘</b>을 누르면 그 분류를 포함한 거래처만, 상단 <b>검색</b>창에 거래처명을 쓰면 해당 거래처가 필터됩니다. 분류행 클릭 → 거래처(분류 <b>최대 4개 직접 수정</b>) → 제품. <b>엑셀</b>=현재 표, <b>전체 거래처 엑셀</b>=거래처별 매핑.',
-      {controlsHtml:chips,onMount:bind,gradeDist:true,mixCols:true,fullCsv:{label:'📥 전체 거래처 엑셀',fn:clsFullCsv},labelCell:o=>{ const parts=String(o.label||'').split(' · ').filter(Boolean); return parts.length?parts.map(catBadge).join(''):'<span class="sub2">미분류</span>'; }});
+      {searchVendors:true,controlsHtml:chips,onMount:bind,gradeDist:true,mixCols:true,fullCsv:{label:'📥 전체 거래처 엑셀',fn:clsFullCsv},labelCell:o=>{ const parts=String(o.label||'').split(' · ').filter(Boolean); return parts.length?parts.map(catBadge).join(''):'<span class="sub2">미분류</span>'; }});
   }
 }
 /* v529 : 매출 목표 전략 — 제품과 거래처를 좌우로 비교하고, 신규·기존·위험 신호를 실행과제로 연결합니다. */
@@ -6564,7 +6579,7 @@ function regionSales(){
   const glabel = lvl==='course'?'코스':lvl==='si'?'지역(시)':'지역(도)';
   const note = lvl==='course'? '거래처를 <b>배송 코스</b>(1~8 및 E=기타·원거리)별로 묶은 매출입니다. 코스는 거래처 <b>지역(시/군/구)</b> 기준으로 매핑됩니다. 코스행 클릭 → 거래처 → 제품.' : '거래처 <b>지역</b> 기준 매출입니다(업체등급기준). 상단 버튼으로 도/시/코스 전환. 제목 클릭 시 정렬.';
   _grpRender('region', title, groupOf, glabel, note,
-    {controlsHtml:ctrl+(lvl==='course'?courseTimeLegend():''), gradeDist:true, mixCols:true, yoy:true, labelCell:(lvl==='course'?(o=>`${courseBadge(o.key)} ${courseTimeBadge(o.key)}`):undefined), onMount:()=>{ $('#result').querySelectorAll('#rgnSeg button').forEach(b=>b.addEventListener('click',()=>{ state.region.level=b.dataset.v; regionSales(); })); }});
+    {searchVendors:true, controlsHtml:ctrl+(lvl==='course'?courseTimeLegend():''), gradeDist:true, mixCols:true, yoy:true, labelCell:(lvl==='course'?(o=>`${courseBadge(o.key)} ${courseTimeBadge(o.key)}`):undefined), onMount:()=>{ $('#result').querySelectorAll('#rgnSeg button').forEach(b=>b.addEventListener('click',()=>{ state.region.level=b.dataset.v; regionSales(); })); }});
 }
 function creditSales(){
   const cat=state.credit.cat;
@@ -15747,7 +15762,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 거래내역 표 검색창 (2026-09-08)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 지역·업체분류 업체명 검색 (2026-09-09)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
@@ -27057,7 +27072,7 @@ function sgClsSales(){
   } else {
     _grpRender('cls','업체분류별 매출', function(r){ return catsOf(r.cust).join(' · '); }, '업체분류(조합)',
       '거래처는 <b>최대 4개</b> 분류를 가질 수 있습니다. <b>전체</b>에서는 거래처가 가진 <b>분류 조합</b>별로 묶어 보여줍니다. 상단 <b>분류 아이콘</b>(<b>미분류</b> 포함)을 누르면 그 분류를 포함한 거래처만 표시됩니다. 분류행 클릭 → 거래처(분류 <b>최대 4개 직접 수정</b>) → 제품. <b>엑셀</b>=현재 표, <b>전체 거래처 엑셀</b>=거래처별 매핑.',
-      {controlsHtml:chips,onMount:bind,gradeDist:true,mixCols:true,fullCsv:{label:'📥 전체 거래처 엑셀',fn:clsFullCsv},
+      {searchVendors:true,controlsHtml:chips,onMount:bind,gradeDist:true,mixCols:true,fullCsv:{label:'📥 전체 거래처 엑셀',fn:clsFullCsv},
        labelCell:function(o){ var parts=String(o.label||'').split(' · ').filter(Boolean);
          return parts.length?parts.map(catBadge).join(''):'<span style="display:inline-block;padding:2px 11px;border-radius:10px;font-size:12.5px;font-weight:800;background:#eef2f8;color:#64748b;border:1px solid #cbd5e1">🗂️ 미분류</span>'; }});
   }
