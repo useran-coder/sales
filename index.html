@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v667</title>
-<script>window.APP_BUILD='v667';</script>
+<title>동방파스텍 매출 분석 도구 v668</title>
+<script>window.APP_BUILD='v668';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v667</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v668</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -7503,7 +7503,10 @@ function custPriceList(cust, rows, back, itemQ){
   const _bind=()=>{ $('#result').querySelectorAll('#cplMixCat button').forEach(b=>b.addEventListener('click',()=>{state.price.custMixCat=b.dataset.v;custPriceList(cust,rows,back,state._search);}));
     const _cq=$('#result').querySelector('#cplClearQ'); if(_cq)_cq.addEventListener('click',()=>custPriceList(cust,rows,back,''));
     const _th=$('#result').querySelector('#cplTradeHist');
-    if(_th)_th.addEventListener('click',()=>custTradeHistoryV665(cust,()=>custPriceList(cust,rows,back,state._search))); };
+    if(_th)_th.addEventListener('click',()=>custTradeHistoryV665(cust,()=>custPriceList(cust,rows,back,state._search)));
+    /* v668 : 그래프 연도 버튼 */
+    $('#result').querySelectorAll('.cmYearBtn').forEach(b=>b.addEventListener('click',()=>{
+      state.price=state.price||{}; state.price.thYear=+b.dataset.y; custPriceList(cust,rows,back,state._search); })); };
   const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
     {k:'gbun',t:'제품구분',cell:o=>mixBadge(mixCatKey(o),o.key),sortVal:o=>mixCats().indexOf(mixCatKey(o))},
     {k:'code',t:'품번',cls:'l',cell:o=>esc(o.code),sortVal:o=>o.code},
@@ -7519,35 +7522,62 @@ function custPriceList(cust, rows, back, itemQ){
     `${esc(cust)}의 품목·규격별 <b>마지막 출고단가</b>와 <b>타사(다른 거래처) 최고/최저단가</b> 비교입니다. 행을 클릭하면 단가 변경이력이 나옵니다.${_toks.length?` 지금은 <b>품번·품명·규격</b>에 <b>${esc(_iq)}</b>이(가) 모두 포함된 품목만 표시 중입니다. 검색칸을 비우거나 Esc를 누르면 전체가 나옵니다.`:''}`,
     {back:{label:'← 단가표로',fn:back}, controlsHtml:((typeof custProfileHTML==='function'?custProfileHTML(cust):'')+_ctrl), onMount:_bind, drill:{custom:row=>priceHistory(cust, rows.filter(r=>(r.code||'(미상)')+'│'+(r.spec||'')===row.key), row.label, ()=>custPriceList(cust,rows,back,_iq))}});
 }
-/* v665 : 업체 월별 매출 추이 꺾은선 그래프 (제품 월별 수량 추이와 같은 형태) */
-function custMonthChartV665(cust,yr,rows){
+/* v668 : 업체 월별 매출 추이 — 최고·최저 표시, 평균 가로 점선, 연도 버튼, 비규격 비중 */
+function custMonthChartV665(cust,yr,rows,yrsOpt){
   var mv=new Array(13).fill(0), cnt=new Array(13).fill(0);
+  var nonAmt=0, allAmt=0;
   (rows||[]).forEach(function(r){
     if(!r.d||r.d.getFullYear()!==+yr)return;
-    var m=r.d.getMonth()+1; mv[m]+=amtOf(r); cnt[m]++;
+    var m=r.d.getMonth()+1, a=amtOf(r);
+    mv[m]+=a; cnt[m]++; allAmt+=a;
+    try{ if(typeof qtyaKindOf==='function'&&qtyaKindOf(r)==='non')nonAmt+=a; }catch(_e){}
   });
   var vals=mv.slice(1), tot=vals.reduce(function(a,v){return a+v;},0);
-  var mx=Math.max.apply(null,vals.concat([1])), mn=Math.min.apply(null,vals);
-  var avg=tot/12;
-  var W=1180,H=300,L=74,Rr=24,T=34,B=44,iw=W-L-Rr,ih=H-T-B;
-  var y=function(v){ return T+ih-(v/(mx||1))*ih; };
+  var mx=Math.max.apply(null,vals.concat([0])), mn=Math.min.apply(null,vals);
+  var pos=vals.filter(function(v){return v>0;});
+  var mnPos=pos.length?Math.min.apply(null,pos):0;
+  var nMon=pos.length||12, avg=tot/(nMon||1);
+  var iMax=vals.indexOf(mx), iMin=vals.indexOf(mnPos);
+  var top=Math.max(mx,avg)||1;
+  var W=1180,H=320,L=78,Rr=96,T=40,B=46,iw=W-L-Rr,ih=H-T-B;
+  var y=function(v){ return T+ih-(v/top)*ih; };
   var x=function(i){ return L+(iw/11)*i; };
   var g='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="'+esc(cust)+' 월별 매출 추이">';
-  for(var k=0;k<=4;k++){ var gv=mx*k/4, gy=y(gv);
+  for(var k=0;k<=4;k++){ var gv=top*k/4, gy=y(gv);
     g+='<line x1="'+L+'" y1="'+gy+'" x2="'+(W-Rr)+'" y2="'+gy+'" stroke="#eef2f7"/>'
       +'<text x="'+(L-8)+'" y="'+(gy+4)+'" text-anchor="end" font-size="10.5" fill="#94a3b8">'+disp(gv)+'</text>'; }
+  /* 평균 가로 점선 */
+  if(avg>0){ var ay=y(avg);
+    g+='<line x1="'+L+'" y1="'+ay+'" x2="'+(W-Rr)+'" y2="'+ay+'" stroke="#f59e0b" stroke-width="1.4" stroke-dasharray="7 4"/>'
+      +'<rect x="'+(W-Rr+4)+'" y="'+(ay-10)+'" width="88" height="20" rx="10" fill="#fffbeb" stroke="#f59e0b"/>'
+      +'<text x="'+(W-Rr+48)+'" y="'+(ay+4)+'" text-anchor="middle" font-size="10.5" font-weight="800" fill="#b45309">평균 '+disp(avg)+'</text>'; }
   var pts=vals.map(function(v,i){ return x(i)+','+y(v); }).join(' ');
   g+='<polyline points="'+pts+'" fill="none" stroke="#2563eb" stroke-width="2.4" stroke-linejoin="round"/>';
   vals.forEach(function(v,i){
-    g+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="4" fill="#2563eb"/>'
-      +'<text x="'+x(i)+'" y="'+(y(v)-11)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#1e293b" stroke="#fff" stroke-width="3" paint-order="stroke">'+disp(v)+'</text>'
-      +'<text x="'+x(i)+'" y="'+(T+ih+20)+'" text-anchor="middle" font-size="11" fill="#475569">'+(i+1)+'월</text>';
+    var isMax=(i===iMax&&mx>0), isMin=(i===iMin&&mnPos>0&&iMin!==iMax);
+    var col=isMax?'#dc2626':isMin?'#0d9488':'#2563eb';
+    g+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="'+(isMax||isMin?6:4)+'" fill="'+col+'"'+(isMax||isMin?' stroke="#fff" stroke-width="2"':'')+'/>';
+    if(isMax||isMin){
+      var lab=(isMax?'최고 ':'최저 ')+disp(v), bw=Math.max(64,lab.length*7.6+14);
+      g+='<rect x="'+(x(i)-bw/2)+'" y="'+(y(v)-38)+'" width="'+bw+'" height="19" rx="9" fill="'+(isMax?'#fef2f2':'#f0fdfa')+'" stroke="'+col+'"/>'
+        +'<text x="'+x(i)+'" y="'+(y(v)-24)+'" text-anchor="middle" font-size="11" font-weight="900" fill="'+col+'">'+lab+'</text>';
+    } else {
+      g+='<text x="'+x(i)+'" y="'+(y(v)-11)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#1e293b" stroke="#fff" stroke-width="3" paint-order="stroke">'+disp(v)+'</text>';
+    }
+    g+='<text x="'+x(i)+'" y="'+(T+ih+20)+'" text-anchor="middle" font-size="11" fill="'+(isMax?'#dc2626':isMin?'#0d9488':'#475569')+'" font-weight="'+(isMax||isMin?'800':'400')+'">'+(i+1)+'월</text>';
   });
   g+='<line x1="'+L+'" y1="'+(T+ih)+'" x2="'+(W-Rr)+'" y2="'+(T+ih)+'" stroke="#cbd5e1"/></svg>';
+  /* 연도 버튼 */
+  var yrs=yrsOpt||[...new Set((rows||[]).map(function(r){return r.d?r.d.getFullYear():0;}).filter(Boolean))].sort(function(a,b){return b-a;});
+  var yb=yrs.map(function(y2){ return '<button type="button" class="btn'+(y2===+yr?'':' ghost')+' cmYearBtn" data-y="'+y2+'" style="font-size:11.5px;padding:4px 11px'+(y2===+yr?';background:#1e3a5f;color:#fff;border-color:#1e3a5f':'')+'">'+y2+'년</button>'; }).join('');
+  var nonPct=allAmt>0?(nonAmt/allAmt*100):0;
   return '<div style="border:1px solid #dbe4ee;border-radius:10px;background:#fff;padding:10px 12px;margin:0 0 8px">'
-    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
-    +'<b style="font-size:13px;color:#1e3a5f">\ud83d\udcc8 '+esc(cust)+' / '+yr+'년 · 월별 매출 추이</b>'
-    +'<span class="sub2" style="margin-left:auto">합계 '+disp(tot)+' · 월평균 '+disp(avg)+' · 최소 '+disp(mn)+' · 최고 '+disp(mx)+' · 출고 '+won(cnt.reduce(function(a,v){return a+v;},0))+'건</span></div>'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'
+    +'<b style="font-size:13px;color:#1e3a5f">📈 '+esc(cust)+' / '+yr+'년 · 월별 매출 추이</b>'
+    +'<span style="display:inline-flex;align-items:center;gap:5px;margin-left:4px">'+yb+'</span>'
+    +'<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;font-size:11.5px;font-weight:800;color:#c2410c" title="레이저 비규격 등 비규격 품목이 그 해 매출에서 차지하는 비중입니다">📐 비규격 비중 '+nonPct.toFixed(1)+'%</span>'
+    +'<span class="sub2" style="color:#c2410c">'+disp(nonAmt)+' / '+disp(allAmt)+'</span>'
+    +'<span class="sub2" style="margin-left:auto">합계 '+disp(tot)+' · <b style="color:#b45309">평균 '+disp(avg)+'</b>(거래월 '+nMon+'개월) · <b style="color:#dc2626">최고 '+disp(mx)+'</b>('+(iMax+1)+'월) · <b style="color:#0d9488">최저 '+disp(mnPos)+'</b>('+(iMin+1)+'월) · 출고 '+won(cnt.reduce(function(a,v){return a+v;},0))+'건</span></div>'
     +g+'</div>';
 }
 /* v665 : 업체 거래내역 — 연도 탭 · 일자별 원본 행(비고 포함) */
@@ -7593,7 +7623,7 @@ function custTradeHistoryV665(cust,back){
     {back:{label:'\u2190 단가표로',fn:back}, controlsHtml:chart+tabs, pageLimit:300,
      onMount:function(){
        var root=document.getElementById('result');
-       root.querySelectorAll('.thYearBtn').forEach(function(b){
+       root.querySelectorAll('.thYearBtn,.cmYearBtn').forEach(function(b){
          b.addEventListener('click',function(){ state.price.thYear=+b.dataset.y; custTradeHistoryV665(cust,back); });
        });
        /* v666 : 표 검색 — 화면을 다시 그리지 않고 행만 숨기므로 한글 입력 중에도 커서가 그대로 있습니다.
@@ -15762,7 +15792,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 지역·업체분류 업체명 검색 (2026-09-09)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 그래프 최고·최저·평균·연도 (2026-09-09)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
