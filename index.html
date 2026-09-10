@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v676</title>
-<script>window.APP_BUILD='v676';</script>
+<title>동방파스텍 매출 분석 도구 v678</title>
+<script>window.APP_BUILD='v678';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v676</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v678</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -2808,6 +2808,39 @@ function wrAnnualTargetMonthlyActuals(y){
   for(let m=1;m<=fcCutoffMonth();m++)actual[m]=source[m]||0;
   return actual;
 }
+/* ══════════════════════════════════════════════════════════
+   v678 · 주간보고 「1. 목표대비 달성」의 금액을 매출 목표(2026) 그래프와 일원화합니다.
+   예전에는 주간보고가 fcFutureTotals() 로 미래월 목표를 따로 계산했는데,
+   이 계산에는 <제품 조정%·추가%, 거래처 월별%, 제품 월별%> 가 빠져 있어
+   매출 목표 화면의 월별 목표와 금액이 달랐습니다.
+   이제는 그래프가 실제로 그린 값(FC_CHART_V678)을 그대로 씁니다.
+   ══════════════════════════════════════════════════════════ */
+function fcTargetSigV678(){
+  try{
+    const f=state.fc||{};
+    return JSON.stringify([String(f.activePlan||'1'),fcCutoffMonth(),(CUR||[]).length,
+      f.pct,f.override,f.addPct,f.custMonthPct,f.prodOverride,f.prodAddPct,f.prodMonthPct,
+      f.custProdOverride,f.newCusts,f.newProds,f.newLines,f.exclCust,f.exclProd,f.targetOnlyExcl,
+      state.pd&&{l:state.pd.useLabor,p:state.pd.useProcess,i:state.pd.useIndirect,e:state.pd.estimate}]);
+  }catch(_e){ return String(Math.random()); }
+}
+var _fcSilentV678=false;
+(function(){
+  if(typeof renderCustom!=='function')return;
+  const _rcV678=renderCustom;
+  renderCustom=function(){ if(_fcSilentV678)return; return _rcV678.apply(this,arguments); };
+})();
+function fcChartArraysV678(){
+  const C=window.FC_CHART_V677;
+  const sig=fcTargetSigV678();
+  if(C&&C.sig===sig&&C.base)return C;
+  /* 매출 목표 화면을 아직 열지 않았거나 설정이 바뀌었으면, 화면을 건드리지 않고 한 번만 계산합니다. */
+  try{ _fcSilentV678=true; if(typeof forecast==='function')forecast(); }
+  catch(_e){}
+  finally{ _fcSilentV678=false; }
+  const D=window.FC_CHART_V677;
+  return (D&&D.base)?D:null;
+}
 function wrMonthlyTargetLink(y,asOf){
   const ys=dataYears(); if(ys.length<2||+y!==ys[ys.length-1])return null;
   const PY=ys[0],CY=ys[ys.length-1],py=monthlyTotals(PY);
@@ -2817,7 +2850,11 @@ function wrMonthlyTargetLink(y,asOf){
   const actual=wrCmgrMonthlyActuals(CY);
   const annualTargetActual=wrAnnualTargetMonthlyActuals(CY);
   const pctOf=m=>{const v=state.fc&&state.fc.pct&&state.fc.pct[m];return(v!=null&&v!=='')?+v:0;};
+  /* v678 : 매출 목표 화면 그래프가 그린 '기본 월목표'를 그대로 씁니다(조정%·추가%·월별% 모두 반영된 값). */
+  const _chart=fcChartArraysV678();
+  const _useChart=!!(_chart&&_chart.CY===CY&&_chart.cutoff===fixedActualThrough);
   for(let m=1;m<=12;m++){
+    if(_useChart){ baseTarget[m]=+_chart.base[m]||0; continue; }
     const base=(fut.has&&fut.has[m])?fut.tot[m]:(py[m]>0?py[m]*(1+pctOf(m)/100):0);
     baseTarget[m]=base+((pdIncluded&&fcPdInAnnualTarget())?pdMonth(m):0); // 신규업체·신규라인(unallocated) 배분 전 기본 목표
   }
@@ -2859,6 +2896,8 @@ function wrMonthlyTargetLink(y,asOf){
        12개월 배분분(unallocSpread)을 쓰면 확정월 이전에 배분된 몫이 실적으로 대체되며 통째로 사라져,
        목표수정액 합계가 '올해 연매출 목표'보다 그만큼 작아졌습니다. (목표액 행은 기존대로 12개월 고정 배분 유지) */
     modified[m]=(m<=fixedActualThrough)?((annualTargetActual[m]||0)+(m===12?_tailUnalloc:0)):((baseTarget[m]||0)+unallocSpreadFut[m]);
+    /* v678 : 미래월은 그래프 목표 막대와 원 단위까지 같게 맞춥니다. */
+    if(_useChart&&m>fixedActualThrough)modified[m]=+_chart.tgt[m]||0;
   }
   const targetTotal=target.reduce((a,v)=>a+(v||0),0);
   const modifiedTotal=modified.reduce((a,v)=>a+(v||0),0);
@@ -10456,6 +10495,10 @@ function forecast(){ state._inDrill=false;
   /* v674 : 막대의 기준을 '올해 연매출 목표' · 주간보고와 똑같이 맞춥니다. */
   const pdTargetIncluded=!fcExSet.has('PD사업부')&&fcPdInAnnualTarget();
   const tgtV=tgt.slice(),actV=act.slice();
+  /* v678 : 실적 막대를 주간보고 '매출실적'(거래처 담당자 월매출 합계)과 같은 값으로 맞춥니다.
+     예전에는 거래처 제외업체의 실적이 막대에만 남아 주간보고보다 크게 나왔습니다. */
+  try{ const _wa=(typeof wrCmgrMonthlyActuals==='function')?wrCmgrMonthlyActuals(CY):null;
+    if(_wa)for(let m=1;m<=12;m++){ if(act[m])actV[m]=+_wa[m]||0; } }catch(_e){}
   for(let m=1;m<=12;m++){
     if(pdTargetIncluded){
       tgtV[m]+=pdMonth(m);
@@ -10465,6 +10508,7 @@ function forecast(){ state._inDrill=false;
   }
   /* v674 : 신규업체·신규라인 연간목표를 목표비중대로 12개월에 배분해 목표 막대에 더합니다.
      (주간보고 '목표액' 행과 같은 계산 → 두 화면의 월별 목표가 일치합니다) */
+  const _tgtBaseV678=tgtV.slice();   /* v678 : 신규업체·신규라인 배분 전 '기본 월목표' */
   (function(){ try{
     const _s=(typeof fcAnnualTargetSummary==='function')?fcAnnualTargetSummary(fcTargetPlan):null; if(!_s)return;
     const _un=(+_s.newCustAnnual||0)+(+_s.lineCustTotal||0); if(!(_un>0))return;
@@ -10481,6 +10525,11 @@ function forecast(){ state._inDrill=false;
   }catch(_e){} })();
   let _tc2=0,_ts2=0; for(let m=1;m<=12;m++) if(pyMonTot[m]>0){_ts2+=tgtV[m];_tc2++;}
   const tgtAvgV=_tc2?_ts2/_tc2:tgtAvg;
+  /* v677 : 그래프가 실제로 그린 월별 목표·실적을 그대로 보관합니다.
+     주간보고 「목표수정액」이 이 값을 그대로 쓰도록 해, 두 화면의 금액을 강제로 일치시킵니다. */
+  try{ window.FC_CHART_V677={CY:CY,cutoff:(typeof fcCutoffMonth==='function')?fcCutoffMonth():lastAct,
+    plan:String((state.fc&&state.fc.activePlan)||'1'),tgt:tgtV.slice(),act:actV.slice(),base:_tgtBaseV678.slice(),
+    sig:(typeof fcTargetSigV678==='function')?fcTargetSigV678():'',at:Date.now()}; }catch(_e){}
   const series=[]; if(state.fc.showPY) series.push({vals:py,color:'#94a3b8'}); series.push({vals:tgtV,color:'#fbbf24'}); series.push({vals:actV,color:'#1e3a5f'});
   const bepMon=state.bep>0?state.bep/12:0; const refs=[{value:tgtAvgV,label:`목표 월평균 ${fmtM(tgtAvgV)}백만`,color:'#dc2626'}]; if(bepMon>0)refs.push({value:bepMon,label:`BEP 월 ${fmtM(bepMon)}백만`,color:'#7c3aed',align:'left'});
   const _wdL={}; for(let m=1;m<=12;m++)_wdL[m]=workdaysFor(`${CY}-${String(m).padStart(2,'0')}`);
@@ -10501,7 +10550,14 @@ function forecast(){ state._inDrill=false;
   const pdExcluded=fcExSet.has('PD사업부')?pdYear:0; const pdYearNet=pdYear-pdExcluded;
   const fcExcludedAnnualTarget=fcExcludedMonTarget.reduce((a,b)=>a+b,0)+newCustExcluded+lineCustExcluded+pdExcluded;
   const annualSummary=fcAnnualTargetSummary(fcTargetPlan);
-  const olhaeTarget=annualSummary.annualTarget; const projPct=pyAnnual?(olhaeTarget-pyAnnual)/pyAnnual*100:0;
+  /* v678 : '올해 연매출 목표'도 그래프가 그린 값(확정월까지 실적 + 이후월 목표)으로 맞춥니다.
+     → 주간보고 목표수정액 합계와 원 단위까지 같아집니다. */
+  let olhaeTarget=annualSummary.annualTarget;
+  try{ const _cutV678=(typeof fcCutoffMonth==='function')?fcCutoffMonth():lastAct; let _sumV678=0;
+    for(let m=1;m<=12;m++)_sumV678+=(m<=_cutV678?(+actV[m]||0):(+tgtV[m]||0));
+    if(_sumV678>0)olhaeTarget=_sumV678;
+  }catch(_e){}
+  const projPct=pyAnnual?(olhaeTarget-pyAnnual)/pyAnnual*100:0;
   // 고철업체 중 '제외'되지 않은 업체의 당해연도 매출은 거래처외 매출포함항목 합계에 포함
   const _svForOutside=scrapVendorList();
   const _svIncludedForOutside=_svForOutside.filter(function(c){return !fcExSet.has(c);});
@@ -14490,7 +14546,8 @@ var arExportV673=arExport;arExport=function(model){
    나오는 업체 수를 함께 적고, 누르면 그 등급 업체만 표에 남습니다.
    ══════════════════════════════════════════════════════════ */
 var AR_GRADE_TABS={long:1,duedate:1,prevmon:1,credit:1};
-var AR_GRADE_ORDER=['A+','A','A0','A-','B+','B','B0','B-','C+','C','C0','C-','D+','D','D-','E','F','선결','선결제','현금','거래제한','거래중지'];
+/* v677 : 요청하신 순서 — 전체 · A+ · B+ · C+ · A- · B- · C- · 선결 · 미지정 */
+var AR_GRADE_ORDER=['A+','B+','C+','D+','A','B','C','D','A0','B0','C0','A-','B-','C-','D-','E','F','선결','선결제','현금','거래제한','거래중지'];
 var _arGradeSrcModel=null;
 function arGradeKeyOf(o){ var g=String((o&&o.grade)||'').trim(); return g||'미지정'; }
 function arGradeScopeSet(model){
@@ -16130,7 +16187,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 미수 신용등급 버튼 (2026-09-10)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 주간보고=그래프 금액 일원화 (2026-09-10)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
