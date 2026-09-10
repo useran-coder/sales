@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v678</title>
-<script>window.APP_BUILD='v678';</script>
+<title>동방파스텍 매출 분석 도구 v679</title>
+<script>window.APP_BUILD='v679';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v678</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v679</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -2815,13 +2815,37 @@ function wrAnnualTargetMonthlyActuals(y){
    매출 목표 화면의 월별 목표와 금액이 달랐습니다.
    이제는 그래프가 실제로 그린 값(FC_CHART_V678)을 그대로 씁니다.
    ══════════════════════════════════════════════════════════ */
+/* v679 : 목표에 영향을 주는 값이 하나라도 바뀌면 서명이 달라지도록,
+   '목표안 저장키(FC_TARGET_PLAN_KEYS)' 전체와 제외설정·PD설정·원자료 건수를 모두 넣습니다.
+   → 어느 화면에서 무엇을 고쳐도 다음 조회 때 자동으로 다시 계산되어 금액이 어긋나지 않습니다. */
+/* v679 : 주간보고 목표수정액이 매출 목표 화면 그래프와 실제로 같은지 그 자리에서 대조해 보여 줍니다.
+   앞으로 어떤 화면에서 목표를 고치든, 이 표시가 초록이면 두 화면 금액이 같다는 뜻입니다. */
+function wrChartMatchNoteV679(){
+  try{
+    const ys=(typeof dataYears==='function')?dataYears():[]; if(ys.length<2)return '';
+    const CY=ys[ys.length-1];
+    const L=wrMonthlyTargetLink(CY,null); if(!L)return '';
+    const C=window.FC_CHART_V677; if(!C||!C.base)return '';
+    const cut=L.fixedActualThrough; let bad=0, mons=[];
+    for(let m=1;m<=12;m++){
+      const a=Math.round(L.modified[m]||0), b=Math.round(m<=cut?(C.act[m]||0):(C.tgt[m]||0));
+      if(Math.abs(a-b)>1){ bad++; mons.push(m+'월'); }
+    }
+    const st='display:inline-block;margin-left:6px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;';
+    if(!bad)return '<span style="'+st+'background:#dcfce7;color:#166534;border:1px solid #86efac" title="목표수정액 1~'+cut+'월=그래프 실적, '+(cut+1)+'~12월=그래프 목표와 원 단위까지 같습니다">✅ 매출 목표 화면과 금액 일치</span>';
+    return '<span style="'+st+'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5" title="'+mons.join(', ')+'">⚠ 매출 목표 화면과 '+bad+'개월 불일치 ('+mons.slice(0,4).join(', ')+(mons.length>4?' 외':'')+')</span>';
+  }catch(_e){ return ''; }
+}
 function fcTargetSigV678(){
   try{
-    const f=state.fc||{};
-    return JSON.stringify([String(f.activePlan||'1'),fcCutoffMonth(),(CUR||[]).length,
-      f.pct,f.override,f.addPct,f.custMonthPct,f.prodOverride,f.prodAddPct,f.prodMonthPct,
-      f.custProdOverride,f.newCusts,f.newProds,f.newLines,f.exclCust,f.exclProd,f.targetOnlyExcl,
-      state.pd&&{l:state.pd.useLabor,p:state.pd.useProcess,i:state.pd.useIndirect,e:state.pd.estimate}]);
+    const f=state.fc||{}, o=[String(f.activePlan||'1'),fcCutoffMonth(),(CUR||[]).length];
+    const keys=(typeof FC_TARGET_PLAN_KEYS!=='undefined'&&FC_TARGET_PLAN_KEYS)?FC_TARGET_PLAN_KEYS:
+      ['pct','override','addPct','newCusts','prodOverride','prodAddPct','custProdOverride','custMonthPct','prodMonthPct','newProds','newLines','actualCutoffMonth'];
+    keys.forEach(function(k){ if(/At$/.test(k))return; o.push(f[k]); });
+    o.push(f.exclCust,f.exclProd,f.targetOnlyExcl,f.targetExclCust,f.showExcl===undefined?0:0);
+    o.push(state.pd&&{l:state.pd.useLabor,p:state.pd.useProcess,i:state.pd.useIndirect,e:state.pd.estimate,
+      L:state.pd.labor,P:state.pd.process,I:state.pd.indirect,A:state.pd.actual});
+    return JSON.stringify(o);
   }catch(_e){ return String(Math.random()); }
 }
 var _fcSilentV678=false;
@@ -3392,7 +3416,7 @@ function wrPage1(model){
   const totalRow=`<tr class="wr-sum"><td class="wr-no"></td><td class="wr-cust-name-col">합계</td><td></td><td>${wrAmt(total.annual)}</td><td>${wrAmt(total.before)}</td><td>${wrPct(total.annualRate)}</td><td>${wrAmt(total.remaining)}</td><td>${wrAmt(total.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${total.remainingWeekAvg?won(total.remainingWeekAvg)+'원':'-'}</b></div></td>${Array.from({length:model.ranges.length},(_,idx)=>`<td class="${wkColCls(idx)}">${model.isCustom||idx<model.w?wrAmt((total.weeks||[])[idx]||0):'-'}</td>`).join('')}<td class="wr-achieved-col">${wrAmt(total.monthActual)}</td><td>${wrPct(total.monthRate)}</td><td></td></tr>`;
   const productDetail=selectedCust?wrCustProductDetail(model,selectedCust):'';
   const beforeEnd=new Date(model.rangeStart);beforeEnd.setDate(beforeEnd.getDate()-1);const beforeLab=model.isCustom?`${model.y}.1.1~${wrDateText(beforeEnd)}`:(model.m>1?`1~${model.m-1}월`:'전월'); const selectedLab=model.isCustom?'기간':' '+model.m+'월',monthActualCol=8+model.ranges.length,monthRateCol=9+model.ranges.length;
-  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 합계액=1~12월 합계와 일치 · 신규업체·신규라인 목표 배분: 목표액=12개월 고정(실적확정 무관) · 목표수정액=과거월 확정실적+미래월 고정월목표+신규업체·신규라인 목표를 <b>미래월에만</b> 배분(그래서 미래월은 목표액보다 그 배분액만큼 큽니다. 대신 <b>목표수정액 합계=올해 연매출 목표</b>와 일치하고, <b>매출 목표 화면 그래프의 월별 목표(9~12월)·실적(1~8월)과 금액이 똑같습니다</b>) · 실적확정 위치를 옮겨도 월별 목표값은 그대로, 새로 확정된 달의 실적−목표 차이만큼만 목표수정액 합계가 변동 · 매출실적=거래처 담당자 월매출 합계 기준 · <b>PD임가공은 목표·실적 모두에서 빼고 아래 별도 행으로 표시</b>합니다(매출 목표 화면 그래프와 동일 기준))</span></div><div class="wr-tablewrap"><table class="wr-table wr-annual-table"><thead><tr><th style="width:14%">구분</th><th style="width:9%">합계액</th>${Array.from({length:12},(_,i)=>`<th class="${i+1===currentMonthNo?'wr-current-date':''}" style="width:6.41%">${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
+  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 합계액=1~12월 합계와 일치 · 신규업체·신규라인 목표 배분: 목표액=12개월 고정(실적확정 무관) · 목표수정액=과거월 확정실적+미래월 고정월목표+신규업체·신규라인 목표를 <b>미래월에만</b> 배분(그래서 미래월은 목표액보다 그 배분액만큼 큽니다. 대신 <b>목표수정액 합계=올해 연매출 목표</b>와 일치하고, <b>매출 목표 화면 그래프의 월별 목표(9~12월)·실적(1~8월)과 금액이 똑같습니다</b>) · 실적확정 위치를 옮겨도 월별 목표값은 그대로, 새로 확정된 달의 실적−목표 차이만큼만 목표수정액 합계가 변동 · 매출실적=거래처 담당자 월매출 합계 기준 · <b>PD임가공은 목표·실적 모두에서 빼고 아래 별도 행으로 표시</b>합니다(매출 목표 화면 그래프와 동일 기준))</span> ${wrChartMatchNoteV679()}</div><div class="wr-tablewrap"><table class="wr-table wr-annual-table"><thead><tr><th style="width:14%">구분</th><th style="width:9%">합계액</th>${Array.from({length:12},(_,i)=>`<th class="${i+1===currentMonthNo?'wr-current-date':''}" style="width:6.41%">${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
     <div class="wr-pace-stack">${wrYearPacingSection(model)}${wrMonthPacingSection(model)}</div>
     <div class="wr-section">▶ 업체별 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">· ${model.isCustom?wrDateText(model.rangeStart)+' ~ '+wrDateText(model.rangeEnd):model.y+'년 '+model.m+'월 '+model.w+'주차'} 기준 · 단위: 원 · <b>업체명을 선택하면 제품별 달성 현황 표시</b> · 정렬할 항목의 헤더를 클릭</span><span style="float:right;display:inline-flex;align-items:center;gap:7px">${wrP1NavHtml(model)}<button class="btn ghost" id="wrCustXlsx" type="button" style="font-size:12px;padding:6px 12px;background:#dcfce7;color:#15803d;border-color:#86efac;font-weight:800">📥 엑셀</button></span></div>${wrRankBar('업체',model.custRankInfo,issueFilterActions)}<div class="wr-tablewrap wr-cust-target-wrap"><table class="wr-table wr-cust-target-fit ${model.periodMode==='week'?'wr-cust-target-week':''} ${model.periodMode==='month'?'wr-cust-target-note-wide':''}" id="wrCustTargetTable"><thead><tr><th class="wr-no" rowspan="2" style="width:2.6%">NO</th><th class="wr-sortable wr-cust-name-col" data-sort-col="1" data-sort-type="text" rowspan="2" title="업체명 정렬">업체<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="2" data-sort-type="text" rowspan="2" style="width:6%" title="영업관리 구분 정렬">영업관리<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="3" data-sort-type="num" rowspan="2" style="width:6.41%" title="목표액 정렬">${model.y}년도<br>목표액<span class="wr-sort-arrow">↕</span></th><th colspan="3">매출 실적</th><th class="wr-sortable" data-sort-col="7" data-sort-type="num" rowspan="2" style="width:6.41%" title="기간 목표 정렬">${model.isCustom?'기간':' '+model.m+'월'}<br>목표<br><span style="font-size:7px;color:#64748b">${model.isCustom?'일할 계산':'남은주간 평균'}</span><span class="wr-sort-arrow">↕</span></th><th colspan="${model.ranges.length}">${selectedLab} 구간</th><th class="wr-sortable wr-achieved-col" data-sort-col="${monthActualCol}" data-sort-type="num" rowspan="2" title="달성금액 정렬">달성금액<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="${monthRateCol}" data-sort-type="num" rowspan="2" style="width:4.7625%" title="달성률 정렬">${model.isCustom?'기간 달성률':'월 달성률'}<span class="wr-sort-arrow">↕</span></th><th rowspan="2" style="width:${memoWidth}">비고</th></tr><tr><th class="wr-center wr-sortable" data-sort-col="4" data-sort-type="num" style="width:8.5%" title="이전 실적 정렬">${beforeLab}<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="5" data-sort-type="num" style="width:3.6%" title="연 달성률 정렬">달성률<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="6" data-sort-type="num" style="width:8.5%" title="잔여 목표액 정렬">잔여 목표액<span class="wr-sort-arrow">↕</span></th>${wkHead}</tr></thead><tbody>${body}${totalRow}</tbody></table></div>${productDetail}<div class="wr-note">${model.isCustom?'기간 목표는 해당 월 목표를 일수 기준으로 계산합니다.':'월목표 아래 남은주간 평균은 ‘남은 월목표액 ÷ 선택 주차 이후 남은 주차 수’입니다.'} <b>업체명</b>을 선택하면 조회 단위와 동일한 기간의 제품별 목표·실적·달성률이 아래에 표시됩니다. 현재 날짜가 포함된 월·주차에도 이슈가 있으면 금액 아래 📝 아이콘이 표시됩니다.</div></div>`;
 }
@@ -9893,6 +9917,24 @@ function fcAnnualTargetSummary(plan){
   return {annualTarget,lastAct,actualAllRaw,actualEligibleRaw,actualExcludedRaw,actualPeriodTotal,futureTargetRaw,futurePeriodTarget,remainingTarget,newCustAnnual:extras.newCustAnnual,lineCustTotal:extras.lineCustTotal,pdActual,pdFuture,pdYearNet:extras.pdYearNet};
 }
 
+/* v679 : '올해 연매출 목표'를 매출 목표 화면 그래프가 그린 월별 목표와 같은 근거로 계산합니다.
+   예전에는 fcFutureTotals() 만 써서 제품 조정%·추가%, 거래처/제품 월별% 가 빠졌고,
+   그 값을 쓰는 전략 화면·목표추이·업체별 목표 합계까지 함께 어긋났습니다. */
+var fcAnnualTargetSummaryV679=fcAnnualTargetSummary;
+fcAnnualTargetSummary=function(plan){
+  const s=fcAnnualTargetSummaryV679(plan);
+  try{
+    const C=window.FC_CHART_V677;
+    if(C&&C.base&&C.cutoff===s.lastAct&&typeof fcTargetSigV678==='function'&&C.sig===fcTargetSigV678()){
+      let f=0; for(let m=s.lastAct+1;m<=12;m++)f+=(+C.base[m]||0);
+      s.futureTargetRaw=f;
+      s.futurePeriodTarget=f+(+s.newCustAnnual||0)+(+s.lineCustTotal||0)+(+s.pdFuture||0);
+      s.remainingTarget=s.futurePeriodTarget;
+      s.annualTarget=(+s.actualPeriodTotal||0)+s.futurePeriodTarget;
+    }
+  }catch(_e){}
+  return s;
+};
 function pdAvg(cat){ let s=0,n=0; for(let mm=1;mm<=fcCutoffMonth();mm++){ const v=+state.pd[cat][mm]||0; if(v){s+=v;n++;} } return n?Math.round(s/n):0; }
 function pdCatVal(cat,m){ const v=+state.pd[cat][m]||0; if(v)return v; if(m>fcCutoffMonth()&&m<=12&&state.pd.estimate&&!(state.pd.actual&&state.pd.actual[m])) return pdAvg(cat); return 0; }
 function pdMonth(m){ const pd=state.pd; if(!pd)return 0; const L=pd.useLabor?pdCatVal('labor',m):0; const P=pd.useProcess?pdCatVal('process',m):0; const I=pd.useIndirect?pdCatVal('indirect',m):0; return L+P+I; }
@@ -16187,7 +16229,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 주간보고=그래프 금액 일원화 (2026-09-10)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 목표금액 전 화면 일원화 (2026-09-10)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
