@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v672</title>
-<script>window.APP_BUILD='v672';</script>
+<title>동방파스텍 매출 분석 도구 v674</title>
+<script>window.APP_BUILD='v674';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v672</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v674</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -3353,7 +3353,7 @@ function wrPage1(model){
   const totalRow=`<tr class="wr-sum"><td class="wr-no"></td><td class="wr-cust-name-col">합계</td><td></td><td>${wrAmt(total.annual)}</td><td>${wrAmt(total.before)}</td><td>${wrPct(total.annualRate)}</td><td>${wrAmt(total.remaining)}</td><td>${wrAmt(total.monthTarget)}<div class="wr-subamt">남은주간 평균<b>${total.remainingWeekAvg?won(total.remainingWeekAvg)+'원':'-'}</b></div></td>${Array.from({length:model.ranges.length},(_,idx)=>`<td class="${wkColCls(idx)}">${model.isCustom||idx<model.w?wrAmt((total.weeks||[])[idx]||0):'-'}</td>`).join('')}<td class="wr-achieved-col">${wrAmt(total.monthActual)}</td><td>${wrPct(total.monthRate)}</td><td></td></tr>`;
   const productDetail=selectedCust?wrCustProductDetail(model,selectedCust):'';
   const beforeEnd=new Date(model.rangeStart);beforeEnd.setDate(beforeEnd.getDate()-1);const beforeLab=model.isCustom?`${model.y}.1.1~${wrDateText(beforeEnd)}`:(model.m>1?`1~${model.m-1}월`:'전월'); const selectedLab=model.isCustom?'기간':' '+model.m+'월',monthActualCol=8+model.ranges.length,monthRateCol=9+model.ranges.length;
-  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 합계액=1~12월 합계와 일치 · 신규업체·신규라인 목표 배분: 목표액=12개월 고정(실적확정 무관) · 목표수정액=과거월 확정실적+미래월 고정월목표(목표액과 동일) · 실적확정 위치를 옮겨도 월별 목표값은 그대로, 새로 확정된 달의 실적−목표 차이만큼만 목표수정액 합계가 변동 · 매출실적=거래처 담당자 월매출 합계 기준)</span></div><div class="wr-tablewrap"><table class="wr-table wr-annual-table"><thead><tr><th style="width:14%">구분</th><th style="width:9%">합계액</th>${Array.from({length:12},(_,i)=>`<th class="${i+1===currentMonthNo?'wr-current-date':''}" style="width:6.41%">${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
+  return `<div class="wr-page">${wrHeader(model,1)}<div class="wr-section">1. 연 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">(단위: 원 · 합계액=1~12월 합계와 일치 · 신규업체·신규라인 목표 배분: 목표액=12개월 고정(실적확정 무관) · 목표수정액=과거월 확정실적+미래월 고정월목표+신규업체·신규라인 목표를 <b>미래월에만</b> 배분(그래서 미래월은 목표액보다 그 배분액만큼 큽니다. 대신 <b>목표수정액 합계=올해 연매출 목표</b>와 일치) · 실적확정 위치를 옮겨도 월별 목표값은 그대로, 새로 확정된 달의 실적−목표 차이만큼만 목표수정액 합계가 변동 · 매출실적=거래처 담당자 월매출 합계 기준 · <b>PD임가공은 목표·실적 모두에서 빼고 아래 별도 행으로 표시</b>합니다(매출 목표 화면 그래프와 동일 기준))</span></div><div class="wr-tablewrap"><table class="wr-table wr-annual-table"><thead><tr><th style="width:14%">구분</th><th style="width:9%">합계액</th>${Array.from({length:12},(_,i)=>`<th class="${i+1===currentMonthNo?'wr-current-date':''}" style="width:6.41%">${i+1}월</th>`).join('')}</tr></thead><tbody>${arows}</tbody></table></div>
     <div class="wr-pace-stack">${wrYearPacingSection(model)}${wrMonthPacingSection(model)}</div>
     <div class="wr-section">▶ 업체별 목표대비 달성 <span style="font-size:11px;color:#64748b;font-weight:600">· ${model.isCustom?wrDateText(model.rangeStart)+' ~ '+wrDateText(model.rangeEnd):model.y+'년 '+model.m+'월 '+model.w+'주차'} 기준 · 단위: 원 · <b>업체명을 선택하면 제품별 달성 현황 표시</b> · 정렬할 항목의 헤더를 클릭</span><span style="float:right;display:inline-flex;align-items:center;gap:7px">${wrP1NavHtml(model)}<button class="btn ghost" id="wrCustXlsx" type="button" style="font-size:12px;padding:6px 12px;background:#dcfce7;color:#15803d;border-color:#86efac;font-weight:800">📥 엑셀</button></span></div>${wrRankBar('업체',model.custRankInfo,issueFilterActions)}<div class="wr-tablewrap wr-cust-target-wrap"><table class="wr-table wr-cust-target-fit ${model.periodMode==='week'?'wr-cust-target-week':''} ${model.periodMode==='month'?'wr-cust-target-note-wide':''}" id="wrCustTargetTable"><thead><tr><th class="wr-no" rowspan="2" style="width:2.6%">NO</th><th class="wr-sortable wr-cust-name-col" data-sort-col="1" data-sort-type="text" rowspan="2" title="업체명 정렬">업체<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="2" data-sort-type="text" rowspan="2" style="width:6%" title="영업관리 구분 정렬">영업관리<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="3" data-sort-type="num" rowspan="2" style="width:6.41%" title="목표액 정렬">${model.y}년도<br>목표액<span class="wr-sort-arrow">↕</span></th><th colspan="3">매출 실적</th><th class="wr-sortable" data-sort-col="7" data-sort-type="num" rowspan="2" style="width:6.41%" title="기간 목표 정렬">${model.isCustom?'기간':' '+model.m+'월'}<br>목표<br><span style="font-size:7px;color:#64748b">${model.isCustom?'일할 계산':'남은주간 평균'}</span><span class="wr-sort-arrow">↕</span></th><th colspan="${model.ranges.length}">${selectedLab} 구간</th><th class="wr-sortable wr-achieved-col" data-sort-col="${monthActualCol}" data-sort-type="num" rowspan="2" title="달성금액 정렬">달성금액<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="${monthRateCol}" data-sort-type="num" rowspan="2" style="width:4.7625%" title="달성률 정렬">${model.isCustom?'기간 달성률':'월 달성률'}<span class="wr-sort-arrow">↕</span></th><th rowspan="2" style="width:${memoWidth}">비고</th></tr><tr><th class="wr-center wr-sortable" data-sort-col="4" data-sort-type="num" style="width:8.5%" title="이전 실적 정렬">${beforeLab}<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="5" data-sort-type="num" style="width:3.6%" title="연 달성률 정렬">달성률<span class="wr-sort-arrow">↕</span></th><th class="wr-sortable" data-sort-col="6" data-sort-type="num" style="width:8.5%" title="잔여 목표액 정렬">잔여 목표액<span class="wr-sort-arrow">↕</span></th>${wkHead}</tr></thead><tbody>${body}${totalRow}</tbody></table></div>${productDetail}<div class="wr-note">${model.isCustom?'기간 목표는 해당 월 목표를 일수 기준으로 계산합니다.':'월목표 아래 남은주간 평균은 ‘남은 월목표액 ÷ 선택 주차 이후 남은 주차 수’입니다.'} <b>업체명</b>을 선택하면 조회 단위와 동일한 기간의 제품별 목표·실적·달성률이 아래에 표시됩니다. 현재 날짜가 포함된 월·주차에도 이슈가 있으면 금액 아래 📝 아이콘이 표시됩니다.</div></div>`;
 }
@@ -10453,15 +10453,32 @@ function forecast(){ state._inDrill=false;
   for(let m=1;m<=12;m++){ fcExSet.forEach(c=>{ const tv=(fcTargetPlan.custMon[m]&&fcTargetPlan.custMon[m].get(c))||0; fcExcludedMonTarget[m]+=tv; if(m<=lastAct)fcExcludedMonActual[m]+=(cyMonCust[m].get(c)||0); }); tgt[m]=Math.max(0,tgt[m]-fcExcludedMonTarget[m]); }
   // 실적 막대와 실적 합계는 제외업체를 포함한 원실적을 그대로 사용한다.
   let tcnt=0,tsum=0; for(let m=1;m<=12;m++) if(pyMonTot[m]>0){tsum+=tgt[m];tcnt++;} const tgtAvg=tcnt?tsum/tcnt:0;
-  const pdTargetIncluded=!fcExSet.has('PD사업부');
+  /* v674 : 막대의 기준을 '올해 연매출 목표' · 주간보고와 똑같이 맞춥니다. */
+  const pdTargetIncluded=!fcExSet.has('PD사업부')&&fcPdInAnnualTarget();
   const tgtV=tgt.slice(),actV=act.slice();
   for(let m=1;m<=12;m++){
-    if(pdTargetIncluded)tgtV[m]+=pdMonth(m);
-    const pdIsActual=m<=lastAct||!!(state.pd&&state.pd.actual&&state.pd.actual[m]);
-    if(pdIsActual)actV[m]+=pdMonth(m);
+    if(pdTargetIncluded){
+      tgtV[m]+=pdMonth(m);
+      const pdIsActual=m<=lastAct||!!(state.pd&&state.pd.actual&&state.pd.actual[m]);
+      if(pdIsActual)actV[m]+=pdMonth(m);
+    }
   }
+  /* v674 : 신규업체·신규라인 연간목표를 목표비중대로 12개월에 배분해 목표 막대에 더합니다.
+     (주간보고 '목표액' 행과 같은 계산 → 두 화면의 월별 목표가 일치합니다) */
+  (function(){ try{
+    const _s=(typeof fcAnnualTargetSummary==='function')?fcAnnualTargetSummary(fcTargetPlan):null; if(!_s)return;
+    const _un=(+_s.newCustAnnual||0)+(+_s.lineCustTotal||0); if(!(_un>0))return;
+    let _tb=0; for(let m=1;m<=12;m++)_tb+=(tgtV[m]||0);
+    let _done=0;
+    for(let m=1;m<=12;m++){
+      const _sh=(m===12)?(_un-_done):Math.round(_tb>0?_un*(tgtV[m]||0)/_tb:_un/12);
+      _done+=_sh; tgtV[m]+=_sh;
+    }
+  }catch(_e){} })();
+  let _tc2=0,_ts2=0; for(let m=1;m<=12;m++) if(pyMonTot[m]>0){_ts2+=tgtV[m];_tc2++;}
+  const tgtAvgV=_tc2?_ts2/_tc2:tgtAvg;
   const series=[]; if(state.fc.showPY) series.push({vals:py,color:'#94a3b8'}); series.push({vals:tgtV,color:'#fbbf24'}); series.push({vals:actV,color:'#1e3a5f'});
-  const bepMon=state.bep>0?state.bep/12:0; const refs=[{value:tgtAvg,label:`목표 월평균 ${fmtM(tgtAvg)}백만`,color:'#dc2626'}]; if(bepMon>0)refs.push({value:bepMon,label:`BEP 월 ${fmtM(bepMon)}백만`,color:'#7c3aed',align:'left'});
+  const bepMon=state.bep>0?state.bep/12:0; const refs=[{value:tgtAvgV,label:`목표 월평균 ${fmtM(tgtAvgV)}백만`,color:'#dc2626'}]; if(bepMon>0)refs.push({value:bepMon,label:`BEP 월 ${fmtM(bepMon)}백만`,color:'#7c3aed',align:'left'});
   const _wdL={}; for(let m=1;m<=12;m++)_wdL[m]=workdaysFor(`${CY}-${String(m).padStart(2,'0')}`);
   const chart=svgGrouped(series,320,refs,_wdL);
   const pyAnnual=py.reduce((a,b)=>a+b,0); const tgtAnnual=tgt.reduce((a,b)=>a+b,0);
@@ -14347,6 +14364,121 @@ var arExportV165=arExport;arExport=function(model){
  dlXLSX('receivables_'+model.year+'_payment_due.xlsx','결제일 대비',aoa);
 };
 
+/* ══════════════════════════════════════════════════════════
+   v673 · 🔁 전월 매출액대비
+   전월(前月) 매출액과 당월 수금액을 견주어, 매출액보다 적게 걷힌 업체를 모읍니다.
+   대부분의 거래처가 '전월 매출을 다음 달에 결제'하는 구조라 이 비교가 실제
+   수금 진행을 가장 빨리 드러냅니다.
+   ══════════════════════════════════════════════════════════ */
+if(!AR_TABS.some(function(t){return t[0]==='prevmon';})){
+ var _arDueIdx=AR_TABS.findIndex(function(t){return t[0]==='duedate';});
+ AR_TABS.splice(_arDueIdx<0?4:_arDueIdx+1,0,['prevmon','🔁 전월 매출액대비']);
+}
+function arPrevMonData(model){
+ var year=model.year;
+ var mo=+state.ar.pmMonth||0;
+ if(!(mo>=1&&mo<=12))mo=+(String(state.ar.asOf||arLatestDate()||model.end).slice(5,7))||(new Date().getMonth()+1);
+ var py=(mo===1)?year-1:year, pm=(mo===1)?12:mo-1;
+ var allowed=new Map((model.customers||[]).map(function(o){return[o.cust,o];}));
+ var sales={},recv={},last={},cnt={};
+ (CUR||[]).forEach(function(r){
+  if(!(r.d instanceof Date)||isNaN(r.d))return;
+  if(r.d.getFullYear()!==py||(r.d.getMonth()+1)!==pm)return;
+  var c=arCust(r.cust); if(!c||!allowed.has(c))return;
+  sales[c]=(sales[c]||0)+arSalesAmount(r);
+ });
+ var pref=year+'-'+String(mo).padStart(2,'0');
+ (state.ar.receipts||[]).forEach(function(r){
+  var d=String(r.date||''); if(d.slice(0,7)!==pref)return;
+  var c=arCust(r.cust); if(!c||!allowed.has(c))return;
+  var a=arN(r.amount); recv[c]=(recv[c]||0)+a;
+  if(a>0){ cnt[c]=(cnt[c]||0)+1; if(!last[c]||d>last[c])last[c]=d; }
+ });
+ var rows=[];
+ allowed.forEach(function(o,c){
+  var sv=Math.round(sales[c]||0);
+  if(sv<=0)return;                       /* 전월 매출이 없으면 비교 대상이 아님 */
+  var gv=Math.round(recv[c]||0);
+  rows.push({cust:c,manager:o.manager||'',grade:o.grade||'',status:o.status||'',
+   sales:sv,recv:gv,gap:sv-gv,rate:sv?gv/sv:0,balance:arN(o.balance),
+   last:last[c]||'',cnt:cnt[c]||0});
+ });
+ rows.sort(function(a,b){return b.gap-a.gap||b.sales-a.sales||a.cust.localeCompare(b.cust,'ko');});
+ return {rows:rows,mo:mo,py:py,pm:pm,pref:pref,
+  prevLabel:(py!==year?py+'년 ':'')+pm+'월', curLabel:mo+'월'};
+}
+function arPrevMonView(model){
+ var D=arPrevMonData(model), mode=state.ar.pmMode||'short';
+ var list=D.rows.filter(function(r){
+  if(mode==='zero')return r.recv<=0;
+  if(mode==='all')return true;
+  if(mode==='half')return r.rate<0.5;
+  return r.gap>0;
+ });
+ var tSales=D.rows.reduce(function(a,r){return a+r.sales;},0),
+     tRecv=D.rows.reduce(function(a,r){return a+r.recv;},0),
+     shortRows=D.rows.filter(function(r){return r.gap>0;}),
+     tGap=shortRows.reduce(function(a,r){return a+r.gap;},0),
+     zeroN=D.rows.filter(function(r){return r.recv<=0;}).length;
+ var monthOpts=Array.from({length:12},function(_,i){var m=i+1;
+   return'<option value="'+m+'" '+(D.mo===m?'selected':'')+'>'+m+'월 수금 기준</option>';}).join('');
+ var modeOpts=[['short','수금 부족 업체만'],['half','수금률 50% 미만'],['zero','당월 수금 0원'],['all','전체 업체']]
+   .map(function(x){return'<option value="'+x[0]+'" '+(mode===x[0]?'selected':'')+'>'+x[1]+'</option>';}).join('');
+ var body=list.map(function(r,i){
+  var cls=r.recv<=0?'bad':(r.rate<0.5?'late':(r.gap>0?'future':'ok'));
+  var rateTxt=arPct(r.rate,0);
+  return'<tr class="ar-due-row ar-due-'+cls+' ar-pm-row" data-cust="'+esc(r.cust)+'" style="cursor:pointer" title="클릭: 업체별 상세로 이동">'
+   +'<td class="c">'+(i+1)+'</td>'
+   +'<td class="l"><b>'+esc(r.cust)+'</b></td>'
+   +'<td class="c">'+(r.grade?esc(r.grade):'<span class="ar-muted">-</span>')+(r.status?' <span class="ar-muted">'+esc(r.status)+'</span>':'')+'</td>'
+   +'<td>'+arMoney(r.sales)+'</td>'
+   +'<td>'+arMoney(r.recv)+'</td>'
+   +'<td class="'+(r.gap>0?'ar-neg':(r.gap<0?'ar-pos':''))+'"><b>'+(r.gap>0?'-':(r.gap<0?'+':''))+arMoney(Math.abs(r.gap))+'</b></td>'
+   +'<td class="'+(r.rate<0.5?'ar-neg':'')+'">'+rateTxt+'</td>'
+   +'<td>'+arMoney(r.balance)+'</td>'
+   +'<td class="c">'+(r.cnt?arMoney(r.cnt)+'건':'<span class="ar-muted">0건</span>')+'</td>'
+   +'<td class="c">'+(r.last?esc(r.last):'<span class="ar-muted">-</span>')+'</td></tr>';
+ }).join('')||'<tr><td colspan="10" class="c ar-muted" style="padding:34px">해당 조건의 업체가 없습니다.</td></tr>';
+ var note='<div class="ar-note" style="margin:8px 0 10px;padding:9px 12px;border:1px solid #dbe4ee;border-radius:9px;background:#f8fafc;font-size:12.5px;line-height:1.65">'
+  +'<b>'+esc(D.prevLabel)+' 매출액</b> 과 <b>'+esc(D.curLabel)+' 수금액</b> 을 업체별로 견줍니다. '
+  +'<b>부족액 = 전월매출 − 당월수금</b>, <b>수금률 = 당월수금 ÷ 전월매출</b>입니다. '
+  +'전월 매출이 없는 업체는 비교 대상에서 빠집니다. 수금액은 그 달의 <b>순수금</b>(수금취소·부도 차감)이며, 행을 누르면 업체별 상세로 갑니다.'
+  +'<br><span class="ar-muted">※ 결제조건(외상기간)이 30일이 아닌 업체는 이 비교가 과하게 나쁘게 보일 수 있습니다. 조건별 정확한 판정은 <b>📅 결제일 대비</b>를 함께 보십시오.</span></div>';
+ return arToolbar('<label>기준월 <select id="arPmMonth">'+monthOpts+'</select></label><label>보기 <select id="arPmMode">'+modeOpts+'</select></label>')
+  +'<div class="ar-kpis">'
+  +arKpi(D.prevLabel+' 매출액',arMoney(tSales)+'원','비교 대상 '+arMoney(D.rows.length)+'개 업체','')
+  +arKpi(D.curLabel+' 수금액',arMoney(tRecv)+'원','전월매출 대비 '+arPct(tSales?tRecv/tSales:0,0),'ok')
+  +arKpi('수금 부족액',arMoney(tGap)+'원','부족 업체 '+arMoney(shortRows.length)+'개','warn')
+  +arKpi('당월 수금 0원',arMoney(zeroN)+'개 업체','전월 매출이 있는데 입금 없음','bad')
+  +'</div>'+note
+  +'<div class="ar-tablewrap"><table class="ar-table" style="min-width:1120px"><thead><tr>'
+  +'<th>순위</th><th>업체</th><th>신용등급</th><th>'+esc(D.prevLabel)+' 매출액</th><th>'+esc(D.curLabel)+' 수금액</th>'
+  +'<th>부족액</th><th>수금률</th><th>현재 미수잔액</th><th>수금건수</th><th>최종 수금일</th>'
+  +'</tr></thead><tbody>'+body+'</tbody></table></div>';
+}
+var arContentV673=arContent;arContent=function(model){
+ if(state.ar.tab==='prevmon')return arPrevMonView(model);
+ return arContentV673(model);
+};
+var arBindV673=arBind;arBind=function(model,allModel){
+ arBindV673(model,allModel);
+ if(state.ar.tab!=='prevmon')return;
+ var mm=document.getElementById('arPmMonth'),md=document.getElementById('arPmMode');
+ if(mm)mm.onchange=function(){state.ar.pmMonth=+mm.value||0;if(typeof arSave==='function')arSave();arRender();};
+ if(md)md.onchange=function(){state.ar.pmMode=md.value||'short';if(typeof arSave==='function')arSave();arRender();};
+ document.querySelectorAll('.ar-pm-row').forEach(function(tr){
+  tr.onclick=function(){var c=tr.dataset.cust;if(!c)return;
+   state.ar.selectedCust=c;state.ar.search='';state.ar.prevTab='prevmon';state.ar.tab='detail';arRender();};
+ });
+};
+var arExportV673=arExport;arExport=function(model){
+ if(state.ar.tab!=='prevmon')return arExportV673(model);
+ var D=arPrevMonData(model);
+ var aoa=[[D.prevLabel+' 매출액 대비 '+D.curLabel+' 수금 현황'],
+   ['업체','영업관리','신용등급','신용상태',D.prevLabel+' 매출액',D.curLabel+' 수금액','부족액','수금률','현재 미수잔액','수금건수','최종 수금일']];
+ D.rows.forEach(function(r){aoa.push([r.cust,r.manager,r.grade,r.status,r.sales,r.recv,r.gap,+(r.rate*100).toFixed(1),r.balance,r.cnt,r.last]);});
+ dlXLSX('receivables_'+model.year+'_prev_month_vs_receipt.xlsx','전월매출액대비',aoa);
+};
 var arInstallMenuV165=arInstallMenu;arInstallMenu=function(){arInstallMenuV165();var ver=document.getElementById('appVer');if(ver){ver.textContent='버전 v165 · 미수관리';ver.title='2026-08-13 · 결제일 대비·업체상세 검색·현금/어음 동시표시';}};
 /* v166: 상단 업로드버튼 정리 · 전년이월 직접수정 · 영업관리 독립열 · 결제일 카드필터 */
 var arHeaderV166=arHeader;arHeader=function(model){return arHeaderV166(model)
@@ -15919,7 +16051,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 수량추이 그래프 전체기간 연도 (2026-09-10)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 목표 그래프 기준 통일 (2026-09-10)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
@@ -22526,7 +22658,8 @@ setTimeout(mvInstallMenu,3500);
    ========================================================== */
 (function(){
   var TABS=[['dash','\uD83D\uDCCA','종합현황'],['long','\u23F3','장기미수'],['ratio','\uD83D\uDCC8','월매출 대비'],
-            ['duedate','\uD83D\uDCC5','결제일 대비'],['yoy','\u2696\uFE0F','전년대비'],['bills','\uD83E\uDDFE','어음관리'],
+            ['duedate','\uD83D\uDCC5','결제일 대비'],['prevmon','\uD83D\uDD01','전월 매출액대비'],
+            ['yoy','\u2696\uFE0F','전년대비'],['bills','\uD83E\uDDFE','어음관리'],
             ['credit','\uD83D\uDCB3','신용도·회수위험'],['detail','\uD83C\uDFE2','업체별 상세'],
             ['plan','\uD83D\uDCC5','수금계획'],['focus','\u2B50','집중관리업체']];
   function closeAll(){
@@ -22772,7 +22905,7 @@ function CHIPS(arr){ if(!arr||!arr.length)return '';
 /* ── 화면 색인 : 상단 메뉴에서 자동 수집 + 재고·미수 하위 탭 ── */
 var MVT=[['sum','📋 월말 요약'],['trend','📈 월별 추이'],['mat','🧱 원자재 사용추이'],['turn','🔄 제품 재고소진·회전'],
          ['excl','🏬 업체 전용품 재고현황'],['dead','💀 악성·장기체류'],['items','🔎 품목 상세'],['loc','🏭 보관장소·구분']];
-var ART=[['dash','📊 미수 종합현황'],['long','⏳ 장기미수'],['ratio','📈 월매출 대비'],['yoy','⚖️ 미수 전년대비'],['bills','🧾 어음관리'],
+var ART=[['dash','📊 미수 종합현황'],['long','⏳ 장기미수'],['ratio','📈 월매출 대비'],['prevmon','🔁 전월 매출액대비'],['yoy','⚖️ 미수 전년대비'],['bills','🧾 어음관리'],
          ['credit','💳 신용도·회수위험'],['detail','🏢 업체별 상세'],['plan','📅 수금계획'],['focus','⭐ 집중관리업체'],['exclude','🚫 수금관리 제외업체']];
 var EXTRA=[
   {act:'minv',tab:'sum',label:'월 재고현황',kw:['재고현황','월말재고','재고자산','총재고']},
