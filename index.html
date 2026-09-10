@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v679</title>
-<script>window.APP_BUILD='v679';</script>
+<title>동방파스텍 매출 분석 도구 v680</title>
+<script>window.APP_BUILD='v680';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v679</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v680</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -1845,6 +1845,10 @@ body.fpopen #fpSum{display:block}
       <div class="ctrl-row">
         <div class="field"><label>매출 기준</label>
           <div class="seg" id="basisSeg"><button data-v="공급가" class="on">공급가</button><button data-v="합계액">합계액(부가세포함)</button></div></div>
+        <div class="field"><label>매출 구분 <span class="sub2">(PD커버사업부)</span></label>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">
+            <div class="seg" id="pdIncSeg"><button data-v="0" class="on">PD제외</button><button data-v="1">PD포함</button></div>
+            <span class="sub2" id="pdIncNote"></span></div></div>
         <div class="field"><label>표시 단위</label>
           <div class="seg" id="unitSeg"><button data-v="1" class="on">원</button><button data-v="1000">천원</button><button data-v="1000000">백만원</button></div></div>
         <div class="field"><label>기간 단위 <span class="sub2">(매출순위에만 적용)</span></label>
@@ -1926,7 +1930,9 @@ function uiConfirm(msg){ return new Promise(res=>{
 }); }
 function barColor(f){ f=Math.max(0,Math.min(1,isFinite(f)?f:0)); const R=Math.round(234-14*f),G=Math.round(88-50*f),B=Math.round(12+26*f); return `rgb(${R},${G},${B})`; }
 const COLMAP = { date:['출고일자'], cust:['고객','거래처'], code:['품번'], name:['품명'], spec:['규격'],
-                 qty:['출고수량','수량'], price:['단가'], supply:['공급가'], total:['합계액'], bigo:['비고(내역)','비고','내역','적요'] };
+                 qty:['출고수량','수량'], price:['단가'], supply:['공급가'], total:['합계액'], bigo:['비고(내역)','비고','내역','적요'],
+                 /* v680 : PD커버사업부 출고분을 가려내기 위해 출고창고를 함께 읽습니다. */
+                 wh:['출고창고','창고'] };
 const TODAY=new Date(); TODAY.setHours(0,0,0,0);
 
 let datasets=[];     // [{uid, fileName, sheetName, sheetNames:[], recs:[{d,cust,code,name,spec,qty,supply,total}]}]
@@ -2003,7 +2009,7 @@ function mergePriceSets(localArr, remoteArr){
   (localArr||[]).forEach(add); (remoteArr||[]).forEach(add);
   return [...map.values()].sort((a,b)=>tsOf(b)-tsOf(a));
 }
-async function saveSettings(){ fcSyncActivePlan(); syncExcludedCustMaps(); syncTargetExcludedCustMap(); try{ if(typeof ciBackup==='function')ciBackup(); }catch(_e){} await idbSet('settings',{headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,fcTargetPlans:state.fc.targetPlans,fcActivePlan:state.fc.activePlan,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,workdays:state.workdays,weekly:state.weekly,bep:state.bep,fcNewCusts:state.fc.newCusts,fcNewCustReplacements:state.fc.newCustReplacements,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,gbunOverride:state.gbunOverride,specKindOverride:state.specKindOverride,mixCustomCats:state.mixCustomCats,salesQtyAnalysis:state.salesQtyAnalysis,priceSets:state.priceSets,comp:state.comp,editLog:state.editLog,custProdOverride:state.fc.custProdOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcCustMonthPct:state.fc.custMonthPct,fcProdMonthPct:state.fc.prodMonthPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcActualCutoffMonth:state.fc.actualCutoffMonth,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,monthIssueAt:state.monthIssueAt,fcPctAt:state.fc.pctAt,fcOverrideAt:state.fc.overrideAt,fcAddPctAt:state.fc.addPctAt,syncLog:state.syncLog,retainMemo:state.retainMemo,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,custAddr:state.custAddr,inv:state.inv,pd:state.pd,salesMonthlySync:state.salesMonthlySync,laserMonthlySync:state.laserMonthlySync,purchaseMonthlySync:state.purchaseMonthlySync,mixSalesView:state.mixSalesView,mixSalesMonthly:state.mixSalesMonthly,mixSalesYear:state.mixSalesYear,gsync:state.gsync,_seedV:state._seedV,scrapVendors:state.scrapVendors,scrapVendorOff:state.scrapVendorOff,kvcExclProd:state.kvcExclProd,doorFrame:state.doorFrame,market:state.market,custInfoBak:state.custInfoBak}); gsAutoPush(); }
+async function saveSettings(){ fcSyncActivePlan(); syncExcludedCustMaps(); syncTargetExcludedCustMap(); try{ if(typeof ciBackup==='function')ciBackup(); }catch(_e){} await idbSet('settings',{headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,fcTargetPlans:state.fc.targetPlans,fcActivePlan:state.fc.activePlan,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,workdays:state.workdays,weekly:state.weekly,bep:state.bep,fcNewCusts:state.fc.newCusts,fcNewCustReplacements:state.fc.newCustReplacements,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,gbunOverride:state.gbunOverride,specKindOverride:state.specKindOverride,mixCustomCats:state.mixCustomCats,salesQtyAnalysis:state.salesQtyAnalysis,priceSets:state.priceSets,comp:state.comp,editLog:state.editLog,custProdOverride:state.fc.custProdOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcCustMonthPct:state.fc.custMonthPct,fcProdMonthPct:state.fc.prodMonthPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcActualCutoffMonth:state.fc.actualCutoffMonth,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,monthIssueAt:state.monthIssueAt,fcPctAt:state.fc.pctAt,fcOverrideAt:state.fc.overrideAt,fcAddPctAt:state.fc.addPctAt,syncLog:state.syncLog,retainMemo:state.retainMemo,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,custAddr:state.custAddr,inv:state.inv,pd:state.pd,salesMonthlySync:state.salesMonthlySync,laserMonthlySync:state.laserMonthlySync,purchaseMonthlySync:state.purchaseMonthlySync,mixSalesView:state.mixSalesView,mixSalesMonthly:state.mixSalesMonthly,mixSalesYear:state.mixSalesYear,gsync:state.gsync,_seedV:state._seedV,scrapVendors:state.scrapVendors,scrapVendorOff:state.scrapVendorOff,kvcExclProd:state.kvcExclProd,doorFrame:state.doorFrame,market:state.market,custInfoBak:state.custInfoBak,pdInclude:!!state.pdInclude}); gsAutoPush(); }
 
 /* ---------------- file loading ---------------- */
 const drop=$('#drop');
@@ -2065,6 +2071,7 @@ function normalize(headers,rows){ const c=resolveCols(headers); const out=[];
       code:String(r[c.code]==null?'':r[c.code]).trim(),
       name:String(r[c.name]==null?'(미상)':r[c.name]).trim()||'(미상)',
       spec:String(r[c.spec]==null?'':r[c.spec]).trim(), bigo:(c.bigo>=0?String(r[c.bigo]==null?'':r[c.bigo]).trim():''),
+      wh:(c.wh>=0?String(r[c.wh]==null?'':r[c.wh]).trim():''),
       qty:toNum(r[c.qty]), price:toNum(r[c.price]), supply:toNum(r[c.supply]),
       total: c.total>=0?toNum(r[c.total]):toNum(r[c.supply]) }); }
   return out; }
@@ -2142,11 +2149,36 @@ function salesDupRows(){
 }
 function salesDupItems(dup){var out=[];(dup||salesDupRows()).forEach(function(m){(m.items||[]).forEach(function(x){out.push(x);});});return out;}
 
+/* ══════════════════════════════════════════════════════════
+   v680 · PD커버사업부(PD사업부) 출고분은 기본으로 빼고 봅니다.
+   ERP 출고현황을 사업부 구분 없이 받으면 PD커버 「기성」 매출이 함께 들어와
+   방화문부자재 실적이 갑자기 부풀어 보였습니다(예: 8월 7.6억 → 12.2억).
+   판정은 <출고창고에 'PD'가 들어가는지>로 합니다. 출고창고 열이 없는
+   예전 자료는 품번 PDCOVER… 또는 고객 'PD회계입고'로 보조 판정합니다.
+   상단 '매출 구분' 버튼에서 [PD포함]을 누르면 합쳐서 볼 수 있습니다.
+   ══════════════════════════════════════════════════════════ */
+function isPdRecV680(r){
+  try{
+    var wh=String((r&&r.wh)||'').trim();
+    if(wh)return /PD/i.test(wh);
+    var cd=String((r&&r.code)||'').toUpperCase();
+    if(cd.indexOf('PDCOVER')===0)return true;
+    if(String((r&&r.cust)||'').indexOf('PD회계입고')>=0)return true;
+  }catch(_e){}
+  return false;
+}
+var PD_EXCL_V680={n:0,amt:0,hasWh:false};
 function rebuildCUR(){ CUR=[];
   const _dupPlan=salesDupPlan();
-  datasets.forEach(function(ds,di){ (ds.recs||[]).forEach(function(r){ if(salesDupShouldSkip(_dupPlan,ds,di,r))return; const [Y,M,D]=r.d.split('-').map(Number); const d=new Date(Y,M-1,D);
+  const _pdOn=!!state.pdInclude; PD_EXCL_V680={n:0,amt:0,hasWh:false};
+  datasets.forEach(function(ds,di){ (ds.recs||[]).forEach(function(r){ if(salesDupShouldSkip(_dupPlan,ds,di,r))return;
+    if(r&&r.wh)PD_EXCL_V680.hasWh=true;
+    if(isPdRecV680(r)){ PD_EXCL_V680.n++; PD_EXCL_V680.amt+=(+r.supply||0); if(!_pdOn)return; }
+    const [Y,M,D]=r.d.split('-').map(Number); const d=new Date(Y,M-1,D);
     CUR.push({ d, ym:`${Y}-${String(M).padStart(2,'0')}`, y:String(Y), wk:weekKey(d), half:`${Y}-H${M<=6?1:2}`, q:`${Y}-Q${Math.ceil(M/3)}`,
-      cust:custAlias(r.cust), code:r.code, name:r.name, spec:r.spec, bigo:r.bigo||'', qty:r.qty, price:r.price||0, supply:r.supply, total:r.total }); }); }); }
+      cust:custAlias(r.cust), code:r.code, name:r.name, spec:r.spec, bigo:r.bigo||'', wh:r.wh||'', pd:isPdRecV680(r),
+      qty:r.qty, price:r.price||0, supply:r.supply, total:r.total }); }); });
+  try{ if(typeof pdSegSyncV680==='function')pdSegSyncV680(); }catch(_e){} }
 
 /* v368: 저장된 데이터가 복원될 때까지 '파일 선택' 화면을 감춰 두고, 복원이 끝나면 바로 메인 화면을 보여준다. */
 function bootDone(){ try{ const bw=document.getElementById('bootWait'); if(bw)bw.style.display='none'; const dp=document.getElementById('drop'); if(dp&&(typeof CUR==='undefined'||!CUR.length))dp.classList.remove('hidden'); }catch(_e){} }
@@ -2270,6 +2302,22 @@ function buildPeriodOptions(){
 
 /* ---------------- controls ---------------- */
 segBind('#basisSeg',v=>{state.basis=v;buildSummary();rerun();});
+/* v680 : PD매출 제외/포함 — 원자료를 다시 펼쳐 모든 화면에 한 번에 반영합니다. */
+function pdSegSyncV680(){
+  try{
+    const on=!!state.pdInclude;
+    document.querySelectorAll('#pdIncSeg button').forEach(function(b){ b.classList.toggle('on', (b.dataset.v==='1')===on); });
+    const el=document.getElementById('pdIncNote');
+    if(el){
+      const E=PD_EXCL_V680||{n:0,amt:0};
+      if(!E.n)el.textContent='자료에 PD사업부 출고분 없음';
+      else el.innerHTML=on
+        ? '<b style="color:#b45309">PD 포함 중</b> · PD '+won(Math.round(E.amt))+'원('+won(E.n)+'건)이 합산됩니다'
+        : 'PD사업부 <b>'+won(Math.round(E.amt))+'원</b>('+won(E.n)+'건) 제외 중';
+    }
+  }catch(_e){}
+}
+segBind('#pdIncSeg',v=>{ state.pdInclude=(v==='1'); if(typeof saveSettings==='function')saveSettings(); afterDataChanged(); });
 segBind('#unitSeg',v=>{state.unit=Number(v);rerun();});
 segBind('#periodSeg',v=>{state.period=v;buildPeriodOptions();buildSummary();rerun();});
 $('#periodSel').addEventListener('change',e=>{state.periodKey=e.target.value;buildSummary();rerun();});
@@ -11598,6 +11646,7 @@ function exportCSV(){
 (async function(){
   const st=await idbGet('settings');
   if(st){ if(st.headcount){state.headcount=st.headcount;} if(st.headMonthly)state.headMonthly=st.headMonthly; if(st.headYearDefault)state.headYearDefault=st.headYearDefault; if(st.fcPctAt)state.fc.pctAt=st.fcPctAt; if(st.fcOverrideAt)state.fc.overrideAt=st.fcOverrideAt; if(st.fcAddPctAt)state.fc.addPctAt=st.fcAddPctAt; if(st.monthIssueAt)state.monthIssueAt=st.monthIssueAt; if(st.fcPct)state.fc.pct=st.fcPct; if(st.fcOverride)state.fc.override=st.fcOverride; if(st.fcAddPct)state.fc.addPct=st.fcAddPct; if(st.cmgrPrimary)state.cmgrPrimary=st.cmgrPrimary; if(st.cmgrKey)state.cmgrKey=st.cmgrKey; if(st.mgrOverride)state.mgrOverride=st.mgrOverride; if(st.workdays)state.workdays=st.workdays; if(st.weekly)state.weekly={...state.weekly,...st.weekly,notes:{...(state.weekly.notes||{}),...(st.weekly.notes||{})},issues:{...(state.weekly.issues||{}),...(st.weekly.issues||{})}}; if(st.bep!=null)state.bep=st.bep; if(st.fcNewCusts)state.fc.newCusts=st.fcNewCusts; if(st.clsOverride)state.clsOverride=st.clsOverride; if(st.gradeOverride)state.gradeOverride=st.gradeOverride; if(st.gbunOverride)state.gbunOverride=st.gbunOverride; if(st.mixCustomCats)state.mixCustomCats=Array.isArray(st.mixCustomCats)?st.mixCustomCats:[]; if(st.salesQtyAnalysis)state.salesQtyAnalysis={...(state.salesQtyAnalysis||{}),...st.salesQtyAnalysis,sort:{...((state.salesQtyAnalysis||{}).sort||{}),...((st.salesQtyAnalysis||{}).sort||{})}}; if(st.priceSets)state.priceSets=st.priceSets; if(st.comp)state.comp=st.comp; if(st.editLog)state.editLog=st.editLog; if(st.custProdOverride)state.fc.custProdOverride=st.custProdOverride; if(st.fcProdOverride)state.fc.prodOverride=st.fcProdOverride; if(st.fcProdAddPct)state.fc.prodAddPct=st.fcProdAddPct; if(st.fcNewProds)state.fc.newProds=st.fcNewProds; if(st.fcNewLines)state.fc.newLines=st.fcNewLines; if(st.fcCustMemo)state.fc.custMemo=st.fcCustMemo; if(st.fcProdMemo)state.fc.prodMemo=st.fcProdMemo; if(st.fcNotesHtml!=null)state.fc.notesHtml=st.fcNotesHtml; if(st.fcNotesSales!=null)state.fc.notesSales=st.fcNotesSales; if(st.fcNotesTech!=null)state.fc.notesTech=st.fcNotesTech; if(st.fcNotesMeta)state.fc.notesMeta=st.fcNotesMeta; if(st.fcExclCust)state.fc.exclCust=st.fcExclCust; if(st.fcTargetExclCust)state.fc.targetExclCust=st.fcTargetExclCust; if(st.fcExclProd)state.fc.exclProd=st.fcExclProd; if(st.fcShowExclRows!=null)state.fc.showExclRows=!!st.fcShowExclRows; if(st.fcActualCutoffMonth!=null)state.fc.actualCutoffMonth=st.fcActualCutoffMonth; if(st.fcAnnualHist)state.fc.annualHist={...state.fc.annualHist,...st.fcAnnualHist}; if(st.inv)state.inv={...state.inv,...st.inv}; if(st.syncLog)state.syncLog=st.syncLog; if(st.monthIssue)state.monthIssue=st.monthIssue; if(st.pd)state.pd={...state.pd,...st.pd}; if(st.kvcExclProd)state.kvcExclProd=st.kvcExclProd; if(st.doorFrame&&typeof st.doorFrame==='object'){state.doorFrame={...state.doorFrame,...st.doorFrame,map:{...(state.doorFrame.map||{}),...(st.doorFrame.map||{})}};dfInvalidateGroupCache();} if(st.retainMemo)state.retainMemo=st.retainMemo; if(st.retainMemoAt)state.retainMemoAt=st.retainMemoAt; if(st.retainExcl)state.retainExcl=st.retainExcl; if(st.retainVisit)state.retainVisit=st.retainVisit; if(st.cmgrExcl)state.cmgrExcl=st.cmgrExcl; if(st.elogSeenTs)state.elogSeenTs=st.elogSeenTs; if(st.cross)state.cross={...state.cross,...st.cross}; if(st.custInfoBak)state.custInfoBak=st.custInfoBak; if(st.custInfo)state.custInfo=dedupContacts(st.custInfo); if(st.custAddr)state.custAddr=st.custAddr; if(st._seedV)state._seedV=st._seedV; if(st.gsync)state.gsync=st.gsync; if(st.market)state.market={...(state.market||{}),...st.market,d:{...((state.market||{}).d||{}),...(st.market.d||{})}}; } syncExcludedCustMaps(); syncTargetExcludedCustMap(); applySeedContacts(); try{ var _rs=ciRestoreAll(); if((_rs.bak+_rs.seed+_rs.km)>0){ if(typeof logEdit==='function')logEdit('담당정보','자동복구 · 백업 '+_rs.bak+'개사 · 기본자료 '+_rs.seed+'개사 · 키맨 '+_rs.km+'명'); if(typeof saveSettings==='function')saveSettings(); } }catch(_e){}
+  if(st&&st.pdInclude!=null)state.pdInclude=!!st.pdInclude;   /* v680 */
   if(st&&st.fcNewCustReplacements)state.fc.newCustReplacements=fcPlanClone(st.fcNewCustReplacements);
   if(st&&st.fcTargetPlans)state.fc.targetPlans=fcPlanClone(st.fcTargetPlans);
   if(st&&Array.isArray(st.clsCustomCats)){ state.clsCustomCats=st.clsCustomCats.map(function(x){return String(x||'').trim();}).filter(Boolean); clsApplyCustomCats(); }
@@ -16229,7 +16278,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 목표금액 전 화면 일원화 (2026-09-10)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · PD매출 기본 제외·포함 옵션 (2026-09-11)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
