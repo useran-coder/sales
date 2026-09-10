@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v671</title>
-<script>window.APP_BUILD='v671';</script>
+<title>동방파스텍 매출 분석 도구 v672</title>
+<script>window.APP_BUILD='v672';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v671</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v672</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -7751,13 +7751,18 @@ function priceHistory(cust, rows, label, back){
   const histKey=rows.length?((rows[0].code||'(미상)')+'│'+(rows[0].spec||'')):'';
   if(state.price.histUseKey!==histKey){state.price.histUseKey=histKey;state.price.histUseOpen=false;state.price.histUseCust=null;state.price.histUseSort={key:'last',dir:'desc'};state.price.phQtyYear=null;}
   /* v671 : 출고일 기준 수량 추이 그래프 + 연도 탭 */
-  const _qYrs=[...new Set((rows||[]).map(r=>(r.d instanceof Date)?r.d.getFullYear():0).filter(Boolean))].sort((a,b)=>b-a);
+  /* v672 : 기간설정에 잘리지 않도록, 이 업체·이 제품의 전체 출고 이력을 그래프 원본으로 씁니다. */
+  const _qBase=(rows||[]).filter(r=>r.d instanceof Date);
+  const _qFull=histKey?(CUR||[]).filter(r=>(r.d instanceof Date)&&((r.code||'(미상)')+'│'+(r.spec||''))===histKey&&r.cust===cust):[];
+  const _qSrc=(_qFull.length>=_qBase.length)?_qFull:_qBase;
+  const _qWider=_qSrc.length>_qBase.length;
+  const _qYrs=[...new Set(_qSrc.map(r=>r.d.getFullYear()))].sort((a,b)=>b-a);
   let _qYr=+state.price.phQtyYear; if(!_qYr||_qYrs.indexOf(_qYr)<0)_qYr=_qYrs.length?_qYrs[0]:0;
   state.price.phQtyYear=_qYr||null;
   const _qTabs=_qYrs.length?`<div class="ctrlbar" style="flex-wrap:wrap;gap:6px"><b style="font-size:12px">그래프 연도</b>`
     +_qYrs.map(y2=>`<button type="button" class="btn${y2===_qYr?'':' ghost'} phQtyYearBtn" data-y="${y2}" style="font-size:12px;padding:5px 12px${y2===_qYr?';background:#1e3a5f;color:#fff;border-color:#1e3a5f':''}">${y2}년</button>`).join('')
-    +`<span class="sub2" style="margin-left:8px">연도를 고르면 위 그래프만 바뀝니다 · 아래 표는 전체 이력입니다</span></div>`:'';
-  const _qChart=_qYr?phQtyChartV671(cust,label,rows,_qYr)+_qTabs:'';
+    +`<span class="sub2" style="margin-left:8px">연도를 고르면 위 그래프만 바뀝니다 · 그래프는 <b>이 업체·이 제품의 전체 출고 이력</b>(${won(_qSrc.length)}건${_qWider?` · 기간설정 밖 ${won(_qSrc.length-_qBase.length)}건 포함`:''}) 기준이고, 아래 표는 <b>설정한 기간</b> 기준입니다</span></div>`:'';
+  const _qChart=_qYr?phQtyChartV671(cust,label,_qSrc,_qYr)+_qTabs:'';
   const histPm=histKey?lastPriceByProdCust(priceRows()).get(histKey):null;
   const histOthers=histPm?[...histPm.entries()].filter(([c,v])=>c!==cust&&v.lastPrice>0):[];
   let histMax=0,histMin=0,histMaxC='',histMinC='';
@@ -15914,7 +15919,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 단가이력 출고수량 추이 그래프 (2026-09-10)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 수량추이 그래프 전체기간 연도 (2026-09-10)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
