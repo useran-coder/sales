@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v668</title>
-<script>window.APP_BUILD='v668';</script>
+<title>동방파스텍 매출 분석 도구 v670</title>
+<script>window.APP_BUILD='v670';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v668</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v670</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -7533,12 +7533,21 @@ function custMonthChartV665(cust,yr,rows,yrsOpt){
     try{ if(typeof qtyaKindOf==='function'&&qtyaKindOf(r)==='non')nonAmt+=a; }catch(_e){}
   });
   var vals=mv.slice(1), tot=vals.reduce(function(a,v){return a+v;},0);
-  var mx=Math.max.apply(null,vals.concat([0])), mn=Math.min.apply(null,vals);
-  var pos=vals.filter(function(v){return v>0;});
-  var mnPos=pos.length?Math.min.apply(null,pos):0;
-  var nMon=pos.length||12, avg=tot/(nMon||1);
-  var iMax=vals.indexOf(mx), iMin=vals.indexOf(mnPos);
-  var top=Math.max(mx,avg)||1;
+  /* v669 : 최고·최저·평균은 <b>0원인 달</b>과 <b>진행 중인 이번 달</b>을 빼고 계산합니다.
+     이번 달은 아직 매출이 다 잡히지 않아 최저·평균을 왜곡하기 때문입니다. */
+  /* v670 : 당월은 늘 제외하고, <b>당월 10일 전</b>이면 전월 마감이 끝나지 않았으므로 전월도 제외합니다.
+     10일이 지나면 전월은 마감된 것으로 보고 계산에 넣습니다. */
+  var _now=new Date(), _sameY=(+yr===_now.getFullYear());
+  var curM=_sameY?(_now.getMonth()+1):0, prevM=0;
+  if(_sameY&&_now.getDate()<10&&curM>1)prevM=curM-1;
+  var useIdx=[]; vals.forEach(function(v,i){ var m=i+1; if(v>0&&m!==curM&&m!==prevM)useIdx.push(i); });
+  var useVals=useIdx.map(function(i){return vals[i];});
+  var mx=useVals.length?Math.max.apply(null,useVals):0;
+  var mnPos=useVals.length?Math.min.apply(null,useVals):0;
+  var nMon=useVals.length, avg=nMon?useVals.reduce(function(a,v){return a+v;},0)/nMon:0;
+  var iMax=useVals.length?useIdx[useVals.indexOf(mx)]:-1;
+  var iMin=useVals.length?useIdx[useVals.indexOf(mnPos)]:-1;
+  var top=Math.max(mx,avg,Math.max.apply(null,vals.concat([0])))||1;
   var W=1180,H=320,L=78,Rr=96,T=40,B=46,iw=W-L-Rr,ih=H-T-B;
   var y=function(v){ return T+ih-(v/top)*ih; };
   var x=function(i){ return L+(iw/11)*i; };
@@ -7557,12 +7566,13 @@ function custMonthChartV665(cust,yr,rows,yrsOpt){
     var isMax=(i===iMax&&mx>0), isMin=(i===iMin&&mnPos>0&&iMin!==iMax);
     var col=isMax?'#dc2626':isMin?'#0d9488':'#2563eb';
     g+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="'+(isMax||isMin?6:4)+'" fill="'+col+'"'+(isMax||isMin?' stroke="#fff" stroke-width="2"':'')+'/>';
+    /* 금액은 늘 접점 위, 최고·최저 표시는 접점 <b>아래</b>에 답니다. */
+    g+='<text x="'+x(i)+'" y="'+(y(v)-11)+'" text-anchor="middle" font-size="11" font-weight="800" fill="'+(isMax||isMin?col:'#1e293b')+'" stroke="#fff" stroke-width="3" paint-order="stroke">'+disp(v)+'</text>';
     if(isMax||isMin){
-      var lab=(isMax?'최고 ':'최저 ')+disp(v), bw=Math.max(64,lab.length*7.6+14);
-      g+='<rect x="'+(x(i)-bw/2)+'" y="'+(y(v)-38)+'" width="'+bw+'" height="19" rx="9" fill="'+(isMax?'#fef2f2':'#f0fdfa')+'" stroke="'+col+'"/>'
-        +'<text x="'+x(i)+'" y="'+(y(v)-24)+'" text-anchor="middle" font-size="11" font-weight="900" fill="'+col+'">'+lab+'</text>';
-    } else {
-      g+='<text x="'+x(i)+'" y="'+(y(v)-11)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#1e293b" stroke="#fff" stroke-width="3" paint-order="stroke">'+disp(v)+'</text>';
+      var lab=(isMax?'최고':'최저'), bw=44;
+      var by=Math.min(T+ih-4,y(v)+10);
+      g+='<rect x="'+(x(i)-bw/2)+'" y="'+by+'" width="'+bw+'" height="17" rx="8" fill="'+(isMax?'#fef2f2':'#f0fdfa')+'" stroke="'+col+'"/>'
+        +'<text x="'+x(i)+'" y="'+(by+12)+'" text-anchor="middle" font-size="10.5" font-weight="900" fill="'+col+'">'+lab+'</text>';
     }
     g+='<text x="'+x(i)+'" y="'+(T+ih+20)+'" text-anchor="middle" font-size="11" fill="'+(isMax?'#dc2626':isMin?'#0d9488':'#475569')+'" font-weight="'+(isMax||isMin?'800':'400')+'">'+(i+1)+'월</text>';
   });
@@ -7577,7 +7587,7 @@ function custMonthChartV665(cust,yr,rows,yrsOpt){
     +'<span style="display:inline-flex;align-items:center;gap:5px;margin-left:4px">'+yb+'</span>'
     +'<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;font-size:11.5px;font-weight:800;color:#c2410c" title="레이저 비규격 등 비규격 품목이 그 해 매출에서 차지하는 비중입니다">📐 비규격 비중 '+nonPct.toFixed(1)+'%</span>'
     +'<span class="sub2" style="color:#c2410c">'+disp(nonAmt)+' / '+disp(allAmt)+'</span>'
-    +'<span class="sub2" style="margin-left:auto">합계 '+disp(tot)+' · <b style="color:#b45309">평균 '+disp(avg)+'</b>(거래월 '+nMon+'개월) · <b style="color:#dc2626">최고 '+disp(mx)+'</b>('+(iMax+1)+'월) · <b style="color:#0d9488">최저 '+disp(mnPos)+'</b>('+(iMin+1)+'월) · 출고 '+won(cnt.reduce(function(a,v){return a+v;},0))+'건</span></div>'
+    +'<span class="sub2" style="margin-left:auto">합계 '+disp(tot)+' · <b style="color:#b45309">평균 '+disp(avg)+'</b>(거래월 '+nMon+'개월) · <b style="color:#dc2626">최고 '+disp(mx)+'</b>'+(iMax>=0?('('+(iMax+1)+'월)'):'')+' · <b style="color:#0d9488">최저 '+disp(mnPos)+'</b>'+(iMin>=0?('('+(iMin+1)+'월)'):'')+' · 출고 '+won(cnt.reduce(function(a,v){return a+v;},0))+'건'+(curM?(' · <b style="color:#94a3b8">'+curM+'월(진행 중)'+(prevM?('·'+prevM+'월(마감 전)'):'')+'·0원 달 제외</b>'):' · <b style="color:#94a3b8">0원 달 제외</b>')+'</span></div>'
     +g+'</div>';
 }
 /* v665 : 업체 거래내역 — 연도 탭 · 일자별 원본 행(비고 포함) */
@@ -10113,8 +10123,62 @@ function fcFastForecast(){
   if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>requestAnimationFrame(run));
   else setTimeout(run,0);
 }
-function fcRenderIfDone(){ setTimeout(()=>{ const a=document.activeElement; if(a&&a.classList&&['fcov','fcadd','fcpov','fcpadd','fcmemo','fcpmemo','fc-cust-month-pct','fc-prod-month-pct'].some(c=>a.classList.contains(c)))return; if(typeof saveSettings==='function')saveSettings(); forecast(); },80); }
-function fcScheduleRender(){ clearTimeout(_fcReT); _fcReT=setTimeout(()=>{ const a=document.activeElement; let info=null; if(a&&a.classList){ const cl=['fcov','fcadd','fcpov','fcpadd','fc-cust-month-pct','fc-prod-month-pct'].find(x=>a.classList.contains(x)); if(cl)info={cl,key:a.dataset.c||a.dataset.pk||'',mon:a.dataset.m||'',pos:(a.selectionStart!=null?a.selectionStart:null)}; } if(typeof saveSettings==='function')saveSettings(); forecast(); if(info){ const attr=(info.cl==='fcov'||info.cl==='fcadd'||info.cl==='fc-cust-month-pct')?'data-c':'data-pk'; const k=(window.CSS&&CSS.escape)?CSS.escape(info.key):info.key; let sel='#result .'+info.cl+'['+attr+'="'+k+'"]'; if(info.mon)sel+='[data-m="'+info.mon+'"]'; const ne=document.querySelector(sel); if(ne){ ne.focus(); try{ if(info.pos!=null)ne.setSelectionRange(info.pos,info.pos); }catch(_){} } } }, 500); }
+/* v670 : 조정%·추가%·월별% 입력이 한 번에 반영되도록 고쳤습니다.
+   예전에는 <b>입력칸에 커서가 남아 있으면 다시 그리기를 건너뛰었기 때문에</b>
+   같은 값을 두세 번 넣어야 표에 반영되는 것처럼 보였습니다.
+   이제는 건너뛰지 않고 다시 그린 뒤, <b>커서 위치와 화면 스크롤을 그대로 되돌려</b>
+   입력하던 자리에 그대로 머물게 합니다. */
+const FC_EDIT_CLS=['fcov','fcadd','fcpov','fcpadd','fcmemo','fcpmemo','fc-cust-month-pct','fc-prod-month-pct'];
+function fcRerenderKeepFocus(){
+  let info=null;
+  try{ const a=document.activeElement;
+    if(a&&a.classList){ const cl=FC_EDIT_CLS.find(x=>a.classList.contains(x));
+      if(cl)info={cl,key:a.dataset.c||a.dataset.pk||'',mon:a.dataset.m||'',
+        pos:(a.selectionStart!=null?a.selectionStart:null),end:(a.selectionEnd!=null?a.selectionEnd:null)};
+    }
+  }catch(_e){}
+  let sy=0, wraps=[];
+  try{ sy=window.scrollY||document.documentElement.scrollTop||0;
+    wraps=[...document.querySelectorAll('#result .tablewrap')].map(w=>({t:w.scrollTop,l:w.scrollLeft}));
+  }catch(_e){}
+  if(typeof saveSettings==='function')saveSettings();
+  forecast();
+  /* v670 : 표가 다시 그려진 뒤에도 (월별표는 뒤늦게 만들어집니다) 화면이 튀지 않도록
+     잠깐 동안 스크롤 위치를 여러 번 되돌립니다. 그 사이 사용자가 직접 스크롤하면 즉시 멈춥니다. */
+  try{
+    let _stop=false;
+    const _off=()=>{ _stop=true;
+      window.removeEventListener('wheel',_off); window.removeEventListener('touchmove',_off);
+      window.removeEventListener('keydown',_kd,true); };
+    const _kd=e=>{ if(['PageUp','PageDown','Home','End'].includes(e.key))_off(); };
+    window.addEventListener('wheel',_off,{passive:true}); window.addEventListener('touchmove',_off,{passive:true});
+    window.addEventListener('keydown',_kd,true);
+    const _restore=()=>{ if(_stop)return;
+      try{ const nw=[...document.querySelectorAll('#result .tablewrap')];
+        nw.forEach((w,i)=>{ const st=wraps[i]; if(st){ if(w.scrollTop!==st.t)w.scrollTop=st.t; if(w.scrollLeft!==st.l)w.scrollLeft=st.l; } });
+        if(Math.abs((window.scrollY||0)-sy)>1)window.scrollTo(0,sy);
+      }catch(_e2){}
+    };
+    _restore();
+    requestAnimationFrame(()=>{ _restore(); requestAnimationFrame(_restore); });
+    [70,180,350,600].forEach(ms=>setTimeout(_restore,ms));
+    setTimeout(_off,700);
+  }catch(_e){}
+  if(info){
+    try{
+      const attr=(info.cl==='fcov'||info.cl==='fcadd'||info.cl==='fcmemo'||info.cl==='fc-cust-month-pct')?'data-c':'data-pk';
+      const k=(window.CSS&&CSS.escape)?CSS.escape(info.key):info.key;
+      let sel='#result .'+info.cl+'['+attr+'="'+k+'"]';
+      if(info.mon)sel+='[data-m="'+info.mon+'"]';
+      const ne=document.querySelector(sel);
+      if(ne){ ne.focus({preventScroll:true});
+        try{ if(info.pos!=null)ne.setSelectionRange(info.pos,info.end!=null?info.end:info.pos); }catch(_){}
+      }
+    }catch(_e){}
+  }
+}
+function fcRenderIfDone(){ clearTimeout(_fcReT); _fcReT=setTimeout(fcRerenderKeepFocus,120); }
+function fcScheduleRender(){ clearTimeout(_fcReT); _fcReT=setTimeout(fcRerenderKeepFocus,320); }
 /* v556: 매출 목표 화면 재진입/수정 때 원본 전체를 반복 집계하지 않도록 기본 집계를 캐시합니다. */
 let _fcBaseAggCache=null;
 function fcBaseAgg(PY,CY){
@@ -15792,7 +15856,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 그래프 최고·최저·평균·연도 (2026-09-09)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · % 입력 즉시 반영·화면 고정 (2026-09-10)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
