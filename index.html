@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v680</title>
-<script>window.APP_BUILD='v680';</script>
+<title>동방파스텍 매출 분석 도구 v683</title>
+<script>window.APP_BUILD='v683';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v680</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v683</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -14545,35 +14545,47 @@ function arPrevMonData(model){
   var a=arN(r.amount); recv[c]=(recv[c]||0)+a;
   if(a>0){ cnt[c]=(cnt[c]||0)+1; if(!last[c]||d>last[c])last[c]=d; }
  });
+ /* v683 : 전월 매출의 약정 결제일(전월 말일 + 결제조건 일수)과 도래 여부를 함께 냅니다. */
+ var asOf=state.ar.asOf||arLatestDate()||model.end;
+ var prevEnd=arMonthEnd(py,pm);
  var rows=[];
  allowed.forEach(function(o,c){
   var sv=Math.round(sales[c]||0);
   if(sv<=0)return;                       /* 전월 매출이 없으면 비교 대상이 아님 */
   var gv=Math.round(recv[c]||0);
+  var raw=(gradeRec(c)||{}).pay, txt=(raw==null?'':String(raw).trim());
+  var hasPay=/^\d+$/.test(txt), payDays=hasPay?Math.max(0,+txt):0;
+  var due=hasPay?arAddDays(prevEnd,payDays):'';
+  var arrived=hasPay?(due<=asOf):true;   /* 결제조건 미지정은 판단할 수 없어 그대로 둡니다 */
   rows.push({cust:c,manager:o.manager||'',grade:o.grade||'',status:o.status||'',
    sales:sv,recv:gv,gap:sv-gv,rate:sv?gv/sv:0,balance:arN(o.balance),
-   last:last[c]||'',cnt:cnt[c]||0});
+   last:last[c]||'',cnt:cnt[c]||0,
+   payDays:payDays,hasPay:hasPay,due:due,arrived:arrived});
  });
  rows.sort(function(a,b){return b.gap-a.gap||b.sales-a.sales||a.cust.localeCompare(b.cust,'ko');});
  return {rows:rows,mo:mo,py:py,pm:pm,pref:pref,
-  prevLabel:(py!==year?py+'년 ':'')+pm+'월', curLabel:mo+'월'};
+  prevLabel:(py!==year?py+'년 ':'')+pm+'월', curLabel:mo+'월', asOf:asOf, prevEnd:prevEnd};
 }
 function arPrevMonView(model){
  var D=arPrevMonData(model), mode=state.ar.pmMode||'short';
- var list=D.rows.filter(function(r){
+ /* v683 : 결제일이 아직 오지 않은 업체는 기본으로 감춥니다(‘미도래 포함’을 고르면 전부 보입니다). */
+ var withFuture=(mode==='future');
+ var base=withFuture?D.rows:D.rows.filter(function(r){return r.arrived;});
+ var futureN=D.rows.length-D.rows.filter(function(r){return r.arrived;}).length;
+ var list=base.filter(function(r){
   if(mode==='zero')return r.recv<=0;
-  if(mode==='all')return true;
+  if(mode==='all'||mode==='future')return true;
   if(mode==='half')return r.rate<0.5;
   return r.gap>0;
  });
- var tSales=D.rows.reduce(function(a,r){return a+r.sales;},0),
-     tRecv=D.rows.reduce(function(a,r){return a+r.recv;},0),
-     shortRows=D.rows.filter(function(r){return r.gap>0;}),
+ var tSales=base.reduce(function(a,r){return a+r.sales;},0),
+     tRecv=base.reduce(function(a,r){return a+r.recv;},0),
+     shortRows=base.filter(function(r){return r.gap>0;}),
      tGap=shortRows.reduce(function(a,r){return a+r.gap;},0),
-     zeroN=D.rows.filter(function(r){return r.recv<=0;}).length;
+     zeroN=base.filter(function(r){return r.recv<=0;}).length;
  var monthOpts=Array.from({length:12},function(_,i){var m=i+1;
    return'<option value="'+m+'" '+(D.mo===m?'selected':'')+'>'+m+'월 수금 기준</option>';}).join('');
- var modeOpts=[['short','수금 부족 업체만'],['half','수금률 50% 미만'],['zero','당월 수금 0원'],['all','전체 업체']]
+ var modeOpts=[['short','수금 부족 업체만'],['half','수금률 50% 미만'],['zero','당월 수금 0원'],['all','전체 업체'],['future','미도래 포함 전체']]
    .map(function(x){return'<option value="'+x[0]+'" '+(mode===x[0]?'selected':'')+'>'+x[1]+'</option>';}).join('');
  var body=list.map(function(r,i){
   var cls=r.recv<=0?'bad':(r.rate<0.5?'late':(r.gap>0?'future':'ok'));
@@ -14582,6 +14594,10 @@ function arPrevMonView(model){
    +'<td class="c">'+(i+1)+'</td>'
    +'<td class="l"><b>'+esc(r.cust)+'</b></td>'
    +'<td class="c">'+(r.grade?esc(r.grade):'<span class="ar-muted">-</span>')+(r.status?' <span class="ar-muted">'+esc(r.status)+'</span>':'')+'</td>'
+   +'<td class="c">'+(r.hasPay
+        ?(esc(String(r.due).slice(5).replace('-','/'))+' <span class="ar-muted">'+r.payDays+'일</span>'
+          +(r.arrived?'':' <span class="ar-risk" style="background:#e0f2fe;color:#0369a1">미도래</span>'))
+        :'<span class="ar-muted">미지정</span>')+'</td>'
    +'<td>'+arMoney(r.sales)+'</td>'
    +'<td>'+arMoney(r.recv)+'</td>'
    +'<td class="'+(r.gap>0?'ar-neg':(r.gap<0?'ar-pos':''))+'"><b>'+(r.gap>0?'-':(r.gap<0?'+':''))+arMoney(Math.abs(r.gap))+'</b></td>'
@@ -14589,12 +14605,15 @@ function arPrevMonView(model){
    +'<td>'+arMoney(r.balance)+'</td>'
    +'<td class="c">'+(r.cnt?arMoney(r.cnt)+'건':'<span class="ar-muted">0건</span>')+'</td>'
    +'<td class="c">'+(r.last?esc(r.last):'<span class="ar-muted">-</span>')+'</td></tr>';
- }).join('')||'<tr><td colspan="10" class="c ar-muted" style="padding:34px">해당 조건의 업체가 없습니다.</td></tr>';
+ }).join('')||'<tr><td colspan="11" class="c ar-muted" style="padding:34px">해당 조건의 업체가 없습니다.</td></tr>';
  var note='<div class="ar-note" style="margin:8px 0 10px;padding:9px 12px;border:1px solid #dbe4ee;border-radius:9px;background:#f8fafc;font-size:12.5px;line-height:1.65">'
   +'<b>'+esc(D.prevLabel)+' 매출액</b> 과 <b>'+esc(D.curLabel)+' 수금액</b> 을 업체별로 견줍니다. '
   +'<b>부족액 = 전월매출 − 당월수금</b>, <b>수금률 = 당월수금 ÷ 전월매출</b>입니다. '
   +'전월 매출이 없는 업체는 비교 대상에서 빠집니다. 수금액은 그 달의 <b>순수금</b>(수금취소·부도 차감)이며, 행을 누르면 업체별 상세로 갑니다.'
-  +'<br><span class="ar-muted">※ 결제조건(외상기간)이 30일이 아닌 업체는 이 비교가 과하게 나쁘게 보일 수 있습니다. 조건별 정확한 판정은 <b>📅 결제일 대비</b>를 함께 보십시오.</span></div>';
+  +'<br><b>결제일</b>은 <b>'+esc(D.prevEnd)+'(전월 말일) + 결제조건 일수</b>이고, <b>기준일 '+esc(D.asOf)+' 까지 결제일이 지난 업체만</b> 표에 남깁니다'
+  +(futureN?(' — 아직 결제일이 오지 않은 <b>'+arMoney(futureN)+'개사</b>는 감췄습니다(보기에서 <b>미도래 포함 전체</b>를 고르면 나옵니다)'):'')
+  +'. 결제조건이 <b>미지정</b>인 업체는 판단할 수 없어 그대로 표시합니다.'
+  +'<br><span class="ar-muted">※ 조건별 더 정확한 판정은 <b>📅 결제일 대비</b>를 함께 보십시오.</span></div>';
  return arToolbar('<label>기준월 <select id="arPmMonth">'+monthOpts+'</select></label><label>보기 <select id="arPmMode">'+modeOpts+'</select></label>')
   +'<div class="ar-kpis">'
   +arKpi(D.prevLabel+' 매출액',arMoney(tSales)+'원','비교 대상 '+arMoney(D.rows.length)+'개 업체','')
@@ -14602,8 +14621,9 @@ function arPrevMonView(model){
   +arKpi('수금 부족액',arMoney(tGap)+'원','부족 업체 '+arMoney(shortRows.length)+'개','warn')
   +arKpi('당월 수금 0원',arMoney(zeroN)+'개 업체','전월 매출이 있는데 입금 없음','bad')
   +'</div>'+note
-  +'<div class="ar-tablewrap"><table class="ar-table" style="min-width:1120px"><thead><tr>'
-  +'<th>순위</th><th>업체</th><th>신용등급</th><th>'+esc(D.prevLabel)+' 매출액</th><th>'+esc(D.curLabel)+' 수금액</th>'
+  +'<div class="ar-tablewrap"><table class="ar-table" style="min-width:1220px"><thead><tr>'
+  +'<th>순위</th><th>업체</th><th>신용등급</th><th>결제일<span style="display:block;font-weight:600;font-size:10.5px;color:#94a3b8">'+esc(D.prevLabel)+' 매출분</span></th>'
+  +'<th>'+esc(D.prevLabel)+' 매출액</th><th>'+esc(D.curLabel)+' 수금액</th>'
   +'<th>부족액</th><th>수금률</th><th>현재 미수잔액</th><th>수금건수</th><th>최종 수금일</th>'
   +'</tr></thead><tbody>'+body+'</tbody></table></div>';
 }
@@ -14625,9 +14645,9 @@ var arBindV673=arBind;arBind=function(model,allModel){
 var arExportV673=arExport;arExport=function(model){
  if(state.ar.tab!=='prevmon')return arExportV673(model);
  var D=arPrevMonData(model);
- var aoa=[[D.prevLabel+' 매출액 대비 '+D.curLabel+' 수금 현황'],
-   ['업체','영업관리','신용등급','신용상태',D.prevLabel+' 매출액',D.curLabel+' 수금액','부족액','수금률','현재 미수잔액','수금건수','최종 수금일']];
- D.rows.forEach(function(r){aoa.push([r.cust,r.manager,r.grade,r.status,r.sales,r.recv,r.gap,+(r.rate*100).toFixed(1),r.balance,r.cnt,r.last]);});
+ var aoa=[[D.prevLabel+' 매출액 대비 '+D.curLabel+' 수금 현황 · 기준일 '+D.asOf],
+   ['업체','영업관리','신용등급','신용상태','결제조건(일)','약정 결제일','결제일 도래',D.prevLabel+' 매출액',D.curLabel+' 수금액','부족액','수금률','현재 미수잔액','수금건수','최종 수금일']];
+ D.rows.forEach(function(r){aoa.push([r.cust,r.manager,r.grade,r.status,r.hasPay?r.payDays:'',r.due,r.arrived?'도래':'미도래',r.sales,r.recv,r.gap,+(r.rate*100).toFixed(1),r.balance,r.cnt,r.last]);});
  dlXLSX('receivables_'+model.year+'_prev_month_vs_receipt.xlsx','전월매출액대비',aoa);
 };
 /* ══════════════════════════════════════════════════════════
@@ -14832,7 +14852,8 @@ function arBuildShared(){
    if(_sz>800000&&typeof console!=='undefined'&&console.warn)console.warn('[미수관리] 동기화 수금자료가 큽니다('+Math.round(_sz/1024)+'KB). 서버 응답이 느려질 수 있습니다.');
  }catch(_e){}
  /* v657 : 내장 파일명에 걸린 삭제표시는 다른 기기의 내장자료까지 지우므로 내보내지 않습니다. */
- var _delOut={}; try{ Object.keys(a.delSources||{}).forEach(function(nm){ if(!arIsBundledSource(nm))_delOut[nm]=a.delSources[nm]; }); }catch(_e){ _delOut=a.delSources||{}; }
+ /* v681 : 내장자료 삭제도 다른 기기에 전달되도록 그대로 보냅니다. */
+ var _delOut={}; try{ Object.keys(a.delSources||{}).forEach(function(nm){ _delOut[nm]=a.delSources[nm]; }); }catch(_e){ _delOut=a.delSources||{}; }
  return{schema:1,delSources:arSyncClone(_delOut),balClearedAt:+a.balClearedAt||0,balAt:+a.balAt||0,balDeletedYears:arSyncClone(a.balDeletedYears||{}),balAtYears:arSyncClone(a.balAtYears||{}),balanceSources:arSyncClone(a.balanceSources||{}),receiptsByKey:receiptsByKey,sourcesByName:sourcesByName,opening:arSyncClone(a.opening||{}),balances:arSyncClone(a.balances||{}),yearEndBills:arSyncClone(a.yearEndBills||{}),openingBills:arSyncClone(a.openingBills||{}),actualYears:arSyncClone(a.actualYears||{}),plans:arSyncClone(a.plans||{}),collectionPlans:arSyncClone(a.collectionPlans||{}),excludedCustomers:arSyncClone(a.excludedCustomers||{}),billStatus:arSyncClone(a.billStatus||{}),focusCustomers:arSyncClone(a.focusCustomers||{}),updatedAt:a.updatedAt||'',asOf:a.asOf||''};
 }
 function arApplyShared(v){
@@ -14846,14 +14867,13 @@ function arApplyShared(v){
  var _del=Object.assign({},a.delSources||{});
  if(v.delSources&&typeof v.delSources==='object')Object.keys(v.delSources).forEach(function(nm){
    var t=+v.delSources[nm]||0; if(t>(+_del[nm]||0))_del[nm]=t; });
- /* v655 : 내장 기본자료는 프로그램에 들어 있는 기준자료이므로 삭제표시로 지우지 않습니다.
-    또 업로드 시각이 없는 행(내장자료·예전 자료)은 삭제표시로 지우지 않습니다.
-    이 두 가지 때문에 '받기'를 눌러도 받은 자료가 곧바로 다시 지워졌습니다. */
- Object.keys(_del).forEach(function(nm){ if(arIsBundledSource(nm))delete _del[nm]; });
+ /* v681 : 사용자가 지운 파일은 내장자료든 아니든 지워진 채로 둡니다.
+    업로드 시각이 없는 행(예전 자료·내장자료)도 삭제표시가 있으면 함께 지웁니다.
+    다시 넣고 싶으면 「🔧 내장 기본자료 복구」 버튼을 쓰십시오. */
  Object.keys(_del).forEach(function(nm){
    var ts=+_del[nm]||0;
-   a.sources=(a.sources||[]).filter(function(s){ return !(s&&s.name===nm&&(+s.at||0)>0&&!(+s.at>ts)); });
-   a.receipts=(a.receipts||[]).filter(function(r){ return !(r&&r.source===nm&&(+r.at||0)>0&&!(+r.at>ts)); });
+   a.sources=(a.sources||[]).filter(function(s){ return !(s&&s.name===nm&&!((+s.at||0)>ts)); });
+   a.receipts=(a.receipts||[]).filter(function(r){ return !(r&&r.source===nm&&!((+r.at||0)>ts)); });
  });
  a.delSources=_del;
  /* v609 : 내 PC에서 올린 수금파일은 동기화(받기)로 사라지지 않게 항상 유지합니다.
@@ -14865,8 +14885,8 @@ function arApplyShared(v){
    (_prevSources||[]).forEach(function(s2){
      if(!s2||!s2.name||_remoteNames[s2.name])return;
      var _dts=+(_del[s2.name]||0);
-     /* v655 : 업로드 시각이 있는 파일만 삭제표시로 판단합니다(시각이 없으면 유지). */
-     if(_dts&&(+s2.at||0)>0&&!((+s2.at||0)>_dts))return;
+     /* v681 : 삭제표시보다 나중에 올린 파일만 되살립니다(시각이 없으면 되살리지 않습니다). */
+     if(_dts&&!((+s2.at||0)>_dts))return;
      a.sources.push(arSyncClone(s2));_keptLocal++;
      (_prevReceipts||[]).forEach(function(r2){ if(r2&&r2.source===s2.name)a.receipts.push(arSyncClone(r2)); });
    });
@@ -14942,6 +14962,9 @@ async function arEnsureSeedV657(why){
     var a=state.ar; if(!a)return false;
     var has=(a.receipts||[]).some(function(r){return r&&arIsBundledSource(r.source);});
     if(has)return false;
+    /* v681 : 사용자가 내장자료를 지웠으면 자동으로 되살리지 않습니다(복구 버튼으로만). */
+    var _d=a.delSources||{};
+    if(Object.keys(AR_BUNDLED_SOURCES||{}).some(function(nm){return +_d[nm]>0;}))return false;
     _arEnsureBusyV657=true; _arEnsureAtV657=Date.now();
     var r=await arSeedRepairV656();
     _arEnsureBusyV657=false;
@@ -14952,7 +14975,7 @@ async function arEnsureSeedV657(why){
 }
 try{ window.arEnsureSeedV657=arEnsureSeedV657; }catch(_e){}
 /* v656 : 내장 기본자료를 지금 다시 넣습니다(해제 → 병합 → 저장). */
-async function arSeedRepairV656(){
+async function arSeedRepairV656(force){
   var out={ok:false,n26:0,n25:0,added:0,err:''};
   try{
     var s26=[],s25=[];
@@ -14961,8 +14984,12 @@ async function arSeedRepairV656(){
     out.n26=s26.length; out.n25=s25.length;
     if(!s26.length&&!s25.length){ return out; }
     var a=state.ar||(state.ar=arBase());
-    /* 내장 파일명에 걸린 삭제표시를 풉니다. */
-    try{ Object.keys(a.delSources||{}).forEach(function(nm){ if(arIsBundledSource(nm))delete a.delSources[nm]; }); }catch(_e){}
+    /* v681 : 「복구」를 직접 눌렀을 때만 내장 파일명의 삭제표시를 풉니다.
+       예전에는 무조건 풀어 버려서, 지운 내장자료가 계속 되살아났습니다. */
+    if(force){ try{ Object.keys(a.delSources||{}).forEach(function(nm){ if(arIsBundledSource(nm))delete a.delSources[nm]; }); }catch(_e){} }
+    else{ try{ var _dd=a.delSources||{};
+        if(Object.keys(AR_BUNDLED_SOURCES||{}).some(function(nm){return +_dd[nm]>0;})){ out.err='사용자가 지운 내장자료입니다(복구 버튼으로만 되살립니다).'; return out; }
+      }catch(_e){} }
     var map=new Map((a.receipts||[]).map(function(r){return[arReceiptKey(r),r];}));
     var before=map.size;
     s26.concat(s25).forEach(function(r){ if(!map.has(arReceiptKey(r)))map.set(arReceiptKey(r),r); });
@@ -14989,7 +15016,9 @@ async function arClearAllDelV656(){
 try{ window.arClearAllDelV656=arClearAllDelV656; }catch(_e){}
 /* v655 : 예전에 남은 '내장 기본자료 삭제표시'를 정리합니다. 이것이 남아 있으면
    서버에서 받은 내장자료가 매번 다시 지워집니다. */
-function arClearSeedDelV655(){
+function arClearSeedDelV655(force){
+  /* v681 : 사용자가 지운 내장자료를 자동으로 되살리지 않습니다. 복구 버튼(force)에서만 동작합니다. */
+  if(!force)return 0;
   try{
     var a=state.ar; if(!a||!a.delSources)return 0;
     var n=0; Object.keys(a.delSources).forEach(function(nm){ if(arIsBundledSource(nm)){ delete a.delSources[nm]; n++; } });
@@ -16278,7 +16307,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · PD매출 기본 제외·포함 옵션 (2026-09-11)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 전월대비 결제일 도래분만 (2026-09-11)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
@@ -18952,7 +18981,7 @@ async function dsPull(){
   var got=[],recv=0;
   for(var i=0;i<need.length;i++){
    var ym=need[i],info=rm[ym]||{}; dsSet('받는 중… '+(i+1)+'/'+need.length+' ('+ym+') · 검증');
-   try{ if(window.SG652)SG652.step(Math.round(i/need.length*100),'매출자료 받는 중',(i+1)+'/'+need.length+'개월 · '+ym); }catch(_e){}
+   try{ if(window.SG652)SG652.step(Math.round(i/need.length*100),'매출자료 받는 중',(i+1)+'/'+need.length+'개월 · '+ym,'ds'); }catch(_e){}
    var d=await dsCall({action:'dsGet',ym:ym});
    if(!d||!d.data)throw new Error(ym+' 서버 파일 데이터가 비어 있습니다.');
    var packed=await dsDecode(d.enc||'gz',d.data||'');
@@ -27686,7 +27715,7 @@ try{ clsSales=sgClsSales; }catch(_e){}
     var fb=document.getElementById('arSeedFixBtn');
     if(fb)fb.addEventListener('click',async function(){
       fb.disabled=true; var t=fb.textContent; fb.textContent='복구 중…';
-      var r=(typeof arSeedRepairV656==='function')?await arSeedRepairV656():{err:'복구 기능 없음'};
+      var r=(typeof arSeedRepairV656==='function')?await arSeedRepairV656(true):{err:'복구 기능 없음'};
       fb.disabled=false; fb.textContent=t;
       alert(r&&r.ok?('내장 기본자료를 넣었습니다.\n\n  · 26년 '+r.n26.toLocaleString()+'행 · 25년 '+r.n25.toLocaleString()+'행\n  · 새로 추가 '+r.added.toLocaleString()+'행\n  · 브라우저 보관 '+(r.saved===false?('실패 — '+(r.err||'')):'성공'))
         :('내장 기본자료를 열지 못했습니다.\n\n'+(r&&r.err||'')+'\n\n자료가 정상인 기기에서 «내장 기본자료 포함»을 켜고 보낸 뒤, 이 기기에서 받기를 하십시오.'));
@@ -27746,39 +27775,56 @@ try{ clsSales=sgClsSales; }catch(_e){}
 /* v652 : 서버로 보내기·받기가 지금 어디까지 왔는지 막대로 보여 줍니다.
    구글 동기화(미수관리 포함)와 매출자료 공유의 모든 요청에 자동으로 붙습니다. */
 (function(){
-  var ST={on:false,kind:'down',pct:0,label:'',sub:'',t:0};
+  /* ══════════════════════════════════════════════════════
+     v682 : 진행 막대를 화면별로 따로 움직이게 했습니다.
+     예전에는 상태값이 하나라서 📦 매출자료 공유와 💰 미수관리 막대가
+     늘 똑같이 움직였습니다. 이제 요청의 종류(action)를 보고
+       · ds… → 📦 매출자료 공유 막대
+       · 그 외(get/save) → 💰 미수관리·설정 동기화 막대
+     로 나눠서, 각 메뉴의 올리기·받기가 서로 상관없이 표시됩니다.
+     ══════════════════════════════════════════════════════ */
+  function mkState(){ return {on:false,kind:'down',pct:0,label:'',sub:'',t:0,at:0}; }
+  var CH={ds:mkState(),gs:mkState()};
+  var CHNAME={ds:'매출자료',gs:'미수관리'};
+  function S(ch){ return CH[ch==='ds'?'ds':'gs']; }
   function kb(n){ n=+n||0; return n<1024?(n+'B'):(n<1048576?((n/1024).toFixed(0)+'KB'):((n/1048576).toFixed(1)+'MB')); }
-  function html(){
+  function html(ST,ch){
     var cls='sg652 '+(ST.kind||'down');
     return '<div class="'+cls+'"><div class="sg652-top"><span class="sg652-ic">'
-      +(ST.kind==='up'?'\u2b06':ST.kind==='down'?'\u2b07':ST.kind==='ok'?'\u2705':'\u26a0')
-      +'</span><span class="sg652-lab">'+(ST.label||'')+'</span><span class="sg652-pct">'+Math.round(ST.pct)+'%</span></div>'
+      +(ST.kind==='up'?'⬆':ST.kind==='down'?'⬇':ST.kind==='ok'?'✅':'⚠')
+      +'</span><span class="sg652-lab">'+(CHNAME[ch]||'')+' · '+(ST.label||'')+'</span><span class="sg652-pct">'+Math.round(ST.pct)+'%</span></div>'
       +'<div class="sg652-bar"><div class="sg652-fill" style="width:'+Math.max(2,Math.min(100,ST.pct))+'%"></div></div>'
       +(ST.sub?('<div class="sg652-sub">'+ST.sub+'</div>'):'')+'</div>';
   }
-  /* v653 : 막대는 항상 자리에 있습니다. 전송할 때만 나타났다 사라지면
-     화면이 밀려 어지럽기 때문에, 평소에는 '대기' 상태로 같은 자리에 그대로 둡니다. */
-  function idleHtml(){
+  /* 막대는 항상 자리에 있습니다(전송할 때만 나타나면 화면이 밀려 어지럽습니다). */
+  function idleHtml(ch){
     var last=''; try{ if(state&&state.gsync&&state.gsync.lastSync&&typeof gsFmtTime==='function')last=gsFmtTime(state.gsync.lastSync); }catch(_e){}
-    return '<div class="sg652 idle"><div class="sg652-top"><span class="sg652-ic">\u23f8</span>'
-      +'<span class="sg652-lab">대기 중</span><span class="sg652-pct">0%</span></div>'
+    return '<div class="sg652 idle"><div class="sg652-top"><span class="sg652-ic">⏸</span>'
+      +'<span class="sg652-lab">'+(CHNAME[ch]||'')+' · 대기 중</span><span class="sg652-pct">0%</span></div>'
       +'<div class="sg652-bar"><div class="sg652-fill" style="width:0%"></div></div>'
-      +'<div class="sg652-sub">보내거나 받을 때 이 막대가 채워집니다'+(last?(' · 마지막 동기화 '+last):'')+'</div></div>';
+      +'<div class="sg652-sub">이 메뉴에서 보내거나 받을 때 이 막대가 채워집니다'+(last&&ch==='gs'?(' · 마지막 동기화 '+last):'')+'</div></div>';
+  }
+  function paintOne(id,ch){
+    var el=document.getElementById(id); if(!el)return;
+    var ST=S(ch), h=ST.on?html(ST,ch):idleHtml(ch);
+    if(el.innerHTML!==h)el.innerHTML=h;
   }
   function paint(){
-    var h=ST.on?html():idleHtml();
-    ['arSyncGauge','dsSyncGauge'].forEach(function(id){ var el=document.getElementById(id); if(el&&el.innerHTML!==h)el.innerHTML=h; });
+    paintOne('dsSyncGauge','ds'); paintOne('arSyncGauge','gs');
     var fx=document.getElementById('sg652Fixed');
-    if(!ST.on){ if(fx)fx.remove(); return; }
-    var inline=document.getElementById('arSyncGauge')||document.getElementById('dsSyncGauge');
-    var visible=false;
-    try{ visible=!!(inline&&inline.getClientRects().length); }catch(_e){}
-    if(visible){ if(fx)fx.remove(); return; }
+    /* 화면에 안 보이는 막대가 움직이는 중이면 오른쪽 아래에 띄웁니다. */
+    var pick=null,pid='';
+    [['ds','dsSyncGauge'],['gs','arSyncGauge']].forEach(function(x){
+      var ST=S(x[0]); if(!ST.on)return;
+      var el=document.getElementById(x[1]),vis=false;
+      try{ vis=!!(el&&el.getClientRects().length); }catch(_e){}
+      if(vis)return;
+      if(!pick||ST.at>pick.at){ pick=ST; pid=x[0]; }
+    });
+    if(!pick){ if(fx)fx.remove(); return; }
     if(!fx){ fx=document.createElement('div'); fx.id='sg652Fixed'; document.body.appendChild(fx); }
-    if(fx.innerHTML!==h)fx.innerHTML=h;
+    var h2=html(pick,pid); if(fx.innerHTML!==h2)fx.innerHTML=h2;
   }
-  /* 화면이 다시 그려져도 막대가 사라지지 않도록 주기적으로 자리를 채웁니다.
-     v654 : 화면 변화가 있을 때도 곧바로 채워, 잠깐 비어 보이는 일이 없게 합니다. */
   setInterval(paint,1200);
   try{
     var _mo=new MutationObserver(function(){
@@ -27789,19 +27835,18 @@ try{ clsSales=sgClsSales; }catch(_e){}
     else document.addEventListener('DOMContentLoaded',function(){_mo.observe(document.body,{childList:true,subtree:true});},{once:true});
   }catch(_e){}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paint,{once:true}); else setTimeout(paint,300);
-  /* v653 : 응답이 오지 않아 막대가 걸린 채로 남지 않도록, 45초간 변화가 없으면 대기로 돌립니다. */
-  var _stale=0;
-  function touch(){ _stale=Date.now(); }
-  setInterval(function(){ if(ST.on&&_stale&&Date.now()-_stale>45000){ ST.on=false;ST.pct=0;_stale=0;paint(); } },5000);
+  /* 응답이 오지 않아 막대가 걸린 채로 남지 않도록, 45초간 변화가 없으면 대기로 돌립니다. */
+  setInterval(function(){ ['ds','gs'].forEach(function(c){ var ST=S(c);
+    if(ST.on&&ST.at&&Date.now()-ST.at>45000){ ST.on=false;ST.pct=0;ST.at=0; } }); paint(); },5000);
   var SG={
     kb:kb,
-    show:function(kind,label,sub){ touch(); ST.on=true;ST.kind=kind;ST.label=label||'';ST.sub=sub||'';ST.pct=Math.max(3,ST.pct*0);paint(); },
-    set:function(pct,sub){ if(!ST.on)return; touch(); if(pct!=null)ST.pct=Math.max(ST.pct,Math.min(99,pct)); if(sub!=null)ST.sub=sub; paint(); },
-    step:function(pct,label,sub){ touch(); ST.on=true; if(label)ST.label=label; if(pct!=null)ST.pct=Math.min(99,pct); if(sub!=null)ST.sub=sub; paint(); },
-    done:function(sub){ touch(); ST.on=true;ST.kind='ok';ST.pct=100;ST.label='완료';if(sub!=null)ST.sub=sub;paint();
-      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;paint(); },2600); },
-    fail:function(sub){ touch(); ST.on=true;ST.kind='err';ST.pct=100;ST.label='실패';if(sub!=null)ST.sub=sub;paint();
-      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;paint(); },4200); }
+    show:function(kind,label,sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true;ST.kind=kind;ST.label=label||'';ST.sub=sub||'';ST.pct=3;paint(); },
+    set:function(pct,sub,ch){ var ST=S(ch); if(!ST.on)return; ST.at=Date.now(); if(pct!=null)ST.pct=Math.max(ST.pct,Math.min(99,pct)); if(sub!=null)ST.sub=sub; paint(); },
+    step:function(pct,label,sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true; if(label)ST.label=label; if(pct!=null)ST.pct=Math.min(99,pct); if(sub!=null)ST.sub=sub; paint(); },
+    done:function(sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true;ST.kind='ok';ST.pct=100;ST.label='완료';if(sub!=null)ST.sub=sub;paint();
+      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;ST.at=0;paint(); },2600); },
+    fail:function(sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true;ST.kind='err';ST.pct=100;ST.label='실패';if(sub!=null)ST.sub=sub;paint();
+      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;ST.at=0;paint(); },4200); }
   };
   window.SG652=SG;
 
@@ -27818,39 +27863,54 @@ try{ clsSales=sgClsSales; }catch(_e){}
     for(var i=0;i<list.length;i++){ if(list[i]&&u.indexOf(list[i])===0)return true; }
     return /script\.google\.com/.test(u);
   }
-  function wrap(res,isPost,upBytes){
+  /* v682 : 요청의 action 으로 어느 메뉴의 통신인지 가려냅니다. */
+  function chanOf(url,init,input){
+    var act='';
     try{
-      if(!res||!res.body||typeof res.body.getReader!=='function'){ SG.done(isPost?('보냄 '+kb(upBytes)):''); return res; }
+      var body=(init&&init.body!=null)?init.body:((input&&input.body)||null);
+      if(typeof body==='string'){ var m=body.match(/"action"\s*:\s*"([^"]+)"/); if(m)act=m[1]; }
+    }catch(_e){}
+    if(!act){ try{ var q=String(url||'').match(/[?&]action=([^&]+)/); if(q)act=decodeURIComponent(q[1]); }catch(_e){} }
+    act=String(act||'');
+    if(/^ds/i.test(act))return 'ds';
+    if(/^au/i.test(act))return '';        /* 로그인·업데이트 확인은 막대에 표시하지 않습니다 */
+    return 'gs';
+  }
+  function wrap(res,isPost,upBytes,ch){
+    try{
+      if(!res||!res.body||typeof res.body.getReader!=='function'){ SG.done(isPost?('보냄 '+kb(upBytes)):'',ch); return res; }
       var total=0; try{ total=+res.headers.get('content-length')||0; }catch(_e){}
       var reader=res.body.getReader(), got=0;
       var stream=new ReadableStream({start:function(ctrl){
         (function pump(){
           reader.read().then(function(r){
             if(r.done){ ctrl.close();
-              SG.done(isPost?('보냄 '+kb(upBytes)+' · 응답 '+kb(got)):('받음 '+kb(got)));
+              SG.done(isPost?('보냄 '+kb(upBytes)+' · 응답 '+kb(got)):('받음 '+kb(got)),ch);
               return; }
             got+=(r.value&&r.value.length)||0;
             var pct= total?Math.round(got/total*100) : (isPost? Math.min(96,72+got/4096) : Math.min(96,38+got/4096));
-            SG.set(pct,(isPost?'응답 받는 중 ':'받는 중 ')+kb(got)+(total?(' / '+kb(total)):''));
+            SG.set(pct,(isPost?'응답 받는 중 ':'받는 중 ')+kb(got)+(total?(' / '+kb(total)):''),ch);
             ctrl.enqueue(r.value); pump();
-          },function(e){ ctrl.error(e); SG.fail('전송이 끊겼습니다'); });
+          },function(e){ ctrl.error(e); SG.fail('전송이 끊겼습니다',ch); });
         })();
       }});
       return new Response(stream,{status:res.status,statusText:res.statusText,headers:res.headers});
-    }catch(_e){ SG.done(''); return res; }
+    }catch(_e){ SG.done('',ch); return res; }
   }
   var f=function(input,init){
     var url=(typeof input==='string')?input:((input&&input.url)||'');
     if(!syncUrl(url))return of.apply(this,arguments);
+    var ch=chanOf(url,init,input);
+    if(!ch)return of.apply(this,arguments);
     var m=''; try{ m=String((init&&init.method)||(input&&input.method)||'GET').toUpperCase(); }catch(_e){ m='GET'; }
     var isPost=(m==='POST');
     var bytes=0; try{ if(isPost&&init&&typeof init.body==='string')bytes=init.body.length; }catch(_e){}
-    SG.show(isPost?'up':'down', isPost?'서버로 보내는 중':'서버에서 받는 중', isPost?('보낼 자료 '+kb(bytes)):'요청 보냄');
-    SG.step(isPost?30:12);
+    SG.show(isPost?'up':'down', isPost?'서버로 보내는 중':'서버에서 받는 중', isPost?('보낼 자료 '+kb(bytes)):'요청 보냄', ch);
+    SG.step(isPost?30:12,null,null,ch);
     return of.apply(this,arguments).then(function(res){
-      SG.step(isPost?70:36, null, isPost?'서버가 처리 중':'응답 받는 중');
-      return wrap(res,isPost,bytes);
-    },function(e){ SG.fail('연결 실패 — '+(e&&e.message||e)); throw e; });
+      SG.step(isPost?70:36, null, isPost?'서버가 처리 중':'응답 받는 중', ch);
+      return wrap(res,isPost,bytes,ch);
+    },function(e){ SG.fail('연결 실패 — '+(e&&e.message||e),ch); throw e; });
   };
   f.__sg652=true; window.fetch=f;
 })();
