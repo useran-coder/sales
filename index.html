@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v683</title>
-<script>window.APP_BUILD='v683';</script>
+<title>동방파스텍 매출 분석 도구 v684</title>
+<script>window.APP_BUILD='v684';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1714,7 +1714,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v683</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v684</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -2527,7 +2527,21 @@ function runHeaderCustSearch(){
   if(hf&&hi){ hf.addEventListener('submit',e=>{e.preventDefault(); if(state._headSearchMode==='cust')runHeaderCustSearch(); else runHeaderProductSearch();}); hi.addEventListener('keydown',e=>{if(e.key==='Escape'){hi.value='';hi.focus();}}); } }
 document.addEventListener('click',e=>{ if(e.target&&e.target.closest&&e.target.closest('.tile,.tm-item,#homeBtn,#cmgrBtn,#fileToggle')) setHeaderSearchMode(false); },true);
 { const cb=$('#cmgrBtn'); cb&&cb.addEventListener('click',()=>{ if(!CUR.length){ alert('먼저 매출 파일을 불러오세요.'); return; } closeFilePanel(); state._prevAct=(state.act&&state.act!=='cmgr')?state.act:'rank-cust'; document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); state.act='cmgr'; state.sortKey=null; state._drill=false; runAct(); }); }
-$('#fileToggle').addEventListener('click',()=>{ setCmgrMode(false); const p=$('#dataPanel'); const open=p.classList.toggle('open'); document.body.classList.toggle('fpopen',open); if(open)fpSyncSummary(); $('#fileToggle').classList.toggle('open',open); $('#fileToggle').textContent=open?'📁 파일·관리 ▴':'📁 파일·관리 ▾'; const r=$('#result'),s=$('#summary'); if(r)r.style.display=open?'none':''; if(s)s.style.display=open?'none':''; /* v399: 파일·관리 화면에서는 상단 요약카드·표시설정도 감춘다 */ { const st2=$('#sumTop'),sp2=$('#setPanel'); if(st2)st2.style.display=open?'none':''; if(sp2)sp2.style.display=open?'none':''; } if(open){ document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); window.scrollTo({top:0,behavior:'smooth'}); /* v441: 매입분석도구처럼 파일·관리 진입 즉시 서버 목록과 공용 속성을 갱신한다. */ setTimeout(()=>{ try{if(typeof dsCheck==='function')Promise.resolve(dsCheck(true)).catch(()=>{});}catch(_e){} try{if(state.gsync&&state.gsync.url&&state.gsync.key&&typeof window.gsLoad==='function')window.gsLoad(true);}catch(_e2){} },80); } });
+$('#fileToggle').addEventListener('click',()=>{ setCmgrMode(false); const p=$('#dataPanel'); const open=p.classList.toggle('open'); document.body.classList.toggle('fpopen',open);
+  /* v684 : 다른 화면에서 숨겨 둔 인라인 스타일이 남아 파일·관리 화면이 빈 채로 열리는 일이 있어, 열 때 강제로 되돌립니다. */
+  if(open){ try{ p.style.display=''; p.style.visibility=''; p.style.height=''; p.style.opacity=''; }catch(_e){} }
+  if(open)setTimeout(function(){ try{
+    if(!document.body.classList.contains('fpopen'))return;
+    const q=document.getElementById('dataPanel'); if(!q)return;
+    const h=q.getBoundingClientRect().height, txt=(q.innerText||'').trim();
+    if(h>40&&txt.length>60)return;                       /* 정상 */
+    q.classList.add('open'); q.removeAttribute('style'); /* 남은 인라인 스타일 제거 */
+    try{ if(typeof renderFileList==='function')renderFileList(); }catch(_e){}
+    try{ if(typeof dsRender==='function')dsRender(); }catch(_e){}
+    try{ if(typeof arRenderFileList==='function')arRenderFileList(); }catch(_e){}
+    try{ if(typeof fpSyncSummary==='function')fpSyncSummary(); }catch(_e){}
+  }catch(_e){} },700);
+  if(open)fpSyncSummary(); $('#fileToggle').classList.toggle('open',open); $('#fileToggle').textContent=open?'📁 파일·관리 ▴':'📁 파일·관리 ▾'; const r=$('#result'),s=$('#summary'); if(r)r.style.display=open?'none':''; if(s)s.style.display=open?'none':''; /* v399: 파일·관리 화면에서는 상단 요약카드·표시설정도 감춘다 */ { const st2=$('#sumTop'),sp2=$('#setPanel'); if(st2)st2.style.display=open?'none':''; if(sp2)sp2.style.display=open?'none':''; } if(open){ document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); window.scrollTo({top:0,behavior:'smooth'}); /* v441: 매입분석도구처럼 파일·관리 진입 즉시 서버 목록과 공용 속성을 갱신한다. */ setTimeout(()=>{ try{if(typeof dsCheck==='function')Promise.resolve(dsCheck(true)).catch(()=>{});}catch(_e){} try{if(state.gsync&&state.gsync.url&&state.gsync.key&&typeof window.gsLoad==='function')window.gsLoad(true);}catch(_e2){} },80); } });
 { const dc=$('#dataPanelCollapse'); dc&&dc.addEventListener('click',()=>{ if(typeof closeFilePanel==='function'){closeFilePanel();return;} $('#dataPanel').classList.remove('open'); const ft=$('#fileToggle'); ft.classList.remove('open'); ft.textContent='📁 파일 추가·관리 ▾'; }); }
 { const bepI=$('#bepInput'), bepM=$('#bepInputM');
   const reflect=()=>{ if(bepI&&document.activeElement!==bepI)bepI.value=state.bep?state.bep.toLocaleString('en-US'):''; if(bepM&&document.activeElement!==bepM)bepM.value=state.bep?Math.round(state.bep/12).toLocaleString('en-US'):''; };
@@ -10055,7 +10069,22 @@ function monthlyTrend(){
   }
   for(let m=1;m<=12;m++) if(pdTrendIncluded&&fcPdInAnnualTarget())tgt[m]+=pdMonth(m);
   const annualSummary=fcAnnualTargetSummary(fut);
-  const unallocatedTgt=annualSummary.newCustAnnual+annualSummary.lineCustTotal;
+  /* ══════════════════════════════════════════════════════
+     v684 : 이 화면의 막대를 「매출 목표 (2026)」 그래프와 똑같이 맞춥니다.
+     예전에는 여기서 따로 계산해 ① 실적에 PD임가공을 더하고(매출목표 화면은 빼고 봄)
+     ② 신규업체·신규라인 목표를 월별 막대에 넣지 않아 9~12월 목표가 달랐습니다.
+     ══════════════════════════════════════════════════════ */
+  let unallocatedTgt=annualSummary.newCustAnnual+annualSummary.lineCustTotal;
+  try{
+    const _C=(typeof fcChartArraysV678==='function')?fcChartArraysV678():null;
+    if(_C&&_C.CY===CY&&_C.tgt&&_C.act){
+      for(let m=1;m<=12;m++){
+        tgt[m]=+_C.tgt[m]||0;
+        if(m<=actualLastMonth){ act[m]=+_C.act[m]||0; cy[m]=+_C.act[m]||0; }
+      }
+      unallocatedTgt=0;   /* 막대에 이미 배분돼 있으므로 합계에 다시 더하지 않습니다 */
+    }
+  }catch(_e){}
   const pyT=py.reduce((a,b)=>a+b,0), cyActT=act.reduce((a,b)=>a+b,0), tgtT=tgt.reduce((a,b)=>a+b,0);
   const tgtTAll=tgtT+unallocatedTgt;
   const avgPct = pyT? (tgtTAll-pyT)/pyT*100 : 0;
@@ -16307,7 +16336,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 전월대비 결제일 도래분만 (2026-09-11)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 목표추이=매출목표 그래프 일치 (2026-09-11)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
