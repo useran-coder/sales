@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v689</title>
-<script>window.APP_BUILD='v689';</script>
+<title>동방파스텍 매출 분석 도구 v690</title>
+<script>window.APP_BUILD='v690';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1738,7 +1738,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-product-cost-btn" href="https://useran-coder.github.io/product" target="_blank" rel="noopener">제품제조원가</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v689</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v690</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
 </header>
 
@@ -12953,7 +12953,28 @@ window.addEventListener('load',boot,{once:true});
 (function(){
   if(window.__mpSyncScrap)return;
   function hash(s){s=String(s||'');var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(36)}
+  function po_v690(o){return !!o&&typeof o==='object'&&!Array.isArray(o)}
+  var SCRAP_MIN_V690=30, SCRAP_MAX_V690=3000;
+  /* v690 : 이미 저장된 비정상 고철 단가(직접 입력분 제외)를 1회 정리한다 */
+  window.__mpScrapCleanV690=function(db,y){
+    try{
+      var rows=(db.years&&db.years[y]&&db.years[y]['고철'])||[],hit=0;
+      rows.forEach(function(r){
+        if(!r||!Array.isArray(r.m))return;
+        for(var i=0;i<12;i++){
+          var v=Number(String(r.m[i]||'').replace(/,/g,''));
+          if(!v)continue;
+          if(v>=SCRAP_MIN_V690&&v<=SCRAP_MAX_V690)continue;
+          if(db._manualCell&&db._manualCell[y+'|고철|'+r._id+'|m'+i])continue;
+          r.m[i]='';hit++;
+        }
+      });
+      return hit;
+    }catch(e){return 0}
+  };
   window.__mpSyncScrap=function(db,y){
+    if(!po_v690(db))return;
+    try{window.__mpScrapCleanV690(db,y)}catch(e){}
     if(typeof CUR==='undefined'||!Array.isArray(CUR)||typeof isScrapSale!=='function')return;
     var by={};
     CUR.forEach(function(r){
@@ -12974,12 +12995,20 @@ window.addEventListener('load',boot,{once:true});
     Object.keys(by).forEach(function(v){
       var r=rows.filter(function(x){return String(x.vendor||'').trim()===v})[0];
       if(!r){r={vendor:v,m:Array(12).fill(''),auto:true,autoSrc:'sales',_id:'mr_'+hash(y+'|고철|'+v)};rows.push(r)}
+      /* v690 : 매입분석도구에서 내려온 행은 그쪽이 기준 — 매출자료로 덮지 않는다 */
+      if(db._srcRow&&db._srcRow[y+'|고철|'+r._id]){r.autoSrc='purchase';return}
       r.auto=true;r.autoSrc='sales';
       for(var i=0;i<12;i++){
         var p=by[v].m[i]; if(!p)continue;
-        var nv=String(Math.round(p.value||0));
-        if(db._manualCell&&db._manualCell[y+'|고철|'+r._id+'|m'+i])continue;
-        if(String(r.m[i]||'')!==nv){r.m[i]=nv;db._cellUpdated[y+'|고철|'+r._id+'|m'+i]=Date.now()}
+        var pv=Math.round(p.value||0);
+        /* v690 : 고철 단가 정상범위(원/kg) 밖이면 자동반영 제외 — 금액/EA 혼입값(예 37,000) 차단 */
+        if(!(pv>=SCRAP_MIN_V690&&pv<=SCRAP_MAX_V690))continue;
+        var nv=String(pv), _ck=y+'|고철|'+r._id+'|m'+i;
+        if(db._manualCell&&db._manualCell[_ck])continue;
+        /* v690 : 사용자가 지운 칸은 다시 채우지 않는다 */
+        var _dl=Number((db._cellDeleted||{})[_ck]||0), _up=Number((db._cellUpdated||{})[_ck]||0);
+        if(_dl&&_dl>=_up)continue;
+        if(String(r.m[i]||'')!==nv){r.m[i]=nv;db._cellUpdated[_ck]=Date.now()}
       }
     });
   };
@@ -13121,6 +13150,9 @@ function mergePurchaseShared(target,source){
         var row=dst.filter(function(r){return String(r&&r._id||'')===sid})[0]
              ||(vend?dst.filter(function(r){return String(r&&r.vendor||'').trim()===vend})[0]:null);
         if(!row){row=cp(sr);row._id=sid;row.m=Array.isArray(row.m)?row.m.slice(0,12):[];while(row.m.length<12)row.m.push('');dst.push(row);added++;}
+        /* v690 : 이 행은 매입분석도구가 기준임을 표시 → 매출자료 자동반영이 덮어쓰지 않는다 */
+        if(!po(out._srcRow))out._srcRow={};
+        out._srcRow[y+'|'+k+'|'+row._id]=now;
         if(!String(row.vendor||'').trim()&&vend){row.vendor=vend;touch(out,y,k,row,'vendor')}
         if(!Array.isArray(row.m))row.m=Array(12).fill('');
         if(!Array.isArray(row.w)&&Array.isArray(sr.w))row.w=Array(12).fill(0);
@@ -13129,10 +13161,20 @@ function mergePurchaseShared(target,source){
           var sv=String(sr.m&&sr.m[mi]!=null?sr.m[mi]:'').trim();
           var sStamp=cellStamp(src,y,k,sid,field), oStamp=cellStamp(out,y,k,row._id,field);
           var sDel=n0((src._cellDeleted||{})[y+'|'+k+'|'+sid+'|'+field]);
+          var _manual=n0((out._manualCell||{})[y+'|'+k+'|'+row._id+'|'+field]);
           if(sv===''){
             /* v463 : 매입 도구에서 지운 칸을 그대로 반영한다.
                (예전에는 빈 칸을 건너뛰어 매출 도구에 옛 단가가 계속 남았다) */
             if(old==='')continue;
+            /* v690 : 고철은 매입분석도구가 기준 — 그쪽이 빈 칸이면 직접 입력분을 뺀 나머지는 함께 비운다 */
+            if(k==='고철'&&!_manual){
+              row.m[mi]=''; cells++;
+              if(Array.isArray(row.w))row.w[mi]=0;
+              if(!po(out._cellDeleted))out._cellDeleted={};
+              out._cellDeleted[y+'|'+k+'|'+row._id+'|'+field]=Math.max(sDel,sStamp,now);
+              out._cellUpdated[y+'|'+k+'|'+row._id+'|'+field]=Math.max(sDel,sStamp,now);
+              continue;
+            }
             if(sDel>oStamp||(sStamp>0&&sStamp>oStamp)){
               row.m[mi]=''; cells++;
               if(Array.isArray(row.w))row.w[mi]=0;
@@ -13186,6 +13228,29 @@ function mergePurchaseShared(target,source){
       });
     });
   });
+  /* v690 : ▾가공 추가 금액(egiExtras)도 매입분석도구 값으로 갱신한다 */
+  (function(){
+    var si=Array.isArray(src.egiExtras)?src.egiExtras:[];
+    if(!si.length)return;
+    if(!Array.isArray(out.egiExtras))out.egiExtras=[];
+    si.forEach(function(sx){
+      if(!po(sx))return;
+      var nm=String(sx.name||'').trim(); if(!nm&&!String(sx._id||''))return;
+      var id=String(sx._id||'');
+      if(n0((out._extraDeleted||{})[id]))return;
+      var t=out.egiExtras.filter(function(x){return po(x)&&(String(x._id||'')===id&&id)})[0]
+         ||out.egiExtras.filter(function(x){return po(x)&&String(x.name||'').trim()===nm&&nm})[0];
+      if(!t){t=cp(sx);if(!t._id)t._id='ex_'+hash(nm);out.egiExtras.push(t);cells++;return}
+      ['name','amount','note'].forEach(function(f){
+        var sS=n0((src._extraUpdated||{})[id+'|'+f]), oS=n0((out._extraUpdated||{})[String(t._id||'')+'|'+f]);
+        var sv2=String(sx[f]==null?'':sx[f]), ov=String(t[f]==null?'':t[f]);
+        if(sv2===ov)return;
+        if(sS>=oS){t[f]=sx[f];cells++;
+          if(!po(out._extraUpdated))out._extraUpdated={};
+          out._extraUpdated[String(t._id||'')+'|'+f]=Math.max(sS,now);}
+      });
+    });
+  })();
   out._purchaseSyncAt=now;
   out._purchaseImportedAt=Math.max(n0(out._purchaseImportedAt),n0(src._purchaseImportedAt),now);
   return {db:out,added:added,cells:cells};
@@ -13402,12 +13467,17 @@ function gradeCard(db,m,y){
 }
 function scrapCard(db,y){
   var k='고철',li=latest(db,k,y),b=getBase();
-  return '<section class="mp-grade-card mp-special-card scrap">'+
+  /* v690 : 고철단가에도 단가추이 그래프보기 추가 (강종 카드와 동일 동작) */
+  return '<section class="mp-grade-card mp-special-card scrap" data-grade="고철">'+
     '<div class="mp-grade-head"><span class="mp-grade-name">🔩 고철단가</span>'+
-    '<span class="mp-grade-desc">고철(스크랩) 회수단가 · 영업분석 매출자료에서 자동 반영</span>'+
+    '<span class="mp-grade-desc">고철(스크랩) 회수단가 · 매입분석도구 값 우선 · 없는 달만 매출자료에서 자동 반영</span>'+
     '<span class="mp-grade-current">현재 적용 <b>'+won(b.scrapPrice||0)+'</b>원/kg'+(li?' · 최근 '+li.month+'월 평균 <b>'+won(li.value)+'</b>원':'')+'</span>'+
-    '<div class="mp-grade-actions"><button type="button" class="apply" data-mp-apply="scrap">최근 고철단가 적용</button></div></div>'+
+    '<div class="mp-grade-actions">'+
+      '<button type="button" data-mp-trend="1">단가추이 그래프보기</button>'+
+      '<button type="button" class="apply" data-mp-apply="scrap">최근 고철단가 적용</button>'+
+    '</div></div>'+
     tableHtml(db,k,y)+
+    '<div class="mp-trend-wrap" hidden>'+trendSvg(db,k,y)+'</div>'+
   '</section>';
 }
 function extraCard(db){
@@ -14528,7 +14598,7 @@ if(gr||_catEl||_payEl){
 var arBindV158=arBind;arBind=function(model,allModel){arBindV158(model,allModel);if(state.ar.tab!=='exclude')return;document.querySelectorAll('[data-exclude-cust]').forEach(function(cb){cb.onchange=async function(e){e.stopPropagation();state.ar.excludedCustomers=state.ar.excludedCustomers||{};if(cb.checked)state.ar.excludedCustomers[cb.dataset.excludeCust]=true;else delete state.ar.excludedCustomers[cb.dataset.excludeCust];var tr=cb.closest('tr'),on=cb.checked;if(tr){tr.classList.toggle('ar-excluded-row',on);var statusCell=tr.cells[tr.cells.length-1];if(statusCell)statusCell.innerHTML=on?'<span class="ar-risk manage">집계 제외</span>':'관리 포함';}var visible=(model.customers||[]).filter(function(o){return!!state.ar.excludedCustomers[o.cust]}),chips=document.querySelectorAll('.ar-summary-strip .ar-summary-chip');if(chips[0])chips[0].innerHTML='제외업체 <b>'+visible.length+'</b>개';if(chips[1])chips[1].innerHTML='제외 미수금 <b>'+arMoney(visible.reduce(function(a,o){return a+o.balance},0))+'</b>원';var total=Object.keys(state.ar.excludedCustomers).filter(function(c){return state.ar.excludedCustomers[c]}).length,tab=document.querySelector('[data-ar-tab="exclude"]');if(tab)tab.textContent='🚫 수금관리 제외업체'+(total?' ('+total+')':'');await arSave();};});};
 function arOpenPage(){if(typeof closeFilePanel==='function')closeFilePanel();var p=document.getElementById('dataPanel');if(p)p.classList.remove('open');var ft=document.getElementById('fileToggle');if(ft){ft.classList.remove('open');ft.textContent='📁 파일·관리 ▾';}var r=document.getElementById('result'),s=document.getElementById('summary');if(r)r.style.display='';if(s)s.style.display='';state.act='ar';state.sortKey=null;state._search='';state._drill=false;window.runAct();window.scrollTo({top:0,behavior:'smooth'});}
 function arBindFileManager(){if(typeof arRenderFileList==='function')arRenderFileList();var op=document.getElementById('arFileOpenBtn'),bb=document.getElementById('arFileBalanceBtn'),bi=document.getElementById('arFileBalanceInput'),rb=document.getElementById('arFileReceiptBtn'),ri=document.getElementById('arFileReceiptInput');if(op&&!op.dataset.bound){op.dataset.bound='1';op.onclick=arOpenPage;}if(bb&&bi&&!bb.dataset.bound){bb.dataset.bound='1';bb.onclick=function(){bi.click()};bi.onchange=function(){if(bi.files[0])arImportBalances(bi.files[0]).then(function(){if(typeof arRenderFileList==='function')arRenderFileList();}).catch(function(e){alert(e.message)});bi.value='';};}if(rb&&ri&&!rb.dataset.bound){rb.dataset.bound='1';rb.onclick=function(){ri.click()};ri.onchange=function(){if(ri.files.length)arImportReceipts(Array.from(ri.files)).then(function(){var st=document.getElementById('arFileStatus');if(st)st.textContent='수금내역 반영 완료 · 전체 '+arMoney(state.ar.receipts.length)+'건';if(typeof arRenderFileList==='function')arRenderFileList();}).catch(function(e){alert(e.message)});ri.value='';};}}
-function arInstallMenu(){var menu=document.getElementById('topMenu');if(!menu)return;arBindFileManager();if(document.getElementById('arMenuBtn'))return;var groups=Array.from(menu.querySelectorAll('.tm-grp')),price=groups.find(function(g){return(g.querySelector('.tm-top')||{}).textContent&&g.querySelector('.tm-top').textContent.indexOf('단가표')>=0});var b=document.createElement('button');b.id='arMenuBtn';b.className='tm-direct';b.type='button';b.dataset.act='ar';b.style.cssText='background:#f1f5f9;color:#1e3a5f;border-color:#e2e8f0';b.textContent='💰 미수관리';b.onclick=arOpenPage;if(price)price.after(b);else menu.appendChild(b);var ver=document.getElementById('appVer');if(ver){ver.textContent='v454 · 재고소진 제외품 지정 (2026-08-26)';ver.title='앱 버전 v454 · 제품 재고소진·회전에 제외품 지정 추가 · 최종수정 2026-08-26';}}
+function arInstallMenu(){var menu=document.getElementById('topMenu');if(!menu)return;arBindFileManager();if(document.getElementById('arMenuBtn'))return;var groups=Array.from(menu.querySelectorAll('.tm-grp')),price=groups.find(function(g){return(g.querySelector('.tm-top')||{}).textContent&&g.querySelector('.tm-top').textContent.indexOf('단가표')>=0});var b=document.createElement('button');b.id='arMenuBtn';b.className='tm-direct';b.type='button';b.dataset.act='ar';b.style.cssText='background:#f1f5f9;color:#1e3a5f;border-color:#e2e8f0';b.textContent='💰 미수관리';b.onclick=arOpenPage;if(price)price.after(b);else menu.appendChild(b);var ver=document.getElementById('appVer');if(ver){ver.textContent='v454 · 고철단가 매입분석 기준 동기화·추이그래프 (2026-09-12)';ver.title='앱 버전 v454 · 제품 재고소진·회전에 제외품 지정 추가 · 최종수정 2026-08-26';}}
 /* v163: aging month labels + band drilldown; ratio per-customer view */
 var arAgingV163=arAging;arAging=function(model){
  var a={d0:0,d31:0,d61:0,d91:0,d181:0};
