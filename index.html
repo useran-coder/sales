@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v701</title>
-<script>window.APP_BUILD='v701';</script>
+<title>동방파스텍 매출 분석 도구 v702</title>
+<script>window.APP_BUILD='v702';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1737,7 +1737,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v701</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v702</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -13127,8 +13127,24 @@ function getDb(){
   }else if(!db)db=ls||db;
   return normalize(db||blankDb());
 }
+/* v702 : ▾가공 추가 금액은 <매입분석도구가 주인>입니다.
+   매출 도구는 읽어서 보여주기만 하고, 저장할 때도 매입분석 값을 그대로 되돌려 놓습니다.
+   (예전에는 두 프로그램이 같은 저장소에 서로 다른 항목을 써서 행이 지워지거나 늘어났습니다) */
+function mpExtrasOwner(){
+  try{ var sh=readLocal(MAT_KEY); return (sh&&Array.isArray(sh.egiExtras))?sh:null; }catch(e){ return null; }
+}
+function mpExtrasMirror(db){
+  try{
+    var sh=mpExtrasOwner(); if(!sh)return db;
+    db.egiExtras=cp(sh.egiExtras||[]);
+    db._extraUpdated=cp(sh._extraUpdated||{});
+    db._extraDeleted=cp(sh._extraDeleted||{});
+  }catch(e){}
+  return db;
+}
 function putDb(db,stampSource){
   db=normalize(db);
+  mpExtrasMirror(db);          /* v702 : 가공 추가 금액은 매입분석 값 유지 */
   db.updated=nowText();
   if(stampSource){db._sourceApp=IS_MASTER?'sales_analyzer_v200':'cost_v200';db._sourceUpdatedAt=Date.now();db._masterSource='purchase_erp'}
   try{localStorage.setItem(MAT_KEY,JSON.stringify(db))}catch(e){}
@@ -13242,28 +13258,12 @@ function mergePurchaseShared(target,source){
       });
     });
   });
-  /* v690 : ▾가공 추가 금액(egiExtras)도 매입분석도구 값으로 갱신한다 */
+  /* v702 : ▾가공 추가 금액은 매입분석도구 값을 <그대로> 씁니다 (행 추가·삭제로 어긋나지 않게) */
   (function(){
-    var si=Array.isArray(src.egiExtras)?src.egiExtras:[];
-    if(!si.length)return;
-    if(!Array.isArray(out.egiExtras))out.egiExtras=[];
-    si.forEach(function(sx){
-      if(!po(sx))return;
-      var nm=String(sx.name||'').trim(); if(!nm&&!String(sx._id||''))return;
-      var id=String(sx._id||'');
-      if(n0((out._extraDeleted||{})[id]))return;
-      var t=out.egiExtras.filter(function(x){return po(x)&&(String(x._id||'')===id&&id)})[0]
-         ||out.egiExtras.filter(function(x){return po(x)&&String(x.name||'').trim()===nm&&nm})[0];
-      if(!t){t=cp(sx);if(!t._id)t._id='ex_'+hash(nm);out.egiExtras.push(t);cells++;return}
-      ['name','amount','note'].forEach(function(f){
-        var sS=n0((src._extraUpdated||{})[id+'|'+f]), oS=n0((out._extraUpdated||{})[String(t._id||'')+'|'+f]);
-        var sv2=String(sx[f]==null?'':sx[f]), ov=String(t[f]==null?'':t[f]);
-        if(sv2===ov)return;
-        if(sS>=oS){t[f]=sx[f];cells++;
-          if(!po(out._extraUpdated))out._extraUpdated={};
-          out._extraUpdated[String(t._id||'')+'|'+f]=Math.max(sS,now);}
-      });
-    });
+    if(!Array.isArray(src.egiExtras))return;
+    out.egiExtras=cp(src.egiExtras);
+    out._extraUpdated=cp(src._extraUpdated||{});
+    out._extraDeleted=cp(src._extraDeleted||{});
   })();
   out._purchaseSyncAt=now;
   out._purchaseImportedAt=Math.max(n0(out._purchaseImportedAt),n0(src._purchaseImportedAt),now);
@@ -13495,19 +13495,20 @@ function scrapCard(db,y){
   '</section>';
 }
 function extraCard(db){
+  /* v702 : 매입분석도구에서 입력한 값을 그대로 가져와 <보기 전용>으로만 보여줍니다 */
+  try{ mpExtrasMirror(db); }catch(_e){}
   var rows=db.egiExtras||[];
   var body=rows.map(function(r,i){
-    return '<tr><td>'+(IS_EDIT?'<input class="mp-extra-name" data-i="'+i+'" value="'+esc(r.name||'')+'" placeholder="항목명">':esc(r.name||''))+'</td>'+
-      '<td>'+(IS_EDIT?'<input class="mp-extra-amount" data-i="'+i+'" value="'+esc(r.amount||'')+'" inputmode="decimal" placeholder="원/kg">':'<span class="mp-market-ro">'+(r.amount!==''&&r.amount!=null?won(r.amount):'-')+'</span>')+'</td>'+
-      '<td>'+(IS_EDIT?'<input class="mp-extra-note" data-i="'+i+'" value="'+esc(r.note||'')+'" placeholder="비고">':esc(r.note||''))+'</td>'+
-      (IS_EDIT?'<td class="mp-extra-del"><button type="button" class="mp-del-row" onclick="deleteMaterialExtraV97('+i+')" title="삭제">×</button></td>':'')+'</tr>';
+    return '<tr><td>'+esc(r.name||'')+'</td>'+
+      '<td><span class="mp-market-ro">'+(r.amount!==''&&r.amount!=null&&n0(r.amount)?won(r.amount):'-')+'</span></td>'+
+      '<td>'+esc(r.note||'')+'</td></tr>';
   }).join('');
   return '<section class="mp-grade-card mp-special-card mp-extra-card">'+
     '<div class="mp-grade-head mp-extra-head" style="cursor:pointer" onclick="window.__mpToggleExtra&&window.__mpToggleExtra(this)"><span class="mp-grade-name"><span class="mp-extra-arrow" style="display:inline-block;width:1.1em">▸</span>가공 추가 금액</span>'+
-    '<span class="mp-grade-desc">미니샤 가공 · 소폭가공 · 판재 소량 추가비용'+(IS_MASTER?' (직접 입력)':' (읽기 전용)')+'</span></div>'+
-    '<div class="mp-extra-body" hidden><table class="mp-extra-table"><thead><tr><th>항목</th><th>추가 금액</th><th>비고</th>'+(IS_EDIT?'<th></th>':'')+'</tr></thead><tbody>'+
-    (body||'<tr><td colspan="4" class="mp-empty">등록된 항목이 없습니다.</td></tr>')+'</tbody></table>'+
-    (IS_EDIT?'<div class="mp-card-foot"><button type="button" class="mp-add-vendor" onclick="addMaterialExtraV97()">＋ 항목 추가</button></div>':'')+'</div></section>';
+    '<span class="mp-grade-desc">미니샤 가공 · 소폭가공 · 판재 소량 추가비용 <b style="color:#0f766e">(매입분석도구에서 입력 · 여기서는 보기 전용)</b></span></div>'+
+    '<div class="mp-extra-body" hidden><table class="mp-extra-table"><thead><tr><th>항목</th><th>추가 금액</th><th>비고</th></tr></thead><tbody>'+
+    (body||'<tr><td colspan="3" class="mp-empty">매입분석도구에 등록된 항목이 없습니다.</td></tr>')+'</tbody></table>'+
+    '<div class="mp-card-foot"><span class="sub2">이 표는 <b>매입분석도구 ▾가공 추가 금액</b>을 그대로 가져옵니다. 수정·추가·삭제는 매입분석도구에서 하세요.</span></div></div></section>';
 }
 function toolbarHtml(db,y,years){
   var opts=years.map(function(v){return '<option'+(v===y?' selected':'')+'>'+esc(v)+'</option>'}).join('');
@@ -13584,6 +13585,7 @@ function renderPage(){
   var y=String((sel&&sel.value)||new Date().getFullYear());
   if(ys.indexOf(y)<0)y=(ys.indexOf(String(new Date().getFullYear()))>=0)?String(new Date().getFullYear()):ys[ys.length-1];
   ensureYearRows(db,y);
+  try{ mpExtrasMirror(db); }catch(_e){}      /* v702 : ▾가공 추가 금액 = 매입분석도구 값 */
   if(IS_MASTER){try{if(typeof window.__mpSyncScrap==='function')window.__mpSyncScrap(db,y)}catch(e){}}
   var html=
     '<div class="card"><div class="ch"><span style="font-size:16px">💰 원자재 월별 매입단가</span>'+
@@ -13948,11 +13950,13 @@ window.deleteMaterialVendorV56=window.deleteMaterialVendorV97=function(k,ri){
   list.splice(+ri,1);putDb(db,true);window.renderMaterialPricePage();
 };
 window.addMaterialExtraV97=function(){
+  toast('▾가공 추가 금액은 매입분석도구에서 추가하세요');return;
   if(!IS_EDIT){toast('받기 전용 화면입니다');return}
   var db=getDb(),r={_id:'ex_'+hash(Date.now()+'|'+Math.random()),name:'',amount:'',note:''};
   db.egiExtras.push(r);db._extraUpdated[r._id+'|name']=Date.now();putDb(db,true);window.renderMaterialPricePage();
 };
 window.deleteMaterialExtraV97=function(i){
+  toast('▾가공 추가 금액은 매입분석도구에서 수정하세요');return;
   if(!IS_EDIT){toast('받기 전용 화면입니다');return}
   var db=getDb(),r=db.egiExtras[+i];
   if(!r||!confirm('이 EGI 추가 금액 항목을 삭제할까요?'))return;
@@ -16573,7 +16577,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 로그인화면 auVer 오경고 제거 (2026-09-14)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 가공 추가 금액 매입분석 미러 (2026-09-15)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
