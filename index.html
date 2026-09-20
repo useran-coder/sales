@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v704</title>
-<script>window.APP_BUILD='v704';</script>
+<title>동방파스텍 매출 분석 도구 v706</title>
+<script>window.APP_BUILD='v706';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -30,7 +30,7 @@
   header .header-title{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-width:max-content}
   header h1{font-size:18px;margin:0;font-weight:800;color:var(--navy)}
   header .sub{font-size:12px;color:var(--muted);margin-left:0}
-  .header-product-search{display:flex;align-items:center;gap:0;margin-left:8px;width:min(390px,32vw);height:36px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;overflow:hidden;transition:border-color .15s,box-shadow .15s}
+  .header-product-search{display:flex;align-items:center;gap:0;margin-left:auto;margin-right:0;width:min(468px,38.4vw);height:36px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;overflow:hidden;transition:border-color .15s,box-shadow .15s}
   .header-product-search:focus-within{border-color:#94a3b8;box-shadow:0 0 0 3px rgba(100,116,139,.10)}
   .header-product-search input{flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;padding:0 12px;font-family:inherit;font-size:13px;color:var(--txt)}
   .header-product-search input::placeholder{color:#94a3b8}
@@ -43,6 +43,8 @@
   .header-product-search .hps-mode.on:hover{background:#17304f;color:#fff}
   body.header-search-mode #setPanel,body.header-search-mode #mgrFilterBar{display:none!important}
   @media(max-width:980px){header{flex-wrap:wrap}.header-product-search{order:5;width:100%;margin-left:0}.appver{margin-left:auto!important}}
+  /* v705 : 제목과 「매입분석 도구」 버튼 사이 가운데 정렬 (양쪽 여백을 자동으로 나눔) */
+  header .header-product-search{margin-left:auto!important;margin-right:0!important}
   .wrap{max-width:1680px;margin:0 auto;padding:18px 24px 60px}
   /* v444: 월 재고현황 표 글자크기 13px */
   #tbl.mv-tbl thead th{font-size:13px}
@@ -869,7 +871,7 @@ header .appuser.off b{color:#94a3b8}
 .gs-config-grid input{width:100%;min-width:0;height:35px;padding:7px 10px;border:1px solid #cfd8e5;border-radius:7px;background:#fff;color:#26364d;font-family:inherit;font-size:12px}
 .gs-config-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:9px}
 .gs-config-status{width:100%;margin-top:8px}
-@media(max-width:1180px){header .header-sync-btn{min-width:200px}.header-product-search{width:min(300px,26vw)}}
+@media(max-width:1180px){header .header-sync-btn{min-width:200px}.header-product-search{width:min(360px,31.2vw)}}
 @media(max-width:980px){header .header-history-btn{order:3;margin-left:auto}.header-sync-btn{order:4;min-width:210px}.appver{order:5;margin-left:0!important}.header-product-search{order:6}}
 @media(max-width:720px){.gs-config-grid{grid-template-columns:1fr}}
 @media(max-width:620px){header .header-history-btn{order:3;margin-left:auto}.appver{order:4}.header-sync-btn{width:100%;order:5;margin-left:0}.header-product-search{order:6}}
@@ -1737,7 +1739,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v704</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v706</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -1759,10 +1761,11 @@ body.fpopen #fpSum{display:block}
     <div class="panel" id="dataPanel">
       <div style="margin:0 0 14px;border-bottom:1px solid var(--line);padding-bottom:12px">
         <div id="auAdmin" style="display:none;margin-bottom:10px"></div>
-        <details class="mk-carddet" style="margin:0;padding:0;border:0;background:none"><summary style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="au-topbar-row"><span class="au-topbar" id="auTopBar"><b class="au-topbar-lab">🔐 로그인</b><span id="auBar"></span></span></div>
+        <details class="mk-carddet gs-syncdet" id="gsSyncDet" style="margin:0;padding:0;border:0;background:none"><summary style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <b style="font-size:13px">☁️ 구글 동기화 <span class="sub2" style="font-weight:400">(전체 설정을 공용 구글시트와 공유 — 모두에게 공유)</span></b>
+        <span id="hdrMovedBox"></span>
         <span class="mk-bmore">펼쳐보기 ▾</span>
-        <span class="au-topbar" id="auTopBar"><span id="hdrMovedBox"></span><b class="au-topbar-lab">🔐 로그인</b><span id="auBar"></span></span>
         </summary><div style="margin-top:9px">
         <div class="gs-config-grid">
           <input type="text" id="gsUrl" placeholder="Apps Script 웹앱 URL (…/exec)" autocomplete="url">
@@ -16577,7 +16580,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 로그인 실패 원인 안내 보강 (2026-09-16)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 동기화 배지 위치·로그인 GET 재시도 (2026-09-20)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-05';
@@ -19559,6 +19562,18 @@ async function auCall(payload,timeoutMs){
       if(d2&&!d2.error)return d2;
       if(d2&&d2.error&&!AU_LOST_RE.test(String(d2.error)))throw new Error(d2.error);
     }catch(_e2){ if(_e2&&_e2.message&&!/Failed to fetch|NetworkError/i.test(_e2.message))throw _e2; }
+    /* v706 : POST 가 챗봇으로 새면 GET(doGet) 으로도 한 번 더 시도합니다 */
+    try{
+      var g=u+(u.indexOf('?')>=0?'&':'?')+'action='+encodeURIComponent(payload.action||'')+
+            '&key='+encodeURIComponent(payload.key||'')+
+            (payload.id?('&id='+encodeURIComponent(payload.id)):'')+
+            (payload.pw?('&pw='+encodeURIComponent(payload.pw)):'')+
+            (payload.token?('&token='+encodeURIComponent(payload.token)):'');
+      var r3=await fetch(g,{method:'GET'});
+      var t3=await r3.text(), d3=null; try{ d3=JSON.parse(t3); }catch(_p3){ d3=null; }
+      if(d3&&!d3.error)return d3;
+      if(d3&&d3.error&&!AU_LOST_RE.test(String(d3.error)))throw new Error(d3.error);
+    }catch(_e3){ if(_e3&&_e3.message&&!/Failed to fetch|NetworkError/i.test(_e3.message))throw _e3; }
     throw new Error('서버가 로그인 요청을 알아보지 못했습니다.\n로그인 요청이 auth(2_로그인) 대신 다른 처리기로 넘어갔습니다.\n\n관리자 조치 (앱스스크립트)\n  ① auth.gs 를 최신 코드(v405)로 교체 — 옛 코드는 호출 방식이 다르면 요청을 놓칩니다\n  ② dsync.gs 의 doPost 맨 앞에  var r=auRoute(e); if(r) return r;  가 있는지 확인\n  ③ 배포 → 배포 관리 → 연필(✏) → 버전: «새 버전» → 배포\n(서버 응답: '+(_serr||'-')+')');
   }
   if(d&&d.error)throw new Error(d.error);
@@ -20036,6 +20051,18 @@ header .header-sync-btn.sync-ok .sync-time{color:#059669!important}
   font-size:12px!important;font-weight:800;padding:0 11px;border-radius:8px;white-space:nowrap;margin:0!important;
   border:1px solid #a7f3d0;background:#ecfdf5;color:#047857}
 #hdrMovedBox+b{margin-left:4px;padding-left:11px;border-left:1px solid #dbe2ea}
+/* v705 : 로그인 줄은 구글 동기화 박스 «위» 오른쪽에 둡니다 */
+.au-topbar-row{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;margin:0 0 7px}
+.au-topbar-row .au-topbar{margin-left:0}
+/* v705 : 접었을 때 박스 높이를 버튼 높이만큼으로 줄입니다 */
+#gsSyncDet{padding:0!important;border:0!important;background:none!important;margin:0 0 2px!important}
+#gsSyncDet>summary{padding:0!important;min-height:0;line-height:1.15;gap:8px}
+#gsSyncDet>summary:hover{background:none!important;box-shadow:none!important}
+#gsSyncDet>summary>b{line-height:1.15}
+#gsSyncDet>summary #hdrMovedBox{margin-left:auto}
+#gsSyncDet>summary .mk-bmore{margin-left:8px;padding:3px 10px;line-height:1.15}
+#gsSyncDet>summary #hdrMovedBox+b{margin-left:0;padding-left:0;border-left:0}
+@media(max-width:900px){ .au-topbar-row{justify-content:flex-start} }
 /* v700 : 로그인 줄을 ☁️ 구글 동기화 제목 오른쪽으로 */
 .au-topbar{margin-left:auto;display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap;
   font-size:12px;color:#475569;padding:4px 9px;border:1px solid #e2e8f0;border-radius:9px;background:#f8fafc}
@@ -20077,6 +20104,9 @@ header .appuser.hu-hide{display:none!important}
     /* ☁️ 구글 동기화 제목줄로 옮긴 로그인 영역은 눌러도 접히지 않게 */
     var t=document.getElementById('auTopBar');
     if(t&&!t._b700){ t._b700=true; t.addEventListener('click',function(e){ e.stopPropagation(); e.preventDefault(); }); }
+    /* v706 : 제목 줄로 옮긴 동기화·버전 배지도 눌러서 접히지 않게 */
+    var mb=document.getElementById('hdrMovedBox');
+    if(mb&&!mb._b706){ mb._b706=true; mb.addEventListener('click',function(e){ e.stopPropagation(); }); }
   }
   function tick(){ bind(); sync(); }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',tick,{once:true});
