@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v739</title>
-<script>window.APP_BUILD='v739';</script>
+<title>동방파스텍 매출 분석 도구 v740</title>
+<script>window.APP_BUILD='v740';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1754,6 +1754,12 @@ body.fpopen #fpSum{display:block}
 .qtya-vendor-box{align-self:start}
 </style>
 
+<style id="v740-gs-soft-border">
+/* v740 : 구글 동기화 줄의 박스(불러오기·버전·펼쳐보기) 외곽선을 옅게 */
+#gsSyncDet > summary #gsSyncBtn{border-color:#e6eaff !important}
+#gsSyncDet > summary #appVer{border-color:#dcf5ea !important}
+#gsSyncDet > summary .mk-bmore{border-color:#d9f3ef !important}
+</style>
 </head>
 <body>
 <header>
@@ -1770,7 +1776,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v739</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v740</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -11992,8 +11998,11 @@ function gsDeepDelta(cur,old){
   if(gsIsPlain(cur)||gsIsPlain(old)){
     const out={}; const keys=new Set([...Object.keys(cur||{}),...Object.keys(old||{})]);
     keys.forEach(k=>{
-      if(!(cur&&Object.prototype.hasOwnProperty.call(cur,k))){ out[k]=null; return; }
+      if(!(cur&&Object.prototype.hasOwnProperty.call(cur,k))){ if(old&&old[k]===null)return; out[k]=null; return; }
       const cv=cur[k], ov=old&&old[k];
+      /* v740 : 값 null 과 '항목 없음'은 서버에서 같은 뜻(삭제)입니다. 둘을 다르게 보면 저장→불러오기→다시 저장이
+         3초마다 끝없이 반복되며 매출 목표 화면을 매번 다시 그려 멈춤(응답 없는 페이지)이 생겼습니다. */
+      if(cv===null&&(ov===null||ov===undefined))return;
       if(gsIsPlain(cv)||gsIsPlain(ov)){ const sub=gsDeepDelta(cv,ov); if(!gsObjEmpty(sub))out[k]=sub; }
       else if(!gsSame(cv,ov)){ out[k]=cv; }
     });
@@ -17141,7 +17150,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 매출 목표 화면 속도 개선(멈춤 해소) (2026-09-22)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 동기화 무한반복 차단·매출 목표 멈춤 해소 (2026-09-22)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-20';
