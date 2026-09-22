@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v738</title>
-<script>window.APP_BUILD='v738';</script>
+<title>동방파스텍 매출 분석 도구 v739</title>
+<script>window.APP_BUILD='v739';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1770,7 +1770,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v738</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v739</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -2596,7 +2596,8 @@ function weekLabel(k){ const s=new Date(k); const e=new Date(s); e.setDate(e.get
 function buildSummary(){
   const pr=periodRows();
   const amt=pr.reduce((a,r)=>a+amtOf(r),0);
-  const ds=pr.map(r=>r.d).sort((a,b)=>a-b);
+  /* v739 : 수십만 행 날짜 정렬 대신 최소·최대만 구합니다(결과 동일) */
+  const ds=(()=>{ let mn=null,mx=null; for(const r of pr){ const d=r.d; if(d==null)continue; if(mn==null||d<mn)mn=d; if(mx==null||d>mx)mx=d; } return mn==null?[]:[mn,mx]; })();
   const cust=new Set(pr.map(r=>r.cust)).size, code=new Set(pr.map(r=>r.code).filter(Boolean)).size, grp=new Set(pr.map(r=>r.name)).size;
   const specN=new Set(pr.map(r=>r.spec).filter(Boolean)).size;
   const itemN=new Set(pr.map(r=>(r.code||'')+'│'+(r.spec||''))).size;
@@ -7735,7 +7736,9 @@ function mixZeroObj(){return Object.fromEntries(mixCats().map(c=>[c,0]));}
 const _ETC_KW=['운반비','실커버','스텐실','도어가공','PD커버','금형','후레임바','고철','EGI'];
 const _normMixName=n=>String(n||'').replace(/\s+/g,'').toUpperCase();
 const isLaserName=n=>isLaserScope(n);
-const isEtcName=n=>{ const s=_normMixName(n); return _ETC_KW.some(k=>s.includes(_normMixName(k))); };
+/* v739 : 품명별 결과를 기억해 행마다 다시 계산하지 않습니다 */
+const _ETC_KW_N=_ETC_KW.map(k=>_normMixName(k)), _etcMemo=new Map();
+const isEtcName=n=>{ const key=String(n||''); let v=_etcMemo.get(key); if(v===undefined){ const s=_normMixName(key); v=_ETC_KW_N.some(k=>s.includes(k)); if(_etcMemo.size>50000)_etcMemo.clear(); _etcMemo.set(key,v); } return v; };
 const isInnerName=n=>{ const s=String(n||''); return /상하\s*보강|이너\s*프레임|INNER\s*FRAME/i.test(s); };
 function mixCatOf(r){ const key=(r.code||'(미상)')+'│'+(r.spec||''),nm=r.name||''; /* 품명의 (L)·레이저·임가공 표기는 수동 구분보다 우선하여 누락을 막습니다. */ if(isLaserName(nm))return '레이저'; const ov=(state.gbunOverride||{})[key]; if(ov&&ov.cat)return ov.cat; if(/_G$/i.test(String(r.code||'')))return '유통/OEM'; if(isInnerName(nm))return '내부보강'; if(isEtcName(nm)||!r.code||r.code==='(미상)')return '기타'; return isExclusivePk(key)?'전용품':'공용품'; }
 function mixCatKey(o){ return mixCatOf({code:o.code,spec:o.spec,name:o.name}); }
@@ -17138,7 +17141,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 기준 목표안 1안 선택·전략 목표금액 위치 (2026-09-21)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 매출 목표 화면 속도 개선(멈춤 해소) (2026-09-22)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-20';
@@ -31039,6 +31042,53 @@ function install(){
   return true;
 }
 if(!install()){ var n=0,t=setInterval(function(){ if(install()||++n>40)clearInterval(t); },300); }
+})();
+</script>
+<script id="v739-perf-cache">
+/* v739 : 매출 목표 화면 멈춤(응답 없는 페이지) 해소
+   - dataYears / fcCustomerUniverse 가 호출될 때마다 출고 데이터 전체(수십만 행)를 다시 훑던 것을
+     데이터가 바뀌지 않으면 한 번 계산한 결과를 재사용하도록 변경
+   - 제외 거래처 키 목록도 같은 작업 안에서는 재사용 */
+(function(){
+  function curSig(){ var a=(typeof CUR!=='undefined')?CUR:null; if(!a||!a.length)return null; return {a:a,n:a.length,f:a[0],l:a[a.length-1]}; }
+  function same(c,s){ return c&&s&&c.a===s.a&&c.n===s.n&&c.f===s.f&&c.l===s.l; }
+  var yc=null, uc=null;
+  window.__v739Invalidate=function(){ yc=null; uc=null; };
+  var _dy=window.dataYears;
+  if(typeof _dy==='function'){
+    var dy=function(){ var s=curSig(); if(!s)return _dy.apply(this,arguments);
+      if(!same(yc,s)){ yc=s; yc.v=_dy.apply(this,arguments); } return yc.v.slice(); };
+    window.dataYears=dy; try{ dataYears=dy; }catch(_e){}
+  }
+  var _cu=window.fcCustomerUniverse;
+  if(typeof _cu==='function'){
+    var cu=function(){ var s=curSig(); if(!s)return _cu.apply(this,arguments);
+      if(!same(uc,s)){ uc=s; var seen=new Set(), out=[]; for(var i=0;i<s.a.length;i++){ var r=s.a[i]; if(!r)continue; var c=String(r.cust||'').trim(); if(!c||seen.has(c))continue; seen.add(c); out.push(c); } uc.v=out; uc.seen=seen; }
+      var out2=uc.v.slice(), seen2=new Set(uc.seen), fc=state.fc||{};
+      var add=function(c){ c=String(c||'').trim(); if(!c||seen2.has(c))return; seen2.add(c); out2.push(c); };
+      Object.keys(fc.newCusts||{}).forEach(add); Object.values(fc.newCustReplacements||{}).forEach(add); (fc.newLines||[]).forEach(function(ln){ if(ln)add(ln.cust); });
+      return out2; };
+    window.fcCustomerUniverse=cu; try{ fcCustomerUniverse=cu; }catch(_e){}
+  }
+  var _ek=window.fcExcludedKeySet, ek=null;
+  if(typeof _ek==='function'){
+    var ekw=function(){ var fc=state.fc||{}, fm=fc.exclCust||null, cm=state.cmgrExcl||null;
+      var fp='', k; if(fm)for(k in fm)fp+=k+(fm[k]?'\u0001':'\u0002'); fp+='\u0003'; if(cm)for(k in cm)fp+=k+(cm[k]?'\u0001':'\u0002');
+      if(ek&&ek.fp===fp)return new Set(ek.v);
+      var v=_ek.apply(this,arguments); ek={fp:fp,v:new Set(v)}; return v; };
+    window.fcExcludedKeySet=ekw; try{ fcExcludedKeySet=ekw; }catch(_e){}
+  }
+  /* 월매출·레이저 월매출 공유 집계 : 입력(출고 데이터·제외 거래처·금액 기준·고철업체)이 같으면 재사용 */
+  function inFp(){ var s=curSig(); if(!s)return null; var ex=''; try{ ex=Array.from(fcExcludedKeySet()).sort().join('\u0001'); }catch(_e){}
+    var sv=''; try{ sv=(typeof scrapVendorList==='function')?scrapVendorList().join('\u0001'):''; }catch(_e){}
+    return {s:s,k:ex+'\u0002'+(state.basis||'')+'\u0002'+sv}; }
+  function memoRefresh(name,field){ var orig=window[name]; if(typeof orig!=='function')return; var c=null;
+    var w=function(){ var f=inFp(); if(!f)return orig.apply(this,arguments);
+      if(c&&same(c.s,f.s)&&c.k===f.k){ state[field]=Object.assign({},c.v); return state[field]; }
+      var v=orig.apply(this,arguments); c={s:f.s,k:f.k,v:Object.assign({},v)}; return v; };
+    window[name]=w; try{ if(name==='refreshSalesMonthlySync')refreshSalesMonthlySync=w; else refreshLaserMonthlySync=w; }catch(_e){} }
+  memoRefresh('refreshSalesMonthlySync','salesMonthlySync');
+  memoRefresh('refreshLaserMonthlySync','laserMonthlySync');
 })();
 </script>
 </body>
