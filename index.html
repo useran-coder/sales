@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v742</title>
-<script>window.APP_BUILD='v742';</script>
+<title>동방파스텍 매출 분석 도구 v743</title>
+<script>window.APP_BUILD='v743';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1776,7 +1776,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v742</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v743</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -17166,7 +17166,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 매출 목표·월별 실적 목표 안내 배지 제거 (2026-09-23)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 방화문 납품 시장 향후 5년(2028~2032) 보기 (2026-09-23)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-20';
@@ -18589,8 +18589,139 @@ for(var k=0;k<=8;k++){
   '</div>';
  return legend+'<div style="width:100%"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;font-family:inherit;font-weight:400">'+g+'</svg></div>';
 }
+/* ═══ v743 : 향후 5년(2028~2032) 방화문 납품 시장 방향 ═══
+   2028년은 «2026년 착공»이, 2029년 이후는 «2027~2030년 착공 시나리오»가 원천입니다.
+   지수 기준 100 = 2024년 착공 월평균(25,286호)이 만들어 내는 납품량(기존 모델과 동일). */
+var FD_L28=[
+ ['01월',80,2.05,'2025년 말 착공 회복분 도달 · 동절기'],
+ ['02월',72,2.00,'설 연휴 · 연중 최저'],
+ ['03월',88,2.10,'봄 현장 재개'],
+ ['04월',92,2.15,'2026년 상반기 착공(+11.1%) 반영 시작'],
+ ['05월',90,2.20,'황금연휴로 조업일 감소'],
+ ['06월',104,2.25,'상반기 마감 · 기준선 회복'],
+ ['07월',98,2.30,'장마·혹서기'],
+ ['08월',88,2.30,'하계휴가 집중'],
+ ['09월',97,2.35,'추석 전 출하'],
+ ['10월',108,2.40,'2026년 하반기 공적주택 착공분 도달'],
+ ['11월',128,2.45,'연말 준공 집중 본격화'],
+ ['12월',141,2.50,'연말 준공 몰림 · 연중 최대']
+];
+var FD_LYR=[
+ ['2029',108,95,120,'2027년 착공(정부 29만호 드라이브)분 도달'],
+ ['2030',114,99,129,'공적주택 119만호 정책 물량의 본류 구간'],
+ ['2031',117,100,134,'과천·태릉(2029 착공)·1·29대책 부지(2030 착공) 반영'],
+ ['2032',112,94,130,'정책 물량 소진 · 가구수 증가 둔화로 완만한 하락']
+];
+function fdLongMode(v){
+ try{ state.market=state.market||{}; state.market.fdLong=!!v; if(typeof marketFiredoor==='function')marketFiredoor(); }catch(_e){}
+}
+function fdIsLong(){ return !!((state.market||{}).fdLong); }
+function fdLongKpi(){
+ var a28=FD_L28.reduce(function(s,r){return s+r[1];},0)/12;
+ var k=[
+  ['2028 연평균','지수 '+a28.toFixed(0),'#16a34a','2026년 착공(1~7월 13.8만호·+11.1%)이 원천 · 기준선 회복'],
+  ['최대 출하월','2028.12 · 지수 141','#b45309','연말 준공 집중 · 2028년 최저(2월 72)의 2.0배'],
+  ['고점 구간','2031 · 지수 117','#0f766e','정책 물량(과천·태릉·1·29대책)이 납품에 도달하는 해'],
+  ['5년 방향','2028 회복 → 2031 고원 → 2032 둔화','#7f1d1d','2029~2032는 착공 시나리오 기반 · 밴드는 ±12%']
+ ];
+ return k.map(function(x){
+  return '<div class="mk-kw" style="border-top-color:'+x[2]+'"><div class="kl">'+esc(x[0])+'</div>'+
+   '<div class="kv" style="color:'+x[2]+';font-size:15px">'+esc(x[1])+'</div><div class="kd">'+esc(x[3])+'</div></div>';
+ }).join('');
+}
+function fdLongChart(){
+ var W=1400,H=390,P={t:34,r:64,b:76,l:60};
+ var pw=W-P.l-P.r, ph=H-P.t-P.b;
+ var iMax=160, sMax=3.5;
+ var nM=FD_L28.length, nY=FD_LYR.length, gap=26;
+ var wM=(pw-gap)*nM/(nM+nY+1.6), wY=(pw-gap)-wM;
+ var Xm=function(i){ return P.l+(wM/nM)*(i+0.5); };
+ var Xy=function(i){ return P.l+wM+gap+(wY/nY)*(i+0.5); };
+ var Yi=function(v){ return P.t+ph-(v/iMax)*ph; };
+ var Ys=function(v){ return P.t+ph-(v/sMax)*ph; };
+ var g='';
+ /* 구간 배경 */
+ var segs=[[P.l,P.l+wM*0.5,'#ecfeff','#0891b2','2028 상반기 · 기준선 회복'],
+           [P.l+wM*0.5,P.l+wM,'#f0fdf4','#16a34a','2028 하반기 · 회복 본격화'],
+           [P.l+wM+gap,P.l+wM+gap+wY,'#fff7ed','#ea580c','2029~2032 · 정책 물량 도달과 둔화']];
+ segs.forEach(function(s){
+  g+='<rect x="'+s[0].toFixed(1)+'" y="'+P.t+'" width="'+(s[1]-s[0]).toFixed(1)+'" height="'+ph+'" fill="'+s[2]+'"/>'+
+     '<text class="mk-lbl14" data-screen-px="14" x="'+((s[0]+s[1])/2).toFixed(1)+'" y="'+(P.t-11)+'" text-anchor="middle" font-size="14" font-weight="700" fill="'+s[3]+'">'+esc(s[4])+'</text>';
+ });
+ /* 눈금 */
+ for(var k=0;k<=8;k++){
+  var v=iMax/8*k, y=Yi(v);
+  g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="#e2e8f0" stroke-width="1"/>'+
+     '<text x="'+(P.l-8)+'" y="'+(y+4.5).toFixed(1)+'" text-anchor="end" font-size="12" fill="#94a3b8">'+Math.round(v)+'</text>'+
+     '<text x="'+(W-P.r+8)+'" y="'+(y+4.5).toFixed(1)+'" text-anchor="start" font-size="12" fill="#93c5fd">'+(sMax/8*k).toFixed(1)+'</text>';
+ }
+ /* 기준선 100 */
+ g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+Yi(100).toFixed(1)+'" y2="'+Yi(100).toFixed(1)+'" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="7 5"/>'+
+    '<text x="'+(P.l+6)+'" y="'+(Yi(100)-7).toFixed(1)+'" font-size="12" font-weight="700" fill="#dc2626">기준 100 = 2024 착공 월평균</text>';
+ /* 2028 월별 : 선행 착공 막대 + 지수 선 */
+ var bw=Math.max(10,(wM/nM)*0.5);
+ FD_L28.forEach(function(r,i){
+  var x=Xm(i), y=Ys(+r[2]||0);
+  g+='<rect x="'+(x-bw/2).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+(P.t+ph-y).toFixed(1)+'" fill="#bfdbfe" rx="3"><title>'+esc(r[0])+' 선행 착공 가중평균 '+r[2]+'만호</title></rect>';
+ });
+ var pts=FD_L28.map(function(r,i){ return Xm(i).toFixed(1)+','+Yi(r[1]).toFixed(1); }).join(' ');
+ g+='<polyline points="'+pts+'" fill="none" stroke="#0f766e" stroke-width="3" stroke-linejoin="round"/>';
+ FD_L28.forEach(function(r,i){
+  var x=Xm(i), y=Yi(r[1]);
+  g+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="4.5" fill="#fff" stroke="#0f766e" stroke-width="2.4"><title>2028.'+esc(r[0])+' 지수 '+r[1]+'\n'+esc(r[3])+'</title></circle>'+
+     '<text x="'+x.toFixed(1)+'" y="'+(y-11).toFixed(1)+'" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f766e">'+r[1]+'</text>'+
+     '<text x="'+x.toFixed(1)+'" y="'+(P.t+ph+20)+'" text-anchor="middle" font-size="12.5" fill="#475569">'+esc(r[0])+'</text>';
+ });
+ g+='<rect x="'+(Xm(0)-26).toFixed(1)+'" y="'+(P.t+ph+30)+'" width="78" height="22" rx="11" fill="#f59e0b"/>'+
+    '<text x="'+(Xm(0)+13).toFixed(1)+'" y="'+(P.t+ph+45)+'" text-anchor="middle" font-size="12.5" font-weight="800" fill="#fff">2028</text>';
+ /* 2029~2032 : 범위 밴드 + 연평균 선 */
+ var up=FD_LYR.map(function(r,i){ return Xy(i).toFixed(1)+','+Yi(r[3]).toFixed(1); });
+ var dn=FD_LYR.map(function(r,i){ return Xy(i).toFixed(1)+','+Yi(r[2]).toFixed(1); }).reverse();
+ g+='<polygon points="'+up.concat(dn).join(' ')+'" fill="#fed7aa" opacity="0.55"/>';
+ var ypts=FD_LYR.map(function(r,i){ return Xy(i).toFixed(1)+','+Yi(r[1]).toFixed(1); }).join(' ');
+ g+='<polyline points="'+(Xm(nM-1).toFixed(1)+','+Yi(FD_L28[nM-1][1]).toFixed(1)+' ')+ypts+'" fill="none" stroke="#ea580c" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round"/>';
+ FD_LYR.forEach(function(r,i){
+  var x=Xy(i), y=Yi(r[1]);
+  g+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="5.5" fill="#fff" stroke="#ea580c" stroke-width="2.6"><title>'+esc(r[0])+'년 연평균 지수 '+r[1]+' (범위 '+r[2]+'~'+r[3]+')\n'+esc(r[4])+'</title></circle>'+
+     '<text x="'+x.toFixed(1)+'" y="'+(y-12).toFixed(1)+'" text-anchor="middle" font-size="13" font-weight="800" fill="#ea580c">'+r[1]+'</text>'+
+     '<text x="'+x.toFixed(1)+'" y="'+(Yi(r[3])-4).toFixed(1)+'" text-anchor="middle" font-size="11" fill="#c2410c">'+r[3]+'</text>'+
+     '<text x="'+x.toFixed(1)+'" y="'+(Yi(r[2])+14).toFixed(1)+'" text-anchor="middle" font-size="11" fill="#c2410c">'+r[2]+'</text>'+
+     '<text x="'+x.toFixed(1)+'" y="'+(P.t+ph+20)+'" text-anchor="middle" font-size="12.5" font-weight="700" fill="#475569">'+esc(r[0])+'년</text>';
+ });
+ g+='<line x1="'+(P.l+wM+gap/2).toFixed(1)+'" x2="'+(P.l+wM+gap/2).toFixed(1)+'" y1="'+P.t+'" y2="'+(P.t+ph)+'" stroke="#cbd5e1" stroke-dasharray="4 4"/>';
+ g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+(P.t+ph)+'" y2="'+(P.t+ph)+'" stroke="#cbd5e1"/>';
+ var legend='<div class="mk-serbtns" style="justify-content:flex-end">'+
+  '<span class="mk-serhint" style="margin-right:auto"></span>'+
+  '<span style="font-size:12px;color:#0f766e;font-weight:700">— 2028년 월별 납품지수 (좌축)</span>'+
+  '<span style="font-size:12px;color:#93c5fd;font-weight:700">▮ 선행 착공 가중평균 (우축, 만호)</span>'+
+  '<span style="font-size:12px;color:#ea580c;font-weight:700">--- 2029~2032 연평균 (밴드=보수~낙관)</span></div>';
+ return legend+'<div style="width:100%"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;font-family:inherit;font-weight:400">'+g+'</svg></div>';
+}
+function fdLongTable(){
+ var tb=FD_L28.map(function(r){
+  return '<tr><td class="k">2028.'+esc(r[0])+'</td><td><b style="color:#0f766e;font-size:13.5px">'+r[1]+'</b></td>'+
+   '<td>'+r[2]+'</td><td style="color:#94a3b8">-</td><td class="l" style="font-size:11.5px;color:#475569">'+esc(r[3])+'</td></tr>';
+ }).join('')+FD_LYR.map(function(r){
+  return '<tr><td class="k" style="color:#ea580c">'+esc(r[0])+'년 평균</td><td><b style="color:#ea580c;font-size:13.5px">'+r[1]+'</b></td>'+
+   '<td style="color:#94a3b8">-</td><td>'+r[2]+' ~ '+r[3]+'</td><td class="l" style="font-size:11.5px;color:#475569">'+esc(r[4])+'</td></tr>';
+ }).join('');
+ return '<div class="mk-tblwrap" style="margin-top:12px"><table class="mk-tbl" style="min-width:720px"><thead><tr>'+
+  '<th class="l">시점</th><th>납품지수</th><th>선행 착공(만호)</th><th>범위(보수~낙관)</th><th class="l">근거</th>'+
+  '</tr></thead><tbody>'+tb+'</tbody></table></div>';
+}
+function fdLongIns(){
+ return '<div class="mk-ins" style="margin-top:12px"><div class="ih">💡 향후 5년에서 읽어야 할 것</div><div class="il">'+
+  '<div><b>① 2028년이 회복의 첫 해</b> — 2028년 물량의 원천인 2026년 착공은 1~7월 13만8,383호로 전년보다 11.1% 늘었습니다. 2027년 연평균 93에서 2028년 약 99로 기준선을 회복합니다.</div>'+
+  '<div><b>② 상저하고는 2028년에도 그대로</b> — 2월 72 → 12월 141로 연중 2.0배 차이가 납니다. 인력과 설비는 연평균이 아니라 <b>11~12월 피크</b>에 맞춰 준비해야 합니다.</div>'+
+  '<div><b>③ 2029~2031이 정책 물량 구간</b> — 정부 2026년 착공 목표 29.4만호와 공적주택 119만호가 계획대로 착공되면 2029~2031년 지수는 108~117까지 올라갑니다. 과천·태릉은 2029년, 1·29대책 부지는 2030년 착공 예정이라 납품은 2031~2032년에 도달합니다.</div>'+
+  '<div><b>④ 2032년은 둔화 국면</b> — 정책 물량이 소진되고 가구수 증가가 둔화되면서 완만하게 내려옵니다. 설비 증설은 2029~2030년에 회수되는 규모로 제한하는 것이 안전합니다.</div>'+
+  '<div><b>⑤ 밴드가 넓다는 점</b> — 2029년 이후는 착공 시나리오 기반이라 보수~낙관 폭이 ±12%입니다. 매년 실제 착공 실적으로 다시 맞춰야 합니다.</div>'+
+  '</div></div>';
+}
+
 function fdMonthSection(){
  var rows=mkRows('fdMonthly'); if(!rows.length)return '';
+ var _L=(typeof fdIsLong==='function')&&fdIsLong();
  var idx=rows.map(function(r){return +r[1]||0;});
  var mn=Math.min.apply(null,idx), mx=Math.max.apply(null,idx);
  var mnM=rows[idx.indexOf(mn)][0], mxM=rows[idx.indexOf(mx)][0];
@@ -18636,11 +18767,17 @@ function fdMonthSection(){
  var ins=mkLines('fdMonthIns').map(function(t){ return '<div>'+t+'</div>'; }).join('');
 
  return '<div class="mk-card">'+
-  '<div class="mk-h mk-hrow"><span>📉 월별 방화문 납품 시장 방향<span class="mk-hs">2026.09 ~ 2027.12 · 착공 21~27개월 시차 모델</span></span>'+
+  '<div class="mk-h mk-hrow"><span>📉 월별 방화문 납품 시장 방향<span class="mk-hs">'+(_L?'2028.01 ~ 2032 · 착공 21~27개월 시차 모델':'2026.09 ~ 2027.12 · 착공 21~27개월 시차 모델')+'</span></span>'+
+   '<div class="mk-modebtns">'+
+     '<button type="button" class="mk-modebtn'+(_L?'':' on')+'" onclick="fdLongMode(false)">📅 2026~2027</button>'+
+     '<button type="button" class="mk-modebtn'+(_L?' on':'')+'" onclick="fdLongMode(true)">🔭 향후 5년</button>'+
+   '</div>'+
    '<span class="mk-asof">📅 기준일 2026.9.21</span></div>'+
+  (_L?'<div class="mk-warn" style="margin-bottom:10px">🔭 <b>향후 5년 시나리오</b> — 2028년은 <b>2026년 착공</b>(1~7월 13만8,383호·전년비 +11.1%)이 원천이라 비교적 단단하고, <b>2029~2032년</b>은 정부 착공 목표(2026년 29.4만호)와 공적주택 119만호 정책이 계획대로 진행된다는 가정 위의 <b>시나리오</b>입니다. 지수 100 = 2024년 착공 월평균(25,286호)이 만드는 납품량으로, 앞 화면과 같은 기준입니다.</div>':'')+
   '<div class="mk-warn" style="margin-bottom:10px">📌 방화문·부자재는 <b>착공 후 18~30개월</b>(중심 24개월), <b>준공 6~12개월 전</b>에 투입됩니다. 월별 납품지수 = <b>21~27개월 전 주택 착공의 삼각가중평균</b>(24개월 전 비중 최대) × <b>조업일수</b> × <b>마감 계절계수</b>이며, 기준 100은 <b>2024년 착공 월평균(25,286호)</b>이 만들어 내는 납품량입니다. 12월에 몰리는 착공(2024.12·2025.12)이 한 달에 쏠리지 않도록 7개월 창으로 나눠 반영했습니다.</div>'+
-  '<div class="mk-kws" style="margin-bottom:12px">'+kpi+'</div>'+
-  fdMonthChart(rows)+
+  '<div class="mk-kws" style="margin-bottom:12px">'+(_L?fdLongKpi():kpi)+'</div>'+
+  (_L?(fdLongChart()+fdLongTable()+fdLongIns()+'<div class="mk-h" style="margin:16px 0 8px">📅 2026.09~2027.12 상세<span class="mk-hs">아래 표·국면·코멘트는 현재 구간 기준입니다</span></div>'):'')+
+  (_L?'':fdMonthChart(rows))+
   '<div class="mk-tblwrap" style="margin-top:12px"><table class="mk-tbl" style="min-width:1020px"><thead><tr>'+
    ['<월','<주요 일정','조업일수','방화문 납품지수','추이','선행 착공(만호)','국면','<코멘트'].map(function(h){ var l=h.charAt(0)==='<'; return '<th'+(l?' class="l"':'')+'>'+esc(l?h.slice(1):h)+'</th>'; }).join('')+
    '</tr></thead><tbody>'+tb+'</tbody></table></div>'+
