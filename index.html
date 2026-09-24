@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v743</title>
-<script>window.APP_BUILD='v743';</script>
+<title>동방파스텍 매출 분석 도구 v749</title>
+<script>window.APP_BUILD='v749';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1394,6 +1394,8 @@ body.fpopen #fpSum{display:block}
 @media(max-width:640px){#result .st-cards{grid-template-columns:repeat(2,minmax(0,1fr))}#result .st-raws{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* v385: 시장분석 차트 강조 라벨 — 공통 SVG 10px 규칙보다 우선 적용 */
 #result svg text.mk-lbl14{font-size:14px!important}
+/* v748 : 시장 규모 막대 안 «만호» 글자는 기존(10px)보다 40% 작게 */
+#result svg text.fd-ho{font-size:6px!important}
 /* 부산물(고철) 최근 24개월 단가 그래프 — 공통 SVG 10px 규칙보다 우선 적용 */
 #result svg.scrap-price-trend-svg text{font-size:12px!important}
 /* v211: 제품구분 매출(mix-sales) 표 순위(NO) 열 가운데 정렬 */
@@ -1776,7 +1778,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v743</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v749</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -17166,7 +17168,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 방화문 납품 시장 향후 5년(2028~2032) 보기 (2026-09-23)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 주택추이·연도카드 2020년부터·올해 우선 표시 (2026-09-24)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-20';
@@ -17443,6 +17445,16 @@ table.ca-ci-tbl td.ca-ci-empty{text-align:center;color:#94a3b8;padding:16px}
 .mk-arw{display:flex;align-items:center;color:#cbd5e1;font-weight:800;padding:0 3px}
 .mk-note{background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:8px 12px;font-size:12px;color:#78350f;margin-top:9px;line-height:1.6}
 .mk-years{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+/* v747 : 카드가 많아져 가로로 넘길 수 있게 합니다 */
+.mk-yrwrap{position:relative;padding:0 30px}
+.mk-yrwrap .mk-years{display:flex;flex-wrap:nowrap;overflow-x:auto;scroll-behavior:smooth;gap:8px;padding:2px 2px 4px;scrollbar-width:none;-ms-overflow-style:none}
+.mk-yrwrap .mk-years::-webkit-scrollbar{display:none;width:0;height:0}
+.mk-yrwrap .mk-y{flex:0 0 210px;min-width:210px}
+.mk-yrbtn{position:absolute!important;top:50%!important;transform:translateY(-50%)!important;width:26px;height:46px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#334155;font:800 14px/1 inherit;cursor:pointer;box-shadow:0 2px 6px rgba(15,23,42,.10);z-index:2;transition:background .15s ease,border-color .15s ease}
+/* v748 : 마우스를 올려도 위치가 움직이지 않게 고정합니다 */
+.mk-yrbtn:hover,.mk-yrbtn:focus,.mk-yrbtn:active{background:#f1f5f9;border-color:#94a3b8;transform:translateY(-50%)!important;box-shadow:0 2px 6px rgba(15,23,42,.10)}
+.mk-yrbtn[disabled]{opacity:.25;cursor:default}
+.mk-yrbtn.l{left:0}.mk-yrbtn.r{right:0}
 .mk-y{border:1.5px solid;border-radius:11px;padding:9px 11px;background:#fff}
 .mk-y .yh{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:5px}
 .mk-y .yn{font-size:16px;font-weight:800}
@@ -18437,7 +18449,7 @@ function marketConstruction(){
  var years=mkRows('years').map(function(r,i){
   var c=YC[i%YC.length];
   var subs=String(r[4]||'').split(';').filter(Boolean).map(function(x){return '<li>'+esc(x.trim())+'</li>';}).join('');
-  return '<div class="mk-y" style="border-color:'+c+'"><div class="yh"><span class="yn" style="color:'+c+'">'+esc(r[0]||'')+'</span><span class="yb" style="background:'+c+'">'+esc(r[1]||'')+'</span></div>'+
+  return '<div class="mk-y" data-y="'+esc(r[0]||'')+'" style="border-color:'+c+'"><div class="yh"><span class="yn" style="color:'+c+'">'+esc(r[0]||'')+'</span><span class="yb" style="background:'+c+'">'+esc(r[1]||'')+'</span></div>'+
    '<div class="ym">'+esc(r[2]||'')+'</div><div class="ys">('+esc(r[3]||'')+')</div><ul>'+subs+'</ul></div>';
  }).join('');
  var lhsh=mkRows('lhsh').map(function(r){
@@ -18494,7 +18506,10 @@ function marketConstruction(){
   '<div class="mk-card"><div class="mk-h">📐 주요 건설지표의 개념과 중요도</div><div class="mk-chain">'+chain+'</div><div class="mk-note">'+mkGet('chainNote')+'</div></div>'+
   conTrendChart()+
   conTypeSection()+
-  '<div class="mk-card"><div class="mk-h">📅 연도별 영향 분석<span class="mk-hs">착공 → 준공 시차가 만드는 매출 사이클</span></div><div class="mk-years">'+years+'</div></div>'+
+  '<div class="mk-card"><div class="mk-h">📅 연도별 영향 분석<span class="mk-hs">착공 → 준공 시차가 만드는 매출 사이클 · ◀ ▶ 로 2032년까지</span></div>'+
+   '<div class="mk-yrwrap"><button type="button" class="mk-yrbtn l" onclick="mkYearScroll(-1)" title="이전 연도">◀</button>'+
+   '<div class="mk-years" id="mkYearsBox">'+years+'</div>'+
+   '<button type="button" class="mk-yrbtn r" onclick="mkYearScroll(1)" title="다음 연도">▶</button></div></div>'+
   '<details class="mk-card mk-carddet lhsh-12"><summary><span class="mk-h" style="margin:0">🏛️ LH·SH 공사 공급 계획<span class="mk-hs">2026 발주·공급 · 하반기 실행계획 · 5년 전망</span></span>'+
    '<span class="mk-bsum">LH 17.9조 · 공공주택 5.2만호 착공 · 3기 신도시 최초 입주 2026.12</span><span class="mk-bmore">펼쳐보기 ▾</span></summary><div style="margin-top:10px">'+
    '<div class="mk-two">'+lhsh+'</div>'+
@@ -18530,7 +18545,7 @@ function marketConstruction(){
 }
 
 /* ═══ v373: 월별 방화문 납품 시장 방향 (착공 기준) ═══ */
-var FD_PH={'바닥':['#dc2626','바닥 다지기','#fef2f2'],'최저':['#7f1d1d','최저점','#fee2e2'],'회복':['#ea580c','완만한 회복','#fff7ed'],'개선':['#16a34a','회복 가시화','#f0fdf4'],'반등':['#0891b2','일시 반등','#ecfeff']};
+var FD_PH={'바닥':['#dc2626','바닥 다지기','#fef2f2'],'최저':['#7f1d1d','최저점','#fee2e2'],'회복':['#ea580c','완만한 개선','#fff7ed'],'개선':['#16a34a','연말 집중 출하','#f0fdf4'],'반등':['#0891b2','일시 반등','#ecfeff']};
 function fdMonthChart(rows){
  if(!rows.length)return '';
  var W=1400,H=390,P={t:34,r:64,b:76,l:60};
@@ -18568,8 +18583,8 @@ for(var k=0;k<=8;k++){
   g+='<rect x="'+(X(i)-bw/2).toFixed(1)+'" y="'+Ys(stk[i]).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" rx="2" fill="#93c5fd" opacity=".62"/>';
  });
  var y100=Yi(100);
- g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+y100.toFixed(1)+'" y2="'+y100.toFixed(1)+'" stroke="#0f172a" stroke-width="1.3" stroke-dasharray="6 4" opacity=".5"/>'+
-    '<text x="'+(P.l+6)+'" y="'+(y100-6).toFixed(1)+'" text-anchor="start" font-size="11.5" font-weight="700" fill="#dc2626">기준 100 = 2024 착공 월평균</text>';
+ var baseLine100='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+y100.toFixed(1)+'" y2="'+y100.toFixed(1)+'" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="7 5"/>'+
+    '<text x="'+(P.l+10)+'" y="'+(y100-7).toFixed(1)+'" text-anchor="start" font-size="12" font-weight="700" fill="#dc2626">기준 100 = 2024 착공 월평균</text>';
  var pts=rows.map(function(r,i){ return X(i).toFixed(1)+','+Yi(idx[i]).toFixed(1); }).join(' ');
  g+='<polyline points="'+pts+'" fill="none" stroke="#0f766e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>';
  rows.forEach(function(r,i){
@@ -18587,6 +18602,7 @@ for(var k=0;k<=8;k++){
   '<span><i class="ln"></i>예상 방화문 납품지수 <b>(좌축)</b></span>'+
   '<span><i class="br"></i>선행지표 · 21~27개월 전 착공 가중평균 <b>(우축, 만호)</b> — 이 달 납품의 원인</span>'+
   '</div>';
+ g+=baseLine100;   /* v745 : 기준선을 막대·선 위에 표시 */
  return legend+'<div style="width:100%"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;font-family:inherit;font-weight:400">'+g+'</svg></div>';
 }
 /* ═══ v743 : 향후 5년(2028~2032) 방화문 납품 시장 방향 ═══
@@ -18598,7 +18614,7 @@ var FD_L28=[
  ['03월',88,2.10,'봄 현장 재개'],
  ['04월',92,2.15,'2026년 상반기 착공(+11.1%) 반영 시작'],
  ['05월',90,2.20,'황금연휴로 조업일 감소'],
- ['06월',104,2.25,'상반기 마감 · 기준선 회복'],
+ ['06월',104,2.25,'상반기 마감 · 기준선 복귀'],
  ['07월',98,2.30,'장마·혹서기'],
  ['08월',88,2.30,'하계휴가 집중'],
  ['09월',97,2.35,'추석 전 출하'],
@@ -18612,17 +18628,128 @@ var FD_LYR=[
  ['2031',117,100,134,'과천·태릉(2029 착공)·1·29대책 부지(2030 착공) 반영'],
  ['2032',112,94,130,'정책 물량 소진 · 가구수 증가 둔화로 완만한 하락']
 ];
-function fdLongMode(v){
- try{ state.market=state.market||{}; state.market.fdLong=!!v; if(typeof marketFiredoor==='function')marketFiredoor(); }catch(_e){}
+/* ═══ v744 : 이전 5년(2022~2026) 방화문 납품 실적 흐름 ═══
+   납품(Y) ≈ 착공(Y-2). 지수 100 = 2024년 착공(30.5만호·월평균 25,286호). */
+var FD_PREV=[
+ ['2022',173,52.6,41.4,'2020년 착공 52.6만호(2021년 +10.9%에서 역산) · 초호황'],
+ ['2023',192,58.4,43.6,'2021년 착공 58만3,737호(역대 최대)가 납품에 도달 · 정점'],
+ ['2024',126,38.3,41.6,'2022년 착공 38만3,404호 · 고점 대비 -34%'],
+ ['2025',80,24.2,34.2,'2023년 착공 24만2,188호(반토막) · 급락'],
+ ['2026',100,30.5,23.0,'2024년 착공 30.5만호로 일시 반등 · 준공은 -41.4%']
+];
+/* v746 : 보기 선택은 저장하지 않습니다. 파일을 열 때마다 «현재 연도가 들어 있는 구간(2026~2027)»으로 시작합니다. */
+var FD_VIEW='cur';
+function fdViewMode(){ return (FD_VIEW==='prev'||FD_VIEW==='long')?FD_VIEW:'cur'; }
+function fdSetView(v){
+ try{ FD_VIEW=(v==='prev'||v==='long')?v:'cur';
+  if(state.market){ delete state.market.fdView; delete state.market.fdLong; }
+  if(typeof marketFiredoor==='function')marketFiredoor(); }catch(_e){}
 }
-function fdIsLong(){ return !!((state.market||{}).fdLong); }
+/* v745 : 분기 지수 = 연평균 × 계절계수(1Q .82 · 2Q .92 · 3Q .96 · 4Q 1.30, 현행 월별 모델에서 산출).
+   2026년 3·4분기는 추정 대신 현재 월별 모델 값(9월 93 / 10~12월 104·119·132)을 씁니다. */
+var FD_PQ=(function(){
+  var F=[0.82,0.92,0.96,1.30], out=[];
+  FD_PREV.forEach(function(r){
+    var y=+r[0], a=+r[1];
+    for(var q=0;q<4;q++){
+      var v=Math.round(a*F[q]);
+      if(y===2026&&q===2)v=93;
+      if(y===2026&&q===3)v=118;
+      out.push({y:y,q:q+1,v:v,lab:String(y).slice(2)+'년 '+(q+1)+'분기'});
+    }
+  });
+  return out;
+})();
+function fdPrevQOf(y){ return FD_PQ.filter(function(o){return o.y===+y;}).map(function(o){return o.v;}); }
+function fdPrevKpi(){
+ var k=[
+  ['정점','2023 · 지수 192','#7f1d1d','2021년 착공 58만호가 원천 · 우리 매출도 이 해가 최대'],
+  ['급락','2025 · 지수 80','#dc2626','2023년 착공 24만호(반토막)의 결과 · 2년 만에 -58%'],
+  ['5년 평균','지수 134','#0f766e','2022~2026 평균 · 2027(93)은 이 평균의 69% 수준'],
+  ['진폭','80 ~ 192 · 2.4배','#b45309','착공 사이클이 2년 뒤 그대로 납품에 재현됨']
+ ];
+ return k.map(function(x){
+  return '<div class="mk-kw" style="border-top-color:'+x[2]+'"><div class="kl">'+esc(x[0])+'</div>'+
+   '<div class="kv" style="color:'+x[2]+';font-size:15px">'+esc(x[1])+'</div><div class="kd">'+esc(x[3])+'</div></div>';
+ }).join('');
+}
+function fdPrevChart(){
+ var W=1400,H=390,P={t:34,r:70,b:80,l:60};
+ var pw=W-P.l-P.r, ph=H-P.t-P.b, n=FD_PQ.length;
+ var iMax=260;
+ var X=function(i){ return P.l+(pw/n)*(i+0.5); };
+ var Yi=function(v){ return P.t+ph-(v/iMax)*ph; };
+ var g='';
+ /* 연도 배경 + 연도 라벨 */
+ var yrCol={2022:['#fef2f2','#dc2626','호황'],2023:['#fee2e2','#7f1d1d','정점'],2024:['#fff7ed','#ea580c','하강'],2025:['#f8fafc','#64748b','바닥'],2026:['#ecfeff','#0891b2','일시 반등']};
+ FD_PREV.forEach(function(r,yi){
+  var c=yrCol[+r[0]]||['#f8fafc','#64748b',''];
+  var x0=P.l+(pw/n)*(yi*4), x1=P.l+(pw/n)*(yi*4+4);
+  g+='<rect x="'+x0.toFixed(1)+'" y="'+P.t+'" width="'+(x1-x0).toFixed(1)+'" height="'+ph+'" fill="'+c[0]+'"/>'+
+     '<text class="mk-lbl14" data-screen-px="14" x="'+((x0+x1)/2).toFixed(1)+'" y="'+(P.t-11)+'" text-anchor="middle" font-size="14" font-weight="700" fill="'+c[1]+'">'+esc(r[0])+'년 · '+esc(c[2])+' (연평균 '+r[1]+')</text>';
+  if(yi>0)g+='<line x1="'+x0.toFixed(1)+'" x2="'+x0.toFixed(1)+'" y1="'+P.t+'" y2="'+(P.t+ph)+'" stroke="#e2e8f0"/>';
+ });
+ for(var k=0;k<=8;k++){
+  var v=iMax/8*k, y=Yi(v);
+  g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="#e2e8f0" stroke-width="1"/>'+
+     '<text x="'+(P.l-8)+'" y="'+(y+4.5).toFixed(1)+'" text-anchor="end" font-size="12" fill="#94a3b8">'+Math.round(v)+'</text>';
+ }
+ /* 분기 막대 */
+ var bw=Math.max(10,(pw/n)*0.56);
+ FD_PQ.forEach(function(o,i){
+  var x=X(i), y=Yi(o.v), c=(yrCol[o.y]||['','#64748b'])[1];
+  g+='<rect x="'+(x-bw/2).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+(P.t+ph-y).toFixed(1)+'" rx="3" fill="#bfdbfe" opacity=".75"><title>'+esc(o.lab)+' 지수 '+o.v+'</title></rect>';
+ });
+ /* 분기 추이선 */
+ var pts=FD_PQ.map(function(o,i){ return X(i).toFixed(1)+','+Yi(o.v).toFixed(1); }).join(' ');
+ g+='<polyline points="'+pts+'" fill="none" stroke="#0f766e" stroke-width="3" stroke-linejoin="round"/>';
+ FD_PQ.forEach(function(o,i){
+  var x=X(i), y=Yi(o.v);
+  g+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="4.2" fill="#fff" stroke="#0f766e" stroke-width="2.2"><title>'+esc(o.lab)+' 지수 '+o.v+'</title></circle>'+
+     '<text x="'+x.toFixed(1)+'" y="'+(y-11).toFixed(1)+'" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f766e">'+o.v+'</text>'+
+     '<text x="'+x.toFixed(1)+'" y="'+(P.t+ph+19)+'" text-anchor="middle" font-size="12" fill="#475569">'+o.q+'Q</text>';
+  if(o.q===1)g+='<text x="'+(x-((pw/n)*0.5)+((pw/n)*2)).toFixed(1)+'" y="'+(P.t+ph+41)+'" text-anchor="middle" font-size="12.5" font-weight="800" fill="#b45309">'+o.y+'년</text>';
+ });
+ g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+(P.t+ph)+'" y2="'+(P.t+ph)+'" stroke="#cbd5e1"/>';
+ /* 기준선 100 — 맨 위에 그립니다 */
+ g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+Yi(100).toFixed(1)+'" y2="'+Yi(100).toFixed(1)+'" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="7 5"/>'+
+    '<text x="'+(P.l+10)+'" y="'+(Yi(100)-7).toFixed(1)+'" font-size="12" font-weight="700" fill="#dc2626">기준 100 = 2024 착공 월평균</text>';
+ var legend='<div class="mk-serbtns" style="justify-content:flex-end">'+
+  '<span class="mk-serhint" style="margin-right:auto">분기 지수 = 연평균 × 계절계수(1Q .82 · 2Q .92 · 3Q .96 · 4Q 1.30) · 2026년 3·4분기는 현재 월별 모델 값</span>'+
+  '<span style="font-size:12px;color:#0f766e;font-weight:700">— 분기 납품지수</span></div>';
+ return legend+'<div style="width:100%"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;font-family:inherit;font-weight:400">'+g+'</svg></div>';
+}
+function fdPrevTable(){
+ var tb=FD_PREV.map(function(r){
+  var q=fdPrevQOf(r[0]);
+  return '<tr><td class="k">'+esc(r[0])+'년</td>'+
+   q.map(function(v){ return '<td><b style="color:#0f766e;font-size:13px">'+v+'</b></td>'; }).join('')+
+   '<td><b style="font-size:13.5px">'+r[1]+'</b></td>'+
+   '<td>'+(+r[0]-2)+'년 '+r[2]+'만호</td><td>'+r[3]+'만호</td>'+
+   '<td class="l" style="font-size:11.5px;color:#475569">'+esc(r[4])+'</td></tr>';
+ }).join('');
+ return '<div class="mk-tblwrap" style="margin-top:12px"><table class="mk-tbl" style="min-width:980px"><thead><tr>'+
+  '<th class="l">납품 연도</th><th>1분기</th><th>2분기</th><th>3분기</th><th>4분기</th><th>연평균</th><th>원천 착공(2년 전)</th><th>그 해 준공</th><th class="l">설명</th>'+
+  '</tr></thead><tbody>'+tb+'</tbody></table></div>';
+}
+function fdPrevIns(){
+ return '<div class="mk-ins" style="margin-top:12px"><div class="ih">💡 지난 5년이 말해 주는 것</div><div class="il">'+
+  '<div><b>① 착공 사이클이 2년 뒤 그대로 재현됩니다</b> — 2021년 착공 58만호 → 2023년 납품 정점(192), 2023년 착공 24만호 → 2025년 납품 급락(80). 착공 통계만 보면 2년 뒤 매출이 보입니다.</div>'+
+  '<div><b>② 2025년 바닥(80)이 기준점</b> — 2026년은 2024년 착공 반등분으로 100까지 올라왔고, 2027년은 다시 93으로 내려갑니다. 2023~2025년의 착공 공백이 2027년까지 이어지는 구조입니다.</div>'+
+  '<div><b>③ 2023년 수준(192)은 당분간 없습니다</b> — 향후 5년 시나리오의 최고치도 2031년 117입니다. 설비·인력은 지수 100~120 구간을 기준으로 잡는 것이 현실적입니다.</div>'+
+  '<div><b>④ 준공은 2026년이 최악</b> — 준공 23만호(전년 34.2만호 대비 -41.4%)로, 현장 마감재 수요가 가장 얇아지는 해입니다.</div>'+
+  '</div></div>';
+}
+
+function fdLongMode(v){ fdSetView(v?'long':'cur'); }
+function fdIsLong(){ return fdViewMode()==='long'; }
 function fdLongKpi(){
  var a28=FD_L28.reduce(function(s,r){return s+r[1];},0)/12;
  var k=[
-  ['2028 연평균','지수 '+a28.toFixed(0),'#16a34a','2026년 착공(1~7월 13.8만호·+11.1%)이 원천 · 기준선 회복'],
+  ['2028 연평균','지수 '+a28.toFixed(0),'#16a34a','2026년 착공(1~7월 13.8만호·+11.1%)이 원천 · 기준선 복귀'],
   ['최대 출하월','2028.12 · 지수 141','#b45309','연말 준공 집중 · 2028년 최저(2월 72)의 2.0배'],
   ['고점 구간','2031 · 지수 117','#0f766e','정책 물량(과천·태릉·1·29대책)이 납품에 도달하는 해'],
-  ['5년 방향','2028 회복 → 2031 고원 → 2032 둔화','#7f1d1d','2029~2032는 착공 시나리오 기반 · 밴드는 ±12%']
+  ['5년 방향','2028 기준선 복귀 → 2031 정점 → 2032 하락','#7f1d1d','2029~2032는 착공 시나리오 기반 · 밴드는 ±12%']
  ];
  return k.map(function(x){
   return '<div class="mk-kw" style="border-top-color:'+x[2]+'"><div class="kl">'+esc(x[0])+'</div>'+
@@ -18641,8 +18768,8 @@ function fdLongChart(){
  var Ys=function(v){ return P.t+ph-(v/sMax)*ph; };
  var g='';
  /* 구간 배경 */
- var segs=[[P.l,P.l+wM*0.5,'#ecfeff','#0891b2','2028 상반기 · 기준선 회복'],
-           [P.l+wM*0.5,P.l+wM,'#f0fdf4','#16a34a','2028 하반기 · 회복 본격화'],
+ var segs=[[P.l,P.l+wM*0.5,'#ecfeff','#0891b2','2028 상반기 · 기준선 복귀'],
+           [P.l+wM*0.5,P.l+wM,'#f0fdf4','#16a34a','2028 하반기 · 연말 집중 출하'],
            [P.l+wM+gap,P.l+wM+gap+wY,'#fff7ed','#ea580c','2029~2032 · 정책 물량 도달과 둔화']];
  segs.forEach(function(s){
   g+='<rect x="'+s[0].toFixed(1)+'" y="'+P.t+'" width="'+(s[1]-s[0]).toFixed(1)+'" height="'+ph+'" fill="'+s[2]+'"/>'+
@@ -18655,9 +18782,9 @@ function fdLongChart(){
      '<text x="'+(P.l-8)+'" y="'+(y+4.5).toFixed(1)+'" text-anchor="end" font-size="12" fill="#94a3b8">'+Math.round(v)+'</text>'+
      '<text x="'+(W-P.r+8)+'" y="'+(y+4.5).toFixed(1)+'" text-anchor="start" font-size="12" fill="#93c5fd">'+(sMax/8*k).toFixed(1)+'</text>';
  }
- /* 기준선 100 */
- g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+Yi(100).toFixed(1)+'" y2="'+Yi(100).toFixed(1)+'" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="7 5"/>'+
-    '<text x="'+(P.l+6)+'" y="'+(Yi(100)-7).toFixed(1)+'" font-size="12" font-weight="700" fill="#dc2626">기준 100 = 2024 착공 월평균</text>';
+ /* 기준선 100 은 맨 마지막(맨 위)에 그립니다 */
+ var baseLine100='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+Yi(100).toFixed(1)+'" y2="'+Yi(100).toFixed(1)+'" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="7 5"/>'+
+    '<text x="'+(P.l+10)+'" y="'+(Yi(100)-7).toFixed(1)+'" font-size="12" font-weight="700" fill="#dc2626">기준 100 = 2024 착공 월평균</text>';
  /* 2028 월별 : 선행 착공 막대 + 지수 선 */
  var bw=Math.max(10,(wM/nM)*0.5);
  FD_L28.forEach(function(r,i){
@@ -18695,6 +18822,7 @@ function fdLongChart(){
   '<span style="font-size:12px;color:#0f766e;font-weight:700">— 2028년 월별 납품지수 (좌축)</span>'+
   '<span style="font-size:12px;color:#93c5fd;font-weight:700">▮ 선행 착공 가중평균 (우축, 만호)</span>'+
   '<span style="font-size:12px;color:#ea580c;font-weight:700">--- 2029~2032 연평균 (밴드=보수~낙관)</span></div>';
+ g+=baseLine100;   /* v745 : 기준선을 막대·선 위에 표시 */
  return legend+'<div style="width:100%"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;font-family:inherit;font-weight:400">'+g+'</svg></div>';
 }
 function fdLongTable(){
@@ -18711,7 +18839,7 @@ function fdLongTable(){
 }
 function fdLongIns(){
  return '<div class="mk-ins" style="margin-top:12px"><div class="ih">💡 향후 5년에서 읽어야 할 것</div><div class="il">'+
-  '<div><b>① 2028년이 회복의 첫 해</b> — 2028년 물량의 원천인 2026년 착공은 1~7월 13만8,383호로 전년보다 11.1% 늘었습니다. 2027년 연평균 93에서 2028년 약 99로 기준선을 회복합니다.</div>'+
+  '<div><b>① 2028년은 기준선으로 되돌아오는 해</b> — 2028년 물량의 원천인 2026년 착공은 1~7월 13만8,383호로 전년보다 11.1% 늘었습니다. 2027년 연평균 93에서 2028년 약 99로 기준선을 회복합니다.</div>'+
   '<div><b>② 상저하고는 2028년에도 그대로</b> — 2월 72 → 12월 141로 연중 2.0배 차이가 납니다. 인력과 설비는 연평균이 아니라 <b>11~12월 피크</b>에 맞춰 준비해야 합니다.</div>'+
   '<div><b>③ 2029~2031이 정책 물량 구간</b> — 정부 2026년 착공 목표 29.4만호와 공적주택 119만호가 계획대로 착공되면 2029~2031년 지수는 108~117까지 올라갑니다. 과천·태릉은 2029년, 1·29대책 부지는 2030년 착공 예정이라 납품은 2031~2032년에 도달합니다.</div>'+
   '<div><b>④ 2032년은 둔화 국면</b> — 정책 물량이 소진되고 가구수 증가가 둔화되면서 완만하게 내려옵니다. 설비 증설은 2029~2030년에 회수되는 규모로 제한하는 것이 안전합니다.</div>'+
@@ -18721,7 +18849,8 @@ function fdLongIns(){
 
 function fdMonthSection(){
  var rows=mkRows('fdMonthly'); if(!rows.length)return '';
- var _L=(typeof fdIsLong==='function')&&fdIsLong();
+ var _V=(typeof fdViewMode==='function')?fdViewMode():'cur';
+ var _L=(_V==='long'), _P=(_V==='prev');
  var idx=rows.map(function(r){return +r[1]||0;});
  var mn=Math.min.apply(null,idx), mx=Math.max.apply(null,idx);
  var mnM=rows[idx.indexOf(mn)][0], mxM=rows[idx.indexOf(mx)][0];
@@ -18729,7 +18858,7 @@ function fdMonthSection(){
  var avg27=y27.length?(y27.reduce(function(a,b){return a+b;},0)/y27.length):0;
  var kpi=[
   ['최저점',mnM+' · 지수 '+mn,'#7f1d1d','2025년 초 착공 급감 + 동절기'],
-  ['최대 출하월',mxM+' · 지수 '+mx,'#16a34a','연말 준공 집중 · 2028 회복장 출발'],
+  ['최대 출하월',mxM+' · 지수 '+mx,'#16a34a','연말 준공 집중 · 2028년 1월에 다시 내려감'],
   (function(){ var y26=rows.filter(function(r){return String(r[0]).indexOf('2026')===0;}).map(function(r){return +r[1]||0;}); var a26=y26.length?y26.reduce(function(a,b){return a+b;},0)/y26.length:0; var d=a26?((avg27-a26)/a26*100):0;
     return ['2027 연평균','지수 '+avg27.toFixed(0)+' (2024 착공 월평균=100)','#0f766e','2026.9~12 평균 '+a26.toFixed(0)+' 대비 '+(d>=0?'+':'')+d.toFixed(0)+'% · 상저하고']; })(),
   ['진폭',mn+' ~ '+mx+' · '+(mx/mn).toFixed(1)+'배','#b45309','월 단위 생산·인력 계획 필수']
@@ -18767,17 +18896,20 @@ function fdMonthSection(){
  var ins=mkLines('fdMonthIns').map(function(t){ return '<div>'+t+'</div>'; }).join('');
 
  return '<div class="mk-card">'+
-  '<div class="mk-h mk-hrow"><span>📉 월별 방화문 납품 시장 방향<span class="mk-hs">'+(_L?'2028.01 ~ 2032 · 착공 21~27개월 시차 모델':'2026.09 ~ 2027.12 · 착공 21~27개월 시차 모델')+'</span></span>'+
+  '<div class="mk-h mk-hrow"><span>📉 월별 방화문 납품 시장 방향<span class="mk-hs">'+(_L?'2028.01 ~ 2032 · 착공 21~27개월 시차 모델':(_P?'2022 ~ 2026 · 실적 흐름(착공 2년 시차)':'2026.09 ~ 2027.12 · 착공 21~27개월 시차 모델'))+'</span></span>'+
    '<div class="mk-modebtns">'+
-     '<button type="button" class="mk-modebtn'+(_L?'':' on')+'" onclick="fdLongMode(false)">📅 2026~2027</button>'+
-     '<button type="button" class="mk-modebtn'+(_L?' on':'')+'" onclick="fdLongMode(true)">🔭 향후 5년</button>'+
+     '<button type="button" class="mk-modebtn'+(_P?' on':'')+'" onclick="fdSetView(\'prev\')">⏮ 이전 5년</button>'+
+     '<button type="button" class="mk-modebtn'+((!_L&&!_P)?' on':'')+'" onclick="fdSetView(\'cur\')">📅 2026~2027</button>'+
+     '<button type="button" class="mk-modebtn'+(_L?' on':'')+'" onclick="fdSetView(\'long\')">🔭 향후 5년</button>'+
    '</div>'+
    '<span class="mk-asof">📅 기준일 2026.9.21</span></div>'+
+  (_P?'<div class="mk-warn" style="margin-bottom:10px">⏮ <b>이전 5년 실적 흐름</b> — 납품 연도의 원천은 <b>2년 전 착공</b>입니다(2023년 납품 ← 2021년 착공 58만3,737호, 2025년 납품 ← 2023년 착공 24만2,188호). 2020년 착공은 2021년 착공의 전년비 +10.9%에서 역산한 52.6만호이며, 2024~2026년 착공·준공은 이 도구의 「주택 인허가·착공·준공 추이」와 같은 값입니다. 지수 100 = 2024년 착공 월평균(25,286호)입니다.</div>':'')+
   (_L?'<div class="mk-warn" style="margin-bottom:10px">🔭 <b>향후 5년 시나리오</b> — 2028년은 <b>2026년 착공</b>(1~7월 13만8,383호·전년비 +11.1%)이 원천이라 비교적 단단하고, <b>2029~2032년</b>은 정부 착공 목표(2026년 29.4만호)와 공적주택 119만호 정책이 계획대로 진행된다는 가정 위의 <b>시나리오</b>입니다. 지수 100 = 2024년 착공 월평균(25,286호)이 만드는 납품량으로, 앞 화면과 같은 기준입니다.</div>':'')+
   '<div class="mk-warn" style="margin-bottom:10px">📌 방화문·부자재는 <b>착공 후 18~30개월</b>(중심 24개월), <b>준공 6~12개월 전</b>에 투입됩니다. 월별 납품지수 = <b>21~27개월 전 주택 착공의 삼각가중평균</b>(24개월 전 비중 최대) × <b>조업일수</b> × <b>마감 계절계수</b>이며, 기준 100은 <b>2024년 착공 월평균(25,286호)</b>이 만들어 내는 납품량입니다. 12월에 몰리는 착공(2024.12·2025.12)이 한 달에 쏠리지 않도록 7개월 창으로 나눠 반영했습니다.</div>'+
-  '<div class="mk-kws" style="margin-bottom:12px">'+(_L?fdLongKpi():kpi)+'</div>'+
+  '<div class="mk-kws" style="margin-bottom:12px">'+(_L?fdLongKpi():(_P?fdPrevKpi():kpi))+'</div>'+
   (_L?(fdLongChart()+fdLongTable()+fdLongIns()+'<div class="mk-h" style="margin:16px 0 8px">📅 2026.09~2027.12 상세<span class="mk-hs">아래 표·국면·코멘트는 현재 구간 기준입니다</span></div>'):'')+
-  (_L?'':fdMonthChart(rows))+
+  (_P?(fdPrevChart()+fdPrevTable()+fdPrevIns()+'<div class="mk-h" style="margin:16px 0 8px">📅 2026.09~2027.12 상세<span class="mk-hs">아래 표·국면·코멘트는 현재 구간 기준입니다</span></div>'):'')+
+  ((_L||_P)?'':fdMonthChart(rows))+
   '<div class="mk-tblwrap" style="margin-top:12px"><table class="mk-tbl" style="min-width:1020px"><thead><tr>'+
    ['<월','<주요 일정','조업일수','방화문 납품지수','추이','선행 착공(만호)','국면','<코멘트'].map(function(h){ var l=h.charAt(0)==='<'; return '<th'+(l?' class="l"':'')+'>'+esc(l?h.slice(1):h)+'</th>'; }).join('')+
    '</tr></thead><tbody>'+tb+'</tbody></table></div>'+
@@ -18912,6 +19044,23 @@ var FD_C_RES='#1d4ed8', FD_C_NON='#0d9488';   /* 검증 통과 팔레트(색각 
 
 function fdNum(v){ var n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:0; }
 function fdMoney(v){ return Math.round(v||0).toLocaleString('ko-KR'); }
+function mkYearScroll(dir){
+  var el=document.getElementById('mkYearsBox'); if(!el)return;
+  el.__userScrolled=true;
+  el.scrollBy({left:dir*(el.clientWidth*0.8||600),behavior:'smooth'});
+}
+/* v749 : 화면을 열면 «올해» 카드가 맨 왼쪽에 오도록 맞춥니다 */
+function mkYearsFocusCurrent(){
+  try{
+    var el=document.getElementById('mkYearsBox'); if(!el||el.__focusedV749)return;
+    var y=String(new Date().getFullYear());
+    var card=el.querySelector('.mk-y[data-y="'+y+'"]');
+    if(!card){ var all=el.querySelectorAll('.mk-y'); for(var i=0;i<all.length;i++){ if(String(all[i].getAttribute('data-y')||'')>=y){ card=all[i]; break; } } }
+    if(!card)return;
+    el.scrollLeft=Math.max(0,card.offsetLeft-el.offsetLeft-2);
+    el.__focusedV749=true;
+  }catch(_e){}
+}
 function fdSizeRows(){
   return mkRows('fdSize').map(function(r){
     var yr=String(r[0]||''), ho=fdNum(r[1]), set=fdNum(r[2]), pr=fdNum(r[3]);
@@ -18955,7 +19104,7 @@ function fdSizeChart(){
   if(!rows.length)return '<div class="mk-note">시장 규모 자료가 없습니다.</div>';
   var data=rows.map(function(o){
     var total=mix.res>0?o.res/(mix.res/100):o.res;
-    return {y:o.y,res:o.res,non:Math.max(0,total-o.res),tot:total};
+    return {y:o.y,res:o.res,non:Math.max(0,total-o.res),tot:total,ho:o.ho,setpr:(o.set*o.pr)};
   });
   var W=920,H=310,L=74,R=16,T=34,B=54,iw=W-L-R,ih=H-T-B;
   var max=Math.max.apply(null,data.map(function(d){return d.tot;}))||1; max*=1.16;
@@ -18969,8 +19118,13 @@ function fdSizeChart(){
     var cx=L+slot*i+slot/2, x=cx-bw/2;
     var yRes=Y(d.res), hRes=Y(0)-yRes;
     var yNon=Y(d.tot), hNon=Math.max(0,yRes-yNon-2);   /* 2px 간격 */
-    s+='<rect x="'+x+'" y="'+yNon.toFixed(1)+'" width="'+bw+'" height="'+hNon.toFixed(1)+'" rx="4" fill="'+FD_C_NON+'"><title>'+esc(d.y)+' 비주거 '+fdMoney(d.non)+'억원</title></rect>'
-      +'<rect x="'+x+'" y="'+yRes.toFixed(1)+'" width="'+bw+'" height="'+hRes.toFixed(1)+'" rx="4" fill="'+FD_C_RES+'"><title>'+esc(d.y)+' 주택 '+fdMoney(d.res)+'억원</title></rect>'
+    /* v747 : 막대 안에 물량(호)을 함께 표시합니다. 주택은 준공 호수, 비주거는 같은 세트단가로 환산한 호수입니다. */
+    var unit=(d.setpr>0)?d.setpr:0;                       /* 억원당 만호의 역수 = 세트수×세트단가 */
+    var hoRes=d.ho, hoNon=unit>0?(d.non/unit):0;
+    s+='<rect x="'+x+'" y="'+yNon.toFixed(1)+'" width="'+bw+'" height="'+hNon.toFixed(1)+'" rx="4" fill="'+FD_C_NON+'"><title>'+esc(d.y)+' 비주거 '+fdMoney(d.non)+'억원 · 환산 '+hoNon.toFixed(1)+'만호</title></rect>'
+      +'<rect x="'+x+'" y="'+yRes.toFixed(1)+'" width="'+bw+'" height="'+hRes.toFixed(1)+'" rx="4" fill="'+FD_C_RES+'"><title>'+esc(d.y)+' 주택 '+fdMoney(d.res)+'억원 · '+hoRes.toFixed(1)+'만호</title></rect>'
+      +(hNon>10?('<text class="fd-ho" x="'+cx+'" y="'+(yNon+hNon/2+2.4).toFixed(1)+'" text-anchor="middle" font-size="6.3" font-weight="800" fill="#ffffff">'+hoNon.toFixed(1)+'만호</text>'):'')
+      +(hRes>10?('<text class="fd-ho" x="'+cx+'" y="'+(yRes+hRes/2+2.4).toFixed(1)+'" text-anchor="middle" font-size="6.3" font-weight="800" fill="#ffffff">'+hoRes.toFixed(1)+'만호</text>'):'')
       +'<text x="'+cx+'" y="'+(yNon-7).toFixed(1)+'" text-anchor="middle" font-size="11.5" font-weight="800" fill="#334155">'+fdMoney(d.tot)+'</text>'
       +'<text x="'+cx+'" y="'+(T+ih+17)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#475569">'+esc(d.y)+'</text>';
   });
@@ -20212,13 +20366,26 @@ async function auTryAuto(){
 var AU={ token:'', id:'', name:'', role:'', exp:0, ready:false, urlOverride:'' };
 var AU_ROLE={admin:'관리자',uploader:'업로더',user:'일반'};
 
-async function auRestore(){ try{ var v=await idbGet(AU_STORE); if(v&&typeof v==='object')AU=Object.assign(AU,v); }catch(_e){} }
-async function auPersist(){ try{ await idbSet(AU_STORE,{token:AU.token,id:AU.id,name:AU.name,role:AU.role,exp:AU.exp,urlOverride:AU.urlOverride||''}); }catch(_e){} }
-function auUrl(){ return (AU.urlOverride||AU_URL||((state.gsync&&state.gsync.url)||'')).trim(); }
+/* v745 : 서버 주소(스크립트 주소)는 로그인 실패·로그아웃·토큰 만료와 무관하게 계속 남아 있어야 합니다.
+   브라우저 저장소(IndexedDB)가 비워지는 경우를 대비해 localStorage 에도 함께 보관합니다. */
+var AU_URL_LS='au_url_override_v745';
+function auUrlLsGet(){ try{ return String(localStorage.getItem(AU_URL_LS)||'').trim(); }catch(_e){ return ''; } }
+function auUrlLsSet(u){ try{ if(u)localStorage.setItem(AU_URL_LS,String(u)); else localStorage.removeItem(AU_URL_LS); }catch(_e){} }
+async function auClearSessionKeepUrl(){
+  var u=AU.urlOverride||auUrlLsGet()||'';
+  AU.token=''; AU.exp=0; AU.urlOverride=u;
+  try{ await idbSet(AU_STORE,{token:'',id:'',name:'',role:'',exp:0,urlOverride:u}); }catch(_e){}
+  auUrlLsSet(u);
+}
+async function auRestore(){ try{ var v=await idbGet(AU_STORE); if(v&&typeof v==='object')AU=Object.assign(AU,v); }catch(_e){}
+  try{ if(!AU.urlOverride){ var u=auUrlLsGet(); if(u)AU.urlOverride=u; } else auUrlLsSet(AU.urlOverride); }catch(_e){} }
+async function auPersist(){ try{ await idbSet(AU_STORE,{token:AU.token,id:AU.id,name:AU.name,role:AU.role,exp:AU.exp,urlOverride:AU.urlOverride||''}); }catch(_e){} auUrlLsSet(AU.urlOverride||''); }
+function auUrl(){ return (AU.urlOverride||auUrlLsGet()||AU_URL||((state.gsync&&state.gsync.url)||'')).trim(); }
 async function auSetUrl(u){
   u=String(u||'').trim();
   AU.urlOverride=u; AU.token=''; AU.exp=0;
   try{ await idbSet(AU_STORE,{token:'',id:'',name:'',role:'',exp:0,urlOverride:u}); }catch(_e){}
+  auUrlLsSet(u);
   try{ state.gsync=state.gsync||{}; state.gsync.url=u||AU_URL; }catch(_e){}
   location.reload();
 }
@@ -20394,7 +20561,7 @@ function auShowGate(){
       var d=await auCall({action:'auLogin',id:id,pw:pw});
       if(!d||!d.token||!d.user)throw new Error('서버가 로그인 요청을 처리하지 못했습니다.\n앱스스크립트를 「배포 관리 → 연필 → 버전: 새 버전 → 배포」로 재배포했는지 확인하세요.');
       AU.token=d.token; AU.id=d.user.id; AU.name=d.user.name; AU.role=d.user.role; AU.exp=d.exp;
-      if(keep)await auPersist(); else { try{ await idbSet(AU_STORE,null); }catch(_e){} }
+      if(keep)await auPersist(); else { await auClearSessionKeepUrl(); }   /* v745 : 서버 주소는 지우지 않습니다 */
       var _autoOn=!!(document.getElementById('auAuto')||{}).checked;
       if(_autoOn)await auAutoSet(id,pw); else await auAutoClear();
       auHideGate(); auApply();
@@ -20516,8 +20683,10 @@ async function auDiag(){
 async function auLogout(){
   try{ if(AU.token)await auCall({action:'auLogout'}); }catch(_e){}
   try{ await auAutoClear(); }catch(_e){}   /* 로그아웃하면 자동 로그인도 해제 */
-  AU={token:'',id:'',name:'',role:'',exp:0,ready:true};
-  try{ await idbSet(AU_STORE,null); }catch(_e){}
+  var _keepUrl=AU.urlOverride||auUrlLsGet()||'';
+  AU={token:'',id:'',name:'',role:'',exp:0,ready:true,urlOverride:_keepUrl};
+  try{ await idbSet(AU_STORE,{token:'',id:'',name:'',role:'',exp:0,urlOverride:_keepUrl}); }catch(_e){}
+  auUrlLsSet(_keepUrl);   /* v745 : 로그아웃해도 서버 주소는 유지 */
   location.reload();
 }
 
@@ -20716,7 +20885,7 @@ async function auBoot(){
     if(!auUrl()){ AU.ready=true; auApply(); return; }          /* 서버 미설정이면 로그인 없이 사용 */
     if(auValid()){
       try{ var d=await auCall({action:'auMe'}); if(!d||!d.user)throw new Error('bad'); AU.name=d.user.name; AU.role=d.user.role; AU.id=d.user.id; AU.exp=d.exp||AU.exp; await auPersist(); }
-      catch(_e){ AU.token=''; AU.exp=0; try{ await idbSet(AU_STORE,null); }catch(_x){} }
+      catch(_e){ await auClearSessionKeepUrl(); }   /* v745 : 서버 연결이 끊겨도 주소는 유지 */
     }
     if(!auValid()){ try{ await auTryAuto(); }catch(_e){} }   /* 자동 로그인 */
     AU.ready=true;
@@ -20787,7 +20956,9 @@ header .header-sync-btn.sync-ok .sync-time{color:#059669!important}
 .au-topbar-row{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;margin:0 0 7px}
 .au-topbar-row .au-topbar{margin-left:0}
 /* v705 : 접었을 때 박스 높이를 버튼 높이만큼으로 줄입니다 */
-#gsSyncDet{padding:0!important;border:0!important;background:none!important;margin:0 0 2px!important}
+/* v744 : 구글 동기화 영역에 외곽 박스선을 표시합니다 */
+#gsSyncDet{padding:9px 12px!important;border:1px solid #cbd5e1!important;border-radius:10px!important;background:#fcfdff!important;margin:0 0 4px!important;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+#gsSyncDet[open]{border-color:#94a3b8!important}
 #gsSyncDet>summary{padding:0!important;min-height:0;line-height:1.15;gap:8px}
 #gsSyncDet>summary:hover{background:none!important;box-shadow:none!important}
 #gsSyncDet>summary>b{line-height:1.15}
@@ -31081,7 +31252,7 @@ fdMonthly:'2026.09|93|2.40|반등|20|추석 9/24~25(평일 2일)|2024년 중반 
 fdPhase:'일시 반등|2026.09~12|4개월|2024년 착공 반등(30.3만호, +24%)분이 납품 창에 도달. 7월 준공 31,778호(+24.3%)로 준공 절벽 완화 신호. 12월은 계절 피크|확정발주 기준 연말 생산 집중, 1월 급감 대비 원자재 선매입 금지, 미수금 회수\n'+
 '최저점|2027.01~05|5개월|2025년 상반기 착공 10.3만호(월평균 1.7만호)가 납품 시점 도달. 설 연휴 겹친 2월이 연중 바닥(지수 66)|고정비 절감·설비보수·표준화, 승인도면·견적 전환율 월별 추적, 인력 유지 최소선 관리\n'+
 '바닥 다지기|2027.06~10|5개월|2025년 6·9월 착공(2.9만·3.0만호)이 반영되나 8월 저착공·9~10월 연휴로 등락|수주잔고 3개월 연속 증가·회수조건 확인 후 외주·인력 단계 확대\n'+
-'회복 가시화|2027.11~2028.03|5개월|2025년 12월 착공 6.42만호(월간 최대)가 21~27개월 창에 들어옴 → 2028 상반기 준공분 투입|현장별 납품 캘린더로 증산, 원자재 분할 선확보, 과잉재고 금지\n'+
+'연말 집중 출하|2027.11~2028.03|5개월|2025년 12월 착공 6.42만호(월간 최대)가 21~27개월 창에 들어옴 → 2028 상반기 준공분 투입|현장별 납품 캘린더로 증산, 원자재 분할 선확보, 과잉재고 금지\n'+
 '재공백 점검|2029년 이후|상시|2026 인허가 1~7월 -7.9%의 착공 전환 결과. 8.13 공급대책은 착공 확인 전 목표에 미반영|공공·정비·비주거 파이프라인으로 민간주택 공백 보완',
 fdMonthIns:'<b>① 2027년은 회복의 해가 아니라 «상저하고»의 해</b>입니다. 2027 연평균 지수 93은 2026년 9~12월 평균 112보다 약 17% 낮습니다. 2025년 착공이 27.3만호(-10.2%)로 줄었기 때문입니다.\n'+
 '<b>② 상반기가 바닥</b>입니다. 2027년 1~5월 평균 77 — 2025년 상반기 착공 10.3만호(월평균 1.7만호)가 납품 시점에 도달합니다. 설 연휴로 조업 18일인 2월이 연중 최저(66)입니다.\n'+
@@ -31263,6 +31434,223 @@ if(!install()){ var n=0,t=setInterval(function(){ if(install()||++n>40)clearInte
 (function(){
   window.fcBaseFutureModeV741=function(){ var v=''; try{ v=String((state&&state.fc&&state.fc.baseFutureMode)||''); }catch(_e){} return v==='plan'?'plan':'mod'; };
   window.fcBaseFutureLabelV741=function(){ return fcBaseFutureModeV741()==='plan'?'월 목표':'목표수정액'; };
+})();
+</script>
+<script id="v744-next-year-month-adj-reset">
+/* v744 : 다음 연도(2027) 목표의 «월별 조정%»가 기준연도(2026) 값으로 남아 있던 것을 한 번만 비웁니다.
+   업체별/제품(규격)별 월별보기의 % 입력칸(custMonthPct·prodMonthPct)과 거래처×제품 %(custProdOverride)만 지웁니다.
+   거래처 조정%·추가%, 신규업체·전략 등록값은 건드리지 않습니다. */
+(function(){
+'use strict';
+var TAG='v744-27monthadj';
+function clearMaps(o){ if(!o||typeof o!=='object')return; ['custMonthPct','prodMonthPct','custProdOverride'].forEach(function(k){ o[k]={}; }); }
+function run(){
+  try{
+    if(typeof state==='undefined'||!state.fc||typeof fcDataYearMax!=='function')return false;
+    var f=state.fc; if(f._monAdjV744===TAG)return false;
+    var dm=fcDataYearMax(), K=String(dm+1);
+    var ctx=String(f._ctxYear||(typeof fcTargetYear==='function'?fcTargetYear():dm));
+    var ys=(f.yearPlans&&f.yearPlans[K])||null;
+    if(ys&&ys.targetPlans){ ['1','2'].forEach(function(k){ clearMaps(ys.targetPlans[k]); }); }
+    if(ctx===K){
+      clearMaps(f);
+      if(f.targetPlans){ ['1','2'].forEach(function(k){ clearMaps(f.targetPlans[k]); }); }
+      f._targetPlanLoaded=null;
+      try{ fcEnsureTargetPlans(); }catch(_x){}
+    }
+    f._monAdjV744=TAG;
+    try{_fcBaseAggCache=null;_fcBase27Cache=null;window.FC_CHART_V677=null;window.__nyAggV737=null;}catch(_x){}
+    try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_x){}
+    try{ if(typeof logEdit==='function')logEdit('매출 목표',K+'년 월별 조정% 초기화(기준연도 값 제거)'); }catch(_x){}
+    try{ if(typeof saveSettings==='function')saveSettings(); }catch(_x){}
+    try{ if(state.act==='forecast'&&typeof runAct==='function')runAct(); }catch(_x){}
+    return true;
+  }catch(_e){ return false; }
+}
+window.__monAdjResetV744=run;
+function boot(){ var n=0,t=setInterval(function(){ n++;
+  var ready=window.__V718_RESTORED&&typeof CUR!=='undefined'&&CUR.length;
+  if(ready||n>60){ clearInterval(t); setTimeout(run,900); } },300); }
+if(document.readyState==='complete')setTimeout(boot,500);
+else window.addEventListener('load',function(){setTimeout(boot,500);},{once:true});
+})();
+</script>
+<script id="v744-forecast-reentry-cache">
+/* v744 : 다른 메뉴에 갔다가 「매출 목표」로 돌아올 때, 설정·자료가 그대로면
+   화면을 처음부터 다시 계산·그리지 않고 «직전에 그린 화면»을 그대로 붙입니다.
+   (입력칸과 버튼의 동작은 노드를 그대로 재사용하므로 유지됩니다) */
+(function(){
+'use strict';
+var cache=null;
+function sig(){
+  try{
+    if(typeof CUR==='undefined'||!CUR.length)return null;
+    var f=state.fc||{};
+    var o=[ (typeof fcTargetYear==='function')?fcTargetYear():0, CUR.length, CUR[0], CUR[CUR.length-1], state.basis,
+      (typeof fcBaseFutureModeV741==='function')?fcBaseFutureModeV741():'' ];
+    /* 화면에 영향을 주는 값은 통째로 비교합니다(빠뜨린 설정 때문에 옛 화면이 남는 일을 막기 위함) */
+    var j=JSON.stringify([f,state.cmgrExcl,state.pd,state.scrapVendors,state.scrapVendorOff,state.strategyPlan,
+      state.mgrOverride,state.clsOverride,state.gradeOverride]);
+    return o.join('\u0001')+'\u0002'+j;
+  }catch(_e){ return null; }
+}
+function install(){
+  if(typeof window.forecast!=='function'||window.forecast.__v744)return false;
+  var orig=window.forecast;
+  var w=function(){
+    var silent=(typeof _fcSilentV678!=='undefined'&&_fcSilentV678)||window.__FC_BUILDING_V737;
+    if(silent||arguments.length)return orig.apply(this,arguments);
+    var r=document.getElementById('result');
+    var s=sig();
+    if(r&&s&&cache&&cache.sig===s&&cache.nodes&&cache.nodes.length&&cache.nodes[0].isConnected===false){
+      try{
+        r.replaceChildren.apply(r, cache.nodes);
+        r.style.display='';
+        return;
+      }catch(_e){ /* 실패하면 평소대로 다시 그립니다 */ }
+    }
+    var out=orig.apply(this,arguments);
+    try{
+      if(r&&s&&r.childNodes.length){ cache={sig:s,nodes:Array.prototype.slice.call(r.childNodes)}; }
+    }catch(_e){ cache=null; }
+    return out;
+  };
+  try{ Object.keys(orig).forEach(function(k){ w[k]=orig[k]; }); }catch(_e){}
+  w.__v744=true; window.forecast=w; try{ forecast=w; }catch(_e){}
+  return true;
+}
+window.__fcCacheClearV744=function(){ cache=null; };
+if(!install()){ var n=0,t=setInterval(function(){ if(install()||++n>40)clearInterval(t); },300); }
+/* 자료·연도·동기화가 바뀌면 캐시를 버립니다 */
+['afterDataChanged','fcSwitchYear','restoreFull','gsApplyDelta'].forEach(function(fn){
+  try{
+    var o=window[fn]; if(typeof o!=='function'||o.__v744c)return;
+    var w=function(){ cache=null; return o.apply(this,arguments); };
+    w.__v744c=true; window[fn]=w; try{ eval(fn+'=w'); }catch(_e){}
+  }catch(_e){}
+});
+})();
+</script>
+<!-- v746: 부동산 정책·시장 자료 업데이트 (2026.9.24) + 시장 규모 2022~2032 확장 -->
+<script id="v746-policy-market-update">
+(function(){
+'use strict';
+var TAG='2026-09-24-v746';
+var UPDATE={
+fdSize:'2022|41.4|5|35|공식 준공 실적 · 직전 호황의 잔여 물량\n2023|43.6|5|35|공식 준공 실적 · 최근 10년 최대 준공\n2024|41.6|5|35|공식 준공 실적 · 고점 유지\n2025|34.2|5|35|잠정 · 감소 국면 진입\n2026|23.0|5|35|자체 연환산 — 1~7월 준공 135,513호(-41.4%)\n2027|26.0|5|35|저점 횡보 — 2025 착공 27.3만호 급감분 도달\n2028|31.0|5|35|회복 전환 — 2026 착공(1~7월 +11.1%) 도달\n2029|33.0|5|35|3기 신도시·공공주택 입주 본격화\n2030|35.0|5|35|공공 준공 정점 구간 · 정책물량 전환율이 변수\n2031|36.0|5|35|과천·태릉(2029 착공)·1·29대책 부지(2030 착공) 반영\n2032|35.0|5|35|정책 물량 소진 · 가구수 증가 둔화로 완만한 하락',
+fdSizeAsOf:'2026-09-24 · 2022~2024년은 국토교통부 준공 실적 확정치, 2025년은 잠정치, 2026년은 1~7월 준공 135,513호(-41.4%)의 연환산이며 2027~2032년은 착공 시차와 정책 물량을 반영한 자체 시나리오입니다. 세대당 세트수·세트단가·주택/비주거 비중은 화면에서 직접 고칠 수 있습니다.',
+asOf:'2026-09-24',
+verify:'<b>확인 기준 2026.9.24</b> — 주택 공식 월자료는 국토교통부 「2026년 7월 주택통계」(8.31 공표)가 최신입니다. 8월 주택통계는 9월 말 공표 예정입니다. 정책은 8.13 「주택 신속공급 방안」과 그 후속조치(9.1 서울·9.3 대전 정비사업 정책설명회)가 진행 중이며, 수도권 신규택지 7.3만호+α는 9월 말~10월 초 발표가 예고된 상태입니다. 금융규제는 2025.10.15 대책(주담대 한도 15억 이하 6억·15~25억 4억·25억 초과 2억, LTV 40%, 스트레스금리 하한 3%, 1주택 전세대출 DSR 반영)이 그대로 유지되고 있습니다.',
+policy:'2027 계획은 ① 2026년 실제 거래처·제품 실적을 기준선으로 사용 ② 주택 회복률은 기본 +0~10%, 상방 +13%, 하방 -5% 시나리오로 관리 ③ <b>정책 물량은 «착공 확인» 뒤에만 목표에 반영</b>합니다. 8.13 대책의 공공택지 착공기간 단축(68→최단 37개월)과 신규택지 7.3만호+α는 발표 자체로는 매출이 되지 않고, 착공 통계에 잡힌 뒤 18~30개월 지나 납품으로 들어옵니다. 반대로 10.15 금융규제(대출 한도 축소·LTV 40%)는 민간 분양 수요를 눌러 민간 착공의 상방을 제한하므로, 공공·정비사업 비중이 높은 거래처를 우선 확보하는 것이 안전합니다.',
+srcline:'국토교통부 2026년 7월 주택통계(2026.8.31) · 국토교통부 주택 신속공급 방안(2026.8.13)과 후속 정비사업 정책설명회(2026.9.1·9.3) · 국토교통부 수도권 신규택지 7.3만호+α 발표 예고(2026.8.14) · 금융위원회 주택시장 안정화를 위한 대출수요 관리 방안(2025.10.15) · 국가데이터처 2026년 7월 산업활동동향(2026.8.31)',
+stAsOf:'2026-09-24',
+stVerify:'<b>2026.9.24 검증</b> — LME 아연은 9/22 현금 <b>$4,006/톤</b>, 3개월물 <b>$3,910/톤</b>, 재고 <b>114,725톤</b>(출고예정 12,825톤·11.18%)으로 갱신했습니다. 국산 열연강판 정품 유통가는 9월 셋째 주 <b>톤당 90만원 초반</b>(전주 대비 약 -1만원), 수입 대응재는 <b>90만원 안팎</b>입니다. 후판은 원가 상승을 이유로 제조사 인상이 시작됐습니다.',
+stSummary:'철강은 <b>원료는 버티고 완제품은 눌리는 장세</b>가 이어집니다. 아연 현금가격은 $4,000선을 지키며 도금 원가를 밀어올리지만, 현물-3개월 스프레드는 $97(9/18)에서 <b>$68(9/22)</b>로 좁아졌고 재고도 11만톤대에서 유지되고 있어 단기 압력은 조금 누그러졌습니다. 반면 열연은 건설수요 부진과 수입 대응재 공세로 <b>3주 이상 약보합</b>입니다. 도금재(GI·EGI)는 아연 강세, 열연 기반재는 약세라는 방향 차이를 분리해 협상하십시오.',
+stPolicy:'① HR·PO·CR은 1개월 단위 분할발주와 복수견적으로 약세의 이익을 확보 ② GI·HGI·EGI는 아연 현금가격과 도금할증을 <b>분리</b>해 협상하고, 스프레드 축소($97→$68)를 근거로 할증 인상 요구를 방어 ③ 후판 인상은 방화문 부자재와 직접 연결이 적으므로 품목별로 분리 대응 ④ 아연 재고가 10만톤 아래로 내려가면 도금재 선확보, 12만톤 위로 늘면 협상 우위로 전환합니다.',
+stSrc:'LME/시장경제신문 아연 현금·3개월·재고(2026.9.22) · 철강금속신문 주간시장동향-열연강판(2026.9.18) · 철강금속신문 후판 시장동향(2026.9.21) · worldsteel Short Range Outlook(2026.4) · 산업통상부 무역위원회 중국산 열연 가격약속(2026.6.23)'
+};
+function apply(){
+  try{
+    if(typeof state==='undefined'||typeof MK_DEFAULT!=='object')return false;
+    state.market=state.market&&typeof state.market==='object'?state.market:{};
+    if(state.market.contentV746===TAG)return false;
+    state.market.d=state.market.d&&typeof state.market.d==='object'?state.market.d:{};
+    var prior=String(state.market.d.history||MK_DEFAULT.history||'');
+    UPDATE.history='2026-09-24|부동산 정책 재점검. 8.13 주택 신속공급 방안 후속(9.1 서울·9.3 대전 정비사업 정책설명회)과 수도권 신규택지 7.3만호+α 발표 예고(9월 말~10월 초)를 반영하고, 2025.10.15 대출규제(한도 6/4/2억·LTV 40%·스트레스금리 3%·1주택 전세대출 DSR 반영)가 유지 중임을 명시. 방화문 시장 규모 그래프를 2022~2032년으로 확장(2022~2024 준공 확정치 41.4·43.6·41.6만호 반영).'+(prior?('\n'+prior):'');
+    var pst=String(state.market.d.stHistory||MK_DEFAULT.stHistory||'');
+    UPDATE.stHistory='2026-09-24|LME 아연 9/22 현금 $4,006·3개월 $3,910·재고 114,725톤 반영(스프레드 $97→$68 축소). 국산 열연 정품 유통가 9월 셋째 주 90만원 초반(전주比 -1만원)·수입 대응재 90만원 안팎으로 갱신. 후판 제조사 인상 시작을 별도 표기.'+(pst?('\n'+pst):'');
+    Object.keys(UPDATE).forEach(function(k){MK_DEFAULT[k]=UPDATE[k];state.market.d[k]=UPDATE[k];});
+    state.market.contentV746=TAG;
+    try{if(typeof saveSettings==='function')saveSettings();}catch(_e){}
+    try{
+      if(state.act==='market-fd'&&typeof marketFiredoor==='function')marketFiredoor();
+      else if(state.act==='market-con'&&typeof marketConstruction==='function')marketConstruction();
+      else if(state.act==='market-steel'&&typeof marketSteel==='function')marketSteel();
+    }catch(_e){}
+    return true;
+  }catch(_e){return false;}
+}
+window.__policyApplyV746=apply;
+function boot(){ var n=0,t=setInterval(function(){n++;if(window.__V718_RESTORED||n>30){clearInterval(t);setTimeout(apply,2300);}},300); }
+if(document.readyState==='complete')setTimeout(boot,380);
+else window.addEventListener('load',function(){setTimeout(boot,380);},{once:true});
+})();
+</script>
+<!-- v747: 추이 2032년 확장 + 연도별 영향 분석 카드 2030~2032 추가 -->
+<script id="v747-trend-2032">
+(function(){
+'use strict';
+var TAG='2026-09-24-v747';
+var UPDATE={
+conTrend3:'2022|52.2|38.3|41.4|확정\n2023|42.9|24.6|43.6|확정\n2024|42.8|30.5|41.6|확정\n2025|38.0|27.3|34.2|잠정\n2026|35.0|30.5|23.0|전망\n2027|36.0|32.0|26.0|전망\n2028|38.0|34.0|31.0|전망\n2029|39.0|35.0|33.0|전망\n2030|41.0|36.0|35.0|전망\n2031|42.0|37.0|36.0|전망\n2032|41.0|36.0|35.0|전망',
+conTrend3Note:'단위는 만호입니다. 2022~2024년은 국토교통부 확정 실적, 2025년은 잠정치이며 2026년 이후는 자체 전망입니다. 2030~2032년은 8.13 주택 신속공급 방안(공공택지 착공기간 68→최단 37개월)과 수도권 신규택지 7.3만호+α, 과천·태릉(2029 착공)·1·29대책 부지(2030 착공) 일정이 계획대로 진행된다는 가정 위의 시나리오이며, 2032년은 정책 물량 소진과 가구수 증가 둔화를 반영해 완만한 하락으로 두었습니다. 방화문 납품은 준공 6~12개월 전에 발생하므로 «준공» 선이 우리 매출과 가장 가깝습니다.',
+conTrendNR:'2022|117.0|76.2|79.0|확정\n2023|90.3|50.5|84.0|확정\n2024|79.3|56.1|72.0|확정\n2025|72.1|51.9|48.0|추정\n2026|72.0|55.5|53.0|전망\n2027|74.0|58.0|49.0|전망\n2028|77.0|61.0|53.0|전망\n2029|79.0|63.0|55.0|전망\n2030|81.0|65.0|58.0|전망\n2031|83.0|67.0|60.0|전망\n2032|84.0|68.0|61.0|전망',
+years:'2022|허가 정점|인허가 52.2만 · 착공 38.3만 · 준공 41.4만|확정|장기 후보군이 가장 컸던 해;이후 인허가 감소가 2025~27 착공을 제약\n2023|착공 충격|인허가 42.9만 · 착공 24.6만 · 준공 43.6만|확정|착공 급락이 2026~27 납품 절벽의 주원인;준공 호조와 착공 부진이 동시에 존재\n2024|부분 반등|인허가 42.8만 · 착공 30.5만 · 준공 41.6만|확정|착공 반등분이 2026 하반기~2027 일부 납품에 도달;지역·유형별 편차 큼\n2025|재조정|인허가 38.0만 · 착공 27.3만 · 준공 34.2만|잠정|낮은 착공 절대량 때문에 2027 회복 폭 제한;PF·공사비가 전환율 좌우\n2026|세 시계 분화|1~7월 인허가 -7.9% · 착공 +11.1% · 준공 -41.4%|실적|현재 납품 저점;2028 회복 후보;2029 이후 파이프라인 재공백 위험\n2027|검증의 해|준공 저점권 · 견적/수주잔고 선행 회복 가능|자체 시나리오|상반기 현금·가동률 방어;하반기 발주잔고 확인 후 단계적 대응\n2028|조건부 회복|2026 착공 반등분의 납품 도달 후보|자체 시나리오|골조율·승인도면·발주잔고가 확인된 현장만 생산능력 확대\n2029|전환율 시험|2026 인허가 감소 영향과 공공·정비사업이 충돌|자체 시나리오|민간 인허가→착공 전환 부진 시 회복이 다시 끊길 수 있음\n2030|정책물량 도달|인허가 41.0만 · 착공 36.0만 · 준공 35.0만(전망)|자체 시나리오|8.13 대책 공공택지(착공 68→37개월)와 3기 신도시 준공이 겹치는 구간;공공·정비 비중 높은 거래처 선점\n2031|고점 구간|인허가 42.0만 · 착공 37.0만 · 준공 36.0만(전망)|자체 시나리오|과천·태릉(2029 착공)·1·29대책 부지(2030 착공)가 납품으로 도달;5년 중 최대 물량 후보;설비 증설은 이 구간 회수 가능성으로 판단\n2032|정점 통과|인허가 41.0만 · 착공 36.0만 · 준공 35.0만(전망)|자체 시나리오|정책 물량 소진·가구수 증가 둔화로 완만한 하락;증설분 회수 완료 여부와 고정비 구조 재점검'
+};
+function apply(){
+  try{
+    if(typeof state==='undefined'||typeof MK_DEFAULT!=='object')return false;
+    state.market=state.market&&typeof state.market==='object'?state.market:{};
+    if(state.market.contentV747===TAG)return false;
+    state.market.d=state.market.d&&typeof state.market.d==='object'?state.market.d:{};
+    var prior=String(state.market.d.history||MK_DEFAULT.history||'');
+    UPDATE.history='2026-09-24|주택·비주거 추이를 2032년까지 확장(2032 주택 인허가 41.0만 · 착공 36.0만 · 준공 35.0만 전망). 연도별 영향 분석에 2030~2032년 카드를 추가하고 좌우 넘김을 넣음.'+(prior?('\n'+prior):'');
+    Object.keys(UPDATE).forEach(function(k){MK_DEFAULT[k]=UPDATE[k];state.market.d[k]=UPDATE[k];});
+    state.market.contentV747=TAG;
+    try{if(typeof saveSettings==='function')saveSettings();}catch(_e){}
+    try{
+      if(state.act==='market-con'&&typeof marketConstruction==='function')marketConstruction();
+      else if(state.act==='market-fd'&&typeof marketFiredoor==='function')marketFiredoor();
+    }catch(_e){}
+    return true;
+  }catch(_e){return false;}
+}
+window.__trend2032ApplyV747=apply;
+function boot(){ var n=0,t=setInterval(function(){n++;if(window.__V718_RESTORED||n>30){clearInterval(t);setTimeout(apply,2600);}},300); }
+if(document.readyState==='complete')setTimeout(boot,400);
+else window.addEventListener('load',function(){setTimeout(boot,400);},{once:true});
+})();
+</script>
+<!-- v749: 주택 추이·연도 카드 2020년부터 + 올해 카드 우선 표시 -->
+<script id="v749-from-2020">
+(function(){
+'use strict';
+var TAG='2026-09-24-v749';
+var UPDATE={
+conTrend3:'2020|45.7|52.6|47.1|확정\n2021|54.5|58.4|43.1|확정\n2022|52.2|38.3|41.4|확정\n2023|42.9|24.6|43.6|확정\n2024|42.8|30.5|41.6|확정\n2025|38.0|27.3|34.2|잠정\n2026|35.0|30.5|23.0|전망\n2027|36.0|32.0|26.0|전망\n2028|38.0|34.0|31.0|전망\n2029|39.0|35.0|33.0|전망\n2030|41.0|36.0|35.0|전망\n2031|42.0|37.0|36.0|전망\n2032|41.0|36.0|35.0|전망',
+conTrend3Note:'단위는 만호입니다. 2020~2024년은 국토교통부 확정 실적(2020년 착공 52.6만호는 2021년 착공 58만3,737호의 전년비 +10.9%에서, 2020년 인허가 45.7만호는 2021년 54.5만호의 전년비 +19.2%에서 역산), 2025년은 잠정치이며 2026년 이후는 자체 전망입니다. 2030~2032년은 8.13 주택 신속공급 방안(공공택지 착공기간 68→최단 37개월)과 수도권 신규택지 7.3만호+α, 과천·태릉(2029 착공)·1·29대책 부지(2030 착공) 일정이 계획대로 진행된다는 가정 위의 시나리오이며, 2032년은 정책 물량 소진과 가구수 증가 둔화를 반영해 완만한 하락으로 두었습니다. 방화문 납품은 준공 6~12개월 전에 발생하므로 «준공» 선이 우리 매출과 가장 가깝습니다.',
+years:'2020|공급 확대|인허가 45.7만 · 착공 52.6만 · 준공 47.1만|확정|저금리·공급확대로 착공이 크게 늘어난 해;이 물량이 2022년 납품 호황(지수 173)의 원천\n2021|착공 최대|인허가 54.5만 · 착공 58만3,737호(역대 최대) · 준공 43.1만|확정|2023년 납품 정점(지수 192)을 만든 해;이후 모든 사이클의 기준점\n2022|허가 정점|인허가 52.2만 · 착공 38.3만 · 준공 41.4만|확정|장기 후보군이 가장 컸던 해;이후 인허가 감소가 2025~27 착공을 제약\n2023|착공 충격|인허가 42.9만 · 착공 24.6만 · 준공 43.6만|확정|착공 급락이 2026~27 납품 절벽의 주원인;준공 호조와 착공 부진이 동시에 존재\n2024|부분 반등|인허가 42.8만 · 착공 30.5만 · 준공 41.6만|확정|착공 반등분이 2026 하반기~2027 일부 납품에 도달;지역·유형별 편차 큼\n2025|재조정|인허가 38.0만 · 착공 27.3만 · 준공 34.2만|잠정|낮은 착공 절대량 때문에 2027 회복 폭 제한;PF·공사비가 전환율 좌우\n2026|세 시계 분화|1~7월 인허가 -7.9% · 착공 +11.1% · 준공 -41.4%|실적|현재 납품 저점;2028 회복 후보;2029 이후 파이프라인 재공백 위험\n2027|검증의 해|준공 저점권 · 견적/수주잔고 선행 회복 가능|자체 시나리오|상반기 현금·가동률 방어;하반기 발주잔고 확인 후 단계적 대응\n2028|조건부 회복|2026 착공 반등분의 납품 도달 후보|자체 시나리오|골조율·승인도면·발주잔고가 확인된 현장만 생산능력 확대\n2029|전환율 시험|2026 인허가 감소 영향과 공공·정비사업이 충돌|자체 시나리오|민간 인허가→착공 전환 부진 시 회복이 다시 끊길 수 있음\n2030|정책물량 도달|인허가 41.0만 · 착공 36.0만 · 준공 35.0만(전망)|자체 시나리오|8.13 대책 공공택지(착공 68→37개월)와 3기 신도시 준공이 겹치는 구간;공공·정비 비중 높은 거래처 선점\n2031|고점 구간|인허가 42.0만 · 착공 37.0만 · 준공 36.0만(전망)|자체 시나리오|과천·태릉(2029 착공)·1·29대책 부지(2030 착공)가 납품으로 도달;5년 중 최대 물량 후보;설비 증설은 이 구간 회수 가능성으로 판단\n2032|정점 통과|인허가 41.0만 · 착공 36.0만 · 준공 35.0만(전망)|자체 시나리오|정책 물량 소진·가구수 증가 둔화로 완만한 하락;증설분 회수 완료 여부와 고정비 구조 재점검'
+};
+function apply(){
+  try{
+    if(typeof state==='undefined'||typeof MK_DEFAULT!=='object')return false;
+    state.market=state.market&&typeof state.market==='object'?state.market:{};
+    if(state.market.contentV749===TAG)return false;
+    state.market.d=state.market.d&&typeof state.market.d==='object'?state.market.d:{};
+    var prior=String(state.market.d.history||MK_DEFAULT.history||'');
+    UPDATE.history='2026-09-24|주택 인허가·착공·준공 추이와 연도별 영향 분석을 2020년부터 표시(2020 착공 52.6만·준공 47.1만, 2021 착공 58만3,737호·준공 43.1만). 연도 카드는 열면 올해(2026년)가 맨 왼쪽에 오도록 변경.'+(prior?('\n'+prior):'');
+    Object.keys(UPDATE).forEach(function(k){MK_DEFAULT[k]=UPDATE[k];state.market.d[k]=UPDATE[k];});
+    state.market.contentV749=TAG;
+    try{if(typeof saveSettings==='function')saveSettings();}catch(_e){}
+    try{ if(state.act==='market-con'&&typeof marketConstruction==='function')marketConstruction(); }catch(_e){}
+    return true;
+  }catch(_e){return false;}
+}
+window.__from2020ApplyV749=apply;
+/* 화면을 그린 뒤 «올해» 카드가 맨 왼쪽에 오도록 맞춥니다 */
+function hookFocus(){
+  if(typeof window.marketConstruction!=='function'||window.marketConstruction.__v749)return false;
+  var o=window.marketConstruction;
+  var w=function(){ var r=o.apply(this,arguments);
+    try{ setTimeout(function(){ if(typeof mkYearsFocusCurrent==='function')mkYearsFocusCurrent(); },40); }catch(_e){}
+    return r; };
+  w.__v749=true; window.marketConstruction=w; try{ marketConstruction=w; }catch(_e){}
+  return true;
+}
+if(!hookFocus()){ var n=0,t=setInterval(function(){ if(hookFocus()||++n>40)clearInterval(t); },300); }
+function boot(){ var n=0,t=setInterval(function(){n++;if(window.__V718_RESTORED||n>30){clearInterval(t);setTimeout(apply,2900);}},300); }
+if(document.readyState==='complete')setTimeout(boot,420);
+else window.addEventListener('load',function(){setTimeout(boot,420);},{once:true});
 })();
 </script>
 </body>
