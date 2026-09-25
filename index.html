@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v778</title>
-<script>window.APP_BUILD='v778';</script>
+<title>동방파스텍 매출 분석 도구 v782</title>
+<script>window.APP_BUILD='v782';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -259,6 +259,10 @@
   .legend .sw{width:14px;height:10px;border-radius:2px;display:inline-block}
   .chartbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
   .topmenu{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:7px 12px;margin-bottom:12px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+  /* v781 : 🧭 매출 목표전략의 탭줄(종합전략·신규업체…)을 메인 메뉴 바로 아래에 함께 고정합니다. */
+  .sg-tabbar-v781{position:sticky;top:var(--tmh-v781,56px);z-index:40;display:flex;gap:6px;flex-wrap:wrap;
+    background:#fff;padding:8px 10px;margin:0 -10px 11px;border-bottom:1px solid #e2e8f0;
+    box-shadow:0 4px 10px -6px rgba(15,23,42,.18)}
   .tm-grp{position:relative}
   .tm-top{background:#f1f5f9;border:1px solid #e2e8f0;color:#1e3a5f;font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;font-family:inherit}
   .tm-top:hover,.tm-top.open{background:var(--navy);color:#fff;border-color:var(--navy)}
@@ -1868,7 +1872,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v778</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v782</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -7242,7 +7246,7 @@ function strategyPage(){
   const bar=function(list,color,empty){if(!list.length)return '<div style="padding:18px 4px;color:#94a3b8;font-size:12px">'+empty+'</div>';const max=Math.max(1,...list.slice(0,8).map(function(o){return o.cy;}));return '<div style="display:flex;flex-direction:column;gap:7px">'+list.slice(0,8).map(function(o){const w=Math.max(2,o.cy/max*100),tip=(o.py>0?' · 전년 '+money(o.py): ' · 신규');return '<div><div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#334155" title="'+esc(o.label)+'">'+esc(o.label)+'</span><b style="white-space:nowrap;color:#1e3a5f">'+money(o.cy)+'</b></div><div style="height:8px;border-radius:5px;background:#eef2f7;margin-top:3px"><span style="display:block;width:'+w.toFixed(1)+'%;height:100%;border-radius:5px;background:'+color+'"></span></div><div style="font-size:10.5px;color:#64748b;margin-top:2px">'+rate(o.growth)+tip+'</div></div>';}).join('')+'</div>';};
   const table=function(list,kind){if(!list.length)return '<div class="sub2" style="padding:14px">표시할 분석 대상이 없습니다.</div>';return '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:650px"><thead><tr style="background:#f1f5f9;color:#334155"><th style="padding:7px;text-align:left">구분</th><th style="padding:7px;text-align:left">대상</th><th style="padding:7px;text-align:right">'+PY+'년</th><th style="padding:7px;text-align:right">'+CY+'년</th><th style="padding:7px;text-align:right">증감률</th><th style="padding:7px;text-align:left">권장 영업조치</th></tr></thead><tbody>'+list.slice(0,20).map(function(o){const action=kind==='newCust'?'첫 거래 90일 안에 주력 3품목 제안·샘플→초도수주':kind==='newProd'?'상위 거래처 5곳에 교차판매·표준규격 제안':kind==='risk'?'방문 후 감소원인 확인·대체품/재수주 일정 확정':'성장품 생산·재고 우선확보 및 연관품 묶음 제안';return '<tr><td style="padding:7px;border-top:1px solid #eef2f7;color:#64748b">'+(kind==='newCust'?'신규업체':kind==='newProd'?'신규제품':kind==='risk'?'이탈위험':'성장제품')+'</td><td style="padding:7px;border-top:1px solid #eef2f7;text-align:left;font-weight:700;color:#1e3a5f">'+esc(o.label)+'</td><td style="padding:7px;border-top:1px solid #eef2f7;text-align:right">'+(o.py?money(o.py):'-')+'</td><td style="padding:7px;border-top:1px solid #eef2f7;text-align:right">'+money(o.cy)+'</td><td style="padding:7px;border-top:1px solid #eef2f7;text-align:right;color:'+(o.growth<0?'#dc2626':'#15803d')+';font-weight:800">'+rate(o.growth)+'</td><td style="padding:7px;border-top:1px solid #eef2f7;text-align:left;color:#475569">'+action+'</td></tr>';}).join('')+'</tbody></table></div>';};
   const tab=state.strategyTab||'overview', tabs=[['overview','종합전략'],['newCust','신규업체'],['newProd','신규제품'],['risk','거래처 위험'],['growth','성장제품']];
-  const nav='<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px">'+tabs.map(function(t){return '<button class="strat-tab" data-v="'+t[0]+'" style="border:1px solid '+(tab===t[0]?'#1e3a5f':'#cbd5e1')+';background:'+(tab===t[0]?'#1e3a5f':'#fff')+';color:'+(tab===t[0]?'#fff':'#334155')+';border-radius:8px;padding:6px 12px;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer">'+t[1]+'</button>';}).join('')+'</div>';
+  const nav='<div class="sg-tabbar-v781">'+tabs.map(function(t){return '<button class="strat-tab" data-v="'+t[0]+'" style="border:1px solid '+(tab===t[0]?'#1e3a5f':'#cbd5e1')+';background:'+(tab===t[0]?'#1e3a5f':'#fff')+';color:'+(tab===t[0]?'#fff':'#334155')+';border-radius:8px;padding:6px 12px;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer">'+t[1]+'</button>';}).join('')+'</div>';
   const graph='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div style="border:1px solid #dbe3ee;border-radius:11px;padding:11px;background:#fff"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:13px;color:#1e3a5f">📦 제품 전략 그래프</b><span class="sub2">신규·성장 제품 매출</span></div>'+bar((newProd.length?newProd:growthProd),'#0d9488','신규 또는 성장 제품이 없습니다.')+'</div><div style="border:1px solid #dbe3ee;border-radius:11px;padding:11px;background:#fff"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:13px;color:#1e3a5f">🏢 거래처 전략 그래프</b><span class="sub2">신규·핵심 거래처 매출</span></div>'+bar((newCust.length?newCust:existingCust),'#1d4ed8','신규 또는 핵심 거래처가 없습니다.')+'</div></div>';
   let content='';if(tab==='newCust')content='<div class="panel" style="padding:12px"><b style="font-size:14px;color:#1e3a5f">신규업체 공략 목록</b><div class="sub2" style="margin:4px 0 10px">전년 매출이 없고 '+CY+'년에 새로 발생한 거래처입니다. 초도 거래를 반복매출로 전환하는 것이 우선입니다.</div>'+table(newCust,'newCust')+'</div>';else if(tab==='newProd')content='<div class="panel" style="padding:12px"><b style="font-size:14px;color:#1e3a5f">신규제품 확산 목록</b><div class="sub2" style="margin:4px 0 10px">전년 판매가 없고 '+CY+'년에 처음 판매된 품목입니다. 대표 거래처에서 표준화·교차판매로 확산합니다.</div>'+table(newProd,'newProd')+'</div>';else if(tab==='risk')content='<div class="panel" style="padding:12px"><b style="font-size:14px;color:#1e3a5f">거래처 방어·회복 목록</b><div class="sub2" style="margin:4px 0 10px">전년 대비 매출이 20% 이상 감소했거나 올해 매출이 끊긴 거래처입니다.</div>'+table(riskCust,'risk')+'</div>';else if(tab==='growth')content='<div class="panel" style="padding:12px"><b style="font-size:14px;color:#1e3a5f">기존 제품 성장 목록</b><div class="sub2" style="margin:4px 0 10px">전년과 올해 모두 판매되면서 증가율이 높은 품목입니다. 납기·재고·생산 우선순위를 높입니다.</div>'+table(growthProd,'growth')+'</div>';else content=graph+'<div class="panel" style="padding:12px;margin-top:12px"><b style="font-size:14px;color:#1e3a5f">영업 실행 우선순위</b><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px"><div style="padding:10px;border-left:3px solid #1d4ed8;background:#f8fafc;font-size:12px"><b>① 신규업체 확보</b><br><span class="sub2">신규 '+newCust.length+'개사에 첫 주문 후 90일 재주문 계획을 등록하고, 주력 3품목 묶음 제안으로 단발성 매출을 반복매출로 전환합니다.</span></div><div style="padding:10px;border-left:3px solid #0d9488;background:#f8fafc;font-size:12px"><b>② 신규제품 확산</b><br><span class="sub2">신규 '+newProd.length+'종을 구매력이 높은 기존 거래처에 교차제안하고, 샘플·규격·단가를 표준화해 확산 속도를 높입니다.</span></div><div style="padding:10px;border-left:3px solid #d97706;background:#f8fafc;font-size:12px"><b>③ 기존제품 성장</b><br><span class="sub2">증가 제품은 안전재고·생산능력·납기 리스크를 먼저 점검하고 연관 부자재를 함께 제안해 객단가를 높입니다.</span></div><div style="padding:10px;border-left:3px solid #dc2626;background:#f8fafc;font-size:12px"><b>④ 거래처 방어</b><br><span class="sub2">위험 '+riskCust.length+'개사는 방문 우선순위를 정해 감소 원인, 경쟁품, 미수·납기 이슈를 확인하고 회복 목표월을 지정합니다.</span></div></div></div>';
   const html='<div class="rhead"><span class="title">🧭 매출 목표전략</span><span class="meta">'+PY+'년 대비 '+CY+'년 · 데이터 전체 기준 · 제품 왼쪽 / 거래처 오른쪽</span></div>'+nav+'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">'+metric('올해 매출',money(current),PY+'년 '+money(prior)+' · 전년대비 '+rate(yoy),'#1e3a5f')+metric('신규업체',won(newCust.length)+'개사',money(newCust.reduce(function(a,o){return a+o.cy;},0)),'#1d4ed8')+metric('신규제품',won(newProd.length)+'종',money(newProd.reduce(function(a,o){return a+o.cy;},0)),'#0d9488')+metric('위험 거래처',won(riskCust.length)+'개사','전년 대비 -20% 이하 또는 올해 매출 없음','#dc2626')+metric('목표 달성',targetRate==null?'-':targetRate.toFixed(1)+'%',annualTarget?('잔여 '+money(remaining)):'목표안 자료 없음','#d97706')+'</div><div class="note" style="margin-bottom:10px"><b>분석 기준:</b> '+PY+'년과 '+CY+'년의 전체 출고 매출을 품번·규격 및 거래처로 비교했습니다. 신규는 전년 0원→올해 발생, 기존 성장은 양년 발생 후 증가, 위험은 전년 대비 20% 이상 감소 또는 올해 0원으로 분류합니다.</div>'+content;
@@ -21276,10 +21280,25 @@ async function auCall(payload,timeoutMs){
     throw new Error('서버에 연결하지 못했습니다 — '+(e.message||e));
   }
   if(timer)clearTimeout(timer);
+  /* v782 : 이 브라우저에 저장돼 있던 «주소 바꾸기» 값이 지워진 배포를 가리키면 HTTP 404 가 납니다.
+     (로그인 화면에 «HTTP 404 · JSON 아님»으로 보이던 바로 그 증상)
+     이때는 저장값을 버리고 프로그램에 내장된 기본 주소로 한 번만 다시 시도합니다. */
+  if(!r.ok && (r.status===404||r.status===403) && AU_URL && u!==AU_URL && !payload.__healedV782){
+    try{ AU.urlOverride=''; auUrlLsSet(''); }catch(_h1){}
+    try{ await idbSet(AU_STORE,{token:AU.token,id:AU.id,name:AU.name,role:AU.role,exp:AU.exp,urlOverride:''}); }catch(_h2){}
+    try{ state.gsync=state.gsync||{}; state.gsync.url=AU_URL; }catch(_h3){}
+    AU._healedFromV782=u;
+    payload.__healedV782=1;
+    return await auCall(payload,timeoutMs);
+  }
   var tx=await r.text(); var d;
   try{ d=JSON.parse(tx); }catch(_){
     var head=String(tx||'').replace(/\s+/g,' ').slice(0,80);
-    throw new Error('서버가 JSON이 아닌 응답을 보냈습니다(HTTP '+r.status+').\n앱스스크립트 배포의 «액세스 권한»을 «모든 사용자»로 두고 재배포했는지 확인하세요.\n응답 앞부분: '+head);
+    var _um=String(u||'').replace(/^https:\/\/script\.google\.com\/macros\/s\//,'').replace(/\/exec.*$/,'');
+    throw new Error('서버가 JSON이 아닌 응답을 보냈습니다(HTTP '+r.status+').'
+      +(r.status===404?'\n→ 이 주소의 배포가 존재하지 않습니다(삭제됐거나 «새 배포»로 주소가 바뀜).':'')
+      +'\n사용한 주소: …'+_um.slice(-18)
+      +'\n앱스스크립트 배포의 «액세스 권한»을 «모든 사용자»로 두고 재배포했는지 확인하세요.\n응답 앞부분: '+head);
   }
   /* v703 : 서버가 이 요청을 «모르는 요청»으로 흘려보낸 경우(챗봇 등 다른 처리기로 넘어가
      "질문이 비어 있습니다." 같은 답이 오는 경우) — 주소 뒤에 action 을 붙여 한 번 더 시도합니다.
@@ -21350,6 +21369,23 @@ function auShowGate(){
   document.getElementById('auId').focus();
   /* 자동 로그인 실패 안내 */
   if(AU._autoErr){ msg.style.color='#dc2626'; msg.textContent='자동 로그인에 실패했습니다. 다시 로그인해 주세요.\n('+AU._autoErr+')'; AU._autoErr=''; }
+  /* v782 : 저장된 주소가 죽어 기본 주소로 되돌린 경우 그 사실을 알려 줍니다. */
+  try{ if(AU._healedFromV782){ msg.style.color='#0f766e';
+    msg.textContent='이 PC에 저장돼 있던 서버 주소가 더 이상 존재하지 않아, 기본 주소로 되돌렸습니다.\n그대로 다시 로그인해 주세요.';
+    AU._healedFromV782=''; } }catch(_hv){}
+  /* v782 : 주소가 꼬였을 때 한 번에 기본값으로 되돌리는 버튼 */
+  try{
+    var _db=document.getElementById('auDiagBtn');
+    if(_db&&!document.getElementById('auResetUrlV782')){
+      _db.insertAdjacentHTML('afterend',' <button type="button" id="auResetUrlV782" style="border:0;background:none;color:#64748b;font-family:inherit;font-size:11.5px;font-weight:700;text-decoration:underline;cursor:pointer">↺ 기본 주소로</button>');
+      document.getElementById('auResetUrlV782').addEventListener('click',async function(){
+        try{ AU.urlOverride=''; auUrlLsSet(''); }catch(_r1){}
+        try{ await idbSet(AU_STORE,{token:'',id:AU.id,name:AU.name,role:AU.role,exp:0,urlOverride:''}); }catch(_r2){}
+        try{ state.gsync=state.gsync||{}; state.gsync.url=AU_URL; }catch(_r3){}
+        location.reload();
+      });
+    }
+  }catch(_rb){}
   /* 저장된 자동 로그인 정보 채우기 */
   (async function(){ try{
     var a=await auAutoGet(); if(!a)return;
@@ -26841,7 +26877,8 @@ var SG_SECS=['w','p','o','b','r','h','s'];
 function sgSecBar(A){
   var op=sgOpen(), anyOpen=SG_SECS.some(function(k){return op[k]!==false;});
   return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 9px">'
-    +'<button class="btn ghost" id="sgAllToggle" style="font-size:11.5px;padding:4px 11px;font-weight:800;background:'+(anyOpen?'#fff':'#1e3a5f')+';color:'+(anyOpen?'#334155':'#fff')+';border-color:'+(anyOpen?'#cbd5e1':'#1e3a5f')+'">'
+    /* v779 : 접기/펼치기 상태가 한눈에 보이도록 색을 넣었습니다(접기=청록, 펼치기=남색). */
+    +'<button class="btn ghost" id="sgAllToggle" style="font-size:11.5px;padding:5px 13px;font-weight:800;border-radius:8px;box-shadow:0 1px 2px rgba(15,23,42,.12);background:'+(anyOpen?'#0d9488':'#1e3a5f')+';color:#fff;border-color:'+(anyOpen?'#0d9488':'#1e3a5f')+'">'
     +(anyOpen?'⊟ 전체 접기':'⊞ 전체 펼치기')+'</button>'
     +'<span class="sub2">각 항목 제목줄을 클릭하면 개별로 접거나 펼칠 수 있습니다.</span>'
     +(A?('<span style="margin-left:8px;display:inline-flex;align-items:center;padding:3px 9px;border:1px solid #bfdbfe;border-radius:8px;background:#f8fbff">'+sgGoalAmountHTML(A)+'</span>'):'')
@@ -28832,7 +28869,11 @@ function sgOverview(A){
     +'③~⑥=<b>기회 위치</b>, ⑦=제품·거래처 우선순위. '
     +'데이터에 없는 신규업체·개발제품·신규사업은 상단 <b>🏢신규업체 / 🧪신규제품 / 🚀신규사업</b> 탭에서 직접 등록.</div>'
     +sgSecBar(A)
-    +sgSec('w','①','매출목표 달성 구성','무엇으로 목표를 채울 것인가',sgGoalCtl(A,true),sgWaterfall(A))
+    /* v779 : 목표 연도·목표안·실적확정 줄을 ① 항목 제목줄에서 꺼내 «전체 접기» 바로 아랫줄로 옮겼습니다. */
+    +'<div class="panel" id="sgGoalCtlRowV779" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:8px 11px;margin:0 0 10px;border-left:4px solid #0d9488;background:#f6fdfc">'
+      +'<b style="font-size:12px;color:#0f766e;white-space:nowrap">🎯 목표 조건</b>'+sgGoalCtl(A,true)
+      +'</div>'
+    +sgSec('w','①','매출목표 달성 구성','무엇으로 목표를 채울 것인가','',sgWaterfall(A))
     +sgSec('p','②','영업전략 추진현황','9개 전략분류별 신규·성장·유지·회복·축소 계획','',sgPipeline(A))
     +sgSec('o','③','교차판매 기회맵','거래처/제품 기준을 전환해 확장 기회를 찾습니다','',sgOppMap(A))
     +sgSec('b','④','매출 증감 분해','어디서 늘고 어디서 빠졌나','',sgBridge(A))
@@ -29316,7 +29357,7 @@ function sgRender(){
   }
   var tab=state.strategyTab||'overview';
   var tabs=[['overview','🧭 종합전략'],['newCust','🏢 신규업체'],['growthCust','📈 성장업체'],['keepCust','🤝 기존업체'],['newProd','🧪 신규제품'],['growth','📈 성장제품'],['keepProd','📦 기존제품'],['newBiz','🚀 신규사업'],['risk','🚨 거래처 위험'],['creditCut','💳 거래축소']];
-  var nav='<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 11px">'+tabs.map(function(t){
+  var nav='<div class="sg-tabbar-v781">'+tabs.map(function(t){
     var on=tab===t[0];
     return '<button class="strat-tab" data-v="'+t[0]+'" style="border:1px solid '+(on?'#1e3a5f':'#cbd5e1')+';background:'+(on?'#1e3a5f':'#fff')+';color:'+(on?'#fff':'#334155')+';border-radius:8px;padding:6px 13px;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer">'+t[1]+'</button>';
   }).join('')+'</div>';
@@ -29360,7 +29401,20 @@ function sgRender(){
 
 function sgRe(fast){ if(sgBusy)return; if(typeof state!=='undefined'&&state.act!=='strategy'){window.__sgFastRender=false;return;} if(fast)window.__sgFastRender=true; sgBusy=true; setTimeout(function(){ sgBusy=false; if(typeof state!=='undefined'&&state.act!=='strategy'){window.__sgFastRender=false;return;} sgRender(); },0); }
 
+/* v781 : 메인 메뉴 높이가 창 너비에 따라 달라지므로, 실제 높이를 재어 탭줄이 붙을 위치를 맞춥니다. */
+function sgSyncTabTopV781(){
+  try{
+    var tm=document.getElementById('topMenu'); if(!tm)return;
+    var h=Math.round(tm.getBoundingClientRect().height)||56;
+    document.documentElement.style.setProperty('--tmh-v781', h+'px');
+  }catch(_e){}
+}
+try{
+  window.addEventListener('resize', sgSyncTabTopV781);
+  window.addEventListener('load', sgSyncTabTopV781);
+}catch(_e){}
 function sgBind(A){
+  try{ sgSyncTabTopV781(); setTimeout(sgSyncTabTopV781,60); }catch(_e){}
   var $$=function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
   var pl=sgPlan();
   $$('.strat-tab').forEach(function(b){ b.addEventListener('click',function(){ state.strategyTab=b.dataset.v; window.scrollTo(0,0); sgRender(); }); });
