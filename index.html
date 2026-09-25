@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v773</title>
-<script>window.APP_BUILD='v773';</script>
+<title>동방파스텍 매출 분석 도구 v775</title>
+<script>window.APP_BUILD='v775';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1868,7 +1868,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v773</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v775</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -17588,7 +17588,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 연속 재렌더 합치기·성능 기록 (2026-09-25)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 월% 편집창 유지·적용 버튼 상태 (2026-09-25)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-20';
@@ -32254,6 +32254,7 @@ function ebtn(t,c,kind,m,n){
   return '<button type="button" class="fcdx-btn" data-kind="'+kind+'" data-m="'+m+'" title="'+m+'월 '+lab+' 월% 내용 보기·수정" style="display:inline-block;margin:1px 3px 1px 0;padding:1px 8px;border-radius:8px;font-size:10.5px;font-weight:700;background:'+c+'1a;color:'+c+';border:1px solid '+c+'55;white-space:nowrap;cursor:pointer">'+t+'</button>'; }
 function esc2(v){ return String(v==null?'':v).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch];}); }
 var OPEN=false;   /* v759 : 점검 패널을 펼쳐 둔 상태를 기억합니다(적용·삭제 후에도 그대로) */
+var EDIT={kind:'',m:0};   /* v775 : 열어 둔 «월% 편집창»을 기억합니다 */
 function build(){
   var el=document.getElementById('fcDiffPanelV757'); if(!el)return;
   var C=window.FC_CHART_V677; if(!C||!C.py)return;   /* v758 : 값이 없으면 직전 표를 그대로 둡니다 */
@@ -32321,42 +32322,92 @@ function build(){
     var b=ev.target.closest&&ev.target.closest('.fcdx-btn'); if(!b||!el.contains(b))return;
     ev.preventDefault(); openEdit(b.getAttribute('data-kind'),+b.getAttribute('data-m'));
   }); }
+  /* v775 : 화면을 다시 그려도 열어 둔 편집창이 닫히지 않도록 그대로 복원합니다 */
+  try{ if(EDIT.kind&&EDIT.m){ OPEN=true; openEdit(EDIT.kind,EDIT.m,true); } }catch(_e){}
 }
 /* ── 기준과 동일하게 맞추기 ─────────────────────────────── */
 var KEYS=['pct','pctAt','override','overrideAt','addPct','addPctAt','prodOverride','prodAddPct','custProdOverride','custMonthPct','prodMonthPct','newCusts','newProds','newCustReplacements'];
 function doReset(msg){
   try{
     var F=state.fc, Y=(typeof fcTargetYear==='function')?String(fcTargetYear()):'';
-    F._ctxYear=Y;                                  /* v758 : 보관함 저장 연도를 화면 연도와 일치시킵니다 */
-    /* v769 : 그냥 비우면 구글 동기화가 서버의 예전 값을 되살립니다.
-       먼저 있던 항목을 «0 / 해제»로 확정해 서버에도 그 값이 남도록 합니다. */
-    var MON=['custMonthPct','prodMonthPct'], PCTK=['override','addPct','prodOverride','prodAddPct','custProdOverride'];
-    var zero=function(o){ if(!o||typeof o!=='object')return;
-      MON.forEach(function(k){ var mp=o[k]; if(!mp)return; Object.keys(mp).forEach(function(c){ var row=mp[c]; if(row&&typeof row==='object')Object.keys(row).forEach(function(mm){ row[mm]=0; }); }); });
-      PCTK.forEach(function(k){ var mp=o[k]; if(!mp)return; Object.keys(mp).forEach(function(c){ mp[c]=''; }); });
+    F._ctxYear=Y;
+    /* v774 : «비우기»가 아니라 «0/해제로 확정»만 합니다.
+       예전에는 0 으로 바꾼 뒤 다시 항목을 통째로 지웠는데(F[k]={}),
+       구글 서버는 «없어진 항목»을 지우지 않고 자기 값을 유지하기 때문에
+       다음 불러오기 때 예전 값이 그대로 되살아났습니다.
+       0 은 계산상 «조정 없음»과 같고 표에도 0건으로 표시되므로 화면 결과는 동일합니다. */
+    var MON=['custMonthPct','prodMonthPct'];
+    var PCTK=['override','addPct','prodOverride','prodAddPct','custProdOverride'];
+    var DELK=['newCusts','newProds','newCustReplacements'];
+    var zero=function(o){
+      if(!o||typeof o!=='object')return;
+      MON.forEach(function(k){ var mp=o[k]; if(!mp||typeof mp!=='object')return;
+        Object.keys(mp).forEach(function(c){ var row=mp[c];
+          if(row&&typeof row==='object')Object.keys(row).forEach(function(mm){ row[mm]=0; });
+          else mp[c]={}; }); });
+      PCTK.forEach(function(k){ var mp=o[k]; if(!mp||typeof mp!=='object')return;
+        Object.keys(mp).forEach(function(c){ mp[c]=''; }); });
       if(o.pct&&typeof o.pct==='object')for(var mm=1;mm<=12;mm++)o.pct[mm]=0;
+      if(o.pctAt&&typeof o.pctAt==='object')o.pctAt={};
+      DELK.forEach(function(k){ if(o[k]&&typeof o[k]==='object')Object.keys(o[k]).forEach(function(c){ delete o[k][c]; }); });
+      if(Object.prototype.toString.call(o.newLines)==='[object Array]')o.newLines.length=0;
     };
+    /* v774 : 무엇을 몇 건 지웠는지 세고, 그 «항목 목록»을 기억해 둡니다.
+       (다른 PC가 잠시 뒤 예전 값을 다시 올려도 되살아나지 않게 지키기 위함) */
+    var _cnt=0, _mark={};
+    var count=function(o){ if(!o||typeof o!=='object')return;
+      MON.forEach(function(k){ var mp=o[k]; if(!mp)return; Object.keys(mp).forEach(function(c){ var r=mp[c]; if(!r||typeof r!=='object')return;
+        Object.keys(r).forEach(function(m){ if(r[m]!=null&&r[m]!==''&&+r[m]!==0){ _cnt++; _mark[k+'\u0001'+c+'\u0001'+m]=1; } }); }); });
+      PCTK.forEach(function(k){ var mp=o[k]; if(!mp)return; Object.keys(mp).forEach(function(c){ if(mp[c]!=null&&mp[c]!==''&&+mp[c]!==0){ _cnt++; _mark[k+'\u0001'+c]=1; } }); });
+      if(o.pct)for(var m2=1;m2<=12;m2++){ if(o.pct[m2]!=null&&o.pct[m2]!==''&&+o.pct[m2]!==0){ _cnt++; _mark['pct\u0001'+m2]=1; } }
+    };
+    count(F); if(F.targetPlans)['1','2'].forEach(function(k){ count(F.targetPlans[k]); });
     zero(F);
     if(F.targetPlans)['1','2'].forEach(function(k){ zero(F.targetPlans[k]); });
-    var _stY0=(F.yearPlans&&F.yearPlans[Y])||null;
-    if(_stY0&&_stY0.targetPlans)['1','2'].forEach(function(k){ zero(_stY0.targetPlans[k]); });
-    try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_x){}
-    try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_x){}
-    try{ if(typeof saveSettings==='function')saveSettings(); }catch(_x){}
-    try{ if(typeof gsSave==='function'&&state.gsync&&state.gsync.url)gsSave(true); }catch(_x){}
-    KEYS.forEach(function(k){ F[k]={}; }); F.newLines=[];
-    if(F.targetPlans)['1','2'].forEach(function(k){ var pl=F.targetPlans[k]; if(!pl)return; KEYS.forEach(function(x){ pl[x]={}; }); pl.newLines=[]; });
     var stY=(F.yearPlans&&F.yearPlans[Y])||null;
-    if(stY&&stY.targetPlans)['1','2'].forEach(function(k){ var pl=stY.targetPlans[k]; if(!pl)return; KEYS.forEach(function(x){ pl[x]={}; }); pl.newLines=[]; });
+    if(stY&&stY.targetPlans)['1','2'].forEach(function(k){ count(stY.targetPlans[k]); zero(stY.targetPlans[k]); });
+    F._resetAtV774=Date.now(); F._resetKeysV774=_mark;
     F._targetPlanLoaded=null;
     try{ fcEnsureTargetPlans(); }catch(_x){}
     try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_x){}
     try{_fcBaseAggCache=null;_fcBase27Cache=null;window.FC_CHART_V677=null;window.__nyAggV737=null;}catch(_x){}
     try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_x){}
     try{ if(typeof logEdit==='function')logEdit('매출 목표',Y+'년 목표 조정값 전체 초기화(기준과 동일)'); }catch(_x){}
-    afterWrite(msg,Y+'년 조정값을 지웠습니다.');
+    /* 저장 → 서버 반영까지 마친 뒤 한 번만 다시 그립니다(중간에 또 보내지 않습니다) */
+    afterWrite(msg,Y+'년 조정값 '+_cnt+'건을 지웠습니다.');
   }catch(_e){}
 }
+/* v774 : 초기화 직후 3분 동안, «지운 바로 그 항목»이 다시 값을 가지면(다른 PC가 예전 값을 올린 경우)
+   조용히 다시 0 으로 되돌리고 서버에도 반영합니다. 사용자가 새로 넣은 다른 항목은 건드리지 않습니다. */
+window.__fcResetGuardV774=function(){
+  try{
+    var F=(typeof state!=='undefined'&&state.fc)||null; if(!F)return 0;
+    var at=+(F._resetAtV774||0), mk=F._resetKeysV774;
+    if(!at||!mk||Date.now()-at>180000)return 0;
+    var n=0;
+    var fix=function(o){ if(!o||typeof o!=='object')return;
+      ['custMonthPct','prodMonthPct'].forEach(function(k){ var mp=o[k]; if(!mp)return;
+        Object.keys(mp).forEach(function(c){ var r=mp[c]; if(!r||typeof r!=='object')return;
+          Object.keys(r).forEach(function(m){ if(mk[k+'\u0001'+c+'\u0001'+m]&&r[m]!=null&&r[m]!==''&&+r[m]!==0){ r[m]=0; n++; } }); }); });
+      ['override','addPct','prodOverride','prodAddPct','custProdOverride'].forEach(function(k){ var mp=o[k]; if(!mp)return;
+        Object.keys(mp).forEach(function(c){ if(mk[k+'\u0001'+c]&&mp[c]!=null&&mp[c]!==''&&+mp[c]!==0){ mp[c]=''; n++; } }); });
+      if(o.pct)for(var m2=1;m2<=12;m2++){ if(mk['pct\u0001'+m2]&&o.pct[m2]!=null&&o.pct[m2]!==''&&+o.pct[m2]!==0){ o.pct[m2]=0; n++; } }
+    };
+    fix(F);
+    if(F.targetPlans)['1','2'].forEach(function(k){ fix(F.targetPlans[k]); });
+    var Y=String((typeof fcTargetYear==='function')?fcTargetYear():'');
+    var st=(F.yearPlans||{})[Y]; if(st&&st.targetPlans)['1','2'].forEach(function(k){ fix(st.targetPlans[k]); });
+    if(n){
+      try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_x){}
+      try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_x){}
+      try{_fcBaseAggCache=null;_fcBase27Cache=null;window.FC_CHART_V677=null;window.__nyAggV737=null;}catch(_x){}
+      try{ if(typeof logEdit==='function')logEdit('매출 목표','초기화한 조정값 '+n+'건이 되돌아와 다시 0으로 정리했습니다'); }catch(_x){}
+      try{ if(typeof saveSettings==='function')saveSettings(); }catch(_x){}
+      try{ if(typeof gsSave==='function'&&state.gsync&&state.gsync.url)gsSave(true); }catch(_x){}
+    }
+    return n;
+  }catch(_e){ return 0; }
+};
 /* v758 : 지운 내용이 구글 동기화로 되살아나지 않도록 «저장 → 서버 반영»까지 마친 뒤 다시 그립니다 */
 function afterWrite(msg,text){
   OPEN=true;
@@ -32374,10 +32425,12 @@ function afterWrite(msg,text){
 /* ── 업체/제품 월% 내용 보기·수정 ─────────────────────── */
 function prodLabel(pk){ var a=String(pk||'').split('│'); var nm=''; try{ var mt=window.FC_PRODMETA_V758&&window.FC_PRODMETA_V758.get(pk); if(mt)nm=mt.name||''; }catch(_e){}
   return esc2(a[0]||'')+(a[1]?' / '+esc2(a[1]):'')+(nm?' <span style="color:#94a3b8">'+esc2(nm)+'</span>':''); }
-function openEdit(kind,m){
+function openEdit(kind,m,force){
   var box=document.getElementById('fcDiffEditV757'); if(!box)return;
-  if(box.getAttribute('data-k')===kind+m){ box.innerHTML=''; box.removeAttribute('data-k'); return; }
+  /* v775 : 같은 버튼을 다시 누르면 닫고, 화면을 다시 그려 복원할 때(force)는 그대로 엽니다 */
+  if(!force && box.getAttribute('data-k')===kind+m){ box.innerHTML=''; box.removeAttribute('data-k'); EDIT={kind:'',m:0}; return; }
   box.setAttribute('data-k',kind+m);
+  EDIT={kind:kind,m:m};
   var f=state.fc, mapName=(kind==='cust')?'custMonthPct':'prodMonthPct', map=f[mapName]||(f[mapName]={});
   var lab=(kind==='cust')?'업체':'제품', col=(kind==='cust')?'#ea580c':'#ca8a04';
   var keys=Object.keys(map).filter(function(k){ var v=map[k]&&map[k][m]; return v!=null&&v!==''&&+v!==0; }).sort();
@@ -32395,18 +32448,32 @@ function openEdit(kind,m){
     '<b style="font-size:12px;color:'+col+'">'+m+'월 · '+lab+' 월% '+keys.length+'건</b>'+
     '<span style="font-size:11px;color:#64748b">값을 고치거나 삭제한 뒤 «적용»을 누르면 목표액에 바로 반영됩니다.</span>'+
     '<span style="margin-left:auto;display:inline-flex;gap:6px">'+
-    '<button type="button" id="fcdxApply" class="btn ghost" style="font-size:11px;padding:4px 12px;background:#dcfce7;color:#15803d;border-color:#86efac;font-weight:800">적용</button>'+
+    '<button type="button" id="fcdxApply" class="btn ghost" disabled style="font-size:11px;padding:4px 12px;background:#eef2f7;color:#94a3b8;border-color:#e2e8f0;font-weight:800;cursor:default">적용</button>'+
     '<button type="button" id="fcdxClearM" class="btn ghost" style="font-size:11px;padding:4px 12px;background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:800">'+m+'월 전체 삭제</button>'+
     '<button type="button" id="fcdxClose" class="btn ghost" style="font-size:11px;padding:4px 10px">닫기</button></span></div>'+
     '<div style="overflow:auto;max-height:340px"><table style="border-collapse:collapse;width:100%;min-width:420px;table-layout:fixed"><thead><tr>'+
     '<th style="'+TH+';width:44px;text-align:center">NO</th><th style="'+TH+'">'+lab+'</th><th style="'+TH+';width:130px;text-align:right">월 목표%</th><th style="'+TH+';width:70px;text-align:center">삭제</th>'+
     '</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
   var del=new Set();
+  /* v775 : 값을 고치거나 삭제를 눌러야 «적용»이 켜집니다 */
+  var applyBtn=null, dirty=false;
+  var setDirty=function(on){
+    dirty=!!on; if(!applyBtn)applyBtn=document.getElementById('fcdxApply'); if(!applyBtn)return;
+    applyBtn.disabled=!dirty;
+    applyBtn.style.background=dirty?'#dcfce7':'#eef2f7';
+    applyBtn.style.color=dirty?'#15803d':'#94a3b8';
+    applyBtn.style.borderColor=dirty?'#86efac':'#e2e8f0';
+    applyBtn.style.cursor=dirty?'pointer':'default';
+    applyBtn.textContent=dirty?'적용':'적용 (변경 없음)';
+  };
   box.addEventListener('click',function(ev){
     var d=ev.target.closest&&ev.target.closest('.fcdx-del');
-    if(d){ var tr=d.closest('tr'); del.add(d.getAttribute('data-key')); tr.style.opacity='.4'; tr.style.textDecoration='line-through'; d.textContent='취소됨'; d.disabled=true; return; }
+    if(d){ var tr=d.closest('tr'); del.add(d.getAttribute('data-key')); tr.style.opacity='.4'; tr.style.textDecoration='line-through'; d.textContent='취소됨'; d.disabled=true; setDirty(true); return; }
   });
-  var cl=document.getElementById('fcdxClose'); if(cl)cl.addEventListener('click',function(){ box.innerHTML=''; box.removeAttribute('data-k'); });
+  box.addEventListener('input',function(ev){ if(ev.target&&ev.target.classList&&ev.target.classList.contains('fcdx-in'))setDirty(true); });
+  box.addEventListener('change',function(ev){ if(ev.target&&ev.target.classList&&ev.target.classList.contains('fcdx-in'))setDirty(true); });
+  setDirty(false);
+  var cl=document.getElementById('fcdxClose'); if(cl)cl.addEventListener('click',function(){ box.innerHTML=''; box.removeAttribute('data-k'); EDIT={kind:'',m:0}; });
   var ap=document.getElementById('fcdxApply');
   if(ap)ap.addEventListener('click',function(){
     try{
@@ -32420,10 +32487,12 @@ function openEdit(kind,m){
         var v=inp.value; mp[k][m]=(v===''?0:(+v||0));
       });
       F._ctxYear=(typeof fcTargetYear==='function')?String(fcTargetYear()):F._ctxYear;
+      F._resetAtV774=0; F._resetKeysV774=null;      /* v774 : 직접 수정하면 «초기화 지킴이»를 끕니다 */
       try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_x){}
       try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_x){}
       try{ if(typeof logEdit==='function')logEdit('매출 목표',m+'월 '+lab+' 월% 수정'); }catch(_x){}
-      box.innerHTML=''; box.removeAttribute('data-k');
+      /* v775 : 창은 그대로 두고 «적용»만 비활성으로 바꿉니다(다시 고치면 켜집니다) */
+      setDirty(false);
       afterWrite(document.getElementById('fcDiffMsgV757'),m+'월 '+lab+' 월%를 수정했습니다.');
     }catch(_e){}
   });
@@ -32438,7 +32507,7 @@ function openEdit(kind,m){
       try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_x){}
       try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_x){}
       try{ if(typeof logEdit==='function')logEdit('매출 목표',m+'월 '+lab+' 월% 전체 삭제'); }catch(_x){}
-      box.innerHTML=''; box.removeAttribute('data-k');
+      setDirty(false);
       afterWrite(document.getElementById('fcDiffMsgV757'),m+'월 '+lab+' 월%를 모두 지웠습니다.');
     }catch(_e){}
   });
@@ -32809,6 +32878,7 @@ function install(){
       return;
     }
     lastAt=now; pending=false;
+    try{ if(typeof window.__fcResetGuardV774==='function')window.__fcResetGuardV774(); }catch(_e){}
     var a=(window.performance&&performance.now)?performance.now():0;
     var r=f.apply(this,arguments);
     try{
