@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v767</title>
-<script>window.APP_BUILD='v767';</script>
+<title>동방파스텍 매출 분석 도구 v768</title>
+<script>window.APP_BUILD='v768';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -876,15 +876,13 @@
 .rgp-vend-table tbody tr.rgp-vtr:hover td{background:#f8fafc}
 .rgp-vend-table tbody tr.rgp-vtr.on td{background:#dbeafe!important;font-weight:800}
 .rank-group-vendors-empty{text-align:center!important;color:#94a3b8;padding:12px!important}
-/* v767 : 「매출 목표」처럼 행이 많은 표는 화면에 보이는 부분만 먼저 배치해
+/* v768 : 「매출 목표」처럼 행이 많은 표는 화면에 보이는 부분만 먼저 배치해
    첫 진입에서 버튼이 바로 눌리도록 합니다(스크롤하면 나머지가 그려집니다). */
-#result tr.fcrow,#result tr.fcprow,#result tr.fcnewrow,#result tr.fcnewprow,
-#result tr.fc-cust-month-row,#result tr.fc-prod-month-row{
+#result .tablewrap:has(tr.fcrow),#result .tablewrap:has(tr.fcprow){
   content-visibility:auto;
-  contain-intrinsic-size:auto 34px;
+  contain-intrinsic-size:auto 900px;
 }
-@media print{#result tr.fcrow,#result tr.fcprow,#result tr.fcnewrow,#result tr.fcnewprow,
-#result tr.fc-cust-month-row,#result tr.fc-prod-month-row{content-visibility:visible!important}}
+@media print{#result .tablewrap:has(tr.fcrow),#result .tablewrap:has(tr.fcprow){content-visibility:visible!important}}
 </style>
 
 <style id="sales-sync-header-v03-style">
@@ -1870,7 +1868,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v767</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v768</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -11764,6 +11762,10 @@ function forecast(){ state._inDrill=false;
   }catch(_e){}
   const projPct=pyAnnual?(olhaeTarget-pyAnnual)/pyAnnual*100:0;
   // 고철업체 중 '제외'되지 않은 업체의 당해연도 매출은 거래처외 매출포함항목 합계에 포함
+  /* v768 : 다음 연도(2027) 목표를 세울 때 «기준연도(2026) 화면»을 숨긴 채 한 번 더 계산하는데,
+     그 숨은 계산에서는 표·카드 HTML을 만들 필요가 없습니다.
+     여기서 바로 끝내 표 수천 줄을 두 번 만들던 낭비를 없앱니다(첫 진입 멈춤의 핵심 원인). */
+  try{ if((typeof _fcSilentV678!=='undefined'&&_fcSilentV678)||window.__FC_BUILDING_V737){ setGlobalBar(false); return; } }catch(_e){}
   const _svForOutside=scrapVendorList();
   const _svIncludedForOutside=_svForOutside.filter(function(c){return !fcExSet.has(c);});
   const _svExcludedForOutside=_svForOutside.filter(function(c){return fcExSet.has(c);});
@@ -17540,7 +17542,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 매출목표 첫 진입 응답속도 개선 (2026-09-25)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 2027 목표 숨은 재계산 제거 (2026-09-25)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-20';
@@ -32656,6 +32658,48 @@ function install(){
 }
 if(!install()){ var n=0,t=setInterval(function(){ if(install()||++n>40)clearInterval(t); },300); }
 window.__grabYearTargetsV752=grab;
+})();
+</script>
+<script id="v768-forecast-guard">
+/* v768 : 「매출 목표」 화면이 짧은 시간에 여러 번 다시 그려지면(동기화 되돌림·연쇄 갱신 등)
+   화면이 멈춘 것처럼 보이고 브라우저가 «응답 없는 페이지»를 띄웁니다.
+   · 2.5초 안에 3번을 넘기면 나머지는 한 번으로 합쳐 1.2초 뒤에 그립니다(내용은 같습니다).
+   · 한 번 그리는 데 1.5초가 넘으면 수정이력에 남겨 원인을 확인할 수 있게 합니다. */
+(function(){
+'use strict';
+function install(){
+  var f=window.forecast;
+  if(typeof f!=='function'||f.__guardV768)return false;
+  var hist=[], timer=null, pending=false, slowLogged=false;
+  var w=function(){
+    var silent=false;
+    try{ silent=!!(window.__FC_BUILDING_V737||(typeof _fcSilentV678!=='undefined'&&_fcSilentV678)); }catch(_e){}
+    if(silent)return f.apply(this,arguments);
+    var now=Date.now();
+    hist=hist.filter(function(t){ return now-t<2500; });
+    if(hist.length>=3){
+      pending=true;
+      if(!timer)timer=setTimeout(function(){ timer=null; hist=[]; if(pending){ pending=false; try{ w(); }catch(_e){} } },1200);
+      return;
+    }
+    hist.push(now);
+    var a=(window.performance&&performance.now)?performance.now():0;
+    var r=f.apply(this,arguments);
+    try{
+      var d=((window.performance&&performance.now)?performance.now():0)-a;
+      if(d>1500&&!slowLogged){ slowLogged=true;
+        if(typeof logEdit==='function')logEdit('매출 목표','화면 그리기 '+Math.round(d)+'ms (자료 '+((typeof CUR!=='undefined'&&CUR.length)||0)+'건) — 느리면 알려주십시오');
+        if(window.console&&console.warn)console.warn('[매출목표] 렌더 '+Math.round(d)+'ms');
+      }
+    }catch(_e){}
+    return r;
+  };
+  w.__guardV768=1;
+  window.forecast=w; try{ forecast=w; }catch(_e){}
+  return true;
+}
+if(!install()){ var n=0,t=setInterval(function(){ n++; if(install()||n>40)clearInterval(t); },150); }
+window.addEventListener('load',function(){ setTimeout(install,300); setTimeout(install,1500); });
 })();
 </script>
 </body>
