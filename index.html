@@ -3,8 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v766</title>
-<script>window.APP_BUILD='v766';</script>
+<title>동방파스텍 매출 분석 도구 v767</title>
+<script>window.APP_BUILD='v767';</script>
+<script id="v767-idle-observers">
+/* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
+   여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
+   버튼 클릭이 한참 뒤에야 처리되던 문제를 없앱니다.
+   → #result 를 지켜보는 감시자들의 뒷정리 작업을 «브라우저가 한가할 때»로 미루고
+     한 번에 몰리지 않게 합칩니다. 작업 내용은 그대로이고 순서만 늦춰집니다. */
+(function(){
+  var MO=window.MutationObserver; if(!MO||MO.__v767)return;
+  var RIC=window.requestIdleCallback||function(f,o){ return setTimeout(function(){ f({didTimeout:true,timeRemaining:function(){return 0;}}); }, (o&&o.timeout)?60:60); };
+  function V(cb){
+    var self=this;
+    self.__defer=0; self.__t=0; self.__pend=null;
+    self.__inner=new MO(function(recs,obs){
+      if(!self.__defer){ try{ cb.call(self,recs,self); }catch(e){} return; }
+      self.__pend=self.__pend?self.__pend.concat(recs):recs.slice();
+      if(self.__t)return; self.__t=1;
+      RIC(function(){ self.__t=0; var r=self.__pend||[]; self.__pend=null; try{ cb.call(self,r,self); }catch(e){} },{timeout:1500});
+    });
+  }
+  V.prototype.observe=function(t,o){
+    try{ if(t&&t.nodeType===1&&t.id==='result'&&o&&o.subtree)this.__defer=1; }catch(e){}
+    return this.__inner.observe(t,o);
+  };
+  V.prototype.disconnect=function(){ this.__t=0; this.__pend=null; return this.__inner.disconnect(); };
+  V.prototype.takeRecords=function(){ return this.__inner.takeRecords(); };
+  V.__v767=1;
+  try{ window.MutationObserver=V; }catch(e){}
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -847,6 +876,15 @@
 .rgp-vend-table tbody tr.rgp-vtr:hover td{background:#f8fafc}
 .rgp-vend-table tbody tr.rgp-vtr.on td{background:#dbeafe!important;font-weight:800}
 .rank-group-vendors-empty{text-align:center!important;color:#94a3b8;padding:12px!important}
+/* v767 : 「매출 목표」처럼 행이 많은 표는 화면에 보이는 부분만 먼저 배치해
+   첫 진입에서 버튼이 바로 눌리도록 합니다(스크롤하면 나머지가 그려집니다). */
+#result tr.fcrow,#result tr.fcprow,#result tr.fcnewrow,#result tr.fcnewprow,
+#result tr.fc-cust-month-row,#result tr.fc-prod-month-row{
+  content-visibility:auto;
+  contain-intrinsic-size:auto 34px;
+}
+@media print{#result tr.fcrow,#result tr.fcprow,#result tr.fcnewrow,#result tr.fcnewprow,
+#result tr.fc-cust-month-row,#result tr.fc-prod-month-row{content-visibility:visible!important}}
 </style>
 
 <style id="sales-sync-header-v03-style">
@@ -1832,7 +1870,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v766</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v767</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -7463,8 +7501,12 @@ function lastScrapSalePrices(rows){
   return out;
 }
 function modeOf(ps){ const fr={}; let mode=0,mc=0; ps.forEach(p=>{ const k=Math.round(p); if(k<=0)return; fr[k]=(fr[k]||0)+1; if(fr[k]>mc||(fr[k]===mc&&k>mode)){mc=fr[k];mode=k;} }); return {mode,mc}; }
-function prodCatalog(){ const m=new Map(); CUR.forEach(r=>{ const pk=(r.code||'(미상)')+'│'+(r.spec||''); let o=m.get(pk); if(!o){o={pk,code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',prices:[]};m.set(pk,o);} const up=unitPrice(r); if(up>0)o.prices.push(up); if(!o.name&&r.name)o.name=r.name; }); return [...m.values()].map(o=>{ const {mode}=modeOf(o.prices); return {pk:o.pk,code:o.code,name:o.name,spec:o.spec,price:mode,label:o.code+' '+o.name+(o.spec?' / '+o.spec:'')}; }).sort((a,b)=>a.label.localeCompare(b.label,'ko')); }
-function custCatalog(){ return [...new Set(CUR.map(r=>r.cust))].sort((a,b)=>a.localeCompare(b,'ko')); }
+function _prodCatalogRawV767(){ const m=new Map(); CUR.forEach(r=>{ const pk=(r.code||'(미상)')+'│'+(r.spec||''); let o=m.get(pk); if(!o){o={pk,code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',prices:[]};m.set(pk,o);} const up=unitPrice(r); if(up>0)o.prices.push(up); if(!o.name&&r.name)o.name=r.name; }); return [...m.values()].map(o=>{ const {mode}=modeOf(o.prices); return {pk:o.pk,code:o.code,name:o.name,spec:o.spec,price:mode,label:o.code+' '+o.name+(o.spec?' / '+o.spec:'')}; }).sort((a,b)=>a.label.localeCompare(b.label,'ko')); }
+/* v767 : 같은 자료면 다시 만들지 않습니다(매출 목표 화면을 열 때마다 20만 건을 다시 훑던 부분) */
+var _catCacheV767={cur:null,n:-1,prod:null,cust:null};
+function _catFreshV767(){ if(_catCacheV767.cur!==CUR||_catCacheV767.n!==CUR.length){ _catCacheV767={cur:CUR,n:CUR.length,prod:null,cust:null}; } return _catCacheV767; }
+function prodCatalog(){ const c=_catFreshV767(); if(c.prod)return c.prod; c.prod=_prodCatalogRawV767(); return c.prod; }
+function custCatalog(){ const c=_catFreshV767(); if(c.cust)return c.cust; c.cust=[...new Set(CUR.map(r=>r.cust))].sort((a,b)=>a.localeCompare(b,'ko')); return c.cust; }
 // product key -> {cust -> {last,lastPrice}}  (for 타사 단가 비교)
 function lastPriceByProdCust(rows){ const m=new Map(); rows.forEach(r=>{ const pk=(r.code||'(미상)')+'│'+(r.spec||''); let pm=m.get(pk); if(!pm){pm=new Map();m.set(pk,pm);} const up=unitPrice(r); let o=pm.get(r.cust); if(!o||r.d>=o.last){pm.set(r.cust,{last:r.d,lastPrice:up});} }); return m; }
 function shortAmt(v){ v=Math.round(v||0); if(v>=1e8)return (v/1e8).toFixed(v>=1e9?0:1)+'억'; if(v>=1e4)return Math.round(v/1e4).toLocaleString()+'만'; return v.toLocaleString(); }
@@ -10614,7 +10656,11 @@ function legendPY(PY,CY,cbId,checked){ return `<div class="legend">
 // 목표 제외업체는 사용자가 직접 체크·해제할 수 있다.
 // 실제 매출은 원자료 그대로 모든 실적·합계에 포함한다.
 // '(폐업)' 표기와 공백 차이는 같은 거래처로 정규화하여 제외업체 수가 중복 집계되지 않게 한다.
-function fcCustKey(c){ return String(c||'').replace(/\s*\(폐업\)\s*$/,'').replace(/\s+/g,'').trim(); }
+var _fcCustKeyMemoV767=new Map();
+function fcCustKey(c){ const s0=String(c||''); let v=_fcCustKeyMemoV767.get(s0); if(v!==undefined)return v;
+  v=s0.replace(/\s*\(폐업\)\s*$/,'').replace(/\s+/g,'').trim();
+  if(_fcCustKeyMemoV767.size>20000)_fcCustKeyMemoV767.clear();
+  _fcCustKeyMemoV767.set(s0,v); return v; }
 // 이전 버전의 '고정 제외' 잠금은 제거했다. 기존 저장된 제외 상태는 유지되며 사용자가 자유롭게 해제할 수 있다.
 const FORCED_TARGET_ZERO_CUST_KEYS=new Set();
 function fcIsForcedTargetZeroCust(c){ return false; }
@@ -11803,7 +11849,15 @@ function forecast(){ state._inDrill=false;
   custRows = state.fc.showExclRows ? custRows : (pdCustRow + lineCustRows + newRows + custRows); const cTotProjNetBase=custArrTotalBase.reduce((a,o)=>a+(o.excl?0:o.proj),0); const isOverallAnnual=!state.fc.showExclRows&&m1===1&&m2===12&&clsFilter==='전체'&&statusFilter==='전체'; const cTotProjAll=state.fc.showExclRows?cTotProj:(isOverallAnnual?annualSummary.annualTarget:(cTotProjNetBase+newProjSum+lineCustTotal+pdYearNet)); const cTotPrevAll=state.fc.showExclRows?cTotPrev:custArrTotalBase.reduce((a,o)=>a+(o.excl?0:o.prev),0); const cTotYtdAll=state.fc.showExclRows?custArr.reduce((a,o)=>a+(o.ytd||0),0):custArrTotalBase.reduce((a,o)=>a+(o.ytd||0),0);
   // products (ALL)
   const prodKeys=new Set(); for(let m=m1;m<=m2;m++){ pyMonProd[m].forEach((_,pk)=>prodKeys.add(pk)); cyMonProd[m].forEach((_,pk)=>prodKeys.add(pk)); if(m>lastAct)fcProdMon[m].forEach((_,pk)=>prodKeys.add(pk)); }
-  const fcProdTargetEntry=(m,pk)=>{ let amt=0,qty=0; const src=m<=lastAct?cyMonCustProd[m]:fcCustProdMon[m]; src.forEach((pm,c)=>{ if(fcExSet.has(c))return; const e=pm&&pm.get(pk); if(e){amt+=e.amt;qty+=e.qty;} }); return {amt,qty}; };
+  /* v767 : 제품별 목표를 제품 하나마다 «모든 거래처»를 다시 훑던 부분을 월 1회 집계로 바꿉니다.
+     (제품수 × 12개월 × 거래처수 → 12개월 × 자료건수) — 매출 목표 첫 진입이 느리던 가장 큰 원인 */
+  const _pTotMon=Array.from({length:13},()=>null);
+  const _pTotOf=(m)=>{ let t=_pTotMon[m]; if(t)return t; t=new Map();
+    const src=m<=lastAct?cyMonCustProd[m]:fcCustProdMon[m];
+    src.forEach((pm,c)=>{ if(fcExSet.has(c))return; if(!pm)return;
+      pm.forEach((e,pk)=>{ let o=t.get(pk); if(!o){o={amt:0,qty:0};t.set(pk,o);} o.amt+=e.amt||0; o.qty+=e.qty||0; }); });
+    _pTotMon[m]=t; return t; };
+  const fcProdTargetEntry=(m,pk)=>{ const o=_pTotOf(m).get(pk); return o?{amt:o.amt,qty:o.qty}:{amt:0,qty:0}; };
   let prodArr=[...prodKeys].map(pk=>{ let prev=0,pq=0,proj0=0,cq=0,ytd=0,ytdQ=0,ytdP=0,futP=0; for(let m=m1;m<=m2;m++){ const pe=pyMonProd[m].get(pk); if(pe){prev+=pe.amt;pq+=pe.qty;} const te=fcProdTargetEntry(m,pk); if(te){proj0+=te.amt;cq+=te.qty; if(m<=lastAct)ytdP+=te.amt; else futP+=te.amt;} const ae=cyMonProd[m].get(pk); if(m<=lastAct&&ae){ytd+=ae.amt;ytdQ+=ae.qty||0;} } const meta=prodMeta.get(pk)||{code:pk,name:'',spec:''}; const ov=state.fc.prodOverride[pk]; const ad=state.fc.prodAddPct[pk];
     /* v646 : 조정%·추가% 는 위에서 월별 목표에 이미 반영했으므로 여기서 다시 곱하지 않습니다.
        (예전에는 표에서만 곱해 월별 합계와 숫자가 달랐습니다.) */
@@ -12039,7 +12093,10 @@ function forecast(){ state._inDrill=false;
     $('#result').querySelectorAll('.fcnewreplace').forEach(b=>b.addEventListener('click',async e=>{ e.preventDefault(); e.stopPropagation(); const box=b.closest('.fcnew-replace-box'),inp=box&&box.querySelector('.fcnewreplace-input'),actual=fcFindRealCustomer(inp&&inp.value); await fcReplaceNewCustomerTarget(b.dataset.c,actual); }));
     $('#result').querySelectorAll('.fcdel').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); const c=b.dataset.c; delete state.fc.newCusts[c]; delete state.fc.addPct[c]; delete state.fc.override[c]; delete state.fc.newCustReplacements[c]; Object.keys(state.fc.newCustReplacements||{}).forEach(k=>{ if(fcCustKey(state.fc.newCustReplacements[k])===fcCustKey(c))delete state.fc.newCustReplacements[k]; }); saveSettings(); forecast(); }));
     $('#result').querySelectorAll('.numfmt').forEach(inp=>{ const f=()=>{ const v=inp.value.replace(/[^\d]/g,''); inp.value=v?(+v).toLocaleString('en-US'):''; }; f(); inp.addEventListener('input',f); });
-    const csb=$('#fcCustSearch'),csBtn=$('#fcCustSearchBtn'); if(csb){ const normSearch=v=>{try{return String(v||'').normalize('NFKC').toLocaleLowerCase('ko-KR');}catch(_e){return String(v||'').toLowerCase();}}; const filterCustRows=qv=>{ const toks=normSearch(qv).trim().split(/\s+/).filter(Boolean); $('#result').querySelectorAll('.fcrow,.fcnewrow,.fc-cust-month-row').forEach(tr=>{ const s=normSearch((tr.dataset.c||'')+' '+tr.textContent); tr.style.display=(!toks.length||toks.every(t=>s.includes(t)))?'':'none'; }); }; const submitCustSearch=()=>{state.fc._csearch=csb.value||'';filterCustRows(state.fc._csearch);if(typeof saveSettings==='function')saveSettings();}; csb.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();submitCustSearch();}}); csBtn&&csBtn.addEventListener('click',submitCustSearch); fcBindSearchSuggest(csb,()=>{const seen=new Set(),items=[];custArr.forEach(o=>{if(o.c&&!seen.has(o.c)){seen.add(o.c);items.push({value:o.c,label:'🏢 '+o.c,search:o.c});}});Object.keys(state.fc.newCusts||{}).forEach(c=>{if(c&&!seen.has(c)){seen.add(c);items.push({value:c,label:'✨ '+c,search:c});}});(state.fc.newLines||[]).forEach(l=>{const c=l.cust||'';if(c&&!seen.has(c)){seen.add(c);items.push({value:c,label:'✨ '+c,search:c});}});return items;},()=>submitCustSearch()); filterCustRows(state.fc._csearch||''); }
+    const csb=$('#fcCustSearch'),csBtn=$('#fcCustSearchBtn'); if(csb){ const normSearch=v=>{try{return String(v||'').normalize('NFKC').toLocaleLowerCase('ko-KR');}catch(_e){return String(v||'').toLowerCase();}}; const filterCustRows=qv=>{ const toks=normSearch(qv).trim().split(/\s+/).filter(Boolean); const rows=$('#result').querySelectorAll('.fcrow,.fcnewrow,.fc-cust-month-row');
+      /* v767 : 검색어가 없으면 각 행의 글자를 읽지 않고 바로 모두 표시합니다(첫 진입 지연 제거) */
+      if(!toks.length){ rows.forEach(tr=>{ if(tr.style.display==='none')tr.style.display=''; }); return; }
+      rows.forEach(tr=>{ const s=normSearch((tr.dataset.c||'')+' '+tr.textContent); tr.style.display=toks.every(t=>s.includes(t))?'':'none'; }); }; const submitCustSearch=()=>{state.fc._csearch=csb.value||'';filterCustRows(state.fc._csearch);if(typeof saveSettings==='function')saveSettings();}; csb.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();submitCustSearch();}}); csBtn&&csBtn.addEventListener('click',submitCustSearch); fcBindSearchSuggest(csb,()=>{const seen=new Set(),items=[];custArr.forEach(o=>{if(o.c&&!seen.has(o.c)){seen.add(o.c);items.push({value:o.c,label:'🏢 '+o.c,search:o.c});}});Object.keys(state.fc.newCusts||{}).forEach(c=>{if(c&&!seen.has(c)){seen.add(c);items.push({value:c,label:'✨ '+c,search:c});}});(state.fc.newLines||[]).forEach(l=>{const c=l.cust||'';if(c&&!seen.has(c)){seen.add(c);items.push({value:c,label:'✨ '+c,search:c});}});return items;},()=>submitCustSearch()); filterCustRows(state.fc._csearch||''); }
     const ovR=$('#fcOvReset'); ovR&&ovR.addEventListener('click',async()=>{ if(!Object.keys(state.fc.override).length){ await uiConfirm('초기화할 조정%가 없습니다.'); return; } if(!await uiConfirm('모든 거래처의 <b>조정%</b>를 초기화할까요?'))return; state.fc.override={}; saveSettings(); forecast(); });
     const adR=$('#fcAddReset'); adR&&adR.addEventListener('click',async()=>{ if(!Object.keys(state.fc.addPct).length){ await uiConfirm('초기화할 추가%가 없습니다.'); return; } if(!await uiConfirm('모든 거래처의 <b>추가%</b>를 초기화할까요?'))return; state.fc.addPct={}; saveSettings(); forecast(); });
     $('#result').querySelectorAll('#fcPer button').forEach(b=>b.addEventListener('click',()=>{ state.fc.period=b.dataset.v; b.parentElement.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); fcFastForecast(); }));
@@ -17483,7 +17540,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 업체별 추이·명칭 고객관리/기술개발 (2026-09-25)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 매출목표 첫 진입 응답속도 개선 (2026-09-25)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-20';
@@ -30379,11 +30436,21 @@ try{ clsSales=sgClsSales; }catch(_e){}
       .replace(/\.{2,}/g,'.');
   }
   function eligibleText(node){
-    var p=node&&node.parentElement;
-    return !!(p&&!p.closest(EXCLUDE_SELECTOR)&&FORMAL_ENDING.test(node.nodeValue||''));
+    /* v767 : 글자 검사를 먼저 해서, 해당 없는 대부분의 글자에서 closest 탐색을 생략합니다 */
+    if(!node)return false;
+    if(!FORMAL_ENDING.test(node.nodeValue||''))return false;
+    var p=node.parentElement;
+    return !!(p&&!p.closest(EXCLUDE_SELECTOR));
   }
+  /* v767 : ① 이미 처리한 요소는 다시 보지 않습니다(화면을 새로 그리면 요소도 새로 생기므로 자동 초기화)
+            ② 해당 말투가 없는 요소는 글자 검사 한 번으로 건너뜁니다 — 큰 화면에서 수만 번 반복되던 탐색 제거 */
+  var _ckSeenV767=(typeof WeakSet!=='undefined')?new WeakSet():null;
+  var _ckRootV767=(typeof WeakSet!=='undefined')?new WeakSet():null;
   function compactElement(el){
-    if(!el||el.nodeType!==1||el.closest(EXCLUDE_SELECTOR))return;
+    if(!el||el.nodeType!==1)return;
+    if(_ckSeenV767){ if(_ckSeenV767.has(el))return; _ckSeenV767.add(el); }
+    if(!FORMAL_ENDING.test(el.textContent||''))return;
+    if(el.closest(EXCLUDE_SELECTOR))return;
     var walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT),nodes=[],n;
     while((n=walker.nextNode()))if(eligibleText(n))nodes.push(n);
     nodes.forEach(function(t){var next=compactText(t.nodeValue);if(next!==t.nodeValue)t.nodeValue=next;});
@@ -30391,10 +30458,14 @@ try{ clsSales=sgClsSales; }catch(_e){}
   function compactRoot(root){
     var el=root&&root.nodeType===1?root:(root&&root.parentElement);
     if(!el)return;
-    var set=[];
-    if(el.matches&&el.matches(COPY_SELECTOR))set.push(el);
-    var parent=el.closest&&el.closest(COPY_SELECTOR);if(parent&&set.indexOf(parent)<0)set.push(parent);
-    if(el.querySelectorAll)el.querySelectorAll(COPY_SELECTOR).forEach(function(x){if(set.indexOf(x)<0)set.push(x);});
+    /* v767 : 중복 제거를 Set 으로 바꿉니다(대상이 수천 개일 때 배열 검색이 제곱으로 느려졌습니다) */
+    /* v767 : 같은 요소를 여러 번 훑지 않습니다(화면을 새로 그리면 요소가 새로 생겨 자동 초기화) */
+    if(_ckRootV767){ if(_ckRootV767.has(el))return; _ckRootV767.add(el); }
+    var seen=(typeof Set!=='undefined')?new Set():null, set=[];
+    var push=function(x){ if(!x)return; if(seen){ if(seen.has(x))return; seen.add(x); } else if(set.indexOf(x)>=0)return; set.push(x); };
+    if(el.matches&&el.matches(COPY_SELECTOR))push(el);
+    var parent=el.closest&&el.closest(COPY_SELECTOR); if(parent)push(parent);
+    if(el.querySelectorAll)el.querySelectorAll(COPY_SELECTOR).forEach(push);
     set.forEach(compactElement);
   }
   window.compactKoreanEnding=compactText;
