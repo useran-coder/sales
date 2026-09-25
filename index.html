@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v768</title>
-<script>window.APP_BUILD='v768';</script>
+<title>동방파스텍 매출 분석 도구 v769</title>
+<script>window.APP_BUILD='v769';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1868,7 +1868,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v768</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v769</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -17542,7 +17542,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 2027 목표 숨은 재계산 제거 (2026-09-25)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 점검 패널 수정값 고정·첫 진입 추가 개선 (2026-09-25)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-20';
@@ -32087,9 +32087,12 @@ if(!install()){ var n=0,t=setInterval(function(){ if(install()||++n>40)clearInte
   var _ek=window.fcExcludedKeySet, ek=null;
   if(typeof _ek==='function'){
     var ekw=function(){ var fc=state.fc||{}, fm=fc.exclCust||null, cm=state.cmgrExcl||null;
+      /* v769 : 같은 객체·같은 개수면 지문 문자열을 다시 만들지 않습니다(한 화면에서 수천 번 호출되던 부분) */
+      var fn=fm?Object.keys(fm).length:-1, cn=cm?Object.keys(cm).length:-1;
+      if(ek&&ek.fm===fm&&ek.cm===cm&&ek.fn===fn&&ek.cn===cn)return new Set(ek.v);
       var fp='', k; if(fm)for(k in fm)fp+=k+(fm[k]?'\u0001':'\u0002'); fp+='\u0003'; if(cm)for(k in cm)fp+=k+(cm[k]?'\u0001':'\u0002');
-      if(ek&&ek.fp===fp)return new Set(ek.v);
-      var v=_ek.apply(this,arguments); ek={fp:fp,v:new Set(v)}; return v; };
+      if(ek&&ek.fp===fp){ ek.fm=fm; ek.cm=cm; ek.fn=fn; ek.cn=cn; return new Set(ek.v); }
+      var v=_ek.apply(this,arguments); ek={fp:fp,fm:fm,cm:cm,fn:fn,cn:cn,v:new Set(v)}; return v; };
     window.fcExcludedKeySet=ekw; try{ fcExcludedKeySet=ekw; }catch(_e){}
   }
   /* 월매출·레이저 월매출 공유 집계 : 입력(출고 데이터·제외 거래처·금액 기준·고철업체)이 같으면 재사용 */
@@ -32239,6 +32242,22 @@ function doReset(msg){
   try{
     var F=state.fc, Y=(typeof fcTargetYear==='function')?String(fcTargetYear()):'';
     F._ctxYear=Y;                                  /* v758 : 보관함 저장 연도를 화면 연도와 일치시킵니다 */
+    /* v769 : 그냥 비우면 구글 동기화가 서버의 예전 값을 되살립니다.
+       먼저 있던 항목을 «0 / 해제»로 확정해 서버에도 그 값이 남도록 합니다. */
+    var MON=['custMonthPct','prodMonthPct'], PCTK=['override','addPct','prodOverride','prodAddPct','custProdOverride'];
+    var zero=function(o){ if(!o||typeof o!=='object')return;
+      MON.forEach(function(k){ var mp=o[k]; if(!mp)return; Object.keys(mp).forEach(function(c){ var row=mp[c]; if(row&&typeof row==='object')Object.keys(row).forEach(function(mm){ row[mm]=0; }); }); });
+      PCTK.forEach(function(k){ var mp=o[k]; if(!mp)return; Object.keys(mp).forEach(function(c){ mp[c]=''; }); });
+      if(o.pct&&typeof o.pct==='object')for(var mm=1;mm<=12;mm++)o.pct[mm]=0;
+    };
+    zero(F);
+    if(F.targetPlans)['1','2'].forEach(function(k){ zero(F.targetPlans[k]); });
+    var _stY0=(F.yearPlans&&F.yearPlans[Y])||null;
+    if(_stY0&&_stY0.targetPlans)['1','2'].forEach(function(k){ zero(_stY0.targetPlans[k]); });
+    try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_x){}
+    try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_x){}
+    try{ if(typeof saveSettings==='function')saveSettings(); }catch(_x){}
+    try{ if(typeof gsSave==='function'&&state.gsync&&state.gsync.url)gsSave(true); }catch(_x){}
     KEYS.forEach(function(k){ F[k]={}; }); F.newLines=[];
     if(F.targetPlans)['1','2'].forEach(function(k){ var pl=F.targetPlans[k]; if(!pl)return; KEYS.forEach(function(x){ pl[x]={}; }); pl.newLines=[]; });
     var stY=(F.yearPlans&&F.yearPlans[Y])||null;
@@ -32308,9 +32327,11 @@ function openEdit(kind,m){
       var F=state.fc, mp=F[mapName]||(F[mapName]={});
       box.querySelectorAll('.fcdx-in').forEach(function(inp){
         var k=inp.getAttribute('data-key'); if(!mp[k])return;
-        if(del.has(k)){ delete mp[k][m]; if(!Object.keys(mp[k]).length)delete mp[k]; return; }
-        var v=inp.value; if(v===''||+v===0){ delete mp[k][m]; if(!Object.keys(mp[k]).length)delete mp[k]; }
-        else mp[k][m]=+v;
+        /* v769 : «지움»을 항목 삭제가 아니라 0 으로 확정합니다.
+           항목을 지우면 구글 동기화가 서버의 예전 값을 다시 덮어씌워 되살아났습니다.
+           0 은 계산에서 «조정 없음»과 같고, 표에서도 0건으로 표시됩니다. */
+        if(del.has(k)){ mp[k][m]=0; return; }
+        var v=inp.value; mp[k][m]=(v===''?0:(+v||0));
       });
       F._ctxYear=(typeof fcTargetYear==='function')?String(fcTargetYear()):F._ctxYear;
       try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_x){}
@@ -32325,7 +32346,8 @@ function openEdit(kind,m){
     if(cm.getAttribute('data-arm')!=='1'){ cm.setAttribute('data-arm','1'); cm.textContent='한 번 더 누르면 삭제'; setTimeout(function(){ if(cm&&cm.getAttribute('data-arm')==='1'){cm.setAttribute('data-arm','0');cm.textContent=m+'월 전체 삭제';} },6000); return; }
     try{
       var F=state.fc, mp=F[mapName]||{};
-      Object.keys(mp).forEach(function(k){ if(mp[k]&&mp[k][m]!=null){ delete mp[k][m]; if(!Object.keys(mp[k]).length)delete mp[k]; } });
+      /* v769 : 삭제 대신 0 으로 확정해, 동기화가 예전 값을 되살리지 못하게 합니다 */
+      Object.keys(mp).forEach(function(k){ if(mp[k]&&mp[k][m]!=null)mp[k][m]=0; });
       F._ctxYear=(typeof fcTargetYear==='function')?String(fcTargetYear()):F._ctxYear;
       try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_x){}
       try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_x){}
