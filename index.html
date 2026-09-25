@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v772</title>
-<script>window.APP_BUILD='v772';</script>
+<title>동방파스텍 매출 분석 도구 v773</title>
+<script>window.APP_BUILD='v773';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1868,7 +1868,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v772</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v773</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -17588,7 +17588,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 서버 변경없음 빠른응답 연동 (2026-09-25)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 연속 재렌더 합치기·성능 기록 (2026-09-25)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-20';
@@ -32303,6 +32303,11 @@ function build(){
     '<tbody>'+rows+'</tbody></table></div>'+
     '<div id="fcDiffEditV757"></div>'+
     '<div style="margin-top:6px;font-size:11px;color:#64748b">기준액 = 화면 상단에서 고른 «기준 연도 목표안»의 월별 금액(확정월까지 실적 + 이후월 목표수정액/월 목표). 목표액 = 그 기준액에 아래 설정을 적용한 결과입니다.</div>'+
+    (function(){ try{ var L=window.__fcPerfLog||[]; if(!L.length)return '';
+      var rows=L.slice(-8).map(function(x){ return x.t+' '+x.ms+'ms'+(x.fast?'(빠름)':'')+(x.year?(' · '+x.year+'년'):''); }).join('  |  ');
+      var mx=Math.max.apply(null,L.map(function(x){return x.ms;}));
+      return '<div style="margin-top:4px;font-size:11px;color:'+(mx>1500?'#b91c1c':'#64748b')+'">⏱ 최근 화면 그리기 : '+rows+'  (자료 '+(L[L.length-1].rows||0).toLocaleString()+'건)</div>';
+    }catch(_e){ return ''; } })()+
     '</div></details>';
   var det=document.getElementById('fcDiffDetV757');
   if(det)det.addEventListener('toggle',function(){ OPEN=!!det.open; });
@@ -32524,10 +32529,24 @@ function install(){
         return;
       }catch(_e){ /* 실패하면 평소대로 다시 그립니다 */ }
     }
+    /* v773 : 새로 그리기 전에 «직전 화면»을 먼저 놓아 줍니다.
+       예전에는 옛 화면·새 화면·직전 메뉴 화면이 한꺼번에 메모리에 남아
+       왔다갔다 할수록 브라우저가 무거워졌습니다. */
+    cache=null;
+    try{ if(state.lastData&&state.act==='forecast')state.lastData=null; }catch(_e){}
     var out=orig.apply(this,arguments);
     try{
       if(r&&s&&r.childNodes.length){ cache={sig:s,nodes:Array.prototype.slice.call(r.childNodes)}; }
     }catch(_e){ cache=null; }
+    /* 메모리가 빠듯하면 재진입 캐시를 포기해 브라우저가 정리할 수 있게 합니다 */
+    try{
+      var pm=window.performance&&performance.memory;
+      if(pm&&pm.jsHeapSizeLimit&&pm.usedJSHeapSize/pm.jsHeapSizeLimit>0.72){
+        cache=null;
+        try{ _plan2Cache=null; }catch(_x){}
+        try{ window.__nyAggV737=null; }catch(_x){}
+      }
+    }catch(_e){}
     return out;
   };
   try{ Object.keys(orig).forEach(function(k){ w[k]=orig[k]; }); }catch(_e){}
@@ -32773,23 +32792,31 @@ window.__grabYearTargetsV752=grab;
 function install(){
   var f=window.forecast;
   if(typeof f!=='function'||f.__guardV768)return false;
-  var hist=[], timer=null, pending=false, slowLogged=false;
+  var lastAt=0, timer=null, pending=false, slowLogged=false;
+  var GAP=380;                     /* v773 : 이 시간 안에 다시 요청되면 «마지막 한 번»으로 합칩니다(버튼 클릭 체감은 그대로) */
+  window.__fcPerfLog=window.__fcPerfLog||[];
   var w=function(){
     var silent=false;
     try{ silent=!!(window.__FC_BUILDING_V737||(typeof _fcSilentV678!=='undefined'&&_fcSilentV678)); }catch(_e){}
     if(silent)return f.apply(this,arguments);
     var now=Date.now();
-    hist=hist.filter(function(t){ return now-t<2500; });
-    if(hist.length>=3){
+    /* 방금 그렸는데 또 요청이 오면 지금은 건너뛰고, 요청이 멈춘 뒤 한 번만 다시 그립니다.
+       (여러 번 연속으로 다시 그리느라 «응답 없는 페이지»가 뜨던 구간 제거) */
+    if(lastAt && (now-lastAt)<GAP){
       pending=true;
-      if(!timer)timer=setTimeout(function(){ timer=null; hist=[]; if(pending){ pending=false; try{ w(); }catch(_e){} } },1200);
+      if(timer)clearTimeout(timer);
+      timer=setTimeout(function(){ timer=null; if(pending){ pending=false; lastAt=0; try{ w(); }catch(_e){} } },GAP);
       return;
     }
-    hist.push(now);
+    lastAt=now; pending=false;
     var a=(window.performance&&performance.now)?performance.now():0;
     var r=f.apply(this,arguments);
     try{
       var d=((window.performance&&performance.now)?performance.now():0)-a;
+      lastAt=Date.now();
+      window.__fcPerfLog.push({t:new Date().toLocaleTimeString('ko-KR'),ms:Math.round(d),rows:((typeof CUR!=='undefined'&&CUR.length)||0),
+        year:((typeof fcTargetYear==='function')?fcTargetYear():0),fast:d<60});
+      if(window.__fcPerfLog.length>12)window.__fcPerfLog.shift();
       if(d>1500&&!slowLogged){ slowLogged=true;
         if(typeof logEdit==='function')logEdit('매출 목표','화면 그리기 '+Math.round(d)+'ms (자료 '+((typeof CUR!=='undefined'&&CUR.length)||0)+'건) — 느리면 알려주십시오');
         if(window.console&&console.warn)console.warn('[매출목표] 렌더 '+Math.round(d)+'ms');
