@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v770</title>
-<script>window.APP_BUILD='v770';</script>
+<title>동방파스텍 매출 분석 도구 v772</title>
+<script>window.APP_BUILD='v772';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1868,7 +1868,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v770</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v772</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -12819,8 +12819,9 @@ function exportCSV(){
     state.gsync.auto=true;
     { const _ga=document.getElementById('gsAuto'); if(_ga)_ga.checked=true; }
     const _sc0=(state.gsync.syncCount||0);
-    setTimeout(()=>{ if(typeof gsLoad==='function')gsLoad(false); },1000);
-    setTimeout(()=>{ if((state.gsync.syncCount||0)===_sc0 && typeof gsLoad==='function')gsLoad(true); },6500);
+    /* v771 : 시작 직후 같은 «불러오기»가 세 번 겹쳐 서버 대기열이 길어지던 것을 한 번으로 줄입니다 */
+    setTimeout(()=>{ if(typeof gsLoad==='function')gsLoad(false); },1400);
+    setTimeout(()=>{ if((state.gsync.syncCount||0)===_sc0 && !_gsBusy && typeof gsLoad==='function')gsLoad(true); },12000);
   }
 })();
 </script>
@@ -12941,6 +12942,8 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
         _sig=_parts.join('|');
       }catch(_e){}
       var _same=(!force&&!!_sig&&_sig===_lastRenderSig);
+      /* v771 : 서버에 바뀐 것이 없으면 확인 간격을 점점 늘려 불필요한 요청을 줄입니다 */
+      try{ window.__gsQuietV771=_same?((window.__gsQuietV771||0)+1):0; }catch(_eq){}
       if(_sig)_lastRenderSig=_sig;
       /* v473 : 작업 중인 화면(재고·안전재고·폐기검토·단가)은 자동 동기화로 절대 다시 그리지 않는다.
          다른 화면도 (1) 입력칸에 커서가 있거나 (2) 마우스가 표 위에 있으면 미루고,
@@ -13051,7 +13054,14 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
       try{return await requestOnce(url,opt,timeout)}catch(e){last=classifyError(e);if(!last.retryable||i===n-1)throw last;setMode('retry','연결 재시도 '+(i+1)+'/'+(n-1));await sleep(waits[Math.min(i,waits.length-1)])}
     }throw last||new Error('동기화 요청 실패');
   }
-  function getUrl(c){return c.url+(c.url.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(c.key)+'&_t='+Date.now()}
+  /* v772 : 마지막으로 받은 리비전을 함께 보냅니다.
+     서버(.gs v17 이상)가 «변경 없음»이면 자료를 만들지 않고 짧게만 답해 대기 시간이 크게 줄어듭니다.
+     구버전 .gs 는 rev 를 무시하므로 그대로 동작합니다. */
+  function getUrl(c){
+    var rev=''; try{ rev=String((state.gsync&&state.gsync.lastRevision)||''); }catch(_e){}
+    return c.url+(c.url.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(c.key)
+      +(rev?('&rev='+encodeURIComponent(rev)):'')+'&_t='+Date.now();
+  }
   function responseData(d){
     var out;
     if(hasOwn(d,'data'))out=d.data&&typeof d.data==='object'?clone(d.data):{};
@@ -13139,6 +13149,15 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
     var localPatch=firstServerLoad?{}:gsDelta(),hasLocal=patchHas(localPatch),oldBase=clone(_gsBase||currentFull());_gsBusy=true;setMode('working','불러오는 중…');if(!silent)status(firstServerLoad?'서버 원본을 보호 기준으로 처음 적용합니다.':'서버 최신 자료를 불러오고 로컬 변경사항을 보존합니다.');
     try{
       var rr=await getRemote(c);
+      /* v772 : 서버가 «변경 없음»이라고 답하면 병합·저장·화면 갱신을 모두 건너뜁니다 */
+      if(rr&&rr.meta&&rr.meta.unchanged===true&&!firstServerLoad&&!hasLocal){
+        sessionServerReady=true; initialLoadQueued=false;
+        setSuccess('load',rr.meta); await persistOnly();
+        status('✓ 변경 없음 — 최신 상태입니다 · '+fmtFull(state.gsync.lastSync),'#0f766e');
+        _gsPendingPush=false; _gsPushAt=0; autoRetry=0; gsUpdateBtn();
+        try{ window.__gsQuietV771=(window.__gsQuietV771||0)+1; }catch(_eq){}
+        return true;
+      }
       if(firstServerLoad&&firstLocalSnapshot){
         ['fcTargetPlans','fcNewCusts','fcTargetExclCust','pd','scrapVendors','scrapVendorOff','fcCustMonthPct','fcProdMonthPct','custProdOverride','fcProdOverride','fcProdAddPct'].forEach(function(n){
           if(hasOwn(rr.data,n))return;
@@ -13196,7 +13215,25 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
     finally{_gsBusy=false;gsUpdateBtn()}
   };
 
-  window.gsStartPoll=gsStartPoll=function(){if(_gsPollT)clearInterval(_gsPollT);_gsPollT=setInterval(function(){if(!state.gsync||!state.gsync.auto||!state.gsync.url||!state.gsync.key||_gsBusy||_gsPendingPush||document.hidden)return;var a=document.activeElement;if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable))return;gsLoad(true)},60000)};
+  /* v771 : 자동 확인은 «변경이 없을수록 뜸하게». 1분 → 최대 10분까지 간격을 늘립니다.
+     (자료가 큰 환경에서 1분마다 전체를 내려받아 오래 기다리던 현상을 줄입니다) */
+  window.gsStartPoll=gsStartPoll=function(){
+    if(_gsPollT){ try{clearInterval(_gsPollT);}catch(_e){} try{clearTimeout(_gsPollT);}catch(_e){} }
+    var run=function(){
+      var q=+(window.__gsQuietV771||0);
+      var wait=Math.min(600000,60000*Math.max(1,Math.min(10,1+q)));
+      _gsPollT=setTimeout(function(){
+        try{
+          if(state.gsync&&state.gsync.auto&&state.gsync.url&&state.gsync.key&&!_gsBusy&&!_gsPendingPush&&!document.hidden){
+            var a=document.activeElement;
+            if(!(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable)))gsLoad(true);
+          }
+        }catch(_e){}
+        run();
+      },wait);
+    };
+    run();
+  };
 
   function removeHistoryDuplicates(){['elogBtn','cmElog','fcElogBtn','ciElog'].forEach(function(x){var e=id(x);if(e)e.remove()})}
   function updateHistoryBtn(){var b=id('headerElogBtn');if(!b)return;var n=typeof elogUnseen==='function'?elogUnseen():0;b.textContent='🕘 수정이력'+(n?' ('+n+'건)':'');b.classList.toggle('has-unseen',n>0)}
@@ -17551,7 +17588,7 @@ header .appver{height:32px!important;font-size:10.5px!important;padding:0 9px!im
 <script id="ver-pin-v183">
 (function(){
  function usr(){var u='';try{u=(typeof state!=='undefined'&&state&&state.gsync&&String(state.gsync.user||'').trim())||'';}catch(e){}return u;}
- function tgt(){return (window.APP_BUILD||'v454')+' · 변경 없는 동기화는 재렌더 생략 (2026-09-25)';}
+ function tgt(){return (window.APP_BUILD||'v454')+' · 서버 변경없음 빠른응답 연동 (2026-09-25)';}
  function userSync(){var el=document.getElementById('appUser');if(!el)return;var u=usr();var t='\uD83D\uDC64 <b>'+(u?u.replace(/[&<>"]/g,''):'\uBBF8\uB85C\uADF8\uC778')+'</b>';if(el.innerHTML!==t)el.innerHTML=t;el.classList.toggle('off',!u);}
  function enforce(){userSync();var el=document.getElementById('appVer');if(!el)return;var t=tgt();if(el.textContent!==t)el.textContent=t;
    var ti='빌드 '+(window.APP_BUILD||'v454')+' · 문의하실 때 이 번호를 알려주십시오 · 최종수정 2026-09-20';
@@ -30133,7 +30170,7 @@ try{ clsSales=sgClsSales; }catch(_e){}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paint,{once:true}); else setTimeout(paint,300);
   /* 응답이 오지 않아 막대가 걸린 채로 남지 않도록, 45초간 변화가 없으면 대기로 돌립니다. */
   setInterval(function(){ ['ds','gs'].forEach(function(c){ var ST=S(c);
-    if(ST.on&&ST.at&&Date.now()-ST.at>45000){ ST.on=false;ST.pct=0;ST.at=0; } }); paint(); },5000);
+    if(ST.on&&ST.at&&Date.now()-ST.at>30000){ ST.on=false;ST.pct=0;ST.at=0; } }); paint(); },5000);
   var SG={
     kb:kb,
     show:function(kind,label,sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true;ST.kind=kind;ST.label=label||'';ST.sub=sub||'';ST.pct=3;paint(); },
@@ -30193,6 +30230,19 @@ try{ clsSales=sgClsSales; }catch(_e){}
       return new Response(stream,{status:res.status,statusText:res.statusText,headers:res.headers});
     }catch(_e){ SG.done('',ch); return res; }
   }
+  /* v771 : ① 서버를 기다리는 동안 «몇 초째»인지 보여 줍니다(12%에서 멈춘 것처럼 보이던 현상 제거)
+            ② 같은 «불러오기» 요청이 겹치면 하나로 합쳐 서버 대기열이 길어지지 않게 합니다 */
+  var _inflightV771={};
+  function _isPlainGetV771(url,init,input){
+    try{
+      var m=String((init&&init.method)||(input&&input.method)||'GET').toUpperCase();
+      if(m!=='GET')return '';
+      var q=String(url||'').match(/[?&]action=([^&]+)/);
+      var act=q?decodeURIComponent(q[1]):'';
+      if(act!=='get')return '';
+      return String(url||'').replace(/[?&]_t=\d+/,'');
+    }catch(_e){ return ''; }
+  }
   var f=function(input,init){
     var url=(typeof input==='string')?input:((input&&input.url)||'');
     if(!syncUrl(url))return of.apply(this,arguments);
@@ -30200,13 +30250,26 @@ try{ clsSales=sgClsSales; }catch(_e){}
     if(!ch)return of.apply(this,arguments);
     var m=''; try{ m=String((init&&init.method)||(input&&input.method)||'GET').toUpperCase(); }catch(_e){ m='GET'; }
     var isPost=(m==='POST');
+    var dedupeKey=_isPlainGetV771(url,init,input);
+    if(dedupeKey&&_inflightV771[dedupeKey]){
+      return _inflightV771[dedupeKey].then(function(r){ try{ return r.clone(); }catch(_e){ return r; } });
+    }
     var bytes=0; try{ if(isPost&&init&&typeof init.body==='string')bytes=init.body.length; }catch(_e){}
     SG.show(isPost?'up':'down', isPost?'서버로 보내는 중':'서버에서 받는 중', isPost?('보낼 자료 '+kb(bytes)):'요청 보냄', ch);
     SG.step(isPost?30:12,null,null,ch);
-    return of.apply(this,arguments).then(function(res){
+    var t0=Date.now(), tick=setInterval(function(){
+      var sec=Math.round((Date.now()-t0)/1000);
+      var base=isPost?30:12, cap=isPost?66:34;
+      SG.set(Math.min(cap,base+sec), (isPost?'서버가 처리 중 ':'서버 응답 기다리는 중 ')+sec+'초'+(sec>=15?' — 자료가 많아 오래 걸릴 수 있습니다':''), ch);
+    },1000);
+    var done=function(){ clearInterval(tick); if(dedupeKey)delete _inflightV771[dedupeKey]; };
+    var pr=of.apply(this,arguments).then(function(res){
+      done();
       SG.step(isPost?70:36, null, isPost?'서버가 처리 중':'응답 받는 중', ch);
       return wrap(res,isPost,bytes,ch);
-    },function(e){ SG.fail('연결 실패 — '+(e&&e.message||e),ch); throw e; });
+    },function(e){ done(); SG.fail('연결 실패 — '+(e&&e.message||e),ch); throw e; });
+    if(dedupeKey)_inflightV771[dedupeKey]=pr;
+    return pr;
   };
   f.__sg652=true; window.fetch=f;
 })();
