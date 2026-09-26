@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v785</title>
-<script>window.APP_BUILD='v785';</script>
+<title>동방파스텍 매출 분석 도구 v786</title>
+<script>window.APP_BUILD='v786';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1872,7 +1872,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v785</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v786</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -12228,6 +12228,9 @@ function forecast(){ state._inDrill=false;
       const saveSel=()=>{ const s=window.getSelection(); if(s&&s.rangeCount&&ed.contains(s.anchorNode)) savedRange=s.getRangeAt(0).cloneRange(); };
       const restoreSel=()=>{ if(savedRange){ const s=window.getSelection(); s.removeAllRanges(); s.addRange(savedRange); } };
       ed.addEventListener('keyup',saveSel); ed.addEventListener('mouseup',saveSel); ed.addEventListener('blur',saveSel);
+      /* v786 : 태블릿(터치)에서는 mouseup 이 나지 않아 «고른 글자»가 기억되지 않았습니다. */
+      ed.addEventListener('touchend',saveSel); ed.addEventListener('pointerup',saveSel);
+      try{ document.addEventListener('selectionchange',function(){ try{ if(document.activeElement===ed)saveSel(); }catch(_s){} }); }catch(_s2){}
       /* v641 : 렌더 시점의 execCommand 호출을 제거했습니다(전체 레이아웃 강제 재계산 → 수 초 정지의 원인).
          서식 버튼들이 실행 직전에 각자 styleWithCSS 를 부르므로 동작에는 변화가 없습니다. */
       let _swc=false; const swcOnce=()=>{ if(_swc)return; _swc=true; try{document.execCommand('styleWithCSS',false,true);}catch(_){} };
@@ -32685,7 +32688,7 @@ function openEdit(kind,m,force){
   var rows=keys.map(function(k,i){
     return '<tr><td style="'+TD+';text-align:center">'+(i+1)+'</td>'+
       '<td style="'+TD+';text-align:left">'+((kind==='cust')?esc2(k):prodLabel(k))+'</td>'+
-      '<td style="'+TD+';text-align:right"><input class="fcdx-in" data-key="'+esc2(k)+'" type="number" step="0.1" value="'+esc2(map[k][m])+'" style="width:84px;text-align:right;font-size:11.5px;padding:2px 5px;border:1px solid #cbd5e1;border-radius:6px"> %</td>'+
+      '<td style="'+TD+';text-align:right"><input class="fcdx-in" data-key="'+esc2(k)+'" type="number" inputmode="decimal" step="0.1" value="'+esc2(map[k][m])+'" style="width:84px;text-align:right;font-size:11.5px;padding:2px 5px;border:1px solid #cbd5e1;border-radius:6px"> %</td>'+
       '<td style="'+TD+';text-align:center"><button type="button" class="fcdx-del" data-key="'+esc2(k)+'" title="이 줄 삭제" style="font-size:11px;padding:2px 8px;border:1px solid #fca5a5;border-radius:6px;background:#fee2e2;color:#b91c1c;font-weight:700;cursor:pointer">삭제</button></td></tr>';
   }).join('');
   if(!rows)rows='<tr><td colspan="4" style="'+TD+';text-align:center;color:#94a3b8">'+m+'월에 설정된 '+lab+' 월%가 없습니다.</td></tr>';
@@ -33312,6 +33315,76 @@ window.addEventListener('load',function(){ setTimeout(install,300); setTimeout(i
   else mount();
   window.ghUploadV784=upload;
   window.ghPickUploadV785=function(){ return upload(true); };
+})();
+</script>
+
+<script id="v786-touch-compat">
+/* v786 : PC(마우스)에서는 되는데 태블릿(터치)에서는 안 되던 것들을 맞춥니다.
+   ① 제안목록·서식버튼이 mousedown 으로만 동작해, 터치에서는 목록이 먼저 닫혀 눌리지 않던 문제
+   ② 입력칸에 글자를 넣은 뒤 버튼을 누르면 «키보드를 닫는 첫 탭»에 눌림이 먹혀 한 번 더 눌러야 했던 문제
+   ③ 버튼·입력칸이 너무 작아 손가락으로 정확히 누르기 어렵던 문제 (터치 기기에서만 크게) */
+(function(){
+  var isTouch=false;
+  try{ isTouch=('ontouchstart' in window)||(navigator.maxTouchPoints>0); }catch(_e){}
+  if(!isTouch)return;
+
+  /* ① mousedown 전용 목록·버튼을 터치에서도 같게 */
+  var MD_SEL='[data-ar-suggest],[data-ar-unified-cust],[data-suggest-value],.wr-issue-cust-option,.fcnb,.fchl,.fcnpc,#fcNotePalBtn';
+  document.addEventListener('touchstart',function(e){
+    try{
+      var t=e.target; if(!t||!t.closest)return;
+      var n=t.closest(MD_SEL); if(!n)return;
+      e.preventDefault();          /* 브라우저가 만들어 낼 마우스 이벤트를 막고 직접 보냅니다 */
+      var mk=function(type){ return new MouseEvent(type,{bubbles:true,cancelable:true,view:window}); };
+      n.dispatchEvent(mk('mousedown'));
+      n.dispatchEvent(mk('mouseup'));
+    }catch(_x){}
+  },{passive:false,capture:true});
+
+  /* ② 키보드가 떠 있을 때 버튼을 누르면 첫 탭이 그대로 먹히게 */
+  var synth=null;
+  document.addEventListener('touchend',function(e){
+    try{
+      var t=e.target; if(!t||!t.closest)return;
+      var b=t.closest('button,.btn,.fcdx-btn'); if(!b||b.disabled)return;
+      if(b.closest(MD_SEL))return;                       /* ①에서 이미 처리 */
+      var a=document.activeElement;
+      if(!a)return;
+      var typing=(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable);
+      if(!typing||a===b||b.contains(a))return;
+      e.preventDefault();
+      synth=b;
+      try{ a.blur(); }catch(_b){}
+      setTimeout(function(){
+        try{ b.click(); }finally{ setTimeout(function(){ if(synth===b)synth=null; },500); }
+      },0);
+    }catch(_x){}
+  },{passive:false,capture:true});
+  document.addEventListener('click',function(e){
+    try{
+      if(!synth||!e.isTrusted)return;
+      var t=e.target; if(!t||!t.closest)return;
+      if(t.closest('button,.btn,.fcdx-btn')===synth){ e.preventDefault(); e.stopPropagation(); }
+    }catch(_x){}
+  },true);
+
+  /* ③ 터치 기기에서만 누르는 영역을 키웁니다 (PC 화면은 그대로) */
+  try{
+    var st=document.createElement('style');
+    st.textContent=
+      '@media (pointer:coarse){'
+      +' button,.btn,.tm-item,.tm-top,.tm-direct,.strat-tab,.chip,.f2chip,.clschip,.fcdx-btn,summary{touch-action:manipulation}'
+      +' #result button,#result .btn,.strat-tab,.f2chip,.clschip{min-height:32px}'
+      +' .fcdx-btn{min-height:30px;padding:5px 12px!important;font-size:12.5px!important}'
+      +' #fcDiffEditV757 .fcdx-in{min-height:34px;width:104px!important;font-size:16px!important;padding:4px 7px!important}'
+      +' #fcDiffEditV757 button{min-height:34px;padding:6px 14px!important}'
+      +' #fcDiffPanelV757 button,#fcDiffPanelV757 .btn{min-height:32px}'
+      +' input,select,textarea{touch-action:manipulation}'
+      +' .gs-config-grid input,.gs-config-actions .btn,.ctrlbar .btn{min-height:34px}'
+      +'}';
+    document.head.appendChild(st);
+  }catch(_c){}
+  window.__v786Touch=1;
 })();
 </script>
 </body>
