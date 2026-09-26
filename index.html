@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v784</title>
-<script>window.APP_BUILD='v784';</script>
+<title>동방파스텍 매출 분석 도구 v785</title>
+<script>window.APP_BUILD='v785';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1872,7 +1872,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v784</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v785</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -1934,6 +1934,8 @@ body.fpopen #fpSum{display:block}
           </div>
           <div class="gs-config-actions" style="margin-top:8px">
             <button class="btn" id="ghUploadBtn" type="button" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;font-weight:800">🚀 지금 올리기</button>
+            <button class="btn" id="ghPickBtn" type="button" style="background:#eef2ff;color:#4338ca;border-color:#c7d2fe;font-weight:800">📄 파일 선택해 올리기</button>
+            <input type="file" id="ghFile" accept=".html,.htm,text/html" style="display:none">
             <button class="btn ghost" id="ghCheckBtn" type="button" style="font-size:12px">🔍 현재 배포 버전 확인</button>
             <button class="btn ghost" id="ghForgetBtn" type="button" style="font-size:12px;color:#b91c1c;border-color:#fecaca">🗑 토큰 지우기</button>
             <span class="sub2 gs-config-status" id="ghStatus" style="font-weight:700"></span>
@@ -1941,7 +1943,8 @@ body.fpopen #fpSum{display:block}
           <div class="sub2" style="margin-top:7px">
             토큰은 <b>이 PC의 브라우저에만</b> 저장되며 서버·동기화에는 절대 올라가지 않습니다. 공용 PC에서는 쓰지 마세요.<br>
             토큰 만들기 — GitHub → Settings → Developer settings → <b>Personal access tokens → Fine-grained tokens</b> → 저장소 <b>이 저장소만</b> 선택 → 권한 <b>Contents: Read and write</b> → 발급.<br>
-            <b>GitHub Pages 주소로 열어야</b> 올릴 수 있습니다(내 컴퓨터의 파일을 직접 연 상태에서는 원본을 읽지 못합니다).
+            <b>내 컴퓨터의 파일을 직접 연 상태(file://)</b>에서는 브라우저가 보안상 자기 원본을 읽지 못합니다 — 이때는 <b>📄 파일 선택해 올리기</b>로 올릴 HTML을 직접 고르면 됩니다(「🚀 지금 올리기」를 눌러도 파일 선택창이 열립니다).<br>
+            GitHub Pages 주소로 열었을 때는 <b>지금 보고 있는 페이지</b>가 그대로 올라갑니다.
           </div>
         </div>
       </details>
@@ -33203,15 +33206,44 @@ window.addEventListener('load',function(){ setTimeout(install,300); setTimeout(i
     if(!/<html/i.test(t))throw new Error('원본이 HTML 이 아닙니다.');
     return t;
   }
-  async function upload(){
+  /* v785 : 내 컴퓨터의 파일로 연 상태(file://)에서는 브라우저가 자기 원본을 읽지 못하므로,
+     올릴 HTML 파일을 직접 고르게 합니다. */
+  function pickFile(){
+    return new Promise(function(res,rej){
+      var f=el('ghFile'); if(!f)return rej(new Error('파일 선택칸을 찾지 못했습니다.'));
+      f.value='';
+      f.onchange=function(){
+        var file=f.files&&f.files[0];
+        if(!file)return rej(new Error('파일을 고르지 않았습니다.'));
+        var r=new FileReader();
+        r.onload=function(){
+          var t=String(r.result||'');
+          if(!/<html/i.test(t))return rej(new Error('고르신 파일이 HTML 이 아닙니다.'));
+          res({text:t,name:file.name});
+        };
+        r.onerror=function(){ rej(new Error('파일을 읽지 못했습니다.')); };
+        r.readAsText(file,'utf-8');
+      };
+      f.click();
+    });
+  }
+  function verOf(t){ var m=String(t||'').match(/APP_BUILD='([^']+)'/); return m?m[1]:''; }
+  async function upload(usePick){
     var c=readCfg();
     if(!c.token)return say('🟠 GitHub 토큰을 먼저 입력해 주세요.','#b45309');
     if(!c.owner||!c.repo||!c.path)return say('🟠 계정·저장소·파일 경로를 확인해 주세요.','#b45309');
     var btn=el('ghUploadBtn'); if(btn)btn.disabled=true;
+    var btn2=el('ghPickBtn'); if(btn2)btn2.disabled=true;
     try{
-      say('⏳ 이 페이지의 원본을 읽는 중…');
-      var html=await mySource();
-      var ver=(window.APP_BUILD||'').toString();
+      var html, ver, from='';
+      if(usePick||location.protocol==='file:'){
+        say('📄 올릴 HTML 파일을 골라 주세요…');
+        var pk=await pickFile();
+        html=pk.text; ver=verOf(html); from=pk.name;
+      }else{
+        say('⏳ 이 페이지의 원본을 읽는 중…');
+        html=await mySource(); ver=(window.APP_BUILD||'').toString();
+      }
       say('⏳ 저장소 상태 확인 중… (자료 '+(html.length/1048576).toFixed(2)+'MB)');
       var sha=await shaOf(c);
       var msg=(el('ghMsg')&&el('ghMsg').value.trim())||('매출 분석 도구 '+(ver||'업데이트')+' 배포');
@@ -33231,12 +33263,12 @@ window.addEventListener('load',function(){ setTimeout(install,300); setTimeout(i
         throw new Error(em);
       }
       var url=(d&&d.commit&&d.commit.html_url)||'';
-      say('🟢 <b>올렸습니다</b> — '+esc(c.owner+'/'+c.repo+'/'+c.path)+' · '+esc(ver)
+      say('🟢 <b>올렸습니다</b> — '+esc(c.owner+'/'+c.repo+'/'+c.path)+' · '+esc(ver||'버전미상')+(from?(' · 보낸 파일 '+esc(from)):'')
          +'<br><span style="font-weight:600;color:#475569">GitHub Pages 반영까지 1~2분 걸립니다.</span>'
          +(url?(' <a href="'+url+'" target="_blank" rel="noopener" style="color:#1d4ed8">커밋 보기 ↗</a>'):''),'#0f766e');
       try{ if(typeof logEdit==='function')logEdit('배포','GitHub 업로드 '+(ver||'')+' → '+c.owner+'/'+c.repo+'/'+c.path); }catch(_l){}
     }catch(e){ say('🔴 '+esc(String(e.message||e)),'#dc2626'); }
-    finally{ if(btn)btn.disabled=false; }
+    finally{ if(btn)btn.disabled=false; if(btn2)btn2.disabled=false; }
   }
   async function check(){
     var c=readCfg();
@@ -33265,17 +33297,21 @@ window.addEventListener('load',function(){ setTimeout(install,300); setTimeout(i
     ['ghOwner','ghRepo','ghPath','ghBranch','ghToken'].forEach(function(id){
       var e=el(id); if(e)e.addEventListener('change',readCfg);
     });
-    if(el('ghUploadBtn'))el('ghUploadBtn').addEventListener('click',upload);
+    if(el('ghUploadBtn'))el('ghUploadBtn').addEventListener('click',function(){ upload(false); });
+    if(el('ghPickBtn'))el('ghPickBtn').addEventListener('click',function(){ upload(true); });
     if(el('ghCheckBtn'))el('ghCheckBtn').addEventListener('click',check);
     if(el('ghForgetBtn'))el('ghForgetBtn').addEventListener('click',function(){
       var k=cfg(); k.token=''; save(k); if(el('ghToken'))el('ghToken').value='';
       say('🗑 토큰을 지웠습니다.','#64748b');
     });
-    if(c.token)say('토큰 저장됨 — 「🚀 지금 올리기」를 누르면 배포됩니다.','#64748b');
+    if(c.token)say(location.protocol==='file:'
+      ? '토큰 저장됨 — 내 컴퓨터 파일로 연 상태이므로 「📄 파일 선택해 올리기」로 올려 주세요.'
+      : '토큰 저장됨 — 「🚀 지금 올리기」를 누르면 배포됩니다.','#64748b');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);
   else mount();
   window.ghUploadV784=upload;
+  window.ghPickUploadV785=function(){ return upload(true); };
 })();
 </script>
 </body>
