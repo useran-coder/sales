@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v794</title>
-<script>window.APP_BUILD='v794';</script>
+<title>동방파스텍 매출 분석 도구 v795</title>
+<script>window.APP_BUILD='v795';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1607,6 +1607,20 @@ body.fpopen #fpSum{display:block}
 #result .fc-target-search-btn{display:inline-flex;align-items:center;justify-content:center;width:41px;height:30px;padding:0;border:0;border-left:1px solid #dbe3ef;background:#f8fafc;color:#475569;cursor:pointer}
 #result .fc-target-search-btn:hover{background:#eff6ff;color:#1d4ed8}
 #result .fc-target-search-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+/* v795 : 안쪽 칸들이 모서리를 네모로 덮어써서 바깥 테두리가 끊겨 보이던 문제 —
+   첫 칸·마지막 칸의 바깥 모서리를 상자와 같게 둥글리고, 높이를 상자에 꽉 채웁니다. */
+#result .fc-target-search>input,
+#result .fc-target-search>select,
+#result .fc-target-search>.fc-target-search-label,
+#result .fc-target-search>.fc-target-search-btn{height:30px!important;align-self:stretch}
+#result .fc-target-search>input{border-radius:8px 0 0 8px!important}
+#result .fc-target-search>.fc-target-search-btn{border-radius:0 8px 8px 0!important}
+#result .fc-target-search>select:last-of-type,
+#result .fc-target-search>.fc-target-search-label:last-of-type{border-top-right-radius:8px;border-bottom-right-radius:8px}
+
+/* v795 : 조정%·추가%·월 조정% 칸을 «＋는 연녹색 / －는 연붉은색»으로 표시합니다. */
+#result input.v795-pos{background:#f0fdf4!important;border-color:#86efac!important;color:#15803d!important;font-weight:800!important}
+#result input.v795-neg{background:#fff1f2!important;border-color:#fca5a5!important;color:#dc2626!important;font-weight:800!important;-webkit-text-fill-color:#dc2626!important}
 #result .fc-prod-unified-input{position:relative;display:inline-flex;align-items:center}
 #result #fcProdSearch,#result #fcCustSearch{box-sizing:border-box}
 #result .fc-prod-cust-suggest{position:absolute;z-index:80;top:calc(100% + 4px);left:0;right:0;display:none;max-height:260px;overflow:auto;border:1px solid #cbd5e1;border-radius:8px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.16)}
@@ -1886,7 +1900,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v794</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v795</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -13112,7 +13126,36 @@ function render(title,meta,data,cols,defSortKey,note,opts={}){
 var V776_FLAGS=[['v776-fccust','#fcCustSearch'],['v776-cmgr','.cmgr-tbl'],['v776-cddelta','.cd-delta-toolbar'],['v776-cdbase','#cdBase'],['v776-fcprod','#fcProdSearch'],['v776-rankpg','.rank-product-group-table'],['v776-homemore','.homemore'],['v776-kvunit','#kvUnit'],['v776-cmpadd','#cmpAdd'],['v776-trcsv','#trCsv'],['v776-fcnotes','#fcNotesToggle']];
 function v776SyncResultFlags(){ try{ var r=document.getElementById('result'); if(!r)return;
   for(var i=0;i<V776_FLAGS.length;i++){ var f=V776_FLAGS[i]; r.classList.toggle(f[0], !!r.querySelector(f[1])); }
-}catch(_e){} }
+}catch(_e){}
+  try{ v795PaintPct(); }catch(_e){} }
+/* v795 : 목표 화면의 % 입력칸 — 직접 넣은 값이 ＋면 연녹색, －면 연붉은색으로 보이게 합니다.
+   (업체별·제품별 매출 목표의 «조정%·추가%», 월별보기의 «월 조정%» 모두) */
+var V795_PCT_SEL='#result input.fcov,#result input.fcadd,#result input.fcpov,#result input.fcpadd,#result input.fc-cust-month-pct,#result input.fc-prod-month-pct,#result input.fccpov,#result input.fc-month-adjust,#result input.fc-inline-pct';
+function v795PaintOne(el){
+  try{
+    if(!el)return;
+    var raw=String(el.value==null?'':el.value).trim();
+    el.classList.remove('v795-pos','v795-neg');
+    if(raw===''||el.disabled)return;
+    var v=parseFloat(raw.replace(/,/g,''));
+    if(!isFinite(v)||v===0)return;
+    el.classList.add(v>0?'v795-pos':'v795-neg');
+  }catch(_e){}
+}
+function v795PaintPct(){
+  try{ document.querySelectorAll(V795_PCT_SEL).forEach(v795PaintOne); }catch(_e){}
+}
+window.v795PaintPct=v795PaintPct;
+(function(){
+  var run=function(ev){
+    try{
+      var t=ev&&ev.target; if(!t||!t.matches)return;
+      if(t.matches('.fcov,.fcadd,.fcpov,.fcpadd,.fc-cust-month-pct,.fc-prod-month-pct,.fccpov,.fc-month-adjust,.fc-inline-pct'))v795PaintOne(t);
+    }catch(_e){}
+  };
+  document.addEventListener('input',run,true);
+  document.addEventListener('change',run,true);
+})();
 window.v776SyncResultFlags=v776SyncResultFlags;
 function renderCustom(html, onMount){ setGlobalBar(true); try{bepHeadParkV792();}catch(_e){} $('#result').innerHTML=html; v776SyncResultFlags(); if(onMount) onMount(); v776SyncResultFlags(); }
 /* v360: 목록 검색 공통 매칭 — 띄어쓰기로 나눈 낱말이 모두 포함되어야 하며(AND),
