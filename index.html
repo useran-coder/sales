@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v790</title>
-<script>window.APP_BUILD='v790';</script>
+<title>동방파스텍 매출 분석 도구 v792</title>
+<script>window.APP_BUILD='v792';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1877,7 +1877,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v790</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v792</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -2006,8 +2006,9 @@ body.fpopen #fpSum{display:block}
           <div id="mvFileList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
         </div>
       </div>
+      <div id="bepHeadBoxV792">
       <div class="ctrl-row" style="margin-top:12px;align-items:center;border-top:1px solid var(--line);padding-top:12px">
-        <b style="font-size:13px">📊 BEP(손익분기점)</b>
+        <b style="font-size:13px">📊 BEP(손익분기점) <span id="bepYrV791" style="font-size:12px;color:#7c3aed;font-weight:800"></span></b>
         <input type="text" inputmode="numeric" id="bepInput" placeholder="연 손익분기 매출액(원)" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;width:200px;text-align:right">
         <span class="sub2" style="margin:0 2px">↔</span>
         <input type="text" inputmode="numeric" id="bepInputM" placeholder="월 손익분기(원)" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;width:170px;text-align:right">
@@ -2023,6 +2024,8 @@ body.fpopen #fpSum{display:block}
         <div class="sub2" style="margin-bottom:6px">전년 1월부터 올해 12월까지 월별 인원입니다(기본 53명 표시). 값을 바꾸면 1인당 월매출/목표에 즉시 반영·저장됩니다.</div>
         <div id="headMonGrid" style="display:flex;flex-wrap:wrap;gap:6px"></div>
       </div>
+      </div>
+      <div id="bepHeadHomeV792"></div>
       <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
         <button class="btn" id="hdrAllExp" type="button" style="background:#ede9fe;color:#6d28d9;border-color:#c4b5fd" title="모든 설정(인원·담당자·목표·분류·등급 등)을 JSON 한 파일로 백업">💾 전체백업</button>
         <button class="btn" id="hdrAllImp" type="button" style="background:#ccfbf1;color:#0f766e;border-color:#5eead4" title="전체 설정 백업(JSON) 복원">⬆ 백업복원</button>
@@ -2310,6 +2313,7 @@ function fcSwitchYear(y){
   }catch(_e){}
   f._targetPlanLoaded=null; f._ctxYear=String(next);
   try{ if(typeof fcNotesSyncYearV789==='function')fcNotesSyncYearV789(); }catch(_y){}
+  try{ if(typeof v791SyncYearUI==='function')v791SyncYearUI(); }catch(_y){}
   if(next>fcDataYearMax()){f._miscSplitV718=String(next);f._exclSplitV720=String(next);f._sgSplitV721=String(next);f._nyCleanV723=String(next);} else {delete f._miscSplitV718;delete f._exclSplitV720;delete f._sgSplitV721;delete f._nyCleanV723;}
   fcEnsureTargetPlans();
   try{ _fcBaseAggCache=null; }catch(_e){}
@@ -2463,6 +2467,7 @@ function fcApplyYearContext(act){
     if(st&&st.targetPlans){ f.targetPlans=fcPlanClone(st.targetPlans); f.activePlan=(st.activePlan==='2'?'2':'1'); }
     f._targetPlanLoaded=null; f._ctxYear=want; fcEnsureTargetPlans();
     try{ if(typeof fcNotesSyncYearV789==='function')fcNotesSyncYearV789(); }catch(_y){}
+    try{ if(typeof v791SyncYearUI==='function')v791SyncYearUI(); }catch(_y){}
     /* 목표합산 제외 업체·매출 목표전략도 같은 연도 것으로 맞춥니다 */
     try{
       const _cp2=v=>JSON.parse(JSON.stringify(v||null));
@@ -2574,7 +2579,7 @@ function mergePriceSets(localArr, remoteArr){
   (localArr||[]).forEach(add); (remoteArr||[]).forEach(add);
   return [...map.values()].sort((a,b)=>tsOf(b)-tsOf(a));
 }
-async function saveSettings(){ fcSyncActivePlan(); syncExcludedCustMaps(); syncTargetExcludedCustMap(); try{ if(typeof ciBackup==='function')ciBackup(); }catch(_e){} await idbSet('settings',{headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,fcTargetPlans:state.fc.targetPlans,fcActivePlan:state.fc.activePlan,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,workdays:state.workdays,weekly:state.weekly,bep:state.bep,fcNewCusts:state.fc.newCusts,fcNewCustReplacements:state.fc.newCustReplacements,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,gbunOverride:state.gbunOverride,specKindOverride:state.specKindOverride,mixCustomCats:state.mixCustomCats,salesQtyAnalysis:state.salesQtyAnalysis,priceSets:state.priceSets,comp:state.comp,editLog:state.editLog,custProdOverride:state.fc.custProdOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcCustMonthPct:state.fc.custMonthPct,fcProdMonthPct:state.fc.prodMonthPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesTeam:state.fc.notesTeam,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcActualCutoffMonth:state.fc.actualCutoffMonth,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,monthIssueAt:state.monthIssueAt,fcPctAt:state.fc.pctAt,fcOverrideAt:state.fc.overrideAt,fcAddPctAt:state.fc.addPctAt,syncLog:state.syncLog,retainMemo:state.retainMemo,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,custAddr:state.custAddr,inv:state.inv,pd:state.pd,salesMonthlySync:state.salesMonthlySync,laserMonthlySync:state.laserMonthlySync,purchaseMonthlySync:state.purchaseMonthlySync,mixSalesView:state.mixSalesView,mixSalesMonthly:state.mixSalesMonthly,mixSalesYear:state.mixSalesYear,gsync:state.gsync,_seedV:state._seedV,scrapVendors:state.scrapVendors,scrapVendorOff:state.scrapVendorOff,kvcExclProd:state.kvcExclProd,doorFrame:state.doorFrame,market:state.market,custInfoBak:state.custInfoBak,pdInclude:!!state.pdInclude}); gsAutoPush(); }
+async function saveSettings(){ fcSyncActivePlan(); syncExcludedCustMaps(); syncTargetExcludedCustMap(); try{ if(typeof ciBackup==='function')ciBackup(); }catch(_e){} await idbSet('settings',{headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,fcTargetPlans:state.fc.targetPlans,fcActivePlan:state.fc.activePlan,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,workdays:state.workdays,weekly:state.weekly,bep:state.bep,bepYears:state.bepYears,fcNewCusts:state.fc.newCusts,fcNewCustReplacements:state.fc.newCustReplacements,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,gbunOverride:state.gbunOverride,specKindOverride:state.specKindOverride,mixCustomCats:state.mixCustomCats,salesQtyAnalysis:state.salesQtyAnalysis,priceSets:state.priceSets,comp:state.comp,editLog:state.editLog,custProdOverride:state.fc.custProdOverride,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcCustMonthPct:state.fc.custMonthPct,fcProdMonthPct:state.fc.prodMonthPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesTeam:state.fc.notesTeam,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcActualCutoffMonth:state.fc.actualCutoffMonth,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,monthIssueAt:state.monthIssueAt,fcPctAt:state.fc.pctAt,fcOverrideAt:state.fc.overrideAt,fcAddPctAt:state.fc.addPctAt,syncLog:state.syncLog,retainMemo:state.retainMemo,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,custAddr:state.custAddr,inv:state.inv,pd:state.pd,salesMonthlySync:state.salesMonthlySync,laserMonthlySync:state.laserMonthlySync,purchaseMonthlySync:state.purchaseMonthlySync,mixSalesView:state.mixSalesView,mixSalesMonthly:state.mixSalesMonthly,mixSalesYear:state.mixSalesYear,gsync:state.gsync,_seedV:state._seedV,scrapVendors:state.scrapVendors,scrapVendorOff:state.scrapVendorOff,kvcExclProd:state.kvcExclProd,doorFrame:state.doorFrame,market:state.market,custInfoBak:state.custInfoBak,pdInclude:!!state.pdInclude}); gsAutoPush(); }
 
 /* ---------------- file loading ---------------- */
 const drop=$('#drop');
@@ -2833,7 +2838,9 @@ function buildSummary(){
   const plab = state.period==='all'?'전체':periodLabel();
   const rangeTxt = ds.length?fmtD(ds[0])+' ~ '+fmtD(ds[ds.length-1]):'-';
   const top=$('#sumTop'); if(top){ top.classList.remove('hidden'); top.innerHTML=`📁 파일 <b>${datasets.length}</b>개 · <b>${pr.length.toLocaleString()}</b>행 · 기간단위 <b>${plab}</b> · ${rangeTxt}`; }
-  { const bi=$('#bepInput'); if(bi&&document.activeElement!==bi) bi.value=state.bep?state.bep.toLocaleString('en-US'):''; const bm=$('#bepInputM'); if(bm&&document.activeElement!==bm) bm.value=state.bep?Math.round(state.bep/12).toLocaleString('en-US'):''; }
+  { const _bv=(typeof bepGetV791==='function')?bepGetV791():(+state.bep||0);
+    try{ const _by=document.getElementById('bepYrV791'); if(_by)_by.textContent=bepYearKeyV791()+'년'; }catch(_e){}
+    const bi=$('#bepInput'); if(bi&&document.activeElement!==bi) bi.value=_bv?_bv.toLocaleString('en-US'):''; const bm=$('#bepInputM'); if(bm&&document.activeElement!==bm) bm.value=_bv?Math.round(_bv/12).toLocaleString('en-US'):''; }
   if(document.getElementById('mgrChipsS')) mountMgrFilter('mgr', rerun); setTimeout(()=>mountFilters2(rerun),0);
   $('#summary').innerHTML=`
     <div class="kpi"><div class="lab">총 매출 <small>(${state.basis}·${plab})</small></div><div class="val">${won(amt)}<small> 원</small></div><div class="sub2" style="margin-top:3px;font-size:10px;color:#b0b8c4">임대료 · PD사업부 기성 제외</div></div>
@@ -2970,9 +2977,82 @@ function mountFilters2(rerunFn){
 }
 mountMgrFilter('mgr', rerun); setTimeout(()=>mountFilters2(rerun),0);
 (function(){ const gb=document.getElementById('globalBack'); if(gb)gb.onclick=()=>{ if(!state.navHist||!state.navHist.length)return; const prev=state.navHist.pop(); state._backing=true; state.act=prev; state.sortKey=null; state._drill=false; if(typeof setCmgrMode==='function'&&prev!=='cmgr')setCmgrMode(false); runAct(); }; })();
+/* v791 : BEP(손익분기점)을 목표 연도별로 따로 둡니다.
+   2027년 목표를 세울 때는 2027년 BEP 을 입력·표시하고, 값이 없으면 직전 값에서 시작합니다. */
+function bepYearKeyV791(){
+  try{ if(typeof fcTargetYear==='function'){ var y=fcTargetYear(); if(y)return String(y); } }catch(_e){}
+  try{ var ys=dataYears(); if(ys&&ys.length)return String(ys[ys.length-1]); }catch(_e){}
+  return String(new Date().getFullYear());
+}
+function bepBaseYearV791(){ try{ var ys=dataYears(); if(ys&&ys.length)return String(ys[ys.length-1]); }catch(_e){} return ''; }
+function bepGetV791(){
+  var m=(state.bepYears=state.bepYears||{}), y=bepYearKeyV791();
+  if(m[y]==null)m[y]=+state.bep||0;      /* 처음 여는 해는 직전 값에서 시작합니다 */
+  return +m[y]||0;
+}
+function bepSetV791(v){
+  v=Math.max(0,Math.round(+v||0));
+  var m=(state.bepYears=state.bepYears||{}), y=bepYearKeyV791();
+  m[y]=v;
+  if(y===bepBaseYearV791())state.bep=v;   /* 기준연도 값은 예전 저장칸과도 맞춰 둡니다 */
+}
+window.bepGetV791=bepGetV791; window.bepSetV791=bepSetV791;
+function v791SyncYearUI(){
+  try{
+    var v=bepGetV791();
+    var by=document.getElementById('bepYrV791'); if(by)by.textContent=bepYearKeyV791()+'년';
+    var bi=document.getElementById('bepInput');  if(bi&&document.activeElement!==bi)bi.value=v?v.toLocaleString('en-US'):'';
+    var bm=document.getElementById('bepInputM'); if(bm&&document.activeElement!==bm)bm.value=v?Math.round(v/12).toLocaleString('en-US'):'';
+  }catch(_e){}
+  try{ if(typeof buildHeadMonthly==='function')buildHeadMonthly(); }catch(_e){}
+  try{ if(typeof bepHeadMoveV792==='function')bepHeadMoveV792(); }catch(_e){}
+}
+window.v791SyncYearUI=v791SyncYearUI;
+/* v792 : 📊 BEP · 👥 사업부 인원 상자를 «매출 목표» 화면의 🔍 기준 대비 점검 바로 아랫줄로 옮깁니다.
+   (설정 화면에서 요소를 그대로 옮기므로 입력·버튼 동작은 전부 그대로입니다) */
+function bepHeadMoveV792(){
+  try{
+    var box=document.getElementById('bepHeadBoxV792'); if(!box)return;
+    var home=document.getElementById('bepHeadHomeV792');
+    var onFc=(typeof state!=='undefined'&&state.act==='forecast');
+    var panel=document.getElementById('fcDiffPanelV757');
+    if(onFc&&panel){
+      var host=document.getElementById('bepHeadHostV792');
+      if(!host){
+        host=document.createElement('div');
+        host.id='bepHeadHostV792';
+        host.style.cssText='margin:8px 0 10px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#fff';
+        box.classList.add('bep-head-onfc-v792');
+      }
+      if(host.parentNode!==panel.parentNode||host.previousElementSibling!==panel){
+        panel.insertAdjacentElement('afterend',host);
+      }
+      if(box.parentNode!==host)host.appendChild(box);
+    }else{
+      var host2=document.getElementById('bepHeadHostV792');
+      if(home&&box.parentNode!==home.parentNode){ home.parentNode.insertBefore(box,home); box.classList.remove('bep-head-onfc-v792'); }
+      if(host2&&!host2.querySelector('#bepHeadBoxV792'))host2.remove();
+    }
+  }catch(_e){}
+}
+window.bepHeadMoveV792=bepHeadMoveV792;
+/* v792 : 화면을 다시 그리기 전에 상자를 제자리(설정 화면)로 잠시 되돌려 지워지지 않게 합니다. */
+function bepHeadParkV792(){
+  try{
+    var box=document.getElementById('bepHeadBoxV792'), home=document.getElementById('bepHeadHomeV792');
+    if(!box||!home)return;
+    if(box.nextElementSibling===home)return;
+    home.parentNode.insertBefore(box,home);
+    box.classList.remove('bep-head-onfc-v792');
+    var host=document.getElementById('bepHeadHostV792'); if(host)host.remove();
+  }catch(_e){}
+}
+window.bepHeadParkV792=bepHeadParkV792;
 function buildHeadMonthly(){
   const ys=dataYears(); if(!ys.length){ $('#headMonGrid').innerHTML=''; return; }
-  const PY=ys[0], CY=ys[ys.length-1]; let h='';
+  /* v791 : 목표 연도(2027 등)도 함께 입력할 수 있게 합니다 */
+  let _tgtY=0; try{ if(typeof fcTargetYear==='function')_tgtY=+fcTargetYear()||0; }catch(_e){}
+  const PY=ys[0], CY=Math.max(ys[ys.length-1], _tgtY||0); let h='';
   for(let y=PY;y<=CY;y++){ const yd=state.headYearDefault[y]!=null?state.headYearDefault[y]:''; 
     h+=`<div style="width:100%;display:flex;align-items:center;gap:8px;margin-top:6px"><span style="font-size:11px;font-weight:700;color:var(--muted)">${y}년</span> <span class="mpct" style="background:#eef2f8">기본값 <input type="number" class="heady" data-y="${y}" value="${yd}" placeholder="${state.headcount}" min="1" style="width:50px"> 명 <button class="btn ghost heady-apply" data-y="${y}" style="padding:3px 8px;font-size:11px">전월 적용</button></span></div>`;
     for(let m=1;m<=12;m++){ const ym=`${y}-${String(m).padStart(2,'0')}`; const v=headFor(ym); h+=`<span class="mpct">${m}월 <input type="number" class="headm" data-ym="${ym}" value="${v}" min="1" style="width:50px"></span>`; } }
@@ -3122,11 +3202,15 @@ $('#fileToggle').addEventListener('click',()=>{ setCmgrMode(false); const p=$('#
   if(open)fpSyncSummary(); $('#fileToggle').classList.toggle('open',open); $('#fileToggle').textContent=open?'📁 파일·관리 ▴':'📁 파일·관리 ▾'; const r=$('#result'),s=$('#summary'); if(r)r.style.display=open?'none':''; if(s)s.style.display=open?'none':''; /* v399: 파일·관리 화면에서는 상단 요약카드·표시설정도 감춘다 */ { const st2=$('#sumTop'),sp2=$('#setPanel'); if(st2)st2.style.display=open?'none':''; if(sp2)sp2.style.display=open?'none':''; } if(open){ document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); window.scrollTo({top:0,behavior:'smooth'}); /* v441: 매입분석도구처럼 파일·관리 진입 즉시 서버 목록과 공용 속성을 갱신한다. */ setTimeout(()=>{ try{if(typeof dsCheck==='function')Promise.resolve(dsCheck(true)).catch(()=>{});}catch(_e){} try{if(state.gsync&&state.gsync.url&&state.gsync.key&&typeof window.gsLoad==='function')window.gsLoad(true);}catch(_e2){} },80); } });
 { const dc=$('#dataPanelCollapse'); dc&&dc.addEventListener('click',()=>{ if(typeof closeFilePanel==='function'){closeFilePanel();return;} $('#dataPanel').classList.remove('open'); const ft=$('#fileToggle'); ft.classList.remove('open'); ft.textContent='📁 파일 추가·관리 ▾'; }); }
 { const bepI=$('#bepInput'), bepM=$('#bepInputM');
-  const reflect=()=>{ if(bepI&&document.activeElement!==bepI)bepI.value=state.bep?state.bep.toLocaleString('en-US'):''; if(bepM&&document.activeElement!==bepM)bepM.value=state.bep?Math.round(state.bep/12).toLocaleString('en-US'):''; };
+  const _bv=()=>(typeof bepGetV791==='function')?bepGetV791():(+state.bep||0);
+  const reflect=()=>{ const v=_bv();
+    try{ const by=document.getElementById('bepYrV791'); if(by)by.textContent=bepYearKeyV791()+'년'; }catch(_e){}
+    if(bepI&&document.activeElement!==bepI)bepI.value=v?v.toLocaleString('en-US'):'';
+    if(bepM&&document.activeElement!==bepM)bepM.value=v?Math.round(v/12).toLocaleString('en-US'):''; };
   const rerender=()=>{ saveSettings(); if(state.act==='trend')monthlyTrend(); else if(state.act==='forecast')forecast(); };
-  if(bepI){ bepI.value=state.bep?state.bep.toLocaleString('en-US'):''; bepI.addEventListener('input',e=>{ const v=e.target.value.replace(/[^\d]/g,''); e.target.value=v?(+v).toLocaleString('en-US'):''; if(bepM)bepM.value=v?Math.round(+v/12).toLocaleString('en-US'):''; }); bepI.addEventListener('change',e=>{ state.bep=parseInt(e.target.value.replace(/[^\d]/g,''))||0; reflect(); rerender(); }); }
-  if(bepM){ bepM.value=state.bep?Math.round(state.bep/12).toLocaleString('en-US'):''; bepM.addEventListener('input',e=>{ const v=e.target.value.replace(/[^\d]/g,''); e.target.value=v?(+v).toLocaleString('en-US'):''; if(bepI)bepI.value=v?(+v*12).toLocaleString('en-US'):''; }); bepM.addEventListener('change',e=>{ const m=parseInt(e.target.value.replace(/[^\d]/g,''))||0; state.bep=m*12; reflect(); rerender(); }); }
-  const bepC=$('#bepClear'); bepC&&bepC.addEventListener('click',()=>{ state.bep=0; if(bepI)bepI.value=''; if(bepM)bepM.value=''; rerender(); }); }
+  if(bepI){ bepI.value=_bv()?_bv().toLocaleString('en-US'):''; bepI.addEventListener('input',e=>{ const v=e.target.value.replace(/[^\d]/g,''); e.target.value=v?(+v).toLocaleString('en-US'):''; if(bepM)bepM.value=v?Math.round(+v/12).toLocaleString('en-US'):''; }); bepI.addEventListener('change',e=>{ bepSetV791(parseInt(e.target.value.replace(/[^\d]/g,''))||0); reflect(); rerender(); }); }
+  if(bepM){ bepM.value=_bv()?Math.round(_bv()/12).toLocaleString('en-US'):''; bepM.addEventListener('input',e=>{ const v=e.target.value.replace(/[^\d]/g,''); e.target.value=v?(+v).toLocaleString('en-US'):''; if(bepI)bepI.value=v?(+v*12).toLocaleString('en-US'):''; }); bepM.addEventListener('change',e=>{ const m=parseInt(e.target.value.replace(/[^\d]/g,''))||0; bepSetV791(m*12); reflect(); rerender(); }); }
+  const bepC=$('#bepClear'); bepC&&bepC.addEventListener('click',()=>{ bepSetV791(0); if(bepI)bepI.value=''; if(bepM)bepM.value=''; rerender(); }); }
 if($('#hdrAllExp'))$('#hdrAllExp').addEventListener('click',fullBackupExport);
 if($('#hdrAllImp'))$('#hdrAllImp').addEventListener('click',fullBackupImport);
 if($('#hdrMerge'))$('#hdrMerge').addEventListener('click',mergeBackups);
@@ -5165,7 +5249,7 @@ function cmgrInfoPage(){
   const html='<div class="rhead" style="display:block"><div class="title">📇 \ub9e4\ucd9c\ucc98 \ub2f4\ub2f9\uc815\ubcf4 \uc785\ub825 <span class="sub2" style="font-weight:400">\u00b7 '+custs.length+'\uac1c \uac70\ub798\ucc98</span></div>'+
     '<div style="margin:8px 0;display:flex;gap:6px;flex-wrap:wrap"><button id="ciBack" class="btn ghost" type="button" style="font-size:12px">\u2190 \ub2f4\ub2f9\uc790 \ud604\ud669</button><button id="ciXlsx" class="btn ghost" type="button" style="font-size:12px;background:#dcfce7;color:#15803d;border-color:#86efac">📥 \uc5d1\uc140 \ub0b4\ubcf4\ub0b4\uae30</button></div>'+elog+'</div>'+
     '<div style="overflow-x:auto"><table class="cmgr-tbl" style="border-collapse:collapse;font-size:13px;width:100%"><thead><tr><th>#</th><th class="l">\uac70\ub798\ucc98</th><th>\ub2f4\ub2f9\uc790</th><th>\ud734\ub300\uc804\ud654</th><th>\uc774\uba54\uc77c</th><th>\uc804\ud654</th><th>\ud329\uc2a4</th><th>\uba54\ubaa8</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>';
-  $('#result').innerHTML=html; try{v776SyncResultFlags();}catch(_e){}
+  try{bepHeadParkV792();}catch(_e){} $('#result').innerHTML=html; try{v776SyncResultFlags();}catch(_e){}
   const save=function(c,f,v){ state.custInfo[c]=state.custInfo[c]||{contacts:[],staff:''}; if(!state.custInfo[c].contacts)state.custInfo[c].contacts=[]; if(!state.custInfo[c].contacts[0])state.custInfo[c].contacts[0]={n:'',p:'',email:'',tel:'',fax:'',m:''}; state.custInfo[c].contacts[0][f]=v; if(typeof logEdit==='function')logEdit('\ub2f4\ub2f9\uc815\ubcf4',c+' \ub9e4\ucd9c\ucc98 \ub2f4\ub2f9\uc815\ubcf4 \uc218\uc815'); saveSettings(); };
   [['ci2-n','n'],['ci2-p','p'],['ci2-email','email'],['ci2-tel','tel'],['ci2-fax','fax'],['ci2-m','m']].forEach(function(pr){ $('#result').querySelectorAll('.'+pr[0]).forEach(function(inp){ inp.addEventListener('change',function(e){ save(e.target.dataset.c,pr[1],e.target.value); }); }); });
   const bk=$('#ciBack'); if(bk)bk.addEventListener('click',function(){ state.act='cmgr'; custManagers(); });
@@ -5730,7 +5814,7 @@ function custManagers(){
   <div class="sub2" id="cmgrStat" style="margin:4px 0 8px">검색결과 <b>${won(view.length)}</b>개사 · 매출합계 <b>${fmtK(fa)}</b> · 레이저 <b>${fmtK(fl)}</b>${fa>0?` (${(fl/fa*100).toFixed(1)}%)`:''}</div>
   <div style="max-height:calc(100vh - 220px);overflow:auto;border:1px solid var(--line);border-radius:10px"><table class="cmgr-tbl${showM?' cmgr-month-mode':''}${(showM||showL)?' tight':''}" style="border-collapse:collapse;font-size:14px;table-layout:fixed;width:100%"><colgroup>${cg}</colgroup><thead>${head}</thead><tbody>${body}</tbody><tfoot>${totRow}</tfoot></table></div>`;
   const _prevSc=(function(){ const e=$('#result').querySelector('.cmgr-tbl'); const w=e?e.closest('div'):null; return w?w.scrollTop:0; })();
-  $('#result').innerHTML=html; try{v776SyncResultFlags();}catch(_e){}
+  try{bepHeadParkV792();}catch(_e){} $('#result').innerHTML=html; try{v776SyncResultFlags();}catch(_e){}
   if(_prevSc){ const _e=$('#result').querySelector('.cmgr-tbl'); const _w=_e?_e.closest('div'):null; if(_w)_w.scrollTop=_prevSc; }
   if(state.cmgr.infoMode && typeof cmgrInfoSwap==='function'){ cmgrInfoSwap(); if(typeof cmgrInfoChrome==='function')cmgrInfoChrome(); }
   if(state.cmgr.addrMode && typeof cmgrAddrSwap==='function'){ cmgrAddrSwap(); if(typeof cmgrAddrChrome==='function')cmgrAddrChrome(); }
@@ -6998,6 +7082,7 @@ function runAct(){ const a=state.act,enteringAct=state._lastAct!==a; if(!a) retu
   if(state._lastAct!==a){ try{foldFilters();}catch(_){} }
   if(!state._backing){ if(state._lastAct && state._lastAct!==a){ state.navHist=state.navHist||[]; if(state.navHist[state.navHist.length-1]!==state._lastAct)state.navHist.push(state._lastAct); if(state.navHist.length>60)state.navHist.shift(); } } state._lastAct=a; state._backing=false;
   { const _gb=document.getElementById('globalBack'); if(_gb)_gb.style.display=(state.navHist&&state.navHist.length)?'inline-flex':'none'; }
+  try{ if(typeof bepHeadMoveV792==='function')setTimeout(bepHeadMoveV792,0); }catch(_e){}
   if(a==='home'){ homeDashboard(); return; }
  try{
   if(a==='rank-cust') rankCore(periodRows(),r=>r.cust,r=>r.cust,'거래처',`${periodLabel()}`,'name','품목군',allScopedRows());
@@ -7758,7 +7843,7 @@ function homeTrendSVG(){
   let tPath=''; for(let i=_tgtFrom2;i<N;i++){ if(tgt[i]!=null)tPath+=(tPath?'L':'M')+x(i).toFixed(1)+' '+y(tgt[i]).toFixed(1)+' '; }
   let ylines=''; for(let i=1;i<N;i++){ if(buckets[i].slice(0,4)!==buckets[i-1].slice(0,4)){ const xx=((x(i-1)+x(i))/2); ylines+=`<line x1="${xx.toFixed(1)}" y1="${padT}" x2="${xx.toFixed(1)}" y2="${(padT+ih).toFixed(1)}" stroke="#f59e0b" stroke-width="1.3" stroke-dasharray="5 3"/><text x="${(xx+3).toFixed(1)}" y="${(padT-24).toFixed(1)}" font-size="12.5" fill="#b45309" font-weight="800">${buckets[i].slice(0,4)}년</text>`; } }
   const avgLine=avg>0?`<line x1="${padL}" y1="${y(avg).toFixed(1)}" x2="${W-padR}" y2="${y(avg).toFixed(1)}" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="2 3"/>`:'';
-  const bepV=(+state.bep||0)/12; const bepY=Math.max(padT,Math.min(padT+ih,y(bepV))); const bepLine=(bepV>0&&max>0)?`<line x1="${padL}" y1="${bepY.toFixed(1)}" x2="${W-padR}" y2="${bepY.toFixed(1)}" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="3 3"/><rect x="${padL+2}" y="${(bepY-14).toFixed(1)}" width="92" height="15" rx="3" fill="#ffffff" fill-opacity="0.9" stroke="#fecaca"/><text x="${padL+7}" y="${(bepY-3).toFixed(1)}" font-size="10" fill="#dc2626" font-weight="800">BEP ${shortAmt(bepV)}</text>`:'';
+  const bepV=((typeof bepGetV791==='function')?bepGetV791():(+state.bep||0))/12; const bepY=Math.max(padT,Math.min(padT+ih,y(bepV))); const bepLine=(bepV>0&&max>0)?`<line x1="${padL}" y1="${bepY.toFixed(1)}" x2="${W-padR}" y2="${bepY.toFixed(1)}" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="3 3"/><rect x="${padL+2}" y="${(bepY-14).toFixed(1)}" width="92" height="15" rx="3" fill="#ffffff" fill-opacity="0.9" stroke="#fecaca"/><text x="${padL+7}" y="${(bepY-3).toFixed(1)}" font-size="10" fill="#dc2626" font-weight="800">BEP ${shortAmt(bepV)}</text>`:'';
   let mm=''; if(imax>=0&&mx>0){ const _tx=x(imax),_anc=_tx<padL+55?'start':_tx>W-padR-55?'end':'middle'; mm+=`<circle cx="${_tx.toFixed(1)}" cy="${y(mx).toFixed(1)}" r="5" fill="none" stroke="#16a34a" stroke-width="2"/><text x="${_tx.toFixed(1)}" y="${(y(mx)-11).toFixed(1)}" font-size="9.5" fill="#16a34a" font-weight="800" text-anchor="${_anc}">▲최고 ${shortAmt(mx)}</text>`; } if(imin>=0&&imin!==imax){ const _tx=x(imin),_anc=_tx<padL+55?'start':_tx>W-padR-55?'end':'middle'; mm+=`<circle cx="${_tx.toFixed(1)}" cy="${y(mn).toFixed(1)}" r="5" fill="none" stroke="#b45309" stroke-width="2"/><text x="${_tx.toFixed(1)}" y="${(y(mn)-11).toFixed(1)}" font-size="9.5" fill="#b45309" font-weight="800" text-anchor="${_anc}">▼최저 ${shortAmt(mn)}</text>`; }
   let dots=''; for(let i=0;i<=lastIdx;i++){ dots+=`<circle cx="${x(i).toFixed(1)}" cy="${y(ser[i]).toFixed(1)}" r="${i===lastIdx?3.5:2.2}" fill="#1e3a5f"/>`; }
   for(let i=_tgtFrom2;i<N;i++){ if(tgt[i]!=null)dots+=`<circle cx="${x(i).toFixed(1)}" cy="${y(tgt[i]).toFixed(1)}" r="${i===_nowI?3.4:2.6}" fill="#fff" stroke="#f59e0b" stroke-width="${i===_nowI?2:1.5}"/>`; }
@@ -11279,14 +11364,15 @@ function monthlyTrend(){
   const pyT=py.reduce((a,b)=>a+b,0), cyActT=act.reduce((a,b)=>a+b,0), tgtT=tgt.reduce((a,b)=>a+b,0);
   const tgtTAll=tgtT+unallocatedTgt;
   const avgPct = pyT? (tgtTAll-pyT)/pyT*100 : 0;
-  const bepMon = state.bep>0? state.bep/12 : 0;
-  const remainMon = 12-actualLastMonth; const bepNeed = (state.bep>0&&remainMon>0)? Math.max(0,(state.bep-cyActT))/remainMon : 0;
+  const _bepY=(typeof bepGetV791==='function')?bepGetV791():(+state.bep||0);
+  const bepMon = _bepY>0? _bepY/12 : 0;
+  const remainMon = 12-actualLastMonth; const bepNeed = (_bepY>0&&remainMon>0)? Math.max(0,(_bepY-cyActT))/remainMon : 0;
   let remTgtMonthly=0; for(let mm=1;mm<=12;mm++){ if(mm>lastAct) remTgtMonthly+=tgt[mm]; }
   const remTgt=annualSummary.futurePeriodTarget;
   const annualMix=annualSummary.annualTarget;
   const targetActual=annualSummary.actualPeriodTotal;
   const excludedActual=annualSummary.actualExcludedRaw;
-  const bepGap = annualMix - state.bep;
+  const bepGap = annualMix - _bepY;
   // avg of monthly targets (months with py>0)
   let tcnt=0,tsum=0; for(let m=1;m<=12;m++) if(py[m]>0){tsum+=tgt[m];tcnt++;}
   const tgtAvg=tcnt?tsum/tcnt:0;
@@ -11335,13 +11421,13 @@ function monthlyTrend(){
       <div class="kpi" style="border-left:4px solid #94a3b8"><div class="lab">전년 연매출(${PY})</div><div class="val" style="color:#475569">${won(pyT)}<small> 원</small></div><div class="sub2" style="margin-top:2px">${PY}년 전체 실적</div></div>
       <div class="kpi" style="border-left:4px solid var(--navy)"><div class="lab">올해 연매출 목표(${CY})</div><div class="val" style="color:var(--navy)">${won(annualMix)}<small> 원</small></div><div class="sub2" style="margin-top:2px">실적(${fcCutLabel()}) <b>${won(targetActual)}</b> + 목표(${fcFutLabel()}) <b>${won(remTgt)}</b>${excludedActual>0?` <span style="color:#dc2626">· 목표합산 제외업체의 ${fcCutLabel()} 실적 ${won(excludedActual)}은 연매출 목표에서 제외</span>`:''}</div></div>
       <div class="kpi"><div class="lab">올해 목표 합계(1~12월)</div><div class="val" style="color:#d97706">${won(tgtTAll)}<small> 원</small></div><div class="sub2" style="margin-top:2px">전년 ${won(pyT)} 대비 ${avgPct>=0?'+':''}${avgPct.toFixed(1)}%</div></div>
-      ${state.bep>0?`<div class="kpi" style="border-left:4px solid #7c3aed"><div class="lab">BEP(손익분기점) 대비</div><div class="val" style="color:#7c3aed">${won(state.bep)}<small> 원</small></div><div class="sub2" style="margin-top:2px">예상 대비 ${bepGap>=0?`<b style="color:var(--green)">+${won(bepGap)} 초과달성</b>`:`<b style="color:var(--red)">${won(bepGap)} 부족</b> · 남은 ${remainMon}개월 매월 +${won(bepNeed)}`}</div></div>`:''}
+      ${_bepY>0?`<div class="kpi" style="border-left:4px solid #7c3aed"><div class="lab">BEP(손익분기점) 대비</div><div class="val" style="color:#7c3aed">${won(_bepY)}<small> 원</small></div><div class="sub2" style="margin-top:2px">예상 대비 ${bepGap>=0?`<b style="color:var(--green)">+${won(bepGap)} 초과달성</b>`:`<b style="color:var(--red)">${won(bepGap)} 부족</b> · 남은 ${remainMon}개월 매월 +${won(bepNeed)}`}</div></div>`:''}
     </div>
     ${legendPY(PY,CY,'trShowPY',state.trend.showPY)}
     <div class="chartbox">${chart}</div>
     <div class="sub2" style="margin:-2px 0 6px;text-align:right;color:#0d9488">막대 아래 <b>초록 숫자 = 조업일수(일, ${CY}년)</b> · 아래에서 월별 직접 수정 가능</div>
     <div class="ctrlbar" style="flex-wrap:wrap"><b style="font-size:12px">조업일수 (${CY}년·월별)</b> ${(()=>{let s='';for(let m=1;m<=12;m++){const ym=`${CY}-${String(m).padStart(2,'0')}`;s+=`<span style="display:inline-flex;align-items:center;gap:3px"><span class="sub2">${m}월</span><input type="number" class="wdm" data-m="${m}" value="${workdaysFor(ym)}" step="1" style="width:46px"></span>`;}return s;})()} <button class="btn ghost" id="wdReset" style="font-size:11px;padding:3px 8px;color:var(--red);border-color:#f3c0c0">기본값</button> <span class="sub2">구정·추석·여름휴가 등 회사 휴무에 맞춰 직접 수정 → 그래프 반영·저장</span></div>
-    ${bepMon>0?`<div class="note" style="margin:6px 0;border-left:3px solid #7c3aed;background:#f5f3ff;color:#5b21b6">&nbsp;&nbsp;<b>BEP(손익분기점)</b> 연 ${won(state.bep)}원(월 ${won(Math.round(bepMon))}원) · 현재 실적 ${won(cyActT)}원 · 남은 ${remainMon}개월간 매월 <b>+${won(bepNeed)}원</b> 달성 시 연 BEP 도달 (목표달성 열에 표기)</div>`:''}
+    ${bepMon>0?`<div class="note" style="margin:6px 0;border-left:3px solid #7c3aed;background:#f5f3ff;color:#5b21b6">&nbsp;&nbsp;<b>BEP(손익분기점)</b> 연 ${won(_bepY)}원(월 ${won(Math.round(bepMon))}원) · 현재 실적 ${won(cyActT)}원 · 남은 ${remainMon}개월간 매월 <b>+${won(bepNeed)}원</b> 달성 시 연 BEP 도달 (목표달성 열에 표기)</div>`:''}
     ${editor}
     ${scrapPanelHTML()}
     ${pdPanelHTML(cyRaw,lastAct,tgt)}
@@ -11900,7 +11986,7 @@ function forecast(){ state._inDrill=false;
     _pm:(function(){try{window.FC_PRODMETA_V758=prodMeta;}catch(_x){}return 1;})(),
     sig:(typeof fcTargetSigV678==='function')?fcTargetSigV678():'',at:Date.now()}; }catch(_e){}
   const series=[]; if(state.fc.showPY) series.push({vals:py,color:'#94a3b8'}); series.push({vals:tgtV,color:'#fbbf24'}); series.push({vals:actV,color:'#1e3a5f'});
-  const bepMon=state.bep>0?state.bep/12:0; const refs=[{value:tgtAvgV,label:`목표 월평균 ${fmtM(tgtAvgV)}백만`,color:'#dc2626'}]; if(bepMon>0)refs.push({value:bepMon,label:`BEP 월 ${fmtM(bepMon)}백만`,color:'#7c3aed',align:'left'});
+  const bepMon=((typeof bepGetV791==='function')?bepGetV791():0)>0?bepGetV791()/12:0; const refs=[{value:tgtAvgV,label:`목표 월평균 ${fmtM(tgtAvgV)}백만`,color:'#dc2626'}]; if(bepMon>0)refs.push({value:bepMon,label:`BEP 월 ${fmtM(bepMon)}백만`,color:'#7c3aed',align:'left'});
   const _wdL={}; for(let m=1;m<=12;m++)_wdL[m]=workdaysFor(`${CY}-${String(m).padStart(2,'0')}`);
   const chart=svgGrouped(series,320,refs,_wdL);
   const pyAnnual=py.reduce((a,b)=>a+b,0); const tgtAnnual=tgt.reduce((a,b)=>a+b,0);
@@ -12409,8 +12495,8 @@ function dlCSV(fn,header,rows){ dlXLSX(fn.replace(/\.csv$/i,'.xlsx'),'Sheet1',[h
 
 function dlXLSX(fn,sheet,aoa){ const ws=XLSX.utils.aoa_to_sheet(aoa); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,sheet); XLSX.writeFile(wb,fn); }
 function importXLSX(cb){ const inp=document.createElement('input'); inp.type='file'; inp.accept='.xlsx,.xls'; inp.onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ const wb=XLSX.read(new Uint8Array(r.result),{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]]; cb(XLSX.utils.sheet_to_json(ws,{header:1,defval:''})); }catch(err){ console.error(err); uiConfirm('파일을 읽지 못했습니다: '+(err.message||err)); } }; r.readAsArrayBuffer(f); }; inp.click(); }
-function fullBackupExport(){ fcSyncActivePlan(); const data={headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,fcTargetPlans:state.fc.targetPlans,fcActivePlan:state.fc.activePlan,workdays:state.workdays,bep:state.bep,fcNewCusts:state.fc.newCusts,fcNewCustReplacements:state.fc.newCustReplacements,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,gbunOverride:state.gbunOverride,specKindOverride:state.specKindOverride,mixCustomCats:state.mixCustomCats,salesQtyAnalysis:state.salesQtyAnalysis,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcCustMonthPct:state.fc.custMonthPct,fcProdMonthPct:state.fc.prodMonthPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesTeam:state.fc.notesTeam,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcActualCutoffMonth:state.fc.actualCutoffMonth,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,syncLog:state.syncLog,retainMemo:state.retainMemo,retainMemoAt:state.retainMemoAt,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,custAddr:state.custAddr,inv:state.inv,pd:state.pd,scrapVendors:state.scrapVendors,scrapVendorOff:state.scrapVendorOff,kvcExclProd:state.kvcExclProd,doorFrame:state.doorFrame,materialDB:state.materialDB,materialBase:state.materialBase,gsync:state.gsync,weekly:state.weekly,_exportedAt:new Date().toISOString()}; const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='settings_backup.json'; a.click(); URL.revokeObjectURL(a.href); }
-function fullBackupImport(){ importJSON(d=>{ if(d.headcount!=null)state.headcount=d.headcount; if(d.headMonthly)state.headMonthly=d.headMonthly; if(d.headYearDefault)state.headYearDefault=d.headYearDefault; if(d.cmgrPrimary)state.cmgrPrimary=d.cmgrPrimary; if(d.cmgrKey)state.cmgrKey=d.cmgrKey; if(d.mgrOverride)state.mgrOverride=d.mgrOverride; if(d.fcPctAt)state.fc.pctAt=d.fcPctAt; if(d.fcOverrideAt)state.fc.overrideAt=d.fcOverrideAt; if(d.fcAddPctAt)state.fc.addPctAt=d.fcAddPctAt; if(d.monthIssueAt)state.monthIssueAt=d.monthIssueAt; if(d.fcPct)state.fc.pct=d.fcPct; if(d.fcOverride)state.fc.override=d.fcOverride; if(d.fcAddPct)state.fc.addPct=d.fcAddPct; if(d.fcTargetPlans)state.fc.targetPlans=fcPlanClone(d.fcTargetPlans); if(d.fcActivePlan)state.fc.activePlan=d.fcActivePlan==='2'?'2':'1'; if(d.workdays)state.workdays=d.workdays; if(d.bep!=null)state.bep=d.bep; if(d.fcNewCusts)state.fc.newCusts=d.fcNewCusts; if(d.fcNewCustReplacements)state.fc.newCustReplacements=d.fcNewCustReplacements; if(d.clsOverride)state.clsOverride=d.clsOverride; if(d.gradeOverride)state.gradeOverride=d.gradeOverride; if(d.gbunOverride)state.gbunOverride=d.gbunOverride; if(d.specKindOverride)state.specKindOverride=d.specKindOverride; if(Array.isArray(d.mixCustomCats))state.mixCustomCats=d.mixCustomCats; if(d.salesQtyAnalysis&&typeof d.salesQtyAnalysis==='object')state.salesQtyAnalysis={...state.salesQtyAnalysis,...d.salesQtyAnalysis}; if(d.priceSets)state.priceSets=mergePriceSets(state.priceSets||[], d.priceSets); if(d.comp)state.comp=d.comp; if(d.editLog)state.editLog=d.editLog; if(d.custProdOverride)state.fc.custProdOverride=d.custProdOverride; if(d.fcProdOverride)state.fc.prodOverride=d.fcProdOverride; if(d.fcProdAddPct)state.fc.prodAddPct=d.fcProdAddPct; if(d.fcCustMonthPct)state.fc.custMonthPct=d.fcCustMonthPct; if(d.fcNewProds)state.fc.newProds=d.fcNewProds; if(d.fcNewLines)state.fc.newLines=d.fcNewLines; if(d.fcCustMemo)state.fc.custMemo=d.fcCustMemo; if(d.fcProdMemo)state.fc.prodMemo=d.fcProdMemo; if(d.fcNotesHtml!=null)state.fc.notesHtml=d.fcNotesHtml; if(d.fcNotesTeam!=null)state.fc.notesTeam=d.fcNotesTeam; if(d.fcNotesSales!=null)state.fc.notesSales=d.fcNotesSales; if(d.fcNotesTech!=null)state.fc.notesTech=d.fcNotesTech; if(d.fcNotesMeta)state.fc.notesMeta={...state.fc.notesMeta,...d.fcNotesMeta}; if(d.fcExclCust)state.fc.exclCust=d.fcExclCust; if(d.fcTargetExclCust)state.fc.targetExclCust=d.fcTargetExclCust; if(d.fcExclProd)state.fc.exclProd=d.fcExclProd; if(d.fcShowExclRows!=null)state.fc.showExclRows=!!d.fcShowExclRows; if(d.fcActualCutoffMonth!=null)state.fc.actualCutoffMonth=d.fcActualCutoffMonth; if(d.fcAnnualHist)state.fc.annualHist={...state.fc.annualHist,...d.fcAnnualHist}; if(d.inv)state.inv={...state.inv,...d.inv}; if(d.syncLog)state.syncLog={...state.syncLog,...d.syncLog}; if(d.pd)state.pd={...state.pd,...d.pd}; if(d.kvcExclProd)state.kvcExclProd=d.kvcExclProd; if(d.doorFrame&&typeof d.doorFrame==='object'){state.doorFrame={...state.doorFrame,...d.doorFrame,map:{...(state.doorFrame.map||{}),...(d.doorFrame.map||{})}};dfInvalidateGroupCache();} if(d.retainMemo)state.retainMemo=d.retainMemo; if(d.retainMemoAt)state.retainMemoAt=d.retainMemoAt; if(d.retainExcl)state.retainExcl=d.retainExcl; if(d.retainVisit)state.retainVisit=d.retainVisit; if(d.cmgrExcl)state.cmgrExcl=d.cmgrExcl; if(d.custInfo)state.custInfo=d.custInfo; if(d.custAddr)state.custAddr=d.custAddr; if(d.monthIssue)state.monthIssue=d.monthIssue; if(d.weekly&&typeof d.weekly==='object'){ state.weekly=state.weekly||{}; ['issues','notes','commonPlans','newCustomerNotes'].forEach(function(kk){ var w=d.weekly[kk]; if(w&&typeof w==='object'){ state.weekly[kk]=state.weekly[kk]||{}; for(var pk in w){ if(state.weekly[kk][pk]&&typeof state.weekly[kk][pk]==='object'&&w[pk]&&typeof w[pk]==='object'){ Object.assign(state.weekly[kk][pk], w[pk]); } else { state.weekly[kk][pk]=w[pk]; } } } }); if(d.weekly.issueAuthor&&!state.weekly.issueAuthor)state.weekly.issueAuthor=d.weekly.issueAuthor; if(d.weekly.p1NewCustomers!=null)state.weekly.p1NewCustomers=!!d.weekly.p1NewCustomers; } if(d.gsync){ state.gsync=state.gsync||{}; for(const _k in d.gsync){ if(_k!=='user'&&_k!=='url') state.gsync[_k]=d.gsync[_k]; } } if(typeof buildHeadMonthly==='function')buildHeadMonthly(); state.fc._targetPlanLoaded=null; fcEnsureTargetPlans(); saveSettings(); state._mgrCountsCache=null; if(typeof buildSummary==='function')buildSummary(); if(state.act&&CUR.length)runAct(); const gu=$('#gsUrl');if(gu&&state.gsync)gu.value=state.gsync.url||''; const gk=$('#gsKey');if(gk&&state.gsync)gk.value=state.gsync.key||''; const bx=$('#baseInfoBox'); if(bx&&bx.classList.contains('open')&&typeof baseInfo==='function')baseInfo(); uiConfirm('전체 설정 백업을 복원했습니다.'); }); }
+function fullBackupExport(){ fcSyncActivePlan(); const data={headcount:state.headcount,headMonthly:state.headMonthly,headYearDefault:state.headYearDefault,mgrOverride:state.mgrOverride,cmgrPrimary:state.cmgrPrimary,cmgrKey:state.cmgrKey,fcPct:state.fc.pct,fcOverride:state.fc.override,fcAddPct:state.fc.addPct,fcTargetPlans:state.fc.targetPlans,fcActivePlan:state.fc.activePlan,workdays:state.workdays,bep:state.bep,bepYears:state.bepYears,fcNewCusts:state.fc.newCusts,fcNewCustReplacements:state.fc.newCustReplacements,clsOverride:state.clsOverride,gradeOverride:state.gradeOverride,gbunOverride:state.gbunOverride,specKindOverride:state.specKindOverride,mixCustomCats:state.mixCustomCats,salesQtyAnalysis:state.salesQtyAnalysis,fcProdOverride:state.fc.prodOverride,fcProdAddPct:state.fc.prodAddPct,fcCustMonthPct:state.fc.custMonthPct,fcProdMonthPct:state.fc.prodMonthPct,fcNewProds:state.fc.newProds,fcNewLines:state.fc.newLines,fcCustMemo:state.fc.custMemo,fcProdMemo:state.fc.prodMemo,fcNotesHtml:state.fc.notesHtml,fcNotesTeam:state.fc.notesTeam,fcNotesSales:state.fc.notesSales,fcNotesTech:state.fc.notesTech,fcNotesMeta:state.fc.notesMeta,fcExclCust:state.fc.exclCust,fcTargetExclCust:state.fc.targetExclCust,fcExclProd:state.fc.exclProd,fcShowExclRows:state.fc.showExclRows,fcActualCutoffMonth:state.fc.actualCutoffMonth,fcAnnualHist:state.fc.annualHist,monthIssue:state.monthIssue,syncLog:state.syncLog,retainMemo:state.retainMemo,retainMemoAt:state.retainMemoAt,retainExcl:state.retainExcl,retainVisit:state.retainVisit,cmgrExcl:state.cmgrExcl,elogSeenTs:state.elogSeenTs,cross:state.cross,custInfo:state.custInfo,custAddr:state.custAddr,inv:state.inv,pd:state.pd,scrapVendors:state.scrapVendors,scrapVendorOff:state.scrapVendorOff,kvcExclProd:state.kvcExclProd,doorFrame:state.doorFrame,materialDB:state.materialDB,materialBase:state.materialBase,gsync:state.gsync,weekly:state.weekly,_exportedAt:new Date().toISOString()}; const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='settings_backup.json'; a.click(); URL.revokeObjectURL(a.href); }
+function fullBackupImport(){ importJSON(d=>{ if(d.headcount!=null)state.headcount=d.headcount; if(d.headMonthly)state.headMonthly=d.headMonthly; if(d.headYearDefault)state.headYearDefault=d.headYearDefault; if(d.cmgrPrimary)state.cmgrPrimary=d.cmgrPrimary; if(d.cmgrKey)state.cmgrKey=d.cmgrKey; if(d.mgrOverride)state.mgrOverride=d.mgrOverride; if(d.fcPctAt)state.fc.pctAt=d.fcPctAt; if(d.fcOverrideAt)state.fc.overrideAt=d.fcOverrideAt; if(d.fcAddPctAt)state.fc.addPctAt=d.fcAddPctAt; if(d.monthIssueAt)state.monthIssueAt=d.monthIssueAt; if(d.fcPct)state.fc.pct=d.fcPct; if(d.fcOverride)state.fc.override=d.fcOverride; if(d.fcAddPct)state.fc.addPct=d.fcAddPct; if(d.fcTargetPlans)state.fc.targetPlans=fcPlanClone(d.fcTargetPlans); if(d.fcActivePlan)state.fc.activePlan=d.fcActivePlan==='2'?'2':'1'; if(d.workdays)state.workdays=d.workdays; if(d.bep!=null)state.bep=d.bep; if(d.bepYears)state.bepYears=d.bepYears; if(d.fcNewCusts)state.fc.newCusts=d.fcNewCusts; if(d.fcNewCustReplacements)state.fc.newCustReplacements=d.fcNewCustReplacements; if(d.clsOverride)state.clsOverride=d.clsOverride; if(d.gradeOverride)state.gradeOverride=d.gradeOverride; if(d.gbunOverride)state.gbunOverride=d.gbunOverride; if(d.specKindOverride)state.specKindOverride=d.specKindOverride; if(Array.isArray(d.mixCustomCats))state.mixCustomCats=d.mixCustomCats; if(d.salesQtyAnalysis&&typeof d.salesQtyAnalysis==='object')state.salesQtyAnalysis={...state.salesQtyAnalysis,...d.salesQtyAnalysis}; if(d.priceSets)state.priceSets=mergePriceSets(state.priceSets||[], d.priceSets); if(d.comp)state.comp=d.comp; if(d.editLog)state.editLog=d.editLog; if(d.custProdOverride)state.fc.custProdOverride=d.custProdOverride; if(d.fcProdOverride)state.fc.prodOverride=d.fcProdOverride; if(d.fcProdAddPct)state.fc.prodAddPct=d.fcProdAddPct; if(d.fcCustMonthPct)state.fc.custMonthPct=d.fcCustMonthPct; if(d.fcNewProds)state.fc.newProds=d.fcNewProds; if(d.fcNewLines)state.fc.newLines=d.fcNewLines; if(d.fcCustMemo)state.fc.custMemo=d.fcCustMemo; if(d.fcProdMemo)state.fc.prodMemo=d.fcProdMemo; if(d.fcNotesHtml!=null)state.fc.notesHtml=d.fcNotesHtml; if(d.fcNotesTeam!=null)state.fc.notesTeam=d.fcNotesTeam; if(d.fcNotesSales!=null)state.fc.notesSales=d.fcNotesSales; if(d.fcNotesTech!=null)state.fc.notesTech=d.fcNotesTech; if(d.fcNotesMeta)state.fc.notesMeta={...state.fc.notesMeta,...d.fcNotesMeta}; if(d.fcExclCust)state.fc.exclCust=d.fcExclCust; if(d.fcTargetExclCust)state.fc.targetExclCust=d.fcTargetExclCust; if(d.fcExclProd)state.fc.exclProd=d.fcExclProd; if(d.fcShowExclRows!=null)state.fc.showExclRows=!!d.fcShowExclRows; if(d.fcActualCutoffMonth!=null)state.fc.actualCutoffMonth=d.fcActualCutoffMonth; if(d.fcAnnualHist)state.fc.annualHist={...state.fc.annualHist,...d.fcAnnualHist}; if(d.inv)state.inv={...state.inv,...d.inv}; if(d.syncLog)state.syncLog={...state.syncLog,...d.syncLog}; if(d.pd)state.pd={...state.pd,...d.pd}; if(d.kvcExclProd)state.kvcExclProd=d.kvcExclProd; if(d.doorFrame&&typeof d.doorFrame==='object'){state.doorFrame={...state.doorFrame,...d.doorFrame,map:{...(state.doorFrame.map||{}),...(d.doorFrame.map||{})}};dfInvalidateGroupCache();} if(d.retainMemo)state.retainMemo=d.retainMemo; if(d.retainMemoAt)state.retainMemoAt=d.retainMemoAt; if(d.retainExcl)state.retainExcl=d.retainExcl; if(d.retainVisit)state.retainVisit=d.retainVisit; if(d.cmgrExcl)state.cmgrExcl=d.cmgrExcl; if(d.custInfo)state.custInfo=d.custInfo; if(d.custAddr)state.custAddr=d.custAddr; if(d.monthIssue)state.monthIssue=d.monthIssue; if(d.weekly&&typeof d.weekly==='object'){ state.weekly=state.weekly||{}; ['issues','notes','commonPlans','newCustomerNotes'].forEach(function(kk){ var w=d.weekly[kk]; if(w&&typeof w==='object'){ state.weekly[kk]=state.weekly[kk]||{}; for(var pk in w){ if(state.weekly[kk][pk]&&typeof state.weekly[kk][pk]==='object'&&w[pk]&&typeof w[pk]==='object'){ Object.assign(state.weekly[kk][pk], w[pk]); } else { state.weekly[kk][pk]=w[pk]; } } } }); if(d.weekly.issueAuthor&&!state.weekly.issueAuthor)state.weekly.issueAuthor=d.weekly.issueAuthor; if(d.weekly.p1NewCustomers!=null)state.weekly.p1NewCustomers=!!d.weekly.p1NewCustomers; } if(d.gsync){ state.gsync=state.gsync||{}; for(const _k in d.gsync){ if(_k!=='user'&&_k!=='url') state.gsync[_k]=d.gsync[_k]; } } if(typeof buildHeadMonthly==='function')buildHeadMonthly(); state.fc._targetPlanLoaded=null; fcEnsureTargetPlans(); saveSettings(); state._mgrCountsCache=null; if(typeof buildSummary==='function')buildSummary(); if(state.act&&CUR.length)runAct(); const gu=$('#gsUrl');if(gu&&state.gsync)gu.value=state.gsync.url||''; const gk=$('#gsKey');if(gk&&state.gsync)gk.value=state.gsync.key||''; const bx=$('#baseInfoBox'); if(bx&&bx.classList.contains('open')&&typeof baseInfo==='function')baseInfo(); uiConfirm('전체 설정 백업을 복원했습니다.'); }); }
 
 function gsMerge(d,skipRender){ if(!d)return;
   if(d.headcount!=null)state.headcount=d.headcount;
@@ -12422,6 +12508,7 @@ function gsMerge(d,skipRender){ if(!d)return;
   if(d.fcAddPct)state.fc.addPct=d.fcAddPct;
   if(d.workdays)state.workdays=d.workdays;
   if(d.bep!=null)state.bep=d.bep;
+  if(d.bepYears&&typeof d.bepYears==='object')state.bepYears=d.bepYears;
   if(d.fcNewCusts)state.fc.newCusts=d.fcNewCusts;
   if(d.clsOverride)state.clsOverride=d.clsOverride;
   if(d.gradeOverride)state.gradeOverride=d.gradeOverride;
@@ -12554,7 +12641,7 @@ function gsFields(){ return [
   ['headcount',state,'headcount'],['headMonthly',state,'headMonthly'],['headYearDefault',state,'headYearDefault'],['salesMonthlySync',state,'salesMonthlySync'],['laserMonthlySync',state,'laserMonthlySync'],['purchaseMonthlySync',state,'purchaseMonthlySync'],
   ['mgrOverride',state,'mgrOverride'],['cmgrPrimary',state,'cmgrPrimary'],['cmgrKey',state,'cmgrKey'],
   ['fcPct',state.fc,'pct'],['fcOverride',state.fc,'override'],['fcAddPct',state.fc,'addPct'],['fcTargetPlans',state.fc,'targetPlans'],['fcActivePlan',state.fc,'activePlan'],
-  ['workdays',state,'workdays'],['bep',state,'bep'],['fcNewCusts',state.fc,'newCusts'],
+  ['workdays',state,'workdays'],['bep',state,'bep'],['bepYears',state,'bepYears'],['fcNewCusts',state.fc,'newCusts'],
   ['clsOverride',state,'clsOverride'],['gradeOverride',state,'gradeOverride'],['gbunOverride',state,'gbunOverride'],['specKindOverride',state,'specKindOverride'],['mixCustomCats',state,'mixCustomCats'],['salesQtyAnalysis',state,'salesQtyAnalysis'],['doorFrameMap',state.doorFrame,'map'],['doorFrameProductGroups',state.doorFrame,'productGroups'],['doorFrameGroupMap',state.doorFrame,'groupMap'],['doorFrameDeletedGroups',state.doorFrame,'deletedGroups'],
   ['priceSets',state,'priceSets'],['comp',state,'comp'],['editLog',state,'editLog'],
   ['custProdOverride',state.fc,'custProdOverride'],['fcProdOverride',state.fc,'prodOverride'],['fcProdAddPct',state.fc,'prodAddPct'],
@@ -12871,7 +12958,7 @@ function render(title,meta,data,cols,defSortKey,note,opts={}){
     const cnt={}; data.forEach(o=>{const b=o.verdict.startsWith('단발성')?'단발성':o.verdict; cnt[b]=(cnt[b]||0)+1;});
     chipsHtml=`<div class="chips">`+order.map(l=>{const c=l==='전체'?data.length:(cnt[l]||0); const on=(state.chipVal||'전체')===l?'on':''; return `<button class="chip hvbtn ${on}" data-v="${l}" style="--hc:${CHIPCOL[l]||'#475569'}">${l}<b>${c}</b></button>`;}).join('')+`</div>`;
   }
-  $('#result').innerHTML=`
+  try{bepHeadParkV792();}catch(_e){} $('#result').innerHTML=`
     <div class="rhead">${opts.back?`<button class="btn ghost" id="backBtn">${esc(opts.back.label)}</button>`:''}<span class="title">${esc(title)}</span><span class="meta">${meta}</span><span class="spacer"></span>
       <input type="text" id="searchBox" placeholder="검색 (거래처/품명/규격)" value="${esc(state._search||'')}" autocomplete="off" spellcheck="false" aria-label="목록 검색">
       ${opts.headExtra||''}<button class="btn ghost" id="exportBtn">엑셀 내보내기</button>${opts.fullCsv?`<button class="btn ghost" id="fullCsvBtn" style="background:#ecfeff;border-color:#67e8f9;color:#0e7490">${esc(opts.fullCsv.label)}</button>`:''}</div>
@@ -12928,7 +13015,7 @@ function v776SyncResultFlags(){ try{ var r=document.getElementById('result'); if
   for(var i=0;i<V776_FLAGS.length;i++){ var f=V776_FLAGS[i]; r.classList.toggle(f[0], !!r.querySelector(f[1])); }
 }catch(_e){} }
 window.v776SyncResultFlags=v776SyncResultFlags;
-function renderCustom(html, onMount){ setGlobalBar(true); $('#result').innerHTML=html; v776SyncResultFlags(); if(onMount) onMount(); v776SyncResultFlags(); }
+function renderCustom(html, onMount){ setGlobalBar(true); try{bepHeadParkV792();}catch(_e){} $('#result').innerHTML=html; v776SyncResultFlags(); if(onMount) onMount(); v776SyncResultFlags(); }
 /* v360: 목록 검색 공통 매칭 — 띄어쓰기로 나눈 낱말이 모두 포함되어야 하며(AND),
    품명·규격의 띄어쓰기나 / · │ 구분기호는 무시하고도 비교해 '방화문900' 같은 입력도 걸리게 한다. */
 function srchStrip(s){ return String(s||'').toLowerCase().replace(/[\s/│·,·\-_*×xX]+/g,''); }
@@ -32696,6 +32783,8 @@ function build(){
   }); }
   /* v775 : 화면을 다시 그려도 열어 둔 편집창이 닫히지 않도록 그대로 복원합니다 */
   try{ if(EDIT.kind&&EDIT.m){ OPEN=true; openEdit(EDIT.kind,EDIT.m,true); } }catch(_e){}
+  /* v792 : 📊 BEP · 👥 사업부 인원 상자를 이 점검 패널 바로 아래로 옮깁니다 */
+  try{ if(typeof bepHeadMoveV792==='function')bepHeadMoveV792(); }catch(_e){}
 }
 /* ── 기준과 동일하게 맞추기 ─────────────────────────────── */
 var KEYS=['pct','pctAt','override','overrideAt','addPct','addPctAt','prodOverride','prodAddPct','custProdOverride','custMonthPct','prodMonthPct','newCusts','newProds','newCustReplacements'];
