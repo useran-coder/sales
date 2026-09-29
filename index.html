@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v792</title>
-<script>window.APP_BUILD='v792';</script>
+<title>동방파스텍 매출 분석 도구 v794</title>
+<script>window.APP_BUILD='v794';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -289,6 +289,9 @@
   .wr-controls label{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#475569}
   .wr-controls select{min-width:auto;padding:6px 9px}
   .wr-reset-alert{background:#fff7ed!important;color:#c2410c!important;border-color:#fdba74!important;font-weight:800!important;box-shadow:0 0 0 2px rgba(234,88,12,.10)}
+  /* v794 : 지금 보고 있는 주차가 «이번주»가 아니면 조회 단위 줄의 «이번주» 버튼을 빨갛게 표시합니다 */
+  .wr-thisweek-alert-v794{background:#fee2e2!important;color:#dc2626!important;border-color:#fca5a5!important;font-weight:800!important;box-shadow:0 0 0 2px rgba(220,38,38,.10)!important}
+  .wr-thisweek-alert-v794:hover{background:#fecaca!important;color:#b91c1c!important}
   .fc-cust-month-table{width:100%!important;min-width:1450px!important;table-layout:fixed}
   .fc-cust-month-table th,.fc-cust-month-table td{vertical-align:middle;text-align:right;white-space:nowrap}
   .fc-cust-month-table th:first-child,.fc-cust-month-table td:first-child{text-align:center}
@@ -362,6 +365,9 @@
   .wr-product-memo:focus{outline:2px solid #bfdbfe;border-color:#60a5fa}
   .wr-p1-nav{flex:0 0 auto}
   .wr-p1-nav .wr-issue-nav-btn{font-size:12px}
+  /* v793 : 매출 목표 화면으로 옮겨 온 BEP·인원 상자는 위쪽 빈 줄을 없앱니다 */
+  #bepHeadHostV792{padding-top:4px!important}
+  #bepHeadHostV792 .bep-head-onfc-v792 > .ctrl-row:first-child{margin-top:0!important;border-top:0!important;padding-top:0!important}
   .wr-page:has(#wrCustTargetTable) .wr-section:has(#wrCustXlsx){display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .wr-page:has(#wrCustTargetTable) .wr-section:has(#wrCustXlsx)>span[style*="float:right"]{float:none!important;margin-left:auto;display:inline-flex;align-items:center;gap:7px}
   .wr-cust-product-note{padding:7px 11px;border-top:1px solid #bfdbfe;background:#eff6ff;color:#475569;font-size:10.5px;line-height:1.45}
@@ -486,6 +492,9 @@
   .wr-issue-nav-btn.today{background:#2563eb;color:#fff;min-width:78px}
   .wr-issue-nav-btn.today:hover{background:#1d4ed8;filter:none}
   .wr-issue-nav-btn.today.is-current{background:#0f766e}
+  /* v793 : 지금 보고 있는 주차가 «이번주»가 아니면 한눈에 알 수 있게 빨강으로 표시합니다 */
+  .wr-issue-nav-btn.today:not(.is-current){background:#fee2e2!important;color:#dc2626!important;box-shadow:inset 0 0 0 1px #fca5a5!important}
+  .wr-issue-nav-btn.today:not(.is-current):hover{background:#fecaca!important;color:#b91c1c!important}
   .wr-issue-nav-btn.today.is-current:hover{background:#0d665f}
   .wr-issue-period{font-size:14px;font-weight:900;color:#111827}
   .wr-issue-period small{font-size:11px;font-weight:700;color:#64748b;margin-left:5px}
@@ -1877,7 +1886,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v792</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v794</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -2006,7 +2015,7 @@ body.fpopen #fpSum{display:block}
           <div id="mvFileList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
         </div>
       </div>
-      <div id="bepHeadBoxV792">
+      <div id="bepHeadBoxV792" style="display:none">
       <div class="ctrl-row" style="margin-top:12px;align-items:center;border-top:1px solid var(--line);padding-top:12px">
         <b style="font-size:13px">📊 BEP(손익분기점) <span id="bepYrV791" style="font-size:12px;color:#7c3aed;font-weight:800"></span></b>
         <input type="text" inputmode="numeric" id="bepInput" placeholder="연 손익분기 매출액(원)" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;width:200px;text-align:right">
@@ -3028,8 +3037,11 @@ function bepHeadMoveV792(){
         panel.insertAdjacentElement('afterend',host);
       }
       if(box.parentNode!==host)host.appendChild(box);
+      box.style.display='';
+      box.classList.add('bep-head-onfc-v792');
     }else{
       var host2=document.getElementById('bepHeadHostV792');
+      box.style.display='none';
       if(home&&box.parentNode!==home.parentNode){ home.parentNode.insertBefore(box,home); box.classList.remove('bep-head-onfc-v792'); }
       if(host2&&!host2.querySelector('#bepHeadBoxV792'))host2.remove();
     }
@@ -3041,6 +3053,7 @@ function bepHeadParkV792(){
   try{
     var box=document.getElementById('bepHeadBoxV792'), home=document.getElementById('bepHeadHomeV792');
     if(!box||!home)return;
+    box.style.display='none';   /* v793 : 파일·관리 화면에서는 숨깁니다(매출 목표 화면에만 표시) */
     if(box.nextElementSibling===home)return;
     home.parentNode.insertBefore(box,home);
     box.classList.remove('bep-head-onfc-v792');
@@ -3048,6 +3061,38 @@ function bepHeadParkV792(){
   }catch(_e){}
 }
 window.bepHeadParkV792=bepHeadParkV792;
+/* v794 : 인원 칸은 «글자를 치는 동안»에는 화면을 다시 그리지 않습니다.
+   예전에는 한 글자마다 저장+전체 재계산+표 재생성이 일어나 커서가 튕기고 숫자가 제대로 안 들어갔습니다. */
+var _headTV794=null, _headFocusV794='', _headCaretV794=0;
+function headRememberV794(el){
+  try{
+    if(!el)return;
+    _headFocusV794 = el.classList.contains('heady') ? ('.heady[data-y="'+el.dataset.y+'"]')
+                   : el.classList.contains('headm') ? ('.headm[data-ym="'+el.dataset.ym+'"]') : '';
+    _headCaretV794 = (el.selectionStart!=null)?el.selectionStart:String(el.value||'').length;
+  }catch(_e){}
+}
+function headRestoreV794(){
+  try{
+    if(!_headFocusV794)return;
+    var el=document.querySelector('#headMonGrid '+_headFocusV794);
+    if(!el)return;
+    el.focus();
+    try{ el.setSelectionRange(_headCaretV794,_headCaretV794); }catch(_s){}
+  }catch(_e){}
+}
+function headApplyV794(){
+  clearTimeout(_headTV794); _headTV794=null;
+  try{
+    var sy=window.scrollY;
+    saveSettings();
+    if(typeof buildSummary==='function')buildSummary();
+    if(typeof rerun==='function')rerun();
+    setTimeout(function(){ try{ window.scrollTo(0,sy); headRestoreV794(); }catch(_e){} },0);
+  }catch(_e){}
+}
+function headScheduleV794(){ clearTimeout(_headTV794); _headTV794=setTimeout(headApplyV794,800); }
+window.headApplyV794=headApplyV794;
 function buildHeadMonthly(){
   const ys=dataYears(); if(!ys.length){ $('#headMonGrid').innerHTML=''; return; }
   /* v791 : 목표 연도(2027 등)도 함께 입력할 수 있게 합니다 */
@@ -3056,10 +3101,47 @@ function buildHeadMonthly(){
   for(let y=PY;y<=CY;y++){ const yd=state.headYearDefault[y]!=null?state.headYearDefault[y]:''; 
     h+=`<div style="width:100%;display:flex;align-items:center;gap:8px;margin-top:6px"><span style="font-size:11px;font-weight:700;color:var(--muted)">${y}년</span> <span class="mpct" style="background:#eef2f8">기본값 <input type="number" class="heady" data-y="${y}" value="${yd}" placeholder="${state.headcount}" min="1" style="width:50px"> 명 <button class="btn ghost heady-apply" data-y="${y}" style="padding:3px 8px;font-size:11px">전월 적용</button></span></div>`;
     for(let m=1;m<=12;m++){ const ym=`${y}-${String(m).padStart(2,'0')}`; const v=headFor(ym); h+=`<span class="mpct">${m}월 <input type="number" class="headm" data-ym="${ym}" value="${v}" min="1" style="width:50px"></span>`; } }
+  /* v794 : 인원 칸에 글자를 치고 있는 중이면 표를 다시 만들지 않습니다(커서가 튕기지 않도록) */
+  try{
+    var _ae=document.activeElement;
+    if(_ae&&_ae.closest&&_ae.closest('#headMonGrid')&&(_ae.classList.contains('headm')||_ae.classList.contains('heady'))){ headRememberV794(_ae); }
+  }catch(_e){}
   $('#headMonGrid').innerHTML=h;
-  $('#headMonGrid').querySelectorAll('.headm').forEach(inp=>inp.addEventListener('input',e=>{ const ym=e.target.dataset.ym, v=e.target.value.trim(); if(v==='')delete state.headMonthly[ym]; else state.headMonthly[ym]=Math.max(1,parseInt(v)||state.headcount); if(typeof logEdit==='function')logEdit('인원계획',ym+' 인원 변경'); saveSettings(); buildSummary(); rerun(); }));
-  $('#headMonGrid').querySelectorAll('.heady').forEach(inp=>{ inp.addEventListener('input',e=>{ const y=e.target.dataset.y, v=e.target.value.trim(); if(v==='')delete state.headYearDefault[y]; else state.headYearDefault[y]=Math.max(1,parseInt(v)||state.headcount); if(typeof logEdit==='function')logEdit('인원계획',y+' 기본인원 변경'); saveSettings(); buildSummary(); rerun(); }); inp.addEventListener('change',()=>buildHeadMonthly()); });
-  $('#headMonGrid').querySelectorAll('.heady-apply').forEach(btn=>btn.addEventListener('click',e=>{ const y=e.target.dataset.y; const yd=state.headYearDefault[y]; const val=(yd!=null&&yd!=='')?+yd:state.headcount; for(let m=1;m<=12;m++){ state.headMonthly[`${y}-${String(m).padStart(2,'0')}`]=val; } saveSettings(); buildHeadMonthly(); buildSummary(); rerun(); }));
+  $('#headMonGrid').querySelectorAll('.headm').forEach(inp=>{
+    inp.addEventListener('input',e=>{ const ym=e.target.dataset.ym, v=e.target.value.trim();
+      headRememberV794(e.target);
+      if(v==='')delete state.headMonthly[ym];
+      else { const n=parseInt(v,10); if(isFinite(n)&&n>0)state.headMonthly[ym]=n; }
+      headScheduleV794(); });
+    inp.addEventListener('change',e=>{ const ym=e.target.dataset.ym, v=e.target.value.trim();
+      if(v===''){ delete state.headMonthly[ym]; }
+      else { const n=Math.max(1,parseInt(v,10)||state.headcount); state.headMonthly[ym]=n; e.target.value=n; }
+      if(typeof logEdit==='function')logEdit('인원계획',ym+' 인원 변경');
+      headApplyV794(); });
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
+  });
+  $('#headMonGrid').querySelectorAll('.heady').forEach(inp=>{
+    inp.addEventListener('input',e=>{ const y=e.target.dataset.y, v=e.target.value.trim();
+      headRememberV794(e.target);
+      if(v==='')delete state.headYearDefault[y];
+      else { const n=parseInt(v,10); if(isFinite(n)&&n>0)state.headYearDefault[y]=n; }
+      headScheduleV794(); });
+    inp.addEventListener('change',e=>{ const y=e.target.dataset.y, v=e.target.value.trim();
+      if(v===''){ delete state.headYearDefault[y]; }
+      else { const n=Math.max(1,parseInt(v,10)||state.headcount); state.headYearDefault[y]=n; e.target.value=n; }
+      if(typeof logEdit==='function')logEdit('인원계획',y+' 기본인원 변경');
+      headApplyV794(); });
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
+  });
+  $('#headMonGrid').querySelectorAll('.heady-apply').forEach(btn=>btn.addEventListener('click',e=>{
+    const y=e.target.dataset.y; const yd=state.headYearDefault[y]; const val=Math.max(1,(yd!=null&&yd!=='')?+yd:state.headcount);
+    for(let m=1;m<=12;m++){ state.headMonthly[`${y}-${String(m).padStart(2,'0')}`]=val; }
+    if(typeof logEdit==='function')logEdit('인원계획',y+'년 전월 적용 '+val+'명');
+    const sy=window.scrollY;
+    buildHeadMonthly();
+    saveSettings(); buildSummary(); rerun();
+    setTimeout(()=>{ try{ window.scrollTo(0,sy); }catch(_e){} },0);
+  }));
 }
 function segBind(sel,cb){ document.querySelectorAll(sel+' button').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll(sel+' button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); cb(b.dataset.v); })); }
 let _fieldDrag=false,_fieldPointerDown=false;
@@ -4814,6 +4896,23 @@ function wrBind(model,page){
   root.querySelectorAll('[data-wrpage]').forEach(b=>b.addEventListener('click',()=>{ const p=+b.dataset.wrpage;state.weekly.page=p;state.act=p===1?'weekly1':p===2?'weekly2':'weekly3';runAct(); }));
   const periodMode=$('#wrPeriodMode'),y=$('#wrYear'),m=$('#wrMonth'),w=$('#wrWeek'),rs=$('#wrRangeStart'),re=$('#wrRangeEnd'),ra=$('#wrRangeApply'),rr=$('#wrRangeReset'),n=$('#wrTopN'),tc=$('#wrTopCustom'),p=$('#wrTopPct'),pc=$('#wrPctCustom'),mc=$('#wrModeCount'),mp=$('#wrModePct');
   if(rr&&periodMode&&periodMode.value!=='week')rr.classList.add('wr-reset-alert');
+  /* v794 : 주간 모드인데 «이번주»가 아니면 빨강으로 알려 줍니다 */
+  try{
+    if(rr){
+      rr.classList.remove('wr-thisweek-alert-v794');
+      let _isNow=false;
+      if(model&&model.periodMode==='week'&&!model.isCustom){
+        const _t=new Date(), _ys=(typeof dataYears==='function')?dataYears():[];
+        let _yy=_t.getFullYear(), _mm=_t.getMonth()+1;
+        if(_ys.length&&_ys.indexOf(_yy)<0){ _yy=_ys[_ys.length-1]; _mm=12; }
+        const _rg=wrRanges(_yy,_mm), _dd=_t.getDate(), _hit=_rg.find(r=>_dd>=r.s&&_dd<=r.e);
+        const _ww=_hit?_hit.n:Math.min(_rg.length,Math.max(1,Math.ceil(_dd/7)));
+        _isNow=(+model.y===_yy && +model.m===_mm && +model.w===_ww);
+      }
+      if(!_isNow){ rr.classList.add('wr-thisweek-alert-v794'); rr.title='지금 보고 있는 기간이 «이번주»가 아닙니다 — 누르면 이번주로 이동합니다'; }
+      else { rr.title='이번주'; }
+    }
+  }catch(_e){}
   const clearRange=()=>{state.weekly.rangeStart='';state.weekly.rangeEnd='';};
   periodMode&&periodMode.addEventListener('change',()=>{const mode=periodMode.value;state.weekly.periodMode=mode;state.weekly.periodModes={1:'week',2:'month',3:'week',...(state.weekly.periodModes||{}),[page]:mode};if(mode==='week')clearRange();if(mode==='custom'&&(!state.weekly.rangeStart||!state.weekly.rangeEnd)){const r=model.range;state.weekly.rangeStart=wrDateInput(r.sDate);state.weekly.rangeEnd=wrDateInput(r.eDate);}saveSettings();weeklyReport(page);});
   y&&y.addEventListener('change',()=>{state.weekly.year=+y.value;if(state.weekly.periodMode==='week'){clearRange();state.weekly.month=wrLatestMonth(+y.value);state.weekly.week=wrLatestWeek(+y.value,state.weekly.month);}saveSettings();weeklyReport(page);});
