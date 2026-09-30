@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v798</title>
-<script>window.APP_BUILD='v798';</script>
+<title>동방파스텍 매출 분석 도구 v799</title>
+<script>window.APP_BUILD='v799';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1633,6 +1633,14 @@ body.fpopen #fpSum{display:block}
 #result .fc-neg-value,#result .fc-negative-number{color:#dc2626!important;-webkit-text-fill-color:#dc2626!important;caret-color:#dc2626!important;border-color:#fca5a5!important;background:#fff7f7!important;font-weight:800!important}
 #result input.fc-negative-number::placeholder{color:#dc2626!important;-webkit-text-fill-color:#dc2626!important;opacity:1!important;font-weight:800!important}
 #result .fc-cust-month-table .fc-cust-month-pct,#result .fc-prod-month-table .fc-prod-month-pct{text-align:right!important;padding-right:4px!important}
+/* v799 : 표를 다시 그릴 때 브라우저가 스스로 스크롤을 옮기는 기능(스크롤 앵커링)을 끕니다.
+   월별보기 표는 나중에 따로 만들어져 높이가 갑자기 늘어나는데, 그때 화면이 저절로 내려가 «출렁»였습니다. */
+#result,#result .tablewrap,#result table,#result tbody{overflow-anchor:none}
+/* v799 : 입력 칸을 키우고, 칸 어디를 눌러도 입력이 되는 것을 커서 모양으로 알립니다 */
+#result .fc-cust-month-table td.fc-cust-month-cell:has(input.fc-cust-month-pct),#result .fc-prod-month-table td:has(input.fc-prod-month-pct){cursor:text}
+#result .fc-cust-month-table .fc-cust-month-pct{height:26px!important}
+#result .fc-prod-month-table .fc-prod-month-pct{height:25px!important}
+#result td:has(>input.fcov),#result td:has(>input.fcadd),#result td:has(>input.fcpov),#result td:has(>input.fcpadd){cursor:text}
 #result .fc-cust-month-table .fc-cust-month-pct,#result .fc-prod-month-table .fc-prod-month-pct{-moz-appearance:textfield!important;appearance:textfield!important}
 #result .fc-cust-month-table .fc-cust-month-pct::-webkit-outer-spin-button,#result .fc-cust-month-table .fc-cust-month-pct::-webkit-inner-spin-button,#result .fc-prod-month-table .fc-prod-month-pct::-webkit-outer-spin-button,#result .fc-prod-month-table .fc-prod-month-pct::-webkit-inner-spin-button{-webkit-appearance:none!important;margin:0!important}
 #result .fc-cust-month-table .fc-cust-month-pct-neg,#result .fc-prod-month-table .fc-prod-month-pct-neg{color:#dc2626!important;-webkit-text-fill-color:#dc2626!important;caret-color:#dc2626!important;border-color:#fca5a5!important;background:#fff1f2!important;font-weight:800!important}
@@ -1900,7 +1908,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v798</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v799</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -11791,6 +11799,41 @@ try{
   document.addEventListener('focusout',function(e){ if(_v796SaveT&&e.target&&e.target.matches&&e.target.matches(V796_EDIT_SEL))setTimeout(function(){ if(_v796SaveT&&!v796Editing())v797SaveNow(); },120); },true);
 }catch(_e){}
 window.v797SaveNow=v797SaveNow;
+/* v799 : 입력칸이 칸(셀) 넓이의 1/4밖에 안 돼서, 손가락·마우스가 조금만 빗나가면 아무 일도 일어나지
+   않았습니다(=«입력이 안 되는 칸»). 이제 칸 아무 데나 누르면 그 칸의 입력칸으로 커서가 들어가고
+   기존 값이 선택되어 바로 덮어쓸 수 있습니다. 행 클릭(품목 보기)도 그때는 일어나지 않습니다. */
+var V799_CELL_IN='input.fc-cust-month-pct,input.fc-prod-month-pct,input.fcov,input.fcadd,input.fcpov,input.fcpadd,input.fccpov,input.fc-month-adjust,input.fc-inline-pct';
+function v799CellInput(t){
+  try{
+    if(!t||!t.closest)return null;
+    if(/^(INPUT|TEXTAREA|SELECT|BUTTON|A|LABEL)$/.test(t.tagName))return null;
+    if(t.closest('input,textarea,select,button,a'))return null;
+    var td=t.closest('td'); if(!td)return null;
+    var inp=td.querySelector(V799_CELL_IN);
+    if(!inp||inp.disabled||inp.readOnly)return null;
+    if(!inp.offsetParent)return null;
+    return inp;
+  }catch(_e){ return null; }
+}
+(function(){
+  var down=function(e){
+    if(e.button!=null&&e.button!==0)return;
+    var inp=v799CellInput(e.target); if(!inp)return;
+    e.preventDefault(); e.stopPropagation();
+    try{ inp.focus({preventScroll:true}); }catch(_e){ inp.focus(); }
+    try{ inp.select(); }catch(_e2){}
+  };
+  var swallow=function(e){ if(v799CellInput(e.target))e.stopPropagation(); };
+  document.addEventListener('mousedown',down,true);
+  document.addEventListener('click',swallow,true);
+  document.addEventListener('touchstart',function(e){
+    try{ var t=e.touches&&e.touches[0]?e.touches[0].target:e.target; var inp=v799CellInput(t); if(!inp)return;
+      e.stopPropagation();
+      try{ inp.focus({preventScroll:true}); }catch(_e){ inp.focus(); }
+      try{ inp.select(); }catch(_e2){}
+    }catch(_e3){}
+  },{capture:true,passive:true});
+})();
 function v796SetMonthPct(store,key,m,val){ try{ store[key]=store[key]||{}; var n=parseFloat(val);
   if(val===''||!isFinite(n)||n===0)delete store[key][m]; else store[key][m]=n;
   if(!Object.keys(store[key]).length)delete store[key]; }catch(_e){} }
@@ -11806,9 +11849,15 @@ function fcRerenderKeepFocus(){
         pos:(a.selectionStart!=null?a.selectionStart:null),end:(a.selectionEnd!=null?a.selectionEnd:null)};
     }
   }catch(_e){}
-  let sy=0, wraps=[];
+  let sy=0, wraps=[], _lockEl=null;
   try{ sy=window.scrollY||document.documentElement.scrollTop||0;
-    wraps=[...document.querySelectorAll('#result .tablewrap')].map(w=>({t:w.scrollTop,l:w.scrollLeft}));
+    /* v799 : 표 상자를 «순서»가 아니라 «id»로 기억합니다. 월별보기 표는 나중에 따로 만들어지기 때문에
+       순서로 맞추면 엉뚱한 상자에 복원되거나 아예 복원되지 않아 표가 맨 위로 튀었습니다. */
+    wraps=[...document.querySelectorAll('#result .tablewrap')].map((w,i)=>({k:w.id||('#'+i),t:w.scrollTop,l:w.scrollLeft}));
+    /* v799 : 다시 그리는 동안 화면 높이가 줄면 브라우저가 스크롤을 끌어올려 화면이 «출렁»입니다.
+       잠깐 높이를 고정해 두면 그 출렁임 자체가 생기지 않습니다. */
+    _lockEl=document.getElementById('result');
+    if(_lockEl&&_lockEl.offsetHeight>0)_lockEl.style.minHeight=_lockEl.offsetHeight+'px';
   }catch(_e){}
   if(typeof saveSettings==='function')saveSettings();
   forecast();
@@ -11824,14 +11873,15 @@ function fcRerenderKeepFocus(){
     window.addEventListener('keydown',_kd,true);
     const _restore=()=>{ if(_stop)return;
       try{ const nw=[...document.querySelectorAll('#result .tablewrap')];
-        nw.forEach((w,i)=>{ const st=wraps[i]; if(st){ if(w.scrollTop!==st.t)w.scrollTop=st.t; if(w.scrollLeft!==st.l)w.scrollLeft=st.l; } });
+        nw.forEach((w,i)=>{ const k=w.id||('#'+i); const st=wraps.find(x=>x.k===k)||((!w.id)?wraps[i]:null);
+          if(st){ if(st.t&&w.scrollTop!==st.t)w.scrollTop=st.t; if(st.l&&w.scrollLeft!==st.l)w.scrollLeft=st.l; } });
         if(Math.abs((window.scrollY||0)-sy)>1)window.scrollTo(0,sy);
       }catch(_e2){}
     };
     _restore();
     requestAnimationFrame(()=>{ _restore(); requestAnimationFrame(_restore); });
-    [70,180,350,600].forEach(ms=>setTimeout(_restore,ms));
-    setTimeout(_off,700);
+    [70,180,350,600,900].forEach(ms=>setTimeout(_restore,ms));
+    setTimeout(()=>{ _off(); try{ if(_lockEl)_lockEl.style.minHeight=''; }catch(_e3){} },1000);
   }catch(_e){}
   if(info){
     try{
