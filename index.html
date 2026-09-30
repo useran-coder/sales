@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v797</title>
-<script>window.APP_BUILD='v797';</script>
+<title>동방파스텍 매출 분석 도구 v798</title>
+<script>window.APP_BUILD='v798';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1900,7 +1900,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v797</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v798</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -7945,12 +7945,12 @@ function homeTrendSVG(){
   if(_nyT){ for(let i=0;i<N;i++){ const bm2=+buckets[i].slice(5,7); const v=+_nyT[bm2]||0; if(v>0)tgt[i]=v; } }
   else for(let i=tgtFrom;i<N;i++){ const [by,bm]=buckets[i].split('-').map(Number); if(by===CY){ const pv=pyByMonth[bm]||0; const pct=(state.fc.pct[bm]!=null&&state.fc.pct[bm]!=='')?+state.fc.pct[bm]:0; if(pv>0)tgt[i]=pv*(1+pct/100); } }
   const _tgtFrom2=_nyT?0:tgtFrom;
-  const W=960,H=332,padL=20,padR=20,padT=46,padB=54; const iw=W-padL-padR,ih=H-padT-padB;
+  const W=960,H=348,padL=20,padR=20,padT=46,padB=70; const iw=W-padL-padR,ih=H-padT-padB;
   let max=1; ser.forEach(v=>max=Math.max(max,v)); purchaseSeries.forEach(v=>max=Math.max(max,v)); tgt.forEach(v=>{if(v!=null)max=Math.max(max,v);});
   const x=i=>N>1?padL+iw*i/(N-1):padL+iw/2, y=v=>padT+ih-(v/max*ih);
   const nzVals=ser.filter(v=>v>0); const mx=Math.max(...nzVals,0); const mn=nzVals.length?Math.min(...nzVals):0; const avg=nzVals.length?nzVals.reduce((a,b)=>a+b,0)/nzVals.length:0;
   let _remT=[]; for(let i=_tgtFrom2;i<N;i++){ if(tgt[i]!=null)_remT.push(tgt[i]); } const remAvg=_remT.length?_remT.reduce((a,b)=>a+b,0)/_remT.length:0;
-  const _td=new Date(); const _nowYM=_td.getFullYear()+'-'+String(_td.getMonth()+1).padStart(2,'0'); const nowIdx=(bIdx[_nowYM]!=null)?bIdx[_nowYM]:-1; const nowLine=nowIdx>=0?`<line x1="${x(nowIdx).toFixed(1)}" y1="${padT}" x2="${x(nowIdx).toFixed(1)}" y2="${(padT+ih).toFixed(1)}" stroke="#0ea5e9" stroke-width="1.3" stroke-dasharray="4 3"/><text x="${x(nowIdx).toFixed(1)}" y="${(padT-5).toFixed(1)}" font-size="9.5" fill="#0ea5e9" text-anchor="middle" font-weight="800">현재월</text>`:'';
+  const _td=new Date(); const _nowYM=_td.getFullYear()+'-'+String(_td.getMonth()+1).padStart(2,'0'); const nowIdx=(bIdx[_nowYM]!=null)?bIdx[_nowYM]:-1; const nowLine=nowIdx>=0?`<line x1="${x(nowIdx).toFixed(1)}" y1="${padT}" x2="${x(nowIdx).toFixed(1)}" y2="${(padT+ih).toFixed(1)}" stroke="#0ea5e9" stroke-width="1.3" stroke-dasharray="4 3"/><rect x="${(x(nowIdx)-21).toFixed(1)}" y="${(padT+ih+39).toFixed(1)}" width="42" height="15" rx="7.5" fill="#f0f9ff" stroke="#7dd3fc"/><text x="${x(nowIdx).toFixed(1)}" y="${(padT+ih+50).toFixed(1)}" font-size="9.5" fill="#0ea5e9" text-anchor="middle" font-weight="800">현재월</text>`:'';
   const imax=ser.indexOf(mx); const imin=mn>0?ser.indexOf(mn):-1;
   let aPath=''; for(let i=0;i<=lastIdx;i++){ aPath+=(i===0?'M':'L')+x(i).toFixed(1)+' '+y(ser[i]).toFixed(1)+' '; }
   let purchasePath=''; for(let i=0;i<N;i++){ if(purchaseSeries[i]>0)purchasePath+=(i>0&&purchaseSeries[i-1]>0?'L':'M')+x(i).toFixed(1)+' '+y(purchaseSeries[i]).toFixed(1)+' '; }
@@ -7968,14 +7968,15 @@ function homeTrendSVG(){
   for(let i=0;i<N;i++){ if(purchaseSeries[i]>0){ const share=ratioBase[i]>0?(purchaseSeries[i]/ratioBase[i]*100).toFixed(1)+'%':'—'; const px=x(i).toFixed(1); const py=(y(purchaseSeries[i])-18).toFixed(1); vlab+=`<text x="${px}" y="${py}" font-size="8.5" fill="#7c3aed" font-weight="400" text-anchor="middle"><tspan x="${px}" dy="0">${shortAmt(purchaseSeries[i])}</tspan><tspan x="${px}" dy="11">(${share})</tspan></text>`; } }
   const avgLab=avg>0?`<rect x="${(W-padR-96).toFixed(1)}" y="${(y(avg)-14).toFixed(1)}" width="94" height="15" rx="3" fill="#ffffff" fill-opacity="0.88" stroke="#e2e8f0"/><text x="${(W-padR-6).toFixed(1)}" y="${(y(avg)-3).toFixed(1)}" font-size="10" fill="#64748b" font-weight="700" text-anchor="end">평균 ${shortAmt(avg)}</text>`:'';
   const fs=N>16?9:(N>12?10:11); let xlab=''; buckets.forEach((b,i)=>{ xlab+=`<text x="${x(i).toFixed(1)}" y="${(padT+ih+15).toFixed(1)}" font-size="${fs}" fill="#94a3b8" text-anchor="middle">${b.slice(2)}</text>`; });
-  let manLab=''; buckets.forEach((b,i)=>{ const _hc=(state.headMonthly&&state.headMonthly[b])||(state.headYearDefault&&state.headYearDefault[+String(b).slice(0,4)])||state.headcount||0; if(_hc)manLab+=`<text x="${x(i).toFixed(1)}" y="${(padT+ih+31).toFixed(1)}" font-size="${fs}" fill="#6366f1" font-weight="700" text-anchor="middle">${_hc}</text>`; });
+  /* v798 : 월 아래줄은 «조업일수»를 표시합니다(기본=달력 기준, 기준정보 ② 조업일수에서 수정). */
+  let manLab=''; buckets.forEach((b,i)=>{ let _wd=0; try{ _wd=(typeof workdaysFor==='function')?(+workdaysFor(b)||0):0; }catch(_e){ _wd=0; } if(_wd)manLab+=`<text x="${x(i).toFixed(1)}" y="${(padT+ih+31).toFixed(1)}" font-size="${fs}" fill="#6366f1" font-weight="700" text-anchor="middle">${_wd}</text>`; });
   // v102: 매입선·비율은 필터와 무관한 전사 기준임을 범례에 명시하고, 금액기준(공급가/합계)이
   // 매입분석도구와 다르면 비율이 왜곡되므로 경고를 함께 표시합니다.
   const _pNote=hasPurchase?(gActive()?' <span style="color:#64748b;font-weight:700">(비율=전사 확정실적 기준·필터 미적용)</span>':' <span style="color:#64748b;font-weight:700">(비율=확정실적 기준)</span>'):'';
   const _pWarn=(hasPurchase&&_basisWarn)?`<span style="color:#dc2626">⚠ 금액기준 불일치(매입분석: ${_pMeta.basis==='supply'?'공급가':'합계액'} / 매출: ${state.basis==='공급가'?'공급가':'합계액'})</span>`:'';
   const purchaseLegend=hasPurchase?`<span style="color:#7c3aed"><i style="display:inline-block;width:18px;border-top:3px solid #7c3aed;vertical-align:middle;margin-right:4px"></i>매입(동기화)</span>${_pNote}${_pWarn}`:'';
-  const legend=`<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 15px;margin-top:3px;padding-top:6px;border-top:1px solid #eef2f7;font-size:11px;font-weight:800;line-height:1.35">${purchaseLegend}<span style="color:#475569"><i style="display:inline-block;width:18px;border-top:3px solid #1e3a5f;vertical-align:middle;margin-right:4px"></i>실적</span><span style="color:#b45309"><i style="display:inline-block;width:18px;border-top:3px dashed #f59e0b;vertical-align:middle;margin-right:4px"></i>목표(현재월~)</span><span style="color:#6366f1">■ 인원(명)</span><span style="color:#16a34a">▲ 최고 ${shortAmt(mx)}</span><span style="color:#b45309">▼ 최저 ${shortAmt(mn)}</span><span style="color:#64748b">● 평균 ${shortAmt(avg)}</span><span style="color:#7c3aed">◆ 남은월평균목표 ${shortAmt(remAvg)}</span></div>`;
-  return `<div style="display:flex;flex-direction:column;height:100%"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:330px;display:block"><line x1="${padL}" y1="${padT}" x2="${W-padR}" y2="${padT}" stroke="#eef2f7"/>${ylines}${avgLine}${bepLine}${nowLine}<path d="${tPath}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 4"/><path d="${aPath}" fill="none" stroke="#1e3a5f" stroke-width="2.4"/>${hasPurchase?`<path d="${purchasePath}" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`:''}${dots}${mm}${avgLab}${vlab}${xlab}${manLab}</svg>${legend}</div>`;
+  const legend=`<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 15px;margin-top:3px;padding-top:6px;border-top:1px solid #eef2f7;font-size:11px;font-weight:800;line-height:1.35">${purchaseLegend}<span style="color:#475569"><i style="display:inline-block;width:18px;border-top:3px solid #1e3a5f;vertical-align:middle;margin-right:4px"></i>실적</span><span style="color:#b45309"><i style="display:inline-block;width:18px;border-top:3px dashed #f59e0b;vertical-align:middle;margin-right:4px"></i>목표(현재월~)</span><span style="color:#6366f1">■ 조업일수(일)</span><span style="color:#16a34a">▲ 최고 ${shortAmt(mx)}</span><span style="color:#b45309">▼ 최저 ${shortAmt(mn)}</span><span style="color:#64748b">● 평균 ${shortAmt(avg)}</span><span style="color:#7c3aed">◆ 남은월평균목표 ${shortAmt(remAvg)}</span></div>`;
+  return `<div style="display:flex;flex-direction:column;height:100%"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:346px;display:block"><line x1="${padL}" y1="${padT}" x2="${W-padR}" y2="${padT}" stroke="#eef2f7"/>${ylines}${avgLine}${bepLine}${nowLine}<path d="${tPath}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 4"/><path d="${aPath}" fill="none" stroke="#1e3a5f" stroke-width="2.4"/>${hasPurchase?`<path d="${purchasePath}" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`:''}${dots}${mm}${avgLab}${vlab}${xlab}${manLab}</svg>${legend}</div>`;
 }
 function homeAnnualBar(actual,target,pct,CY){
   const W=170,H=300,base=235,top=35,zeroY=top+base,bw=62,bx=(W-bw)/2;
@@ -9081,14 +9082,41 @@ function productCategoryProductFilterHtml(cur){
   const v=cur==='전체'?'all':cur;
   return `<div class="ctrlbar" style="gap:8px;flex-wrap:wrap"><b style="font-size:12px;white-space:nowrap">제품구분</b>${mixChipsHtml(v,'mixCatProductFilterSeg')}<span class="sub2">제품구분을 선택하면 이 화면에서 바로 해당 제품만 표시합니다.</span></div>`;
 }
+/* v798 : 메인 «제품구분 매출 비중» 원형그래프(또는 범례)를 클릭해 들어온 상세 화면에서
+   표 위에 그 제품구분의 «월별 매출 추이» 그래프를 보여줍니다. (업체 추이 그래프와 같은 형식) */
+function mixDetailChartV798(cat){
+  try{
+    if(typeof custMonthChartV665!=='function')return '';
+    var rows=(CUR||[]).filter(function(r){ return cat==='전체'||mixCatOf(r)===cat; });
+    if(!rows.length)return '';
+    var yrs=[...new Set(rows.map(function(r){ return r.d?r.d.getFullYear():0; }).filter(Boolean))].sort(function(a,b){ return b-a; });
+    if(!yrs.length)return '';
+    state.mixDetail=state.mixDetail||{};
+    var yr=+state.mixDetail.year; if(!yr||yrs.indexOf(yr)<0)yr=yrs[0];
+    state.mixDetail.year=yr;
+    var met=(state.mixDetail.metric==='qty')?'qty':'amt';
+    var h=custMonthChartV665(cat==='전체'?'전체 제품구분':cat, yr, rows, yrs, {metric:met,metricToggle:true});
+    /* 업체 추이 그래프의 버튼 처리와 겹치지 않도록 전용 클래스로 바꿉니다 */
+    h=h.split('cmYearBtn').join('mixYearBtnV798').split('cmMetBtn').join('mixMetBtnV798').split('cmMetSeg').join('mixMetSegV798');
+    return '<div class="mix-detail-chart-v798" style="flex:0 0 100%;width:100%;margin:0 0 4px">'+h+'</div>';
+  }catch(_e){ return ''; }
+}
+function mixDetailChartBindV798(reRender){
+  try{
+    var R0=document.getElementById('result'); if(!R0)return;
+    R0.querySelectorAll('.mixYearBtnV798').forEach(function(b){ b.addEventListener('click',function(){ state.mixDetail=state.mixDetail||{}; state.mixDetail.year=+b.dataset.y; reRender(); }); });
+    R0.querySelectorAll('.mixMetBtnV798').forEach(function(b){ b.addEventListener('click',function(){ state.mixDetail=state.mixDetail||{}; state.mixDetail.metric=b.dataset.m; reRender(); }); });
+  }catch(_e){}
+}
 function productCategoryDetail(label,src,backFn,view,allSrc){
   view=view==='product'?'product':'cust';
   const base=Array.isArray(allSrc)?allSrc:(Array.isArray(src)?src:periodRows());
   const current=(label==='전체'||mixCats().includes(label))?label:'전체';
   const detailSrc=current==='전체'?base:base.filter(r=>mixCatOf(r)===current);
-  const prefix=productCategoryDetailToggle(view);
+  const prefix=mixDetailChartV798(current)+productCategoryDetailToggle(view);
   const filterHtml=view==='product'?productCategoryProductFilterHtml(current):'';
   const bind=()=>{
+    mixDetailChartBindV798(()=>productCategoryDetail(current,detailSrc,backFn,view,base));
     $('#result').querySelectorAll('#mixCatDetailSeg button').forEach(b=>b.addEventListener('click',()=>productCategoryDetail(current,detailSrc,backFn,b.dataset.v,base)));
     $('#result').querySelectorAll('#mixCatProductFilterSeg button').forEach(b=>b.addEventListener('click',()=>{const c=b.dataset.v==='all'?'전체':b.dataset.v;productCategoryDetail(c,c==='전체'?base:base.filter(r=>mixCatOf(r)===c),backFn,'product',base);}));
   };
