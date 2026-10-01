@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v808</title>
-<script>window.APP_BUILD='v808';</script>
+<title>동방파스텍 매출 분석 도구 v809</title>
+<script>window.APP_BUILD='v809';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1920,7 +1920,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v808</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v809</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -28648,6 +28648,7 @@ function sgPipeline(A){
     +sgFld('시작월','<select id="sgFMon" style="'+SGI+'width:81px">'+[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){return '<option value="'+m+'"'+(m===sgNextMon()?' selected':'')+'>'+m+'월</option>';}).join('')+'</select>')
     +sgFld('담당','<input id="sgFOwner" placeholder="담당자" style="'+SGI+'width:90px">')
     +'<button class="btn" id="sgAdd" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;padding:6px 14px">＋ 전략 등록</button>'
+    +'<button class="btn" id="sgPickV809" type="button" title="전체 거래처·제품 목록에서 여러 건을 골라 한 번에 등록합니다(성장업체·성장제품·거래축소 계획용)" style="background:#7c3aed;color:#fff;border-color:#7c3aed;padding:6px 14px">📋 목록에서 골라 담기</button>'
     +'</div>';
 
   var chips='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">'
@@ -30579,6 +30580,116 @@ function sgBind(A){
 
   var pipelineType=document.getElementById('sgFType'),pipelineStage=document.getElementById('sgFStage');
   if(pipelineType&&pipelineStage)pipelineType.addEventListener('change',function(){var keep=pipelineStage.value||'lead';pipelineStage.innerHTML=sgStageOptions(pipelineType.value,keep);});
+
+  /* v809 : 다음 연도(2027) 계획처럼 «아직 실적이 없는» 구분(성장업체·성장제품·거래축소)도
+     전체 거래처·제품 목록에서 여러 건을 골라 한 번에 등록할 수 있게 합니다. */
+  var pickBtn=document.getElementById('sgPickV809');
+  if(pickBtn)pickBtn.addEventListener('click',function(){
+    var typ=(document.getElementById('sgFType')||{}).value||'newCust';
+    var T=SG_TMAP[typ]||SG_TMAP.newCust;
+    var dim=(['newProd','growthProd','keepProd'].indexOf(typ)>=0)?'prod':'cust';
+    var src=(dim==='prod'?(A.prods||[]):(A.custs||[])).slice();
+    src.sort(function(a,b){ return (+b.cy||0)-(+a.cy||0); });
+    var nameOf=function(o){ return String((dim==='prod'?(o.label||o.name):o.name)||'').trim(); };
+    /* 추천 집합 */
+    var rec={};
+    try{
+      var rl=(typ==='growthCust')?(A.growCust||[]):(typ==='growthProd')?(A.growProd||[]):
+             (typ==='creditCut')?(A.creditCutCust||[]):(typ==='risk')?(A.riskCust||[]):
+             (typ==='keepCust')?(A.keepCust||[]):(typ==='keepProd')?(A.keepProd||[]):[];
+      rl.forEach(function(o){ rec[nameOf(o)]=1; });
+    }catch(_e){}
+    var have={}; (pl.items||[]).forEach(function(it){ if(it.type!==typ)return;
+      var k=String((dim==='prod'?it.prod:it.cust)||'').trim(); if(k)have[k]=it.id; });
+
+    var d=document.createElement('div'); d.id='sgPickBoxV809';
+    d.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:99999;display:flex;align-items:center;justify-content:center';
+    d.innerHTML='<div style="background:#fff;border-radius:12px;padding:14px 16px;max-width:980px;width:94%;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.3)">'
+      +'<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:9px">'
+        +'<b style="font-size:15px;color:#1e3a5f">'+T.ic+' '+T.t+' — '+(dim==='prod'?'제품':'거래처')+' 골라 담기</b>'
+        +'<span class="sub2">체크한 항목이 ② 영업전략 추진현황에 <b>'+T.t+'</b>로 등록됩니다. 체크를 풀면 등록이 해제됩니다.</span>'
+        +'<button class="btn ghost" id="sgPickClose" style="margin-left:auto;font-size:12px;padding:3px 10px">닫기</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">'
+        +'<input id="sgPickQ" placeholder="이름 검색" style="'+SGI+'width:220px;text-align:left">'
+        +'<span class="seg" id="sgPickSeg">'
+          +'<button data-v="all" class="on" style="font-size:11.5px;padding:4px 10px">전체</button>'
+          +'<button data-v="rec" style="font-size:11.5px;padding:4px 10px">추천</button>'
+          +'<button data-v="up" style="font-size:11.5px;padding:4px 10px">증가</button>'
+          +'<button data-v="dn" style="font-size:11.5px;padding:4px 10px">감소</button>'
+          +'<button data-v="on" style="font-size:11.5px;padding:4px 10px">선택됨</button>'
+        +'</span>'
+        +'<button class="btn ghost" id="sgPickAll" style="font-size:11.5px;padding:4px 10px">보이는 항목 모두 선택</button>'
+        +'<button class="btn ghost" id="sgPickNone" style="font-size:11.5px;padding:4px 10px">모두 해제</button>'
+        +'<span class="sub2" id="sgPickCnt" style="margin-left:auto;font-weight:800;color:#7c3aed"></span>'
+      +'</div>'
+      +'<div id="sgPickList" style="flex:1;overflow:auto;border:1px solid var(--line);border-radius:9px"></div>'
+      +'<div style="display:flex;gap:7px;justify-content:flex-end;margin-top:10px">'
+        +'<button class="btn ghost" id="sgPickCancel" style="padding:6px 14px">취소</button>'
+        +'<button class="btn" id="sgPickApply" style="background:#7c3aed;color:#fff;border-color:#7c3aed;padding:6px 18px;font-weight:800">선택 반영</button>'
+      +'</div></div>';
+    document.body.appendChild(d);
+    var sel={}; Object.keys(have).forEach(function(k){ sel[k]=1; });
+    var mode='all', q='';
+    var visible=function(){
+      return src.filter(function(o){ var n=nameOf(o); if(!n)return false;
+        if(q&&n.toLowerCase().indexOf(q)<0)return false;
+        if(mode==='rec')return !!rec[n];
+        if(mode==='up')return (+o.diff||0)>0;
+        if(mode==='dn')return (+o.diff||0)<0;
+        if(mode==='on')return !!sel[n];
+        return true; });
+    };
+    var paint=function(){
+      var rows=visible().slice(0,800).map(function(o){ var n=nameOf(o);
+        var dv=+o.diff||0;
+        return '<tr><td style="text-align:center;width:36px"><input type="checkbox" class="sgPickCb" data-n="'+sgEsc(n)+'"'+(sel[n]?' checked':'')+'></td>'
+          +'<td class="l" style="font-weight:700">'+sgEsc(n)+(rec[n]?' <span style="font-size:10px;font-weight:800;color:#7c3aed;background:#f5f3ff;border-radius:7px;padding:1px 6px">추천</span>':'')+'</td>'
+          +'<td style="text-align:right">'+sgWon(Math.round(+o.cy||0))+'</td>'
+          +'<td style="text-align:right;color:#64748b">'+sgWon(Math.round(+o.py||0))+'</td>'
+          +'<td style="text-align:right;font-weight:800;color:'+(dv>=0?'#15803d':'#dc2626')+'">'+(dv>=0?'+':'')+sgWon(Math.round(dv))+'</td></tr>';
+      }).join('');
+      d.querySelector('#sgPickList').innerHTML='<table class="mk-tbl" style="width:100%;font-size:12px"><thead><tr>'
+        +'<th></th><th class="l">'+(dim==='prod'?'제품(품명/규격)':'거래처')+'</th><th>올해</th><th>전년</th><th>증감</th></tr></thead><tbody>'
+        +(rows||'<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:18px">해당 항목이 없습니다.</td></tr>')+'</tbody></table>';
+      d.querySelector('#sgPickCnt').textContent='선택 '+Object.keys(sel).filter(function(k){return sel[k];}).length+'건 · 표시 '+visible().length+'건';
+      d.querySelectorAll('.sgPickCb').forEach(function(cb){ cb.addEventListener('change',function(){
+        var n=cb.dataset.n; if(cb.checked)sel[n]=1; else delete sel[n];
+        d.querySelector('#sgPickCnt').textContent='선택 '+Object.keys(sel).filter(function(k){return sel[k];}).length+'건 · 표시 '+visible().length+'건'; }); });
+    };
+    paint();
+    d.querySelector('#sgPickQ').addEventListener('input',function(e){ q=String(e.target.value||'').trim().toLowerCase(); paint(); });
+    d.querySelectorAll('#sgPickSeg button').forEach(function(b){ b.addEventListener('click',function(){
+      mode=b.dataset.v; d.querySelectorAll('#sgPickSeg button').forEach(function(x){ x.classList.toggle('on',x===b); }); paint(); }); });
+    d.querySelector('#sgPickAll').addEventListener('click',function(){ visible().forEach(function(o){ sel[nameOf(o)]=1; }); paint(); });
+    d.querySelector('#sgPickNone').addEventListener('click',function(){ sel={}; paint(); });
+    var close=function(){ d.remove(); };
+    d.querySelector('#sgPickClose').addEventListener('click',close);
+    d.querySelector('#sgPickCancel').addEventListener('click',close);
+    d.addEventListener('click',function(e){ if(e.target===d)close(); });
+    d.querySelector('#sgPickApply').addEventListener('click',function(){
+      var st=(document.getElementById('sgFStage')||{}).value||'lead';
+      var mon=+((document.getElementById('sgFMon')||{}).value)||1;
+      var owner=String((document.getElementById('sgFOwner')||{}).value||'').trim();
+      var maps=null; try{ maps=sgAnnualTargetMapsV613(); }catch(_e){}
+      var added=0,removed=0;
+      /* 체크 해제된 기존 등록 제거 */
+      Object.keys(have).forEach(function(n){ if(!sel[n]){
+        pl.items=(pl.items||[]).filter(function(x){ return x.id!==have[n]; }); removed++; } });
+      /* 새로 체크된 항목 등록 */
+      Object.keys(sel).forEach(function(n){ if(!sel[n]||have[n])return;
+        var o=src.filter(function(x){ return nameOf(x)===n; })[0]||{};
+        var seed={type:typ,cust:(dim==='prod'?'':n),prod:(dim==='prod'?n:''),title:n};
+        var lk=null; try{ lk=sgLinkedTargetV613(seed,maps); }catch(_e){}
+        var useLink=(lk!=null&&isFinite(lk));
+        pl.items.push({id:sgUid(),plan:sgActivePlan(),type:typ,title:n,note:'',cust:seed.cust,prod:seed.prod,
+          amount:useLink?Math.max(0,Math.round(lk)):Math.max(0,Math.round(+o.cy||0)),
+          amountLink:useLink,stage:st,prob:(SG_SMAP[st]||{p:50}).p,mon:mon,owner:owner,off:false});
+        added++; });
+      try{ if(typeof logEdit==='function')logEdit('영업전략',T.t+' 목록 선택 — 등록 '+added+'건 · 해제 '+removed+'건'); }catch(_e){}
+      close(); sgSave(); sgRe();
+    });
+  });
 
   var add=document.getElementById('sgAdd');
   if(add)add.addEventListener('click',function(){
