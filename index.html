@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v811</title>
-<script>window.APP_BUILD='v811';</script>
+<title>동방파스텍 매출 분석 도구 v812</title>
+<script>window.APP_BUILD='v812';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1920,7 +1920,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v811</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v812</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -12538,10 +12538,19 @@ function forecast(){ state._inDrill=false;
   const perBtns=`<div class="seg" id="fcPer"><button data-v="all" class="${state.fc.period==='all'?'on':''}">전체</button><button data-v="H1" class="${state.fc.period==='H1'?'on':''}">상반기</button><button data-v="H2" class="${state.fc.period==='H2'?'on':''}">하반기</button><button data-v="Q1" class="${state.fc.period==='Q1'?'on':''}">1분기</button><button data-v="Q2" class="${state.fc.period==='Q2'?'on':''}">2분기</button><button data-v="Q3" class="${state.fc.period==='Q3'?'on':''}">3분기</button><button data-v="Q4" class="${state.fc.period==='Q4'?'on':''}">4분기</button><button data-v="range" class="${state.fc.period==='range'?'on':''}">기간설정</button></div>`;
   const monOpts=(selV)=>{let s='';for(let i=1;i<=12;i++)s+=`<option value="${i}" ${i===selV?'selected':''}>${i}월</option>`;return s;};
   const rangeSel=`<span id="fcRangeSel" style="display:${state.fc.period==='range'?'inline-flex':'none'};align-items:center;gap:4px"><select id="fcM1">${monOpts(m1)}</select> ~ <select id="fcM2">${monOpts(m2)}</select></span>`;
-  /* v716 : 조작 영역을 제목 «아래 줄»로 내립니다 */
+  /* v812 : 🎯 목표액 오른쪽에 «전년 대비 %»를 함께 보여 줍니다. */
+  let _pyTotV812=0;
+  try{ _pyTotV812=((fcBaseAgg(PY,CY)||{}).pyMonTot||[]).reduce(function(a,b){return a+(+b||0);},0); }catch(_e){ _pyTotV812=0; }
+  const _yoyV812=(_pyTotV812>0)?((olhaeTarget-_pyTotV812)/_pyTotV812*100):null;
+  const _yoyBadgeV812=(_yoyV812==null)?''
+    :('<span class="fc-legend-yoy-v812" title="'+PY+'년 실적 '+won(Math.round(_pyTotV812))+'원 대비 '+CY+'년 목표액의 증감률입니다. (목표-전년) / 전년 기준"'
+      +' style="margin-left:5px;padding:2px 10px;border-radius:999px;background:'+(_yoyV812>=0?'#f0fdf4':'#fef2f2')+';border:1px solid '+(_yoyV812>=0?'#86efac':'#fca5a5')+';color:'+(_yoyV812>=0?'#15803d':'#dc2626')+';font-weight:800">'
+      +'전년 대비 '+(_yoyV812>=0?'\u25b2 +':'\u25bc ')+_yoyV812.toFixed(1)+'%'
+      +'<span style="font-weight:600;color:#64748b;margin-left:5px">('+PY+'년 '+won(Math.round(_pyTotV812))+'원)</span></span>');
+/* v716 : 조작 영역을 제목 «아래 줄»로 내립니다 */
   const html=`<div class="rhead"><span class="title">매출 목표 (${CY})</span><span class="meta">${fcTargetPlanLabel()} · 연매출 목표 기준: 실적 ${fcCutLabel()} + 목표 ${fcFutLabel()} · 그래프 실제 실적 ${actualLastMonth>0?('1~'+actualLastMonth+'월'):'없음'} · 단위: 백만원</span></div>
   <div class="fc-ctlbar">${fcYearSelectorHTML()}${fcTargetPlanSelectorHTML('fcTargetPlanSel')}${fcCutoffSelectorHTML()}</div>
-    ${legendPY(PY,CY,'fcShowPY',state.fc.showPY).replace(/<\/div>\s*$/,'<span class="fc-legend-target" title="매출 목표 화면의 연매출 목표와 같은 금액입니다." style="margin-left:6px;padding:2px 10px;border-radius:999px;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;font-weight:800">🎯 '+CY+'년 목표액 '+won(Math.round(olhaeTarget))+'원</span></div>')}
+    ${legendPY(PY,CY,'fcShowPY',state.fc.showPY).replace(/<\/div>\s*$/,'<span class="fc-legend-target" title="매출 목표 화면의 연매출 목표와 같은 금액입니다." style="margin-left:6px;padding:2px 10px;border-radius:999px;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;font-weight:800">🎯 '+CY+'년 목표액 '+won(Math.round(olhaeTarget))+'원</span>'+_yoyBadgeV812+'</div>')}
     ${annualPanelHTML(PY,CY,olhaeTarget,tgt)}
     <div class="chartbox">${chart}</div>
     <div id="fcDiffPanelV757"></div>
