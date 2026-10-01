@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v799</title>
-<script>window.APP_BUILD='v799';</script>
+<title>동방파스텍 매출 분석 도구 v802</title>
+<script>window.APP_BUILD='v802';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1908,7 +1908,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v799</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v802</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -1932,8 +1932,8 @@ body.fpopen #fpSum{display:block}
         <div id="auAdmin" style="display:none;margin-bottom:10px"></div>
         <div class="au-topbar-row"><span class="au-topbar" id="auTopBar"><b class="au-topbar-lab">🔐 로그인</b><span id="auBar"></span></span></div>
       <!-- v784 : GitHub 한 번에 올리기 -->
-        <details id="ghBoxV784" style="width:100%;margin:12px 0 0;border:1px solid #d8dee9;border-radius:10px;padding:10px 12px;background:#fbfcfe">
-          <summary style="cursor:pointer;font-weight:800;font-size:13px;color:#1e3a5f">🚀 GitHub 업로드 <span class="sub2" style="font-weight:600">(이 파일을 저장소에 바로 배포합니다)</span></summary>
+        <details class="mk-carddet gh-uploaddet" id="ghBoxV784">
+          <summary><b style="font-weight:800;font-size:13px;color:#1e3a5f">🚀 GitHub 업로드 <span class="sub2" style="font-weight:600">(이 파일을 저장소에 바로 배포합니다)</span></b><span class="mk-bmore">펼쳐보기 ▾</span></summary>
           <div style="margin-top:9px">
             <div class="gs-config-grid">
               <input type="text" id="ghOwner" placeholder="GitHub 계정(owner)" autocomplete="off">
@@ -1961,7 +1961,7 @@ body.fpopen #fpSum{display:block}
             </div>
           </div>
         </details>
-        <details class="mk-carddet gs-syncdet" id="gsSyncDet" style="margin:0;padding:0;border:0;background:none"><summary style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <details class="mk-carddet gs-syncdet" id="gsSyncDet"><summary style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <b style="font-size:13px">☁️ 구글 동기화 <span class="sub2" style="font-weight:400">(전체 설정을 공용 구글시트와 공유 — 모두에게 공유)</span></b>
         <span id="hdrMovedBox"></span>
         <span class="mk-bmore">펼쳐보기 ▾</span>
@@ -7201,6 +7201,7 @@ function salesQtyAnalysis(){
 
 function chromeFor(act){ const onH=(act==='home'); const s=document.getElementById('summary'); if(s)s.style.display=onH?'':'none'; const st=document.getElementById('sumTop'); if(st)st.style.display=onH?'':'none'; const pricePage=(act==='price'||act==='pricemake'); const sp=document.getElementById('setPanel'); if(sp)sp.style.display=(['minv','rawinv','forecast','trend','safety','disposal','retain','last-prod','last-cust','pareto','trend2','pdelta','qty-sales','kv-churn','cust-delta','compete','doorframe','compare','cmgr','price','pricemake','weekly1','weekly2','weekly3','market-con','market-fd','market-steel'].indexOf(act)>=0)?'none':''; const mf=document.getElementById('mgrFilterBar'); if(mf)mf.style.display=pricePage?'none':''; }
 function runAct(){ const a=state.act,enteringAct=state._lastAct!==a; if(!a) return;
+  if(enteringAct){ try{ if(typeof fcOrderUnlockV802==='function')fcOrderUnlockV802(); }catch(_e){} }
   try{ if(typeof fcApplyYearContext==='function')fcApplyYearContext(a); }catch(_e){} const _mkPage=(a==='market-con'||a==='market-fd'||a==='market-steel'||a==='minv'||a==='rawinv'); if(!_mkPage&&!CUR.length) return; state._inDrill=false; state._syncDeferred=false; try{chromeFor(a);}catch(_){}
   if(state._lastAct!==a){ try{foldFilters();}catch(_){} }
   if(!state._backing){ if(state._lastAct && state._lastAct!==a){ state.navHist=state.navHist||[]; if(state.navHist[state.navHist.length-1]!==state._lastAct)state.navHist.push(state._lastAct); if(state.navHist.length>60)state.navHist.shift(); } } state._lastAct=a; state._backing=false;
@@ -11838,10 +11839,45 @@ function v796SetMonthPct(store,key,m,val){ try{ store[key]=store[key]||{}; var n
   if(val===''||!isFinite(n)||n===0)delete store[key][m]; else store[key][m]=n;
   if(!Object.keys(store[key]).length)delete store[key]; }catch(_e){} }
 window.v796Editing=v796Editing; window.v796SaveSoon=v796SaveSoon;
+/* v801 : 예전에는 «입력칸에 커서가 있으면» 무조건 다시 그리기를 미뤘습니다. 그래서 한 칸에 숫자를 넣고
+   Enter 없이 다음 칸으로 넘어가면, 값은 저장돼도 목표금액·합계가 다시 계산되지 않아 «적용이 안 된 것»처럼
+   보였습니다. 이제는 «글자를 치는 중»(마지막 타자 0.45초 이내)일 때만 미루고, 칸을 벗어나거나 Enter 를
+   누르면 곧바로 반영합니다. 다시 그린 뒤 커서는 지금 있는 칸에 그대로 돌려놓습니다. */
+var _v801TypeAt=0;
+try{ document.addEventListener('input',function(e){ try{ if(e.target&&e.target.matches&&e.target.matches(V796_EDIT_SEL))_v801TypeAt=Date.now(); }catch(_e){} },true); }catch(_e){}
+function v801Typing(){ return v796Editing()&&(Date.now()-_v801TypeAt<450); }
+/* v802 : % 칸을 만지면 «행 순서 고정»을 켜고, 정렬·필터·보기 전환·다른 메뉴로 가면 풉니다. */
+function fcOrderLockV802(){ try{ state.fc._orderLock=state.fc._orderLock||{on:false,map:null};
+  if(!state.fc._orderLock.map)return;            /* 아직 한 번도 그려지지 않았으면 다음 렌더에서 저장 */
+  state.fc._orderLock.on=true; }catch(_e){} }
+function fcOrderUnlockV802(){ try{ state.fc._orderLock={on:false,map:null}; }catch(_e){} }
+window.fcOrderLockV802=fcOrderLockV802; window.fcOrderUnlockV802=fcOrderUnlockV802;
+try{ document.addEventListener('focusin',function(e){
+  try{ if(!e.target||!e.target.matches)return;
+    if(e.target.matches(V796_EDIT_SEL))fcOrderLockV802(); }catch(_e){} },true); }catch(_e){}
+window.v801Typing=v801Typing;
+var FC_EDIT_CLS2=['fcov','fcadd','fcpov','fcpadd','fcmemo','fcpmemo','fc-cust-month-pct','fc-prod-month-pct','fccpov','fc-month-adjust','fc-inline-pct'];
+function _v801Esc(v){ return String(v).replace(/\\/g,'\\\\').replace(/"/g,'\\"'); }
+function v801FocusInfo(){
+  try{ var a=document.activeElement; if(!a||!a.classList)return null;
+    var cl=FC_EDIT_CLS2.find(function(x){ return a.classList.contains(x); }); if(!cl)return null;
+    var sel='#result .'+cl;
+    ['data-c','data-pk','data-m','data-month'].forEach(function(k){ var v=a.getAttribute(k); if(v!=null)sel+='['+k+'="'+_v801Esc(v)+'"]'; });
+    return {sel:sel,pos:(a.selectionStart!=null?a.selectionStart:null),end:(a.selectionEnd!=null?a.selectionEnd:null)};
+  }catch(_e){ return null; }
+}
+function v801FocusRestore(info){
+  if(!info)return;
+  try{ var ne=document.querySelector(info.sel); if(!ne)return;
+    if(document.activeElement!==ne)ne.focus({preventScroll:true});
+    try{ if(info.pos!=null)ne.setSelectionRange(info.pos,info.end!=null?info.end:info.pos); }catch(_){}
+  }catch(_e){}
+}
 const FC_EDIT_CLS=['fcov','fcadd','fcpov','fcpadd','fcmemo','fcpmemo','fc-cust-month-pct','fc-prod-month-pct'];
 function fcRerenderKeepFocus(){
-  /* v796 : 입력칸에 커서가 남아 있으면 다시 그리지 않고 잠시 뒤에 다시 확인합니다. */
-  if(v796Editing()){ clearTimeout(_fcReT); _fcReT=setTimeout(fcRerenderKeepFocus,350); return; }
+  /* v801 : «글자를 치는 중»에만 미룹니다. 칸을 벗어나면 바로 반영합니다. */
+  if(v801Typing()){ clearTimeout(_fcReT); _fcReT=setTimeout(fcRerenderKeepFocus,250); return; }
+  const _v801Info=v801FocusInfo();
   let info=null;
   try{ const a=document.activeElement;
     if(a&&a.classList){ const cl=FC_EDIT_CLS.find(x=>a.classList.contains(x));
@@ -11895,13 +11931,18 @@ function fcRerenderKeepFocus(){
       }
     }catch(_e){}
   }
+  /* v801 : 월 조정%·제품 월 조정%·인라인 % 등 모든 입력칸에 대해 커서를 지금 자리로 되돌립니다. */
+  try{ v801FocusRestore(_v801Info);
+    requestAnimationFrame(function(){ v801FocusRestore(_v801Info); });
+    [80,220,400].forEach(function(ms){ setTimeout(function(){ v801FocusRestore(_v801Info); },ms); });
+  }catch(_e){}
 }
 function _setH797(td,h){ try{ if(td&&td.innerHTML!==h)td.innerHTML=h; }catch(_e){} }
 /* v797 : 입력칸에서 손을 뗄 때까지 «무거운 다시 그리기»를 미뤄 두는 공통 장치.
    한 칸을 고치고 바로 다음 칸을 눌러도 표가 새로 만들어지지 않아 글자가 그대로 들어갑니다. */
 var _v797T=null,_v797Fn=null;
 function v797Defer(fn,ms){ _v797Fn=fn; clearTimeout(_v797T);
-  var go=function(){ if(v796Editing()){ _v797T=setTimeout(go,350); return; } var f=_v797Fn; _v797Fn=null; if(f){ try{ f(); }catch(_e){} } };
+  var go=function(){ if(v801Typing()){ _v797T=setTimeout(go,250); return; } var f=_v797Fn; _v797Fn=null; if(f){ try{ f(); }catch(_e){} } };
   _v797T=setTimeout(go,ms||140); }
 window.v797Defer=v797Defer;
 window._setH797=_setH797;
@@ -12302,9 +12343,31 @@ function forecast(){ state._inDrill=false;
   const projC=c=>{let s=0;for(let m=m1;m<=m2;m++)s+= m<=lastAct?(cyMonCust[m].get(c)||0):(fcCustMon[m].get(c)||0);return s+fcNewTargetAmount(c);};
   const custKeys=new Set(); for(let m=m1;m<=m2;m++){ pyMonCust[m].forEach((_,c)=>custKeys.add(c)); cyMonCust[m].forEach((_,c)=>custKeys.add(c)); if(m>lastAct)fcCustMon[m].forEach((_,c)=>custKeys.add(c)); }
   const fcArrow=k=>state.fc.sortKey===k?(state.fc.sortDir===-1?' ▼':' ▲'):'';
-  const applyFcSort=(arr)=>{ if(!arr.length){return;} const sk=state.fc.sortKey, dir=state.fc.sortDir||-1; if(!sk||!(sk in arr[0])){ arr.sort((a,b)=>b.proj-a.proj); return; }
+  /* v802 : «입력 중에는 행 순서를 바꾸지 않습니다».
+     예전에는 한 칸에 % 를 넣으면 그 거래처의 목표금액이 바뀌면서 표가 곧바로 매출순으로 다시 정렬되어
+     방금 고친 행이 저 아래로 내려가 버렸습니다(예: 15위 → 42위). 그래서 그 자리에는 다른 거래처의 칸이
+     올라오고, 사용자는 «입력이 안 된 것»처럼 보였습니다. 이제는 % 칸을 한 번이라도 만지면 그 화면에
+     있는 동안 순서를 그대로 두고, 정렬 머리글·필터·보기 전환·다른 메뉴로 가면 다시 정렬합니다. */
+  const _lockKey=(o)=>o&&(o.c!=null?('c\u0000'+o.c):(o.pk!=null?('p\u0000'+o.pk):null));
+  const applyFcSort=(arr)=>{ if(!arr.length){return;}
+    const lock=state.fc._orderLock;
+    if(lock&&lock.on&&lock.map){
+      const mp=lock.map, big=1e9;
+      let unknown=0; arr.forEach(o=>{ const k=_lockKey(o); if(k==null||mp[k]==null)unknown++; });
+      if(unknown<arr.length){
+        arr.sort((a,b)=>{ const ka=_lockKey(a),kb=_lockKey(b);
+          const ia=(ka!=null&&mp[ka]!=null)?mp[ka]:big, ib=(kb!=null&&mp[kb]!=null)?mp[kb]:big;
+          if(ia!==ib)return ia-ib; return (b.proj||0)-(a.proj||0); });
+        return;
+      }
+    }
+    const sk=state.fc.sortKey, dir=state.fc.sortDir||-1;
+    if(!sk||!(sk in arr[0])){ arr.sort((a,b)=>b.proj-a.proj); _lockSave(arr); return; }
     const str=['c','code','name','spec','sales','tech'].includes(sk);
-    arr.sort((a,b)=>{ if(str){ const r=(a[sk]||'').localeCompare(b[sk]||'','ko'); return dir===-1?-r:r; } const va=a[sk]==null?-Infinity:a[sk], vb=b[sk]==null?-Infinity:b[sk]; return dir===-1?vb-va:va-vb; }); };
+    arr.sort((a,b)=>{ if(str){ const r=(a[sk]||'').localeCompare(b[sk]||'','ko'); return dir===-1?-r:r; } const va=a[sk]==null?-Infinity:a[sk], vb=b[sk]==null?-Infinity:b[sk]; return dir===-1?vb-va:va-vb; });
+    _lockSave(arr); };
+  const _lockSave=(arr)=>{ try{ const L=(state.fc._orderLock=state.fc._orderLock||{on:false,map:null});
+    if(L.on)return; const mp=L.map||(L.map={}); arr.forEach((o,i)=>{ const k=_lockKey(o); if(k!=null)mp[k]=i; }); }catch(_e){} };
   let custArr=[...custKeys].map(c=>{ const prev=sumC(pyMonCust,c); const proj=projC(c); let ytd=0; for(let _m=m1;_m<=Math.min(m2,lastAct);_m++) ytd+=(cyMonCust[_m].get(c)||0); const diff=proj-prev; const pct=prev?diff/prev*100:(proj>0?null:0); const ov=state.fc.override[c]; const ad=state.fc.addPct[c]; /* v621 : 조정%·추가%가 만든 증감(추가증감액). 기준은 '월별 목표%만 적용한 기본 목표'입니다. */ let _basePlan=0; for(let _b=Math.max(m1,lastAct+1);_b<=m2;_b++){ const _py=pyMonCust[_b].get(c)||0; const _pc=(state.fc.pct[_b]!=null&&state.fc.pct[_b]!=='')?+state.fc.pct[_b]:0; _basePlan+=_py*(1+_pc/100); } const _projFuture=proj-ytd-fcNewTargetAmount(c); const adj=Math.round(_projFuture-_basePlan); return {c,prev,proj,diff,pct,ytd,adj,_bp:_basePlan,sales:mgrS(c),tech:mgrT(c),ov:(ov==null?'':ov),ad:(ad==null?'':ad)}; }).filter(o=>o.prev>0||o.proj>0||o.ytd>0);
   custArr=custArr.filter(o=>(clsFilter==='전체'||(catsOf(o.c)||[]).includes(clsFilter))&&(statusFilter==='전체'||catOf(o.c)===statusFilter));
   custArr.forEach(o=>{ o.excl=fcDisplayExSet.has(o.c); o.targetOnly=fcTargetOnlyKeys.has(fcCustKey(o.c)); o.targetExcl=fcExSet.has(o.c); if(o.targetExcl){ o.proj=0; o.diff=-o.prev; o.pct=o.prev?-100:0; o.ov=''; o.ad=''; } });
@@ -12468,7 +12531,7 @@ function forecast(){ state._inDrill=false;
         annualWrap.parentNode.insertBefore(monBox,annualWrap);
         if(monOn)annualWrap.style.display='none';
         /* v776 : 켤 때 그 시점에 표를 만들도록 다시 그립니다(꺼져 있을 때 미리 만들지 않아 훨씬 빠릅니다). */
-        mb.addEventListener('click',()=>{ state.fc._custMonView=!state.fc._custMonView; if(typeof saveSettings==='function')saveSettings(); fcFastForecast(); });
+        mb.addEventListener('click',()=>{ fcOrderUnlockV802(); state.fc._custMonView=!state.fc._custMonView; if(typeof saveSettings==='function')saveSettings(); fcFastForecast(); });
         monBox.querySelectorAll('.fc-cust-month-pct').forEach(inp=>{ const syncPctColor=()=>inp.classList.toggle('fc-cust-month-pct-neg',parseFloat(inp.value)<0); syncPctColor();
           inp.addEventListener('input',()=>{ syncPctColor(); const v=inp.value.trim(); if(v!==''&&!isFinite(parseFloat(v)))return; v796SetMonthPct(monthPct,inp.dataset.c,+inp.dataset.m,v); v796SaveSoon(); });
           inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } });
@@ -12548,7 +12611,7 @@ function forecast(){ state._inDrill=false;
     /* v797 : 글자를 치는 동안에는 «전 행 재계산»(거래처 수 × 4칸 다시 쓰기)을 하지 않습니다.
        예전에는 220ms 마다 표 전체 숫자칸을 다시 써서 (거래처가 많으면 수천 칸) 화면이 흔들리고
        입력한 글자가 밀려 «한 번에 입력이 안 되는» 현상이 있었습니다. 입력칸에서 손을 뗀 뒤 한 번만 계산합니다. */
-    const _recalcWhenIdle=()=>{ if(v796Editing()){ clearTimeout(_recCT); _recCT=setTimeout(_recalcWhenIdle,350); return; } recalcCust(); };
+    const _recalcWhenIdle=()=>{ if(v801Typing()){ clearTimeout(_recCT); _recCT=setTimeout(_recalcWhenIdle,250); return; } recalcCust(); };
     const scheduleRecalcCust=()=>{ clearTimeout(_recCT); v796SaveSoon(); _recCT=setTimeout(_recalcWhenIdle,220); };
     const _csel=c=>$('#result').querySelector('tr.fcrow[data-c="'+(window.CSS&&CSS.escape?CSS.escape(c):c.replace(/"/g,'\\"'))+'"]');
     const fcTotCust=()=>{ const tr=$('#result .total-row'); if(!tr)return; const allProj=custArr.reduce((a,o)=>a+o.proj,0)+newProjSum+lineCustTotal+pdYearNet; if(tr.children[6])tr.children[6].innerHTML=disp(allProj); if(tr.children[7])tr.children[7].innerHTML=diffSpan(allProj-cTotPrev); if(tr.children[8])tr.children[8].innerHTML=fcAdjSpan(custArr.reduce((a,o)=>a+(+o.adj||0),0)); };
@@ -12594,8 +12657,8 @@ function forecast(){ state._inDrill=false;
     const ovR=$('#fcOvReset'); ovR&&ovR.addEventListener('click',async()=>{ if(!Object.keys(state.fc.override).length){ await uiConfirm('초기화할 조정%가 없습니다.'); return; } if(!await uiConfirm('모든 거래처의 <b>조정%</b>를 초기화할까요?'))return; state.fc.override={}; saveSettings(); forecast(); });
     const adR=$('#fcAddReset'); adR&&adR.addEventListener('click',async()=>{ if(!Object.keys(state.fc.addPct).length){ await uiConfirm('초기화할 추가%가 없습니다.'); return; } if(!await uiConfirm('모든 거래처의 <b>추가%</b>를 초기화할까요?'))return; state.fc.addPct={}; saveSettings(); forecast(); });
     $('#result').querySelectorAll('#fcPer button').forEach(b=>b.addEventListener('click',()=>{ state.fc.period=b.dataset.v; b.parentElement.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); fcFastForecast(); }));
-    $('#result').querySelectorAll('#fcDim button').forEach(b=>b.addEventListener('click',()=>{ state.fc.dim=b.dataset.v; state.fc.sortKey=null; b.parentElement.querySelectorAll('button').forEach(x=>{const on=x===b,col=x.dataset.v==='prod'?'#0d9488':'#1e3a5f';x.classList.toggle('on',on);x.style.background=on?col:'';x.style.color=on?'#fff':col;x.style.borderColor=on?col:'';}); fcFastForecast(); }));
-    $('#result').querySelectorAll('.fcsort').forEach(th=>{ th.style.cursor='pointer'; th.title='클릭하면 정렬'; th.addEventListener('click',()=>{ const k=th.dataset.sk; if(state.fc.sortKey===k) state.fc.sortDir=state.fc.sortDir===-1?1:-1; else { state.fc.sortKey=k; state.fc.sortDir=-1; } fcFastForecast(); }); });
+    $('#result').querySelectorAll('#fcDim button').forEach(b=>b.addEventListener('click',()=>{ fcOrderUnlockV802(); state.fc.dim=b.dataset.v; state.fc.sortKey=null; b.parentElement.querySelectorAll('button').forEach(x=>{const on=x===b,col=x.dataset.v==='prod'?'#0d9488':'#1e3a5f';x.classList.toggle('on',on);x.style.background=on?col:'';x.style.color=on?'#fff':col;x.style.borderColor=on?col:'';}); fcFastForecast(); }));
+    $('#result').querySelectorAll('.fcsort').forEach(th=>{ th.style.cursor='pointer'; th.title='클릭하면 정렬'; th.addEventListener('click',()=>{ fcOrderUnlockV802(); const k=th.dataset.sk; if(state.fc.sortKey===k) state.fc.sortDir=state.fc.sortDir===-1?1:-1; else { state.fc.sortKey=k; state.fc.sortDir=-1; } fcFastForecast(); }); });
     const fpy=$('#fcShowPY'); fpy&&fpy.addEventListener('change',e=>{ state.fc.showPY=e.target.checked; fcFastForecast(); });
     const f1=$('#fcM1'),f2=$('#fcM2'); f1&&f1.addEventListener('change',e=>{state.fc.m1=+e.target.value; if(state.fc.m1>(state.fc.m2||12))state.fc.m2=state.fc.m1; fcFastForecast();}); f2&&f2.addEventListener('change',e=>{state.fc.m2=+e.target.value; if(state.fc.m2<(state.fc.m1||1))state.fc.m1=state.fc.m2; fcFastForecast();});
     $('#result').querySelectorAll('.fcrow').forEach(tr=>tr.addEventListener('click',e=>{ if(typeof _fieldDrag!=='undefined'&&_fieldDrag){_fieldDrag=false;return;} if(e.target.closest('input,textarea,select,button,label'))return; if(window.getSelection&&String(window.getSelection()).trim().length>0)return; fcDrillCust(tr.dataset.c); }));
@@ -12707,7 +12770,7 @@ function fcDrillCust(c){ state._inDrill=true; const f=state._fc; if(!f)return; c
   }
   const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← 목록으로</button><span class="title">${esc(c)} ▸ 제품·규격별 목표</span><span class="meta">${fcRangeLabel()} · 전년 ${won(tp)} → 목표 ${won(tj)}${monOn?' · 월별 목표수량':''}</span>${monBtn}<span class="spacer"></span><button class="btn ghost" id="fcdCsv">엑셀 내보내기</button></div>
     ${bodyHtml}`;
-  renderCustom(html,()=>{ $('#backBtn').addEventListener('click',forecast); const mb=$('#fcCustMonBtn'); mb&&mb.addEventListener('click',()=>{ state.fc._custMonView=!state.fc._custMonView; fcDrillCust(c); }); $('#result').querySelectorAll('.fcds').forEach(th=>{th.style.cursor='pointer';th.addEventListener('click',()=>{const k=th.dataset.sk; if(ds.k===k)ds.d*=-1; else{ds.k=k;ds.d=(['code','name','spec'].includes(k)?1:-1);} fcDrillCust(c);});}); $('#result').querySelectorAll('.fccpov').forEach(inp=>{ inp.addEventListener('change',()=>{ state.fc.custProdOverride=state.fc.custProdOverride||{}; const pk=inp.dataset.pk, v=inp.value.trim(); const k=c+'│'+pk; if(v==='')delete state.fc.custProdOverride[k]; else state.fc.custProdOverride[k]=v; logEdit('제품목표',`${c} · ${pk} 목표 ${v===''?'해제':v+'%'}`); v796SaveSoon(); v797Defer(()=>fcDrillCust(c)); }); inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } }); inp.addEventListener('click',e=>e.stopPropagation()); });
+  renderCustom(html,()=>{ $('#backBtn').addEventListener('click',forecast); const mb=$('#fcCustMonBtn'); mb&&mb.addEventListener('click',()=>{ fcOrderUnlockV802(); state.fc._custMonView=!state.fc._custMonView; fcDrillCust(c); }); $('#result').querySelectorAll('.fcds').forEach(th=>{th.style.cursor='pointer';th.addEventListener('click',()=>{const k=th.dataset.sk; if(ds.k===k)ds.d*=-1; else{ds.k=k;ds.d=(['code','name','spec'].includes(k)?1:-1);} fcDrillCust(c);});}); $('#result').querySelectorAll('.fccpov').forEach(inp=>{ inp.addEventListener('change',()=>{ state.fc.custProdOverride=state.fc.custProdOverride||{}; const pk=inp.dataset.pk, v=inp.value.trim(); const k=c+'│'+pk; if(v==='')delete state.fc.custProdOverride[k]; else state.fc.custProdOverride[k]=v; logEdit('제품목표',`${c} · ${pk} 목표 ${v===''?'해제':v+'%'}`); v796SaveSoon(); v797Defer(()=>fcDrillCust(c)); }); inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } }); inp.addEventListener('click',e=>e.stopPropagation()); });
     const cc=$('#fcdCsv'); cc&&cc.addEventListener('click',()=>{ if(state.fc._custMonView){ const aoa=[['순위','품명','규격',...Array.from({length:12},(_,k)=>(k+1)+'월'),'합계']]; const keysAll=new Set(); for(let m=1;m<=12;m++){ const sm=(m<=f.lastAct?f.cyMonCustProd[m]:f.fcCustProdMon[m]).get(c); if(sm)sm.forEach((_,pk)=>keysAll.add(pk)); } let mArr=[...keysAll].map(pk=>{ const meta=f.prodMeta.get(pk)||{code:pk,name:'',spec:''}; const mq=[]; let tot=0; for(let m=1;m<=12;m++){ const sm=(m<=f.lastAct?f.cyMonCustProd[m]:f.fcCustProdMon[m]).get(c); const ce=sm&&sm.get(pk); const q=ce?ce.qty:0; mq[m]=q; tot+=q; } return {name:meta.name,spec:meta.spec,mq,tot}; }).filter(o=>o.tot!==0); if(fcIsTargetExcludedCust(c))mArr=[]; mArr.sort((a,b)=>b.tot-a.tot); mArr.forEach((o,i)=>aoa.push([i+1,o.name,o.spec,...Array.from({length:12},(_,k)=>Math.round(o.mq[k+1]||0)),Math.round(o.tot)])); dlXLSX('forecast_customer_monthly_qty.xlsx','월별목표수량',aoa); } else dlCSV('forecast_customer_products.csv',['순위','품번','품명','규격','전년','올해목표','증감액','증감%','전년수량','목표수량'],arr.map((o,i)=>[i+1,o.code,o.name,o.spec,Math.round(o.prev),Math.round(o.proj),Math.round(o.diff),o.pct==null?'신규':o.pct.toFixed(1),Math.round(o.pq),Math.round(o.cq)])); }); });
 }
 function fcDrillProd(pk){ state._inDrill=true; const f=state._fc; if(!f)return; const [m1,m2]=fcRange(); const meta=f.prodMeta.get(pk)||{code:pk,name:'',spec:''};
@@ -17932,7 +17995,7 @@ window.arCodeNormV607=arCodeNormV607; window.arBackfillCodesV607=arBackfillCodes
     renderCustom(html,()=>{
       bindTrendTopV760(_ttKeyC,()=>fcDrillCust(c));
       $('#backBtn').addEventListener('click',forecast);
-      const mb=$('#fcCustMonBtn');mb&&mb.addEventListener('click',()=>{state.fc._custMonView=!state.fc._custMonView;fcDrillCust(c);});
+      const mb=$('#fcCustMonBtn');mb&&mb.addEventListener('click',()=>{fcOrderUnlockV802(); state.fc._custMonView=!state.fc._custMonView;fcDrillCust(c);});
       const amountBtn=$('#fcCustMonAmount');amountBtn&&amountBtn.addEventListener('click',()=>{state.fc._custMonMetric='amount';fcDrillCust(c);});
       const qtyBtn=$('#fcCustMonQty');qtyBtn&&qtyBtn.addEventListener('click',()=>{state.fc._custMonMetric='qty';fcDrillCust(c);});
       $('#result').querySelectorAll('.fcds').forEach(th=>{th.style.cursor='pointer';th.addEventListener('click',()=>{const k=th.dataset.sk;if(ds.k===k)ds.d*=-1;else{ds.k=k;ds.d=(['code','name','spec'].includes(k)?1:-1);}fcDrillCust(c);});});
@@ -22354,7 +22417,31 @@ header .header-sync-btn.sync-ok .sync-time{color:#059669!important}
 .au-topbar-row .au-topbar{margin-left:0}
 /* v705 : 접었을 때 박스 높이를 버튼 높이만큼으로 줄입니다 */
 /* v744 : 구글 동기화 영역에 외곽 박스선을 표시합니다 */
-#gsSyncDet{padding:9px 12px!important;border:1px solid #cbd5e1!important;border-radius:10px!important;background:#fcfdff!important;margin:0 0 4px!important;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+/* v800 : 🚀 GitHub 업로드 · ☁️ 구글 동기화 — 두 줄의 «모양·높이»를 똑같이 맞추고,
+   GitHub 줄에도 구글 동기화와 같은 마우스 올림 모션과 「펼쳐보기」 배지를 답니다. */
+#gsSyncDet,#ghBoxV784{padding:9px 12px!important;border:1px solid #cbd5e1!important;border-radius:10px!important;background:#fcfdff!important;margin:0 0 6px!important;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+#ghBoxV784{margin:12px 0 6px!important}
+#gsSyncDet>summary,#ghBoxV784>summary{min-height:26px!important;height:26px!important;align-items:center!important;flex-wrap:nowrap!important;overflow:visible}
+/* 줄 안의 배지·버튼 높이를 똑같이 고정해 두 박스 높이가 1px 차이도 없게 맞춥니다 */
+#gsSyncDet>summary #gsSyncBtn,#gsSyncDet>summary #appVer,#gsSyncDet>summary .mk-bmore,#ghBoxV784>summary .mk-bmore{height:22px!important;min-height:22px!important;display:inline-flex!important;align-items:center!important;padding:0 10px!important;box-sizing:border-box!important}
+#gsSyncDet>summary>b,#ghBoxV784>summary>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ghBoxV784>summary{padding:0!important;line-height:1.15;gap:8px;list-style:none;cursor:pointer;display:flex;align-items:center;flex-wrap:wrap}
+#ghBoxV784>summary::-webkit-details-marker{display:none}
+#ghBoxV784>summary>b{line-height:1.15}
+#ghBoxV784>summary .mk-bmore{margin-left:auto;padding:3px 10px;line-height:1.15}
+/* 구글 동기화 줄의 배지·버튼을 26px 줄높이에 맞춰 GitHub 줄과 같은 높이가 되게 합니다 */
+#gsSyncDet>summary #gsSyncBtn,#gsSyncDet>summary #appVer{padding:3px 10px!important;line-height:1.15!important;font-size:10.5px!important}
+/* GitHub 줄 모션 — 구글 동기화(청록)와 구분되는 남색 계열 */
+#ghBoxV784:hover{border-color:#1e3a5f!important;box-shadow:0 8px 22px rgba(30,58,95,.18)}
+#ghBoxV784:not([open]):hover{transform:translateY(-2px)}
+#ghBoxV784>summary .mk-bmore{color:#1e3a5f;background:#eef2ff;border-color:#c7d2fe}
+#ghBoxV784>summary:hover .mk-bmore{background:#1e3a5f;color:#fff;border-color:#1e3a5f;transform:translateY(-1.5px) scale(1.05);box-shadow:0 4px 12px rgba(30,58,95,.28)}
+#ghBoxV784>summary:active .mk-bmore{transform:translateY(0) scale(.98)}
+#ghBoxV784[open]>summary .mk-bmore{font-size:0;color:#64748b;border-color:#cbd5e1;background:#fff}
+#ghBoxV784[open]>summary .mk-bmore::before{content:'접기 ▴';font-size:11px}
+#ghBoxV784[open]>summary:hover .mk-bmore{background:#1e3a5f!important;border-color:#1e3a5f!important;color:#fff!important}
+#ghBoxV784[open]>summary:hover .mk-bmore::before{color:#fff}
+#ghBoxV784[open]{border-color:#94a3b8!important}
 #gsSyncDet[open]{border-color:#94a3b8!important}
 #gsSyncDet>summary{padding:0!important;min-height:0;line-height:1.15;gap:8px}
 #gsSyncDet>summary:hover{background:none!important;box-shadow:none!important}
