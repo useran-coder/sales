@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v805</title>
-<script>window.APP_BUILD='v805';</script>
+<title>동방파스텍 매출 분석 도구 v806</title>
+<script>window.APP_BUILD='v806';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1915,7 +1915,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v805</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v806</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -28363,14 +28363,7 @@ function sgWaterfall(A){
     +'<div class="note" style="margin-top:8px">'+(gap>0
       ? '목표까지 <b style="color:#dc2626">'+sgShort(gap)+'원</b>이 비어 있습니다. '+(autoOn?'연간 목표표의 남은 목표 <b>'+sgShort(autoFuture)+'</b>에 영업전략 순 기대영향 <b>'+((pipelineExtra>=0?'+':'')+sgShort(pipelineExtra))+'</b>과 미수관리 자동 거래축소를 합산한 결과입니다.':'아래 <b>② 영업전략 추진현황</b>에 전략을 등록하면 즉시 반영됩니다.')
       : (autoOn?'연간 목표표 자동분류와 영업전략 추진현황 직접전략을 합산한 도달예상이 목표를 <b style="color:#15803d">'+sgShort(-gap)+'원</b> 초과합니다.':'등록된 전략만으로 목표를 <b style="color:#15803d">'+sgShort(-gap)+'원</b> 초과합니다. 확률 낮은 항목의 실현 가능성을 재점검하세요.'))+'</div>'
-    +(function(){ var B=A.creditCutBasis||null; var av=-Math.max(0,+A.creditCutImpact||0); if(!B)return '';
-        return '<div class="sub2" style="margin-top:5px;padding:6px 9px;border:1px solid #fde68a;border-radius:7px;background:#fffbeb">'
-          +'<b>💳 자동 거래축소 산출 근거</b> · 금액 <b>'+sgShort(av)+'원</b>'
-          +' · 대상 <b>'+B.n+'개사</b>(검토 '+B.all+'개사 중, 미수관리 미연동 '+B.skipped+'개사 제외)'
-          +' · 남은 <b>'+B.remain+'개월</b>(실적확정 '+B.cut+'월 기준)'
-          +' · 미수관리 자료 <b>'+B.arRows+'행</b>'
-          +(B.arRows?'':' <b style="color:#b91c1c">— 미수관리 자료가 없어 자동 거래축소가 0원입니다</b>')
-          +'<br><span style="color:#64748b">다른 기기와 이 줄의 숫자가 다르면 그 기기의 <b>미수관리 자료</b> 또는 <b>실적확정월</b>이 다른 것입니다. 두 값을 맞추면 부족액도 같아집니다.</span></div>'; })()
+    /* v806 : 「자동 거래축소 산출 근거」 안내줄은 요청에 따라 표시하지 않습니다. */
     +'<div class="sub2" style="margin-top:5px"><b>읽는 방법:</b> 신규업체·신규사업은 직전 누적금액 위로 증가하고, 💳 거래축소는 위에서 아래로 차감됩니다. 성장업체·거래처위험·기존제품·성장제품은 기존업체 매출에 포함된 참고 비중이라 계획합계에 다시 더하지 않습니다. <b>신규제품</b>은 v660부터 신규업체와 같이 <b>계획 합계에 별도로 더합니다</b>(기존업체 막대에서 그만큼 빼므로 합계는 같습니다).</div>';
   var selectedObj=steps.filter(function(o){return o.k===selected;})[0],selectedAmount=selectedObj?selectedObj.v:0;
   return head+s+sgWaterfallCompanyPanel(A,selected,planItems,useProb,basis,selectedAmount,autoOn)+sourceDetail+foot;
@@ -28663,17 +28656,21 @@ function sgPipeline(A){
       +'<th style="padding:6px 5px;text-align:center">확률</th><th style="padding:6px 5px;text-align:right">기대매출</th>'
       +'<th style="padding:6px 5px;text-align:center">시작</th><th style="padding:6px 5px;text-align:center">담당</th>'
       +'<th style="padding:6px 5px;text-align:center">반영</th><th style="padding:6px 5px"></th></tr></thead><tbody>';
-    /* v664 : 목표표 등록 신규업체 — 읽기 전용 행(금액 수정은 연간 목표표에서 합니다). */
+    /* v806 : 목표표 등록 신규업체 행도 «단계·확률»을 고칠 수 있고, 실제 매출이 생기면
+       «실제 업체명»으로 바꿀 수 있습니다. (단계·확률은 전략계획에 거래처별로 보관합니다) */
+    pl.tgtMeta=pl.tgtMeta||{};
     tgtShow.forEach(function(o){
+      var mk=String(o.name||''), meta=pl.tgtMeta[mk]||{}, st=meta.stage||'fix', pr=(meta.prob==null?100:+meta.prob);
+      var exp2=Math.round(o.amt*Math.max(0,Math.min(100,pr))/100);
       rowsHtml+='<tr style="border-bottom:1px solid #eef2f7;background:#f8fbff">'
-        +'<td style="padding:6px 5px"><span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:11px;background:#dbeafe;color:#1e40af;font-size:11px;font-weight:900">\ud83c\udfe2 신규업체</span></td>'
-        +'<td style="padding:6px 5px;font-weight:800">'+sgEsc(o.name)+'</td>'
-        +'<td style="padding:6px 5px;color:#94a3b8">-</td>'
-        +'<td style="padding:6px 5px;color:#1d4ed8;font-weight:700">목표표 등록(업체추가)</td>'
+        +'<td style="padding:6px 5px;text-align:left"><span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:11px;background:#dbeafe;color:#1e40af;font-size:11px;font-weight:900">\ud83c\udfe2 신규업체</span></td>'
+        +'<td style="padding:6px 5px;text-align:left"><input class="sgTgtName" list="sgCustDL" autocomplete="off" data-n="'+sgEsc(mk)+'" value="'+sgEsc(mk)+'" title="실제 매출이 생겨 업체명이 다르면 실제 거래처명을 골라 바꾸세요. 출고자료에 있는 업체면 «실제 매출처 연결»로, 없으면 이름만 바뀝니다." style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;font-weight:800;border-color:#bfdbfe;background:#fff;text-align:left"></td>'
+        +'<td style="padding:6px 5px;text-align:left;color:#94a3b8">-</td>'
+        +'<td style="padding:6px 5px;text-align:left;color:#1d4ed8;font-weight:700">목표표 등록(업체추가)</td>'
         +'<td style="padding:6px 5px;text-align:right;font-weight:900;color:#1d4ed8">'+sgWon(o.amt)+'</td>'
-        +'<td style="padding:6px 5px;text-align:center;color:#64748b">목표 확정</td>'
-        +'<td style="padding:6px 5px;text-align:center;color:#64748b">100%</td>'
-        +'<td style="padding:6px 5px;text-align:right;font-weight:800;color:#1d4ed8">'+sgWon(o.amt)+'</td>'
+        +'<td style="padding:6px 5px;text-align:center"><select class="sgTgtStage" data-n="'+sgEsc(mk)+'" style="'+SGI+'width:110px">'+sgStageOptions('newCust',st)+'</select></td>'
+        +'<td style="padding:6px 5px;text-align:center"><input class="sgTgtProb" data-n="'+sgEsc(mk)+'" value="'+pr+'" style="'+SGI+'width:54px;text-align:center"> %</td>'
+        +'<td style="padding:6px 5px;text-align:right;font-weight:800;color:#1d4ed8">'+sgWon(exp2)+'</td>'
         +'<td style="padding:6px 5px;text-align:center;color:#94a3b8">-</td>'
         +'<td style="padding:6px 5px;text-align:center;color:#94a3b8">-</td>'
         +'<td style="padding:6px 5px;text-align:center" title="\u2460 신규업체 막대에 이미 합산되어 있습니다">\u2705</td>'
@@ -28690,7 +28687,7 @@ function sgPipeline(A){
       var isCross=(filt!=='all'&&it.type!==filt);
       if(!it.off){ if(isCross){xTot+=signed;xExp+=e;xCnt++;} else {tot+=signed;exp+=e;} }
       rowsHtml+='<tr style="border-bottom:1px solid #eef2f7'+(it.off?';opacity:.45':'')+'">'
-        +'<td style="padding:5px;white-space:nowrap"><span style="display:inline-block;padding:2px 8px;border-radius:9px;font-size:11px;font-weight:800;background:'+T.c+'18;color:'+T.c+'">'+T.ic+' '+T.t+(T.sign===-1?' · 차감':'')+'</span>'
+        +'<td style="padding:5px;white-space:nowrap;text-align:left"><span style="display:inline-block;padding:2px 8px;border-radius:9px;font-size:11px;font-weight:800;background:'+T.c+'18;color:'+T.c+'">'+T.ic+' '+T.t+(T.sign===-1?' · 차감':'')+'</span>'
           +(isCross?'<span title="이 줄의 원래 구분은 '+T.t+'입니다. 대상 거래처·제품이 여기에 해당해 함께 표시했습니다. 금액은 원래 구분에서만 집계됩니다." style="display:inline-block;margin-left:3px;padding:2px 6px;border-radius:8px;font-size:10px;font-weight:800;background:#f1f5f9;color:#64748b;border:1px dashed #cbd5e1">🔗 교차</span>':'')
           +'</td>'
         +'<td style="padding:5px;text-align:left"><input class="sgE sgSuggestInput sg-pipeline-edit" data-suggest-kind="cust" autocomplete="off" data-id="'+it.id+'" data-f="cust" value="'+sgEsc(it.cust||'')+'" style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;border-color:#e2e8f0"></td>'
@@ -30568,6 +30565,39 @@ function sgBind(A){
     var commit=function(){if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();sgSave();};
     if(immediate)commit();else sgTextSaveTimer=setTimeout(commit,220);
   };
+  /* v806 : 목표표 등록 신규업체 행 — 단계·확률 수정, 실제 업체명 교체 */
+  $$('.sgTgtStage').forEach(function(el){ el.addEventListener('change',function(){
+    var n=el.dataset.n; pl.tgtMeta=pl.tgtMeta||{}; var m=pl.tgtMeta[n]||(pl.tgtMeta[n]={});
+    m.stage=el.value; m.prob=(SG_SMAP[el.value]||{p:100}).p;
+    sgSave(); sgRe(); }); });
+  $$('.sgTgtProb').forEach(function(el){ el.addEventListener('change',function(){
+    var n=el.dataset.n; pl.tgtMeta=pl.tgtMeta||{}; var m=pl.tgtMeta[n]||(pl.tgtMeta[n]={});
+    m.prob=Math.max(0,Math.min(100,sgNum(el.value)));
+    sgSave(); sgRe(); }); });
+  $$('.sgTgtName').forEach(function(el){ el.addEventListener('change',async function(){
+    var from=el.dataset.n, to=String(el.value||'').trim();
+    if(!to||to===from){ el.value=from; return; }
+    try{
+      var real=(typeof fcFindRealCustomer==='function')?fcFindRealCustomer(to):null;
+      if(real&&typeof fcReplaceNewCustomerTarget==='function'){
+        var ok=await fcReplaceNewCustomerTarget(from,real);
+        if(!ok){ el.value=from; return; }
+        if(typeof logEdit==='function')logEdit('영업전략',from+' → '+real+' 실제 매출처 연결');
+      }else{
+        /* 출고자료에 없는 이름이면 목표표의 신규업체 이름만 바꿉니다 */
+        var nc=state.fc.newCusts||{};
+        if(!Object.prototype.hasOwnProperty.call(nc,from)){ el.value=from; return; }
+        if(Object.prototype.hasOwnProperty.call(nc,to)){ if(typeof uiConfirm==='function')await uiConfirm('이미 같은 이름의 신규업체 목표가 있습니다.'); el.value=from; return; }
+        nc[to]=nc[from]; delete nc[from];
+        ['addPct','custMemo','exclCust','targetExclCust'].forEach(function(k){ try{ if(typeof fcMoveSettingKey==='function')fcMoveSettingKey(state.fc[k],from,to); }catch(_e){} });
+        (state.fc.newLines||[]).forEach(function(ln){ if(ln&&ln.cust===from)ln.cust=to; });
+        if(pl.tgtMeta&&pl.tgtMeta[from]){ pl.tgtMeta[to]=pl.tgtMeta[from]; delete pl.tgtMeta[from]; }
+        if(typeof logEdit==='function')logEdit('영업전략','신규업체 이름 변경 '+from+' → '+to);
+        if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
+        if(typeof saveSettings==='function')await saveSettings();
+      }
+    }catch(_e){}
+    sgSave(); sgRe(); }); });
   $$('.sgE').forEach(function(el){
     var textEdit=['cust','prod','note','owner','title'].indexOf(el.dataset.f)>=0;
     if(textEdit){
