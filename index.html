@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v802</title>
-<script>window.APP_BUILD='v802';</script>
+<title>동방파스텍 매출 분석 도구 v803</title>
+<script>window.APP_BUILD='v803';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1908,7 +1908,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v802</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v803</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -7965,6 +7965,10 @@ function homeTrendSVG(){
   let purchasePath=''; for(let i=0;i<N;i++){ if(purchaseSeries[i]>0)purchasePath+=(i>0&&purchaseSeries[i-1]>0?'L':'M')+x(i).toFixed(1)+' '+y(purchaseSeries[i]).toFixed(1)+' '; }
   // 목표 점선은 현재월 목표점에서 시작한다(이전월 실적점과 연결하지 않음).
   let tPath=''; for(let i=_tgtFrom2;i<N;i++){ if(tgt[i]!=null)tPath+=(tPath?'L':'M')+x(i).toFixed(1)+' '+y(tgt[i]).toFixed(1)+' '; }
+  /* v803 : 실적 마지막 달과 첫 목표 달 사이가 비어 선이 끊겨 보였습니다 → 점선으로 이어 줍니다. */
+  let _bridgeI=-1; for(let i=_tgtFrom2;i<N;i++){ if(tgt[i]!=null){ _bridgeI=i; break; } }
+  const bridgeLine=(lastIdx>=0&&_bridgeI>lastIdx&&ser[lastIdx]>0)
+    ? `<line x1="${x(lastIdx).toFixed(1)}" y1="${y(ser[lastIdx]).toFixed(1)}" x2="${x(_bridgeI).toFixed(1)}" y2="${y(tgt[_bridgeI]).toFixed(1)}" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4 4" stroke-linecap="round"/>` : '';
   let ylines=''; for(let i=1;i<N;i++){ if(buckets[i].slice(0,4)!==buckets[i-1].slice(0,4)){ const xx=((x(i-1)+x(i))/2); ylines+=`<line x1="${xx.toFixed(1)}" y1="${padT}" x2="${xx.toFixed(1)}" y2="${(padT+ih).toFixed(1)}" stroke="#f59e0b" stroke-width="1.3" stroke-dasharray="5 3"/><text x="${(xx+3).toFixed(1)}" y="${(padT-24).toFixed(1)}" font-size="12.5" fill="#b45309" font-weight="800">${buckets[i].slice(0,4)}년</text>`; } }
   const avgLine=avg>0?`<line x1="${padL}" y1="${y(avg).toFixed(1)}" x2="${W-padR}" y2="${y(avg).toFixed(1)}" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="2 3"/>`:'';
   const bepV=((typeof bepGetV791==='function')?bepGetV791():(+state.bep||0))/12; const bepY=Math.max(padT,Math.min(padT+ih,y(bepV))); const bepLine=(bepV>0&&max>0)?`<line x1="${padL}" y1="${bepY.toFixed(1)}" x2="${W-padR}" y2="${bepY.toFixed(1)}" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="3 3"/><rect x="${padL+2}" y="${(bepY-14).toFixed(1)}" width="92" height="15" rx="3" fill="#ffffff" fill-opacity="0.9" stroke="#fecaca"/><text x="${padL+7}" y="${(bepY-3).toFixed(1)}" font-size="10" fill="#dc2626" font-weight="800">BEP ${shortAmt(bepV)}</text>`:'';
@@ -7985,7 +7989,7 @@ function homeTrendSVG(){
   const _pWarn=(hasPurchase&&_basisWarn)?`<span style="color:#dc2626">⚠ 금액기준 불일치(매입분석: ${_pMeta.basis==='supply'?'공급가':'합계액'} / 매출: ${state.basis==='공급가'?'공급가':'합계액'})</span>`:'';
   const purchaseLegend=hasPurchase?`<span style="color:#7c3aed"><i style="display:inline-block;width:18px;border-top:3px solid #7c3aed;vertical-align:middle;margin-right:4px"></i>매입(동기화)</span>${_pNote}${_pWarn}`:'';
   const legend=`<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 15px;margin-top:3px;padding-top:6px;border-top:1px solid #eef2f7;font-size:11px;font-weight:800;line-height:1.35">${purchaseLegend}<span style="color:#475569"><i style="display:inline-block;width:18px;border-top:3px solid #1e3a5f;vertical-align:middle;margin-right:4px"></i>실적</span><span style="color:#b45309"><i style="display:inline-block;width:18px;border-top:3px dashed #f59e0b;vertical-align:middle;margin-right:4px"></i>목표(현재월~)</span><span style="color:#6366f1">■ 조업일수(일)</span><span style="color:#16a34a">▲ 최고 ${shortAmt(mx)}</span><span style="color:#b45309">▼ 최저 ${shortAmt(mn)}</span><span style="color:#64748b">● 평균 ${shortAmt(avg)}</span><span style="color:#7c3aed">◆ 남은월평균목표 ${shortAmt(remAvg)}</span></div>`;
-  return `<div style="display:flex;flex-direction:column;height:100%"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:346px;display:block"><line x1="${padL}" y1="${padT}" x2="${W-padR}" y2="${padT}" stroke="#eef2f7"/>${ylines}${avgLine}${bepLine}${nowLine}<path d="${tPath}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 4"/><path d="${aPath}" fill="none" stroke="#1e3a5f" stroke-width="2.4"/>${hasPurchase?`<path d="${purchasePath}" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`:''}${dots}${mm}${avgLab}${vlab}${xlab}${manLab}</svg>${legend}</div>`;
+  return `<div style="display:flex;flex-direction:column;height:100%"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:346px;display:block"><line x1="${padL}" y1="${padT}" x2="${W-padR}" y2="${padT}" stroke="#eef2f7"/>${ylines}${avgLine}${bepLine}${nowLine}${bridgeLine}<path d="${tPath}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 4"/><path d="${aPath}" fill="none" stroke="#1e3a5f" stroke-width="2.4"/>${hasPurchase?`<path d="${purchasePath}" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`:''}${dots}${mm}${avgLab}${vlab}${xlab}${manLab}</svg>${legend}</div>`;
 }
 function homeAnnualBar(actual,target,pct,CY){
   const W=170,H=300,base=235,top=35,zeroY=top+base,bw=62,bx=(W-bw)/2;
@@ -11790,7 +11794,67 @@ var _v796SaveT=null,_v797SaveFrom=0;
 /* v797 : saveSettings() 는 설정 전체를 IndexedDB 에 쓰고 동기화까지 걸어 무겁습니다(태블릿에서 0.5~1.5초).
    글자를 치는 동안 이것이 돌면 화면이 멈추고 입력이 씹힙니다. 입력칸에서 손을 뗀 뒤 저장하고,
    그래도 6초가 넘으면 안전하게 한 번 저장합니다. 창을 닫거나 탭을 가릴 때도 즉시 저장합니다. */
-function v797SaveNow(){ clearTimeout(_v796SaveT); _v796SaveT=null; _v797SaveFrom=0; try{ if(typeof saveSettings==='function')saveSettings(); }catch(_e){} }
+function v797SaveNow(){ clearTimeout(_v796SaveT); _v796SaveT=null; _v797SaveFrom=0; try{ if(typeof saveSettings==='function')saveSettings(); }catch(_e){} try{ fcSnapSaveV803(); }catch(_e){} }
+/* v803 : 목표 %(조정·추가·월 조정) 값이 바뀔 때마다 «자동 보관함»에 최근 20개를 남깁니다.
+   실수로 지워졌거나 동기화로 덮어써졌을 때 「🕘 % 되돌리기」로 그 시점 값으로 되돌릴 수 있습니다. */
+var FC_SNAP_KEY_V803='fcPctSnapsV803';
+var FC_SNAP_FIELDS_V803=[['custMonthPct','업체 월 조정%'],['prodMonthPct','제품 월 조정%'],['override','업체 조정%'],['addPct','업체 추가%'],['prodOverride','제품 조정%'],['prodAddPct','제품 추가%'],['pct','월별 목표%'],['custProdOverride','업체·제품 목표%']];
+function fcSnapNowV803(){ var o={}; FC_SNAP_FIELDS_V803.forEach(function(f){ try{ o[f[0]]=JSON.parse(JSON.stringify(state.fc[f[0]]||{})); }catch(_e){ o[f[0]]={}; } }); return o; }
+function fcSnapCountV803(o){ var n=0; FC_SNAP_FIELDS_V803.forEach(function(f){ var v=o[f[0]]; if(!v)return;
+  Object.keys(v).forEach(function(k){ var x=v[k]; if(x&&typeof x==='object')n+=Object.keys(x).length; else if(x!==''&&x!=null)n++; }); }); return n; }
+var _fcSnapBusy=false;
+async function fcSnapSaveV803(){
+  if(_fcSnapBusy)return; _fcSnapBusy=true;
+  try{
+    var cur=fcSnapNowV803(), sig=JSON.stringify(cur);
+    var list=(await idbGet(FC_SNAP_KEY_V803))||[];
+    if(list.length&&list[list.length-1].sig===sig){ _fcSnapBusy=false; return; }
+    var _y=0; try{ _y=(typeof fcTargetYear==='function')?fcTargetYear():0; }catch(_e2){}
+    list.push({t:Date.now(),y:_y,sig:sig,n:fcSnapCountV803(cur),d:cur});
+    while(list.length>20)list.shift();
+    await idbSet(FC_SNAP_KEY_V803,list);
+  }catch(_e){}
+  _fcSnapBusy=false;
+}
+async function fcSnapListV803(){ try{ return (await idbGet(FC_SNAP_KEY_V803))||[]; }catch(_e){ return []; } }
+try{ setTimeout(function(){ try{ fcSnapSaveV803(); }catch(_e){} },6000); }catch(_e){}
+async function fcSnapRestoreV803(idx){
+  var list=await fcSnapListV803(); var it=list[idx]; if(!it)return false;
+  FC_SNAP_FIELDS_V803.forEach(function(f){ if(it.d&&it.d[f[0]])state.fc[f[0]]=JSON.parse(JSON.stringify(it.d[f[0]])); });
+  try{ if(typeof logEdit==='function')logEdit('매출 목표','% 값 되돌리기 · '+new Date(it.t).toLocaleString('ko-KR')+' 시점('+it.n+'건)'); }catch(_e){}
+  try{ await saveSettings(); }catch(_e){}
+  try{ fcOrderUnlockV802(); }catch(_e){}
+  try{ forecast(); }catch(_e){}
+  return true;
+}
+async function fcSnapOpenV803(){
+  var list=await fcSnapListV803();
+  if(!list.length){ if(typeof uiConfirm==='function')uiConfirm('보관된 % 값 기록이 아직 없습니다. 지금부터 값을 고치면 자동으로 보관됩니다.'); return; }
+  var cur=fcSnapCountV803(fcSnapNowV803());
+  var rows=list.map(function(it,i){ return '<tr><td style="text-align:center;color:#94a3b8">'+(list.length-i)+'</td>'
+    +'<td>'+new Date(it.t).toLocaleString('ko-KR')+(it.y?' <span class="sub2">('+it.y+'년 목표)</span>':'')+'</td>'
+    +'<td style="text-align:right;font-weight:800;color:'+(it.n>cur?'#0d9488':'#334155')+'">'+it.n.toLocaleString()+'건</td>'
+    +'<td style="text-align:center"><button class="btn ghost fcsnap-go-v803" data-i="'+i+'" style="font-size:11.5px;padding:3px 10px">이 시점으로</button></td></tr>'; }).reverse().join('');
+  var html='<div style="padding:4px 2px"><div class="sub2" style="margin-bottom:8px">지금 값은 <b>'+cur.toLocaleString()+'건</b>입니다. 건수가 지금보다 많은 기록이 «지워지기 전» 값일 가능성이 큽니다.</div>'
+    +'<table class="tbl" style="width:100%;font-size:12px"><thead><tr><th>순번</th><th>저장 시각</th><th>값 개수</th><th>되돌리기</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  if(typeof uiModal==='function'){ uiModal('🕘 목표 % 값 되돌리기',html); }
+  else { var d=document.createElement('div'); d.id='fcSnapBoxV803';
+    d.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:99999;display:flex;align-items:center;justify-content:center';
+    d.innerHTML='<div style="background:#fff;border-radius:12px;padding:16px 18px;max-width:620px;width:92%;max-height:80vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.3)"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><b style="font-size:15px;color:#1e3a5f">🕘 목표 % 값 되돌리기</b><button class="btn ghost" id="fcSnapCloseV803" style="margin-left:auto;font-size:12px;padding:3px 10px">닫기</button></div>'+html+'</div>';
+    document.body.appendChild(d);
+    d.addEventListener('click',function(e){ if(e.target===d)d.remove(); });
+    var c=d.querySelector('#fcSnapCloseV803'); if(c)c.addEventListener('click',function(){ d.remove(); });
+  }
+  setTimeout(function(){ document.querySelectorAll('.fcsnap-go-v803').forEach(function(b){ b.addEventListener('click',async function(){
+    var i=+b.dataset.i, it=list[i];
+    var ok=(typeof uiConfirm==='function')?await uiConfirm(new Date(it.t).toLocaleString('ko-KR')+' 시점의 % 값('+it.n+'건)으로 되돌릴까요? 지금 값은 자동 보관함에 남습니다.'):confirm('되돌릴까요?');
+    if(!ok)return;
+    await fcSnapSaveV803();
+    await fcSnapRestoreV803(i);
+    var bx=document.getElementById('fcSnapBoxV803'); if(bx)bx.remove();
+  }); }); },60);
+}
+window.fcSnapOpenV803=fcSnapOpenV803; window.fcSnapSaveV803=fcSnapSaveV803;
 function v796SaveSoon(){ clearTimeout(_v796SaveT); if(!_v797SaveFrom)_v797SaveFrom=Date.now();
   var go=function(){ if(v796Editing()&&Date.now()-_v797SaveFrom<6000){ _v796SaveT=setTimeout(go,400); return; } v797SaveNow(); };
   _v796SaveT=setTimeout(go,900); }
@@ -12469,7 +12533,7 @@ function forecast(){ state._inDrill=false;
       <div class="seg" id="fcDim"><button data-v="cust" class="${state.fc.dim==='cust'?'on':''}" style="${state.fc.dim==='cust'?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':'color:#1e3a5f'}">거래처</button><button data-v="prod" class="${state.fc.dim==='prod'?'on':''}" style="${state.fc.dim==='prod'?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488'}">제품(규격)</button></div>
       <b style="font-size:12px">기간(전년 대비)</b> ${perBtns} ${rangeSel} <span class="sub2">그래프·KPI는 연간 기준</span></div>
     ${state.fc.dim==='cust'?`
-    <h4 class="fch">📋 업체별 매출 목표 · ${rLab} <span class="fc-target-search fc-cust-unified-search"><input type="search" id="fcCustSearch" autocomplete="off" spellcheck="false" placeholder="거래처명 포함 검색" value="${esc(state.fc._csearch||'')}"><span class="fc-target-search-label">🏢 거래처</span><button type="button" id="fcCustSearchBtn" class="fc-target-search-btn" aria-label="거래처 검색" title="검색"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="M12.5 12.5L17 17"></path></svg></button></span> <span style="float:right"><button class="btn" id="fcAddCust" style="font-size:13px;padding:3px 10px">＋ 업체추가</button> <button class="btn ghost" id="fcIssueCust" style="font-size:13px;padding:3px 10px;${state.fc.issC?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.fc.issC?' (해제)':''}</button> <button class="btn ghost" id="fcExclRows" style="font-size:13px;padding:3px 8px;${state.fc.showExclRows?'background:#dc2626;color:#fff;border-color:#dc2626':''}">📋 ${state.fc.showExclRows?'일반 업체 보기':'제외 업체만 보기'}(${excludedCustCount()})${state.fc.showExclRows?' ✓':''}</button> <button class="btn ghost fcexcltoggle" style="font-size:13px;padding:3px 8px;${state.fc.showExcl?'background:#0d9488;color:#fff;border-color:#0d9488':''}">🚫 제외옵션(거래처 ${excludedCustCount()} · 목표 ${targetOnlyExcludedCustCount()})${state.fc.showExcl?' ✓':''}</button> <button class="btn ghost" id="fcOvReset" style="font-size:13px;padding:3px 8px">조정% 초기화</button> <button class="btn ghost" id="fcAddReset" style="font-size:13px;padding:3px 8px;color:var(--red);border-color:#f3c0c0">추가% 초기화</button> <button class="btn ghost" id="fcCustCsv" style="font-size:13px;padding:3px 8px">엑셀</button></span></h4>
+    <h4 class="fch">📋 업체별 매출 목표 · ${rLab} <span class="fc-target-search fc-cust-unified-search"><input type="search" id="fcCustSearch" autocomplete="off" spellcheck="false" placeholder="거래처명 포함 검색" value="${esc(state.fc._csearch||'')}"><span class="fc-target-search-label">🏢 거래처</span><button type="button" id="fcCustSearchBtn" class="fc-target-search-btn" aria-label="거래처 검색" title="검색"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="M12.5 12.5L17 17"></path></svg></button></span> <span style="float:right"><button class="btn" id="fcAddCust" style="font-size:13px;padding:3px 10px">＋ 업체추가</button> <button class="btn ghost" id="fcIssueCust" style="font-size:13px;padding:3px 10px;${state.fc.issC?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.fc.issC?' (해제)':''}</button> <button class="btn ghost" id="fcExclRows" style="font-size:13px;padding:3px 8px;${state.fc.showExclRows?'background:#dc2626;color:#fff;border-color:#dc2626':''}">📋 ${state.fc.showExclRows?'일반 업체 보기':'제외 업체만 보기'}(${excludedCustCount()})${state.fc.showExclRows?' ✓':''}</button> <button class="btn ghost fcexcltoggle" style="font-size:13px;padding:3px 8px;${state.fc.showExcl?'background:#0d9488;color:#fff;border-color:#0d9488':''}">🚫 제외옵션(거래처 ${excludedCustCount()} · 목표 ${targetOnlyExcludedCustCount()})${state.fc.showExcl?' ✓':''}</button> <button class="btn ghost" id="fcOvReset" style="font-size:13px;padding:3px 8px">조정% 초기화</button> <button class="btn ghost" id="fcAddReset" style="font-size:13px;padding:3px 8px;color:var(--red);border-color:#f3c0c0">추가% 초기화</button> <button class="btn ghost fcSnapBtnV803" style="font-size:13px;padding:3px 8px;color:#1d4ed8;border-color:#bfdbfe" title="최근 20개 시점의 목표 % 값 중에서 골라 되돌립니다">🕘 % 되돌리기</button> <button class="btn ghost" id="fcCustCsv" style="font-size:13px;padding:3px 8px">엑셀</button></span></h4>
     <div id="fcNewForm" style="display:none;margin:0 0 8px;padding:10px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px">
       <b style="font-size:12px">신규 거래처 목표 추가 — 제품·수량·단가 → 연목표</b>
       <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
@@ -12486,7 +12550,7 @@ function forecast(){ state._inDrill=false;
     </div><datalist id="fcNewCustRealDL">${fcRealCustDL}</datalist>
     <div class="note" style="margin:0 0 8px"><b>제외 옵션</b>: <b>거래처 제외</b>는 담당자 표에서 숨기고 목표액도 0원 처리합니다. <b>목표합산 제외</b>만 선택하면 거래처와 실적은 정상 표시하고 2026년 목표액만 합계·목표추이에서 제외합니다. <b>조정%</b>: 입력 시 그 거래처가 전년 동월 比 해당%로 고정되고 나머지는 월 목표총액에 맞춰 <b>재배분</b>(전체 합계 유지). 칸에 <i style="color:#b6c0cc">흐린 기울임</i>으로 보이는 숫자는 <b>아직 입력하지 않은 자동 계산값</b>이고, 직접 입력하면 <b style="background:#fff7e6;padding:0 3px;border-radius:3px">노란 칸</b>으로 바뀝니다. <b>Enter</b>를 누르면 바로 반영됩니다. <b>추가%</b>: 그 거래처 목표에 <b>추가로 가산</b>되어 전체 목표금액과 그래프·<b>월별 실적·목표</b>가 함께 늘어납니다(예: 추가 10% → 그만큼 합계 증가). <b>거래처 행 클릭</b> 시 품목군→품번·품명·규격으로 이어집니다.</div>${fcExclOptionSummary}
     <div class="tablewrap ${state.fc.showExcl?'fcshowexcl':''} ${state.fc.issC?'fcissue-c':''}" style="max-height:1120px"><table class="fc-cust-annual-table"><colgroup><col style="width:44px"><col style="width:150px"><col style="width:84px"><col style="width:84px"><col style="width:92px"><col style="width:92px"><col style="width:92px"><col style="width:92px"><col style="width:96px"><col style="width:72px"><col style="width:62px"><col style="width:62px"><col></colgroup><thead><tr><th>순위</th><th class="l fcsort" data-sk="c">거래처${fcArrow('c')}</th><th class="mgr fcsort" data-sk="sales">고객관리${fcArrow('sales')}</th><th class="mgr fcsort" data-sk="tech">기술개발${fcArrow('tech')}</th><th class="fcsort" data-sk="ytd">실적(1~${lastAct}월)${fcArrow('ytd')}<div style="font-size:8px;color:#0d9488;font-weight:700">제외업체 포함</div></th><th class="fcsort" data-sk="prev">전년(${PY})${fcArrow('prev')}</th><th class="fcsort" data-sk="proj">올해목표${fcArrow('proj')}</th><th class="fcsort" data-sk="diff">증감액${fcArrow('diff')}</th><th class="fcsort" data-sk="adj" title="조정%·추가%로 늘거나 줄어든 금액입니다. 기준은 월별 목표%만 적용한 기본 목표이며, 다른 업체의 조정%로 인한 재배분 효과도 함께 반영됩니다.">추가증감액${fcArrow('adj')}</th><th class="fcsort" data-sk="pct">증감%${fcArrow('pct')}</th><th title="해당 월 목표 내에서 재분배(전체 합계 유지)">조정%</th><th title="전체 금액에 추가로 가산(합계·그래프 증가)">추가%</th><th class="l">메모(조정·추가% 이슈)</th></tr></thead><tbody>${custRows}<tr class="total-row"><td></td><td class="l">합 계</td><td></td><td></td><td>${disp(cTotYtdAll)}</td><td>${disp(cTotPrevAll)}</td><td>${disp(cTotProjAll)}</td><td>${diffSpan(cTotProjAll-cTotPrevAll)}</td><td>${fcAdjSpan(custArr.reduce((a,o)=>a+(+o.adj||0),0))}</td><td></td><td></td><td></td><td></td></tr></tbody></table></div>`:`
-    <h4 class="fch">📦 제품(규격)별 매출 목표 · ${rLab} <span class="fc-target-search fc-prod-unified-search"><input type="search" id="fcProdSearch" autocomplete="off" spellcheck="false" placeholder="${state.fc._prodSearchMode==='customer'?'업체명 포함 검색':'품번·품명·규격 포함 검색'}" value="${esc(state.fc._prodSearchMode==='customer'?(state.fc._prodCustSearch||''):(state.fc._psearch||''))}"><select id="fcProdSearchMode" aria-label="검색 기준"><option value="customer" ${state.fc._prodSearchMode==='customer'?'selected':''}>🏢 업체</option><option value="product" ${state.fc._prodSearchMode==='customer'?'':'selected'}>📦 제품</option></select><button type="button" id="fcProdSearchBtn" class="fc-target-search-btn" aria-label="제품 목표 검색" title="검색"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="M12.5 12.5L17 17"></path></svg></button></span> <span style="float:right"><button class="btn" id="fcAddProd" style="font-size:13px;padding:3px 10px">＋ 제품추가</button> <button class="btn ghost" id="fcIssueProd" style="font-size:13px;padding:3px 10px;${state.fc.issP?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.fc.issP?' (해제)':''}</button> <button class="btn ghost fcexcltoggle" style="font-size:13px;padding:3px 8px;${state.fc.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.fc.showExcl?'숨기기':'보이기'}</button> <button class="btn ghost" id="fcProdOvReset" style="font-size:13px;padding:3px 8px">조정% 초기화</button> <button class="btn ghost" id="fcProdAddReset" style="font-size:13px;padding:3px 8px;color:var(--red);border-color:#f3c0c0">추가% 초기화</button> <button class="btn ghost" id="fcProdCsv" style="font-size:13px;padding:3px 8px">엑셀</button></span></h4>
+    <h4 class="fch">📦 제품(규격)별 매출 목표 · ${rLab} <span class="fc-target-search fc-prod-unified-search"><input type="search" id="fcProdSearch" autocomplete="off" spellcheck="false" placeholder="${state.fc._prodSearchMode==='customer'?'업체명 포함 검색':'품번·품명·규격 포함 검색'}" value="${esc(state.fc._prodSearchMode==='customer'?(state.fc._prodCustSearch||''):(state.fc._psearch||''))}"><select id="fcProdSearchMode" aria-label="검색 기준"><option value="customer" ${state.fc._prodSearchMode==='customer'?'selected':''}>🏢 업체</option><option value="product" ${state.fc._prodSearchMode==='customer'?'':'selected'}>📦 제품</option></select><button type="button" id="fcProdSearchBtn" class="fc-target-search-btn" aria-label="제품 목표 검색" title="검색"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="M12.5 12.5L17 17"></path></svg></button></span> <span style="float:right"><button class="btn" id="fcAddProd" style="font-size:13px;padding:3px 10px">＋ 제품추가</button> <button class="btn ghost" id="fcIssueProd" style="font-size:13px;padding:3px 10px;${state.fc.issP?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.fc.issP?' (해제)':''}</button> <button class="btn ghost fcexcltoggle" style="font-size:13px;padding:3px 8px;${state.fc.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.fc.showExcl?'숨기기':'보이기'}</button> <button class="btn ghost" id="fcProdOvReset" style="font-size:13px;padding:3px 8px">조정% 초기화</button> <button class="btn ghost" id="fcProdAddReset" style="font-size:13px;padding:3px 8px;color:var(--red);border-color:#f3c0c0">추가% 초기화</button> <button class="btn ghost fcSnapBtnV803" style="font-size:13px;padding:3px 8px;color:#1d4ed8;border-color:#bfdbfe" title="최근 20개 시점의 목표 % 값 중에서 골라 되돌립니다">🕘 % 되돌리기</button> <button class="btn ghost" id="fcProdCsv" style="font-size:13px;padding:3px 8px">엑셀</button></span></h4>
     <div id="fcNewProdForm" style="display:none;margin:0 0 8px;padding:10px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px">
       <b style="font-size:12px">제품 목표 추가 — 기존/신규 제품 → 업체·수량·단가</b>
       <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
@@ -12658,6 +12722,7 @@ function forecast(){ state._inDrill=false;
     const adR=$('#fcAddReset'); adR&&adR.addEventListener('click',async()=>{ if(!Object.keys(state.fc.addPct).length){ await uiConfirm('초기화할 추가%가 없습니다.'); return; } if(!await uiConfirm('모든 거래처의 <b>추가%</b>를 초기화할까요?'))return; state.fc.addPct={}; saveSettings(); forecast(); });
     $('#result').querySelectorAll('#fcPer button').forEach(b=>b.addEventListener('click',()=>{ state.fc.period=b.dataset.v; b.parentElement.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); fcFastForecast(); }));
     $('#result').querySelectorAll('#fcDim button').forEach(b=>b.addEventListener('click',()=>{ fcOrderUnlockV802(); state.fc.dim=b.dataset.v; state.fc.sortKey=null; b.parentElement.querySelectorAll('button').forEach(x=>{const on=x===b,col=x.dataset.v==='prod'?'#0d9488':'#1e3a5f';x.classList.toggle('on',on);x.style.background=on?col:'';x.style.color=on?'#fff':col;x.style.borderColor=on?col:'';}); fcFastForecast(); }));
+    $('#result').querySelectorAll('.fcSnapBtnV803').forEach(b=>b.addEventListener('click',()=>fcSnapOpenV803()));
     $('#result').querySelectorAll('.fcsort').forEach(th=>{ th.style.cursor='pointer'; th.title='클릭하면 정렬'; th.addEventListener('click',()=>{ fcOrderUnlockV802(); const k=th.dataset.sk; if(state.fc.sortKey===k) state.fc.sortDir=state.fc.sortDir===-1?1:-1; else { state.fc.sortKey=k; state.fc.sortDir=-1; } fcFastForecast(); }); });
     const fpy=$('#fcShowPY'); fpy&&fpy.addEventListener('change',e=>{ state.fc.showPY=e.target.checked; fcFastForecast(); });
     const f1=$('#fcM1'),f2=$('#fcM2'); f1&&f1.addEventListener('change',e=>{state.fc.m1=+e.target.value; if(state.fc.m1>(state.fc.m2||12))state.fc.m2=state.fc.m1; fcFastForecast();}); f2&&f2.addEventListener('change',e=>{state.fc.m2=+e.target.value; if(state.fc.m2<(state.fc.m1||1))state.fc.m1=state.fc.m2; fcFastForecast();});
@@ -12954,7 +13019,7 @@ function gsFields(){ return [
   ['monthIssue',state,'monthIssue'],['monthIssueAt',state,'monthIssueAt'],
   ['syncLog',state,'syncLog'],['inv',state,'inv'],['pd',state,'pd'],['scrapVendors',state,'scrapVendors'],['scrapVendorOff',state,'scrapVendorOff'],
   ['retainMemo',state,'retainMemo'],['retainMemoAt',state,'retainMemoAt'],['retainExcl',state,'retainExcl'],['retainVisit',state,'retainVisit'],
-  ['custInfo',state,'custInfo'],['cross',state,'cross'],
+  ['custInfo',state,'custInfo'],['custAddr',state,'custAddr'],['cross',state,'cross'],['market',state,'market'],
   ['fcPctAt',state.fc,'pctAt'],['fcOverrideAt',state.fc,'overrideAt'],['fcAddPctAt',state.fc,'addPctAt'],
   ['weeklyNotes',state.weekly,'notes'],['weeklyIssues',state.weekly,'issues'],['weeklyNewCustomerNotes',state.weekly,'newCustomerNotes'],['weeklyCommonPlans',state.weekly,'commonPlans'],['cmgrExcl',state,'cmgrExcl'],['kvcExclProd',state,'kvcExclProd']
 ]; }
