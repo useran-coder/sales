@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v810</title>
-<script>window.APP_BUILD='v810';</script>
+<title>동방파스텍 매출 분석 도구 v811</title>
+<script>window.APP_BUILD='v811';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1920,7 +1920,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v810</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v811</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -11668,8 +11668,19 @@ function annualPanelHTML(PY,CY,olhaeTarget,tgtArr){
   /* forecast가 이미 만든 월 집계를 재사용해 토글·재진입 때 원본 전체를 다시 돌지 않는다. */
   const _ab=fcBaseAgg(PY,CY),a25=_ab.pyMonTot.slice(); const sum25=a25.reduce((a,b)=>a+b,0);
   const sumT=tgtArr?tgtArr.reduce((a,b)=>a+(b||0),0):0; const f26=sumT>0?olhaeTarget/sumT:0; const m26=Array(13).fill(0); if(tgtArr)for(let m=1;m<=12;m++)m26[m]=(tgtArr[m]||0)*f26;
-  const monthsOf=y=>{ if(y>=2022&&y<=2024)return [null,...HIST[y]]; if(y===PY)return a25; if(y===CY)return m26; return null; };
-  const sumOf=y=>{ if(y>=2022&&y<=2024)return HIST[y].reduce((a,b)=>a+b,0); if(y===PY)return sum25; if(y===CY)return olhaeTarget; return +H[y]||0; };
+  /* v811 : 목표연도를 다음 해(2027)로 두면 전년(PY)이 2026이 되어 «2025년 행»이 비어 있었습니다.
+     원본 자료에 있는 «모든 연도»의 월별 실적을 한 번 모아 두고, 과년도 행도 실적으로 채웁니다. */
+  const _yrMonV811=(function(){
+    try{
+      if(window.__annYrMonV811&&window.__annYrMonV811.cur===CUR)return window.__annYrMonV811.d;
+      const d={};
+      for(const r of CUR){ const y=+r.y, m=monthOf(r); if(!y||!m)continue; (d[y]||(d[y]=Array(13).fill(0)))[m]+=amtOf(r); }
+      window.__annYrMonV811={cur:CUR,d:d}; return d;
+    }catch(_e){ return {}; }
+  })();
+  const _hasActV811=y=>{ const a=_yrMonV811[y]; return !!(a&&a.reduce((x,v)=>x+(v||0),0)>0); };
+  const monthsOf=y=>{ if(y===CY)return m26; if(y===PY)return a25; if(_hasActV811(y))return _yrMonV811[y]; if(y>=2022&&y<=2024)return [null,...HIST[y]]; return null; };
+  const sumOf=y=>{ if(y===CY)return olhaeTarget; if(y===PY)return sum25; if(_hasActV811(y))return _yrMonV811[y].reduce((a,b)=>a+(b||0),0); if(y>=2022&&y<=2024)return HIST[y].reduce((a,b)=>a+b,0); return +H[y]||0; };
   let body='';
   for(let y=2019;y<=CY;y++){
     const mo=monthsOf(y); const sum=sumOf(y); const prevSum=sumOf(y-1); const yoy=(y>2019&&sum>0&&prevSum>0)?((sum-prevSum)/sum*100):null; const avg=sum>0?sum/12:0;
@@ -11677,7 +11688,7 @@ function annualPanelHTML(PY,CY,olhaeTarget,tgtArr){
     let mcells=''; for(let m=1;m<=12;m++){ const v=mo?mo[m]:null; mcells+=`<td class="num" style="font-size:9.5px;color:${(v!=null&&v>0)?(y===CY?'#2563eb':'#334155'):'#e2e8f0'}">${(v!=null&&v>0)?won2(v):''}</td>`; }
     const sumCell=editSum
       ? `<input type="text" inputmode="numeric" class="annin" data-y="${y}" value="${(+H[y]||0)?(+H[y]).toLocaleString():''}" placeholder="합계" style="width:124px;text-align:right;font-size:10px;font-family:inherit">`
-      : `<b>${won2(sum)}</b>${y===PY?' <span class="sub2" style="color:#0d9488">실적</span>':y===CY?' <span class="sub2" style="color:#2563eb">목표</span>':''}`;
+      : `<b>${won2(sum)}</b>${y===CY?' <span class="sub2" style="color:#2563eb">목표</span>':(y===PY||_hasActV811(y))?' <span class="sub2" style="color:#0d9488">실적</span>':''}`;
     const yoyCell=yoy==null?'<span class="sub2">–</span>':`<b style="color:${yoy<0?'#dc2626':'#16a34a'}">${yoy>=0?'+':''}${yoy.toFixed(1)}%</b>`;
     const label=y===CY?`목표 ${y}년`:`${y}년`;
     body+=`<tr${y===CY?' style="background:#eff6ff"':''}><td class="l" style="font-weight:${y===CY?800:600};white-space:nowrap">${label}</td>${mcells}<td class="num" style="font-weight:800${y===CY?';background:#dbeafe':''}">${sumCell}</td><td class="num" style="text-align:center">${yoyCell}</td><td class="num" style="color:#475569;font-size:9.5px">${avg>0?won2(avg):''}</td></tr>`;
@@ -19206,6 +19217,13 @@ function conTrendChart(){
   rows.forEach(function(r,i){
    sg+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(vals[i]).toFixed(1)+'" r="'+cr+'" fill="#fff" stroke="'+sr.c+'" stroke-width="'+cw+'"/>'+
        '<text x="'+X(i).toFixed(1)+'" y="'+LP[sr.k+'_'+i].toFixed(1)+'" text-anchor="middle" font-size="12" fill="'+sr.c+'">'+vals[i].toFixed(1)+'</text>';
+   /* v811 : 「준공 · 방화문 납품 직결」을 선택하면 각 점에 «전년대비 %»를 함께 보여 줍니다. */
+   if(sr.k===3&&i>0){
+    var _pv=+vals[i-1]||0, _cv=+vals[i]||0;
+    if(_pv>0){ var _yo=(_cv-_pv)/_pv*100;
+     sg+='<text class="cts-yoy-v811" x="'+X(i).toFixed(1)+'" y="'+(Y(_cv)+21).toFixed(1)+'" text-anchor="middle" font-size="11.5" font-weight="800" fill="'+(_yo>=0?'#15803d':'#dc2626')+'" stroke="#fff" stroke-width="3" paint-order="stroke">'+(_yo>=0?'+':'')+_yo.toFixed(1)+'%</text>';
+    }
+   }
   });
   g+=sg+'</g>';
  });
@@ -19214,17 +19232,18 @@ function conTrendChart(){
      '<text x="'+X(i).toFixed(1)+'" y="'+(P.t+ph+38)+'" text-anchor="middle" font-size="11" fill="#94a3b8">'+esc(r[4]||'')+'</text>';
  });
  g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+(P.t+ph)+'" y2="'+(P.t+ph)+'" stroke="#cbd5e1"/>';
+ var yoyCss='<style>#conTrendWrap .cts-yoy-v811{opacity:0;transition:opacity .18s}#conTrendWrap[data-focus="3"] .cts-yoy-v811{opacity:1}</style>';
  var modeBtns='<div class="mk-modebtns">'+
    '<button type="button" class="mk-modebtn'+(mode==='house'?' on':'')+'" onclick="conTrendMode(\'house\')">🏠 주택 (만호)</button>'+
    '<button type="button" class="mk-modebtn'+(mode==='nr'?' on':'')+'" onclick="conTrendMode(\'nr\')">🏭 비주거 건축 (백만㎡)</button></div>';
  var btns='<div class="mk-serbtns">'+SER.map(function(sr){
    return '<button type="button" class="mk-serbtn on" data-k="'+sr.k+'" onclick="conSerFocus('+sr.k+')" style="--sc:'+sr.c+'"><i style="background:'+sr.c+';height:'+((sr.w||2.8)<2?'2px':'3px')+'"></i>'+esc(sr.n)+(sr.k===3?' <b>· 방화문 납품 직결</b>':'')+'</button>';
-  }).join('')+'<span class="mk-serhint">버튼을 누르면 그 지표만 부각됩니다 · 다시 누르면 전체</span></div>';
+  }).join('')+'<span class="mk-serhint">버튼을 누르면 그 지표만 부각됩니다 · 다시 누르면 전체 · <b style="color:#dc2626">준공</b>을 누르면 <b>전년대비 %</b>가 함께 표시됩니다</span></div>';
  return '<div class="mk-card">'+
   '<div class="mk-h mk-hrow"><span>'+CFG.title+'<span class="mk-hs">'+esc(CFG.sub)+'</span></span>'+
    modeBtns+'<span class="mk-asof">📅 기준일 2026.9.5</span></div>'+
   btns+
-  '<div id="conTrendWrap" style="width:100%"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;font-family:inherit;font-weight:400">'+g+'</svg></div>'+
+  yoyCss+'<div id="conTrendWrap" style="width:100%"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;font-family:inherit;font-weight:400">'+g+'</svg></div>'+
   '<div class="mk-note">'+CFG.note+'</div>'+
  '</div>';
 }
