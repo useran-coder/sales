@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v813</title>
-<script>window.APP_BUILD='v813';</script>
+<title>동방파스텍 매출 분석 도구 v814</title>
+<script>window.APP_BUILD='v814';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1920,7 +1920,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v813</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v814</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -28282,6 +28282,99 @@ function sgGraphCategoryAmount(A,key,planItems,useProb,fallback){
   if(key==='creditCut')return sumCy(A.creditCutCust);
   return +fallback||0;
 }
+
+/* ══════════ v814 · 매출목표 달성 구성 «B타입» (거래처 × 제품 매트릭스) ══════════
+   A타입(워터폴)이 «무엇을 더하고 빼서 목표를 채우는가»를 보여 준다면,
+   B타입은 같은 금액을 «거래처 축 × 제품 축»의 넓이로 보여 줍니다.
+     ┌──────────────────┬──────────────┐
+     │ 신규거래처×기존제품 │ 신규거래처×신규제품 │   ← 위 = 신규거래처
+     │   🏢 신규업체      │   🚀 신규사업    │
+     ├──────────────────┼──────────────┤
+     │ 기존거래처×기존제품 │ 기존거래처×신규제품 │   ← 아래 = 기존거래처
+     │   🤝 기존         │   🧪 신규제품    │
+     └──────────────────┴──────────────┘
+         ↑ 왼쪽 = 기존제품        ↑ 오른쪽 = 신규제품
+   칸의 넓이(가로×세로)가 금액에 정확히 비례합니다(모자이크 방식).
+   붉은 점선 사각형은 «목표»의 넓이이므로, 색칠된 넓이가 그 안에 모자라면 그만큼 부족입니다. */
+function sgMekkoV814(o){
+  var keep=Math.max(0,+o.keep||0), nc=Math.max(0,+o.newCust||0), np=Math.max(0,+o.newProd||0), nb=Math.max(0,+o.newBiz||0);
+  var cut=Math.abs(+o.cut||0), end=+o.end||0, goal=Math.max(0,+o.goal||0), sel=o.selected||'';
+  var keepGross=keep;
+  keep=Math.max(0,keep-cut);                   /* 거래축소는 기존 칸에서 먼저 뺍니다 */
+  var plan=keep+nc+np+nb;                      /* = 계획합계 */
+  var W=980,H=392,L=94,R=26,T=32,B=86, iw=W-L-R, ih=H-T-B;
+  if(plan<=0){
+    return '<svg class="sg-waterfall-svg sg-mekko-v814" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="매출목표 달성 구성 B타입">'
+      +'<rect x="'+L+'" y="'+T+'" width="'+iw+'" height="'+ih+'" fill="#f8fafc" stroke="#cbd5e1" stroke-dasharray="5 4"/>'
+      +'<text x="'+(L+iw/2)+'" y="'+(T+ih/2)+'" text-anchor="middle" font-size="13" fill="#94a3b8">표시할 계획 금액이 없습니다.</text></svg>';
+  }
+  /* 전체 그림의 넓이 = 계획합계와 목표 중 큰 쪽. 두 넓이를 같은 자로 재서 비교합니다. */
+  var areaMax=Math.max(plan,goal,1);
+  var kP=Math.sqrt(plan/areaMax), kG=Math.sqrt(goal/areaMax);
+  var pw=iw*kP, ph=ih*kP, x0=L;
+  var colL=keep+nc, colR=np+nb;                /* 왼=기존제품, 오=신규제품 */
+  var wL=pw*(colL/plan), wR=pw-wL;
+  var hKeep=colL>0?ph*(keep/colL):0, hNC=colL>0?ph*(nc/colL):0;
+  var hNP=colR>0?ph*(np/colR):0,  hNB=colR>0?ph*(nb/colR):0;
+  var base=T+ih;
+  var s='<svg class="sg-waterfall-svg sg-mekko-v814" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="매출목표 달성 구성 B타입 거래처×제품 매트릭스">'
+   +'<defs><pattern id="sgCutHatchV814" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
+   +'<rect width="7" height="7" fill="#fee2e2"/><line x1="0" y1="0" x2="0" y2="7" stroke="#dc2626" stroke-width="2.4"/></pattern></defs>';
+  s+='<line x1="'+L+'" y1="'+T+'" x2="'+L+'" y2="'+base+'" stroke="#334155" stroke-width="1.2"/>'
+    +'<line x1="'+L+'" y1="'+base+'" x2="'+(W-R)+'" y2="'+base+'" stroke="#334155" stroke-width="1.2"/>'
+    +'<text x="'+(L-6)+'" y="'+(T-12)+'" text-anchor="end" font-size="11.5" fill="#1e3a5f">거래처</text>'
+    +'<text x="'+(W-R)+'" y="'+(H-9)+'" text-anchor="end" font-size="11.5" fill="#1e3a5f">제품</text>';
+  if(goal>0){
+    var gw=iw*kG, gh=ih*kG;
+    s+='<rect x="'+L+'" y="'+(base-gh).toFixed(1)+'" width="'+gw.toFixed(1)+'" height="'+gh.toFixed(1)+'" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="7 4"/>'
+      +'<text x="'+(L+gw-7).toFixed(1)+'" y="'+(base-gh+15).toFixed(1)+'" text-anchor="end" font-size="10.5" fill="#dc2626" stroke="#fff" stroke-width="3.2" paint-order="stroke">목표 넓이 '+sgShort(goal)+'</text>';
+  }
+  var _den=Math.abs(end)>0?Math.abs(end):plan;
+  var pct=function(v){ return (_den>0?(v/_den*100):0).toFixed(1)+'%'; };
+  var cell=function(k,ic,nm,v,x,yTop,w,h,fill,txt,sub){
+    if(!(v>0)||w<1||h<1)return '';
+    var isSel=(sel===k);
+    var g='<g class="sg-wf-selectable'+(isSel?' is-selected':'')+'" data-wf-key="'+k+'" tabindex="0" role="button" aria-label="'+sgEsc(nm)+' 목록 보기" style="cursor:pointer">'
+      +'<rect x="'+x.toFixed(1)+'" y="'+yTop.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+'" fill="'+fill+'" stroke="'+(isSel?'#1d4ed8':'#ffffff')+'" stroke-width="'+(isSel?2.6:1.6)+'">'
+      +'<title>'+sgEsc(nm)+' : '+sgWon(v)+'원 ('+pct(v)+')</title></rect>';
+    var cx=x+w/2, cy=yTop+h/2;
+    if(h>=46&&w>=96){
+      g+='<text x="'+cx.toFixed(1)+'" y="'+(cy-(sub?14:7)).toFixed(1)+'" text-anchor="middle" font-size="13" fill="'+txt+'">'+ic+' '+sgEsc(nm)+'</text>'
+        +'<text x="'+cx.toFixed(1)+'" y="'+(cy+(sub?4:11)).toFixed(1)+'" text-anchor="middle" font-size="12" fill="'+txt+'">'+sgShort(v)+' · '+pct(v)+'</text>'
+        +(sub?('<text x="'+cx.toFixed(1)+'" y="'+(cy+20).toFixed(1)+'" text-anchor="middle" font-size="9.5" fill="'+txt+'" opacity=".8">'+sgEsc(sub)+'</text>'):'');
+    }else if(h>=36&&w>=52){
+      g+='<text x="'+cx.toFixed(1)+'" y="'+(cy-4).toFixed(1)+'" text-anchor="middle" font-size="10.5" fill="'+txt+'">'+ic+' '+sgEsc(nm)+'</text>'
+        +'<text x="'+cx.toFixed(1)+'" y="'+(cy+11).toFixed(1)+'" text-anchor="middle" font-size="10.5" fill="'+txt+'">'+sgShort(v)+'</text>';
+    }else if(h>=18&&w>=76){
+      g+='<text x="'+cx.toFixed(1)+'" y="'+(cy+4).toFixed(1)+'" text-anchor="middle" font-size="10.5" fill="'+txt+'">'+ic+' '+sgEsc(nm)+' '+sgShort(v)+'</text>';
+    }else{
+      g+='<text x="'+(x+w+6).toFixed(1)+'" y="'+(cy+4).toFixed(1)+'" text-anchor="start" font-size="10.5" fill="#475569" stroke="#fff" stroke-width="3" paint-order="stroke">'+ic+' '+sgEsc(nm)+' '+sgShort(v)+'</text>';
+    }
+    return g+'</g>';
+  };
+  s+=cell('actualKeep','🤝','기존',keep,x0,base-hKeep,wL,hKeep,'#cbd5e1','#1f2937',cut>0?('거래축소 '+sgShort(cut)+' 차감 후'):'');
+  s+=cell('newCust','🏢','신규업체',nc,x0,base-hKeep-hNC,wL,hNC,'#fde047','#713f12','');
+  s+=cell('newProd','🧪','신규제품',np,x0+wL,base-hNP,wR,hNP,'#fbbf24','#713f12','');
+  s+=cell('newBiz','🚀','신규사업',nb,x0+wL,base-hNP-hNB,wR,hNB,'#f59e0b','#4a2a06','');
+  /* 거래축소 : 바닥선 «아래»로 빠져나간 몫 (기존 칸에서 이미 차감되어 있습니다) */
+  if(cut>0&&wL>1&&keepGross>0){
+    var ch=Math.min(36,Math.max(14,ph*(cut/plan)));
+    s+='<g class="sg-wf-selectable'+(sel==='creditCut'?' is-selected':'')+'" data-wf-key="creditCut" tabindex="0" role="button" aria-label="거래축소 목록 보기" style="cursor:pointer">'
+      +'<rect x="'+x0.toFixed(1)+'" y="'+base+'" width="'+wL.toFixed(1)+'" height="'+ch.toFixed(1)+'" fill="url(#sgCutHatchV814)" stroke="#dc2626" stroke-width="1.1" stroke-dasharray="4 3">'
+      +'<title>💳 거래축소 : -'+sgWon(cut)+'원 · 기존 칸에서 이미 뺀 금액입니다</title></rect>'
+      +'<text x="'+(x0+wL/2).toFixed(1)+'" y="'+(base+ch/2+4).toFixed(1)+'" text-anchor="middle" font-size="11" fill="#b91c1c" stroke="#fff" stroke-width="3.2" paint-order="stroke">💳 거래축소 −'+sgShort(cut)+' (기존에서 차감됨)</text></g>';
+  }
+  var _axY=base+(cut>0?54:18);
+  if(wL>46)s+='<text x="'+(x0+wL/2).toFixed(1)+'" y="'+_axY+'" text-anchor="middle" font-size="11" fill="#475569">기존제품</text>';
+  if(wR>46)s+='<text x="'+(x0+wL+wR/2).toFixed(1)+'" y="'+_axY+'" text-anchor="middle" font-size="11" fill="#b45309">신규제품</text>';
+  if(hKeep>26)s+='<text x="'+(L-7)+'" y="'+(base-hKeep/2+4).toFixed(1)+'" text-anchor="end" font-size="11" fill="#475569">기존거래처</text>';
+  if(hNC>26)s+='<text x="'+(L-7)+'" y="'+(base-hKeep-hNC/2+4).toFixed(1)+'" text-anchor="end" font-size="11" fill="#b45309">신규거래처</text>';
+  var gapV=goal-end;
+  s+='<text x="'+(L+iw)+'" y="'+(T-12)+'" text-anchor="end" font-size="11.5" fill="'+(gapV>0?'#dc2626':'#15803d')+'">'
+    +'계획합계 '+sgShort(end)+' / 목표 '+sgShort(goal)+' · '+(gapV>0?('부족 '+sgShort(gapV)):('초과 '+sgShort(-gapV)))+'</text>';
+  s+='</svg>';
+  return s;
+}
 function sgWaterfall(A){
   var pl=sgPlan(),goalCtx=sgGoalContext(A),planItems=sgPlanItems(goalCtx.plan);
   var goal=goalCtx.value;
@@ -28447,6 +28540,12 @@ function sgWaterfall(A){
 
   /* 워터폴 내부 텍스트는 강조체 대신 일반체로 통일합니다. */
   s=s.replace(/ font-weight="(?:700|800|900)"/g,'');
+  /* v814 : B타입(거래처 × 제품 매트릭스)을 고르면 같은 금액을 넓이로 보여 줍니다. */
+  var _wfTypeV814=(pl.wfChartType==='B')?'B':'A';
+  if(_wfTypeV814==='B'){
+    s=sgMekkoV814({keep:existingPlan,newCust:newCustPlan,newProd:newProdPlan,newBiz:newBizPlan,
+      cut:cutPlan,end:end,goal:goal,selected:selected});
+  }
   var rate=goal?end/goal*100:0;
   var sourceDetail='';
   if(autoOn){
@@ -28457,9 +28556,17 @@ function sgWaterfall(A){
     }).join('');
     sourceDetail='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:7px 0 2px;padding:7px 9px;border:1px solid #dbeafe;border-radius:8px;background:#f8fbff;font-size:10.5px"><b style="color:#1e3a5f">금액 출처</b>'+srcChips+'</div>';
   }
+  /* v814 : A타입(워터폴) / B타입(거래처 × 제품 매트릭스) 전환 */
+  var _typeSegV814='<span class="sg-wf-type-v814" style="display:inline-flex;border:1px solid #93c5fd;border-radius:7px;overflow:hidden">'
+    +'<button type="button" class="sgWfTypeBtnV814" data-t="A" title="워터폴 — 무엇을 더하고 빼서 목표를 채우는지" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:none;cursor:pointer;background:'+(_wfTypeV814==='A'?'#1d4ed8':'#fff')+';color:'+(_wfTypeV814==='A'?'#fff':'#1e3a5f')+'">A 워터폴</button>'
+    +'<button type="button" class="sgWfTypeBtnV814" data-t="B" title="거래처 × 제품 매트릭스 — 같은 금액을 넓이로" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:none;border-left:1px solid #bfdbfe;cursor:pointer;background:'+(_wfTypeV814==='B'?'#1d4ed8':'#fff')+';color:'+(_wfTypeV814==='B'?'#fff':'#1e3a5f')+'">B 매트릭스</button></span>';
+  var _typeNoteV814=(_wfTypeV814==='B')
+    ? '<span><b>가로 = 제품축</b>(왼쪽 기존제품 · 오른쪽 신규제품), <b>세로 = 거래처축</b>(아래 기존거래처 · 위 신규거래처). <b>칸의 넓이(가로×세로)가 금액에 그대로 비례</b>합니다. 회색 = 기존거래처×기존제품, 노랑 = 신규가 들어간 칸(🏢 신규업체 · 🧪 신규제품 · 🚀 신규사업). <b>붉은 점선 사각형 = 목표 넓이</b>라, 색칠된 넓이가 그 안에 모자라면 그만큼 부족입니다. 바닥선 아래 빗금은 💳 거래축소로 빠져나간 몫(기존 칸에서 이미 차감). 칸을 누르면 업체·제품 목록이 아래에 열립니다.</span>'
+    : '<span><b>형광 제목 = 계획 합계에 직접 반영</b> · <b>진한 누적막대</b>: 기존업체 ＋ 신규업체 ＋ 신규제품 － 거래축소 ＋ 신규사업 ＝ 계획합계 · <b>반투명 점선막대</b>: 이미 업체매출에 포함된 성장·위험·제품 매출(중복 합산 제외) · 비중은 계획합계 기준</span>';
   var head='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px;padding:7px 9px;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;font-size:11px;color:#1e3a5f"><b>'+(autoOn?'연간 목표표 자동 연동':'계획 구성 보기')+'</b>'
+    +_typeSegV814
     +(autoOn?'<label>분류 기준 <select id="sgWaterfallBasis" style="'+SGI+'width:150px"><option value="cust"'+(basis==='cust'?' selected':'')+'>업체별 매출 목표</option><option value="prod"'+(basis==='prod'?' selected':'')+'>제품별 매출 목표</option></select></label>':'')
-    +'<span><b>형광 제목 = 계획 합계에 직접 반영</b> · <b>진한 누적막대</b>: 기존업체 ＋ 신규업체 ＋ 신규제품 － 거래축소 ＋ 신규사업 ＝ 계획합계 · <b>반투명 점선막대</b>: 이미 업체매출에 포함된 성장·위험·제품 매출(중복 합산 제외) · 비중은 계획합계 기준</span></div>';
+    +_typeNoteV814+'</div>';
   var foot='<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:9px">'
     +sgPill(A.CY+'년 실적',sgShort(baseVal)+'원','#1e3a5f')
     +sgPill(autoOn?'남은 목표+추가전략':'전략 계획 합계',(autoOn?'':(useProb?'기대 ':''))+sgShort(planTot)+'원','#7c3aed')
@@ -30647,6 +30754,9 @@ function sgBind(A){
   if(up)up.addEventListener('change',function(){ pl.useProb=up.checked; sgSave(); sgRe(); });
   var waterfallBasis=document.getElementById('sgWaterfallBasis');
   if(waterfallBasis)waterfallBasis.addEventListener('change',function(){pl.waterfallBasis=waterfallBasis.value==='prod'?'prod':'cust';sgSave();sgRe();});
+  /* v814 : 달성 구성 그래프 A/B 전환 */
+  $$('.sgWfTypeBtnV814').forEach(function(b){ b.addEventListener('click',function(){
+    pl.wfChartType=(b.dataset.t==='B')?'B':'A'; sgSave(); sgRe(); }); });
   $$('.sg-wf-selectable[data-wf-key]').forEach(function(el){
     /* 같은 항목을 다시 선택하면 선택을 해제합니다. */
     var open=function(){
