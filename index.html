@@ -1579,6 +1579,8 @@ body.fpopen #fpSum{display:block}
 .specx-group-table col:nth-child(4),.specx-group-table col:nth-child(6),.specx-group-table col:nth-child(8),.specx-group-table col:nth-child(10),.specx-group-table col:nth-child(12){width:4%!important}
 .specx-group-table col:nth-child(14){width:14%!important}
 .specx-group-scroll:not(.expanded){max-height:528px}.specx-table>colgroup>col:nth-child(4){width:130px!important}.specx-table>colgroup>col:nth-child(7){width:314.59px!important}.specx-table .rank-group-vendors-table.specx-vendors-table{min-width:1230px}.specx-table .specx-vendors-table>colgroup>col:nth-child(1){width:46px!important}.specx-table .specx-vendors-table>colgroup>col:nth-child(2),.specx-table .specx-vendors-table>colgroup>col:nth-child(3){width:200px!important}.specx-table .specx-vendors-table>colgroup>col:nth-child(4){width:300px!important}.specx-table .specx-vendors-table>colgroup>col:nth-child(n+5){width:auto!important}.specx-table .rank-group-vendors-table.specx-vendors-table th[data-spec-vendor-sort]{cursor:pointer;user-select:none}.specx-table .rank-group-vendors-table.specx-vendors-table td:nth-child(2),.specx-table .rank-group-vendors-table.specx-vendors-table td:nth-child(3),.specx-table .rank-group-vendors-table.specx-vendors-table td:nth-child(4){text-align:left}
+/* v815.6 : 거래처별 규격/비규격 전환 화면 */
+.specx-customer-table th[data-spec-customer-sort]{cursor:pointer;user-select:none}.specx-customer-table tbody tr{cursor:default}.specx-customer-table tbody tr:nth-child(even) td{background:#f8fafc}.specx-customer-table tbody tr:hover td{background:#eff6ff}.specx-view-btn.on{border-color:#2563eb!important;background:#1e3a5f!important;color:#fff!important}
 /* 업체별·제품(규격)별 매출 목표 표의 헤더·본문·입력필드를 13px로 통일합니다. */
 #result .fc-target-table,
 #result .fc-target-table th,
@@ -3515,20 +3517,21 @@ function openDrill2(row){
     for(let m=1;m<=12;m++){const ym=`${yr}-${String(m).padStart(2,'0')}`;const a=arr2.reduce((sv,o)=>sv+(o.byMon[ym]||0),0);const q=arr2.reduce((sv,o)=>sv+(o.byMonQty[ym]||0),0);monTotals['mcol:'+ym]=monthlyAmountQtyCell(a,q,true,false);}
   } else cols=drillCols('품목 · 규격',arr,'codespec');
   const yrBtns=monOn?`<span class="seg" id="drill2YrSeg" style="margin-left:6px">${years.map(y=>`<button data-y="${y}" class="${y===yr?'on':''}">${y}</button>`).join('')}</span>`:'';
-  /* v707 : 제품(행)을 고르면 표 위에 그 제품의 월별 출고(매출) 추이 그래프를 보여줍니다 */
+  /* v815.5 : 품목군을 선택한 즉시 표 위에 품목군 전체 월별 추이를 표시합니다.
+     아래 제품을 선택하면 같은 그래프가 그 제품 기준으로 전환됩니다. */
   let _d2Chart='';
   const _d2Cust=(sub[0]&&sub[0].cust)||'';
   const _d2Sel=state._d2Sel&&arr2.filter(o=>o.key===state._d2Sel)[0];
-  if(_d2Sel){
-    const _pRows=sub.filter(r=>((r.code||'(미상)')+'│'+(r.spec||''))===_d2Sel.key);
-    const _pYrs=[...new Set(_pRows.map(r=>r.d?r.d.getFullYear():0).filter(Boolean))].sort((a,b)=>b-a);
-    const _pYr=_pYrs.length?(_pYrs.indexOf(+state._d2Yr)>=0?+state._d2Yr:_pYrs[0]):0;
-    if(_pYr){
-      const _lab=(_d2Cust?_d2Cust+' ▸ ':'')+(_d2Sel.code||'')+' '+(_d2Sel.name||'')+(_d2Sel.spec?' / '+_d2Sel.spec:'');
-      _d2Chart=custMonthChartV665(_lab,_pYr,_pRows,_pYrs,{metric:(state._d2Metric==='qty'?'qty':'amt'),metricToggle:true})+
-        '<div class="ctrlbar" style="margin:-4px 0 8px"><button type="button" class="btn ghost" id="d2ChartClose" style="font-size:12px;padding:4px 12px">✕ 제품 추이 닫기</button>'+
-        '<span class="sub2">표에서 다른 제품을 누르면 그 제품의 추이로 바뀝니다.</span></div>';
-    }
+  const _chartRows=_d2Sel?sub.filter(r=>((r.code||'(미상)')+'│'+(r.spec||''))===_d2Sel.key):sub;
+  const _pYrs=[...new Set(_chartRows.map(r=>r.d?r.d.getFullYear():0).filter(Boolean))].sort((a,b)=>b-a);
+  const _pYr=_pYrs.length?(_pYrs.indexOf(+state._d2Yr)>=0?+state._d2Yr:_pYrs[0]):0;
+  if(_pYr){
+    const _groupLab=(_d2Cust?_d2Cust+' ▸ ':'')+(row.label||'품목군');
+    const _lab=_d2Sel?_groupLab+' ▸ '+(_d2Sel.code||'')+' '+(_d2Sel.name||'')+(_d2Sel.spec?' / '+_d2Sel.spec:''):_groupLab;
+    _d2Chart=custMonthChartV665(_lab,_pYr,_chartRows,_pYrs,{metric:(state._d2Metric==='qty'?'qty':'amt'),metricToggle:true})+
+      '<div class="ctrlbar" style="margin:-4px 0 8px">'+
+      (_d2Sel?'<button type="button" class="btn ghost" id="d2ChartClose" style="font-size:12px;padding:4px 12px">← 품목군 전체 추이</button>':'')+
+      '<span class="sub2">'+(_d2Sel?'표에서 다른 제품을 누르면 해당 제품 추이로 바뀝니다.':'현재 품목군 전체의 월별 추이입니다. 아래 제품을 누르면 해당 제품 추이로 바뀝니다.')+'</span></div>';
   }
   const controls=`${_d2Chart}<div class="ctrlbar"><button class="btn ghost" id="drill2MonBtn" style="font-size:13px;padding:5px 12px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별 매출액 ${monOn?'끄기':'보기'}</button>${yrBtns}<span class="sub2">${monOn?`${yr}년 품목·규격별 1~12월 매출액입니다.`:'품목·규격별 월 매출을 펼쳐봅니다.'}</span></div>`;
   render(`${row.label} ▸ 품목·규격별 매출`,`${monOn?yr+'년 · ':''}${arr2.length.toLocaleString()}건 · 합계 ${won(viewTot)}원 · 매출 내림차순`,arr2,cols,monOn?'yrTot':'amt',
@@ -7505,8 +7508,31 @@ function custDrillView(label, src, backFn, act, extra2){
   const noteEx=(act==='cls')?' <b>업체분류</b> 칸에서 바로 수정·저장됩니다.':(act==='credit'||act==='region')?' <b>신용등급</b> 칸에서 바로 수정·저장됩니다.':'';
   render(`${label} ▸ 거래처별 매출`, `${monOn?yr+'년 · ':''}거래처 ${won(custN)}개 · 합계 ${won(tot)}원`, arr, cols, monOn?'yrTot':'amt',
     `<b>거래처 행을 클릭</b>하면 그 거래처의 제품·규격 매출이 나옵니다.`+noteEx,
-    {back:{label:'← 목록으로',fn:backFn}, tableClass:extra2.mixSalesPage?`mix-sales-table${monOn?' mix-sales-month-table rank-month-fit':''}`:'', total:{label:'합 계',amt:tot,col:monOn?'yrTot':'amt',cells:monOn?(monthlyTotalCells||{}):{cnt:'',qty:''}}, controlsHtml:monthlyCtrl+(extra2.controlsHtml||''), onMount, afterDraw:bindEdits,
+    {back:{label:'← 목록으로',fn:backFn}, tableClass:extra2.mixSalesPage?`mix-sales-table${monOn?' mix-sales-month-table rank-month-fit':''}`:'', total:{label:'합 계',amt:tot,col:monOn?'yrTot':'amt',cells:monOn?(monthlyTotalCells||{}):{cnt:'',qty:''}}, controlsHtml:(extra2.topHtml?(typeof extra2.topHtml==='function'?extra2.topHtml():extra2.topHtml):'')+monthlyCtrl+(extra2.controlsHtml||''), onMount, afterDraw:bindEdits,
      drill:{custom:row=>(extra2&&extra2.rowDrill)?extra2.rowDrill(row, ()=>custDrillView(label,src,backFn,act,extra2)):custProdDrill(row.label, src.filter(r=>r.cust===row.key), ()=>custDrillView(label,src,backFn,act,extra2))}});
+}
+/* v815.7 : 메인 제품구분 매출 비중 → 업체별 → 업체 선택 화면에도
+   앞 화면과 같은 월별 금액·수량 추이 그래프를 표 위에 표시합니다. */
+function custProductChartV8157(cust,src){
+  try{
+    if(typeof custMonthChartV665!=='function'||!Array.isArray(src)||!src.length)return '';
+    const yrs=[...new Set(src.map(r=>+(r.y||(r.d&&r.d.getFullYear()))).filter(Boolean))].sort((a,b)=>b-a);
+    if(!yrs.length)return '';
+    state.custProductChart=state.custProductChart||{};
+    let yr=+state.custProductChart.year;if(!yr||!yrs.includes(yr))yr=yrs[0];
+    state.custProductChart.year=yr;
+    const metric=state.custProductChart.metric==='qty'?'qty':'amt';
+    let html=custMonthChartV665(cust,yr,src,yrs,{metric,metricToggle:true});
+    html=html.split('cmYearBtn').join('cpYearBtnV8157').split('cmMetBtn').join('cpMetBtnV8157').split('cmMetSeg').join('cpMetSegV8157');
+    return `<div class="cust-product-chart-v8157" style="flex:0 0 100%;width:100%;margin:0 0 4px">${html}</div>`;
+  }catch(_e){return '';}
+}
+function custProductChartBindV8157(reRender){
+  try{
+    const root=document.getElementById('result');if(!root)return;
+    root.querySelectorAll('.cpYearBtnV8157').forEach(b=>b.addEventListener('click',()=>{state.custProductChart=state.custProductChart||{};state.custProductChart.year=+b.dataset.y;reRender();}));
+    root.querySelectorAll('.cpMetBtnV8157').forEach(b=>b.addEventListener('click',()=>{state.custProductChart=state.custProductChart||{};state.custProductChart.metric=b.dataset.m==='qty'?'qty':'amt';reRender();}));
+  }catch(_e){}
 }
 function custProdDrill(cust, src, backFn, markBase, monthly, mixSalesPage, viewOpts){
   viewOpts=viewOpts||{};
@@ -7534,10 +7560,13 @@ function custProdDrill(cust, src, backFn, markBase, monthly, mixSalesPage, viewO
   if(markBase){ const nb=s=>String(s||'').toLowerCase().replace(/\s+/g,''); const bk=nb(markBase.kw),bsk=nb(markBase.specKw||''); const isB=o=>bk&&nb((o.code||'')+(o.name||'')).includes(bk)&&(!bsk||nb(o.spec).includes(bsk)); const nc=cols.find(c=>c.k==='name'); if(nc){ const og=nc.cell; nc.cell=o=>og(o)+(isB(o)?' <span class="badge" style="background:#7c3aed;color:#fff;font-size:9px;padding:1px 6px">기준제품</span>':''); } }
   const yrBtns=monOn?`<span class="seg" id="custItemYrSeg" style="margin-left:6px">${years.map(y=>`<button data-y="${y}" class="${y===yr?'on':''}">${y}</button>`).join('')}</span>`:'';
   const monthlyCtrl=monthly?`<div class="ctrlbar">${viewOpts.monthlyPrefixHtml||''}<button class="btn ghost" id="custItemMonBtn" type="button" style="font-size:13px;padding:5px 12px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별보기${monOn?' 끄기':''}</button>${yrBtns}<span class="sub2">${monOn?(viewOpts.monthlyOnText||`${yr}년 품목·규격별 1~12월 매출액입니다.`):(viewOpts.monthlyOffText||'선택 업체의 품목·규격별 월 매출을 펼쳐봅니다.')}</span></div>`:'';
-  const onMount=()=>{viewOpts.onMount&&viewOpts.onMount();const mb=$('#custItemMonBtn');if(mb)mb.addEventListener('click',()=>{state.prodDrillMonthly=!state.prodDrillMonthly;rerender();});$('#result').querySelectorAll('#custItemYrSeg button').forEach(b=>b.addEventListener('click',()=>{state.prodDrillYear=+b.dataset.y;rerender();}));};
+  const suppliedTop=viewOpts.topHtml?(typeof viewOpts.topHtml==='function'?viewOpts.topHtml():viewOpts.topHtml):'';
+  const customerChartRows=Array.isArray(viewOpts.chartRows)?viewOpts.chartRows:src;
+  const customerChart=(!suppliedTop&&mixSalesPage)?custProductChartV8157(cust,customerChartRows):'';
+  const onMount=()=>{viewOpts.onMount&&viewOpts.onMount();if(customerChart)custProductChartBindV8157(rerender);const mb=$('#custItemMonBtn');if(mb)mb.addEventListener('click',()=>{state.prodDrillMonthly=!state.prodDrillMonthly;rerender();});$('#result').querySelectorAll('#custItemYrSeg button').forEach(b=>b.addEventListener('click',()=>{state.prodDrillYear=+b.dataset.y;rerender();}));};
   render(viewOpts.title||`${cust} ▸ 품목·규격별 매출`, `${monOn?yr+'년 · ':''}${arr.length}건 · 합계 ${won(tot)}원`, arr, cols, monOn?'yrTot':'amt',
     viewOpts.note||`${esc(cust)}의 품목·규격별 매출입니다. '← 거래처로'로 돌아갑니다.`,
-    {back:{label:viewOpts.backLabel||'← 거래처로',fn:backFn}, tableClass:mixSalesPage?`mix-sales-table${monOn?' mix-sales-month-table rank-month-fit':''}`:'', controlsHtml:(viewOpts.topHtml?(typeof viewOpts.topHtml==='function'?viewOpts.topHtml():viewOpts.topHtml):'')+monthlyCtrl+(viewOpts.controlsHtml||''), onMount, total:{label:'합 계',amt:tot,col:monOn?'yrTot':'amt',cells:monOn?(monthlyTotalCells||{}):{}}});
+    {back:{label:viewOpts.backLabel||'← 거래처로',fn:backFn}, tableClass:mixSalesPage?`mix-sales-table${monOn?' mix-sales-month-table rank-month-fit':''}`:'', controlsHtml:suppliedTop+customerChart+monthlyCtrl+(viewOpts.controlsHtml||''), onMount, total:{label:'합 계',amt:tot,col:monOn?'yrTot':'amt',cells:monOn?(monthlyTotalCells||{}):{}}});
 }
 function clsFullCsv(){
   const custs=CUR.length?[...new Set(CUR.map(r=>r.cust))].sort((a,b)=>a.localeCompare(b,'ko')):[];
@@ -8710,8 +8739,10 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
   g+='<polyline points="'+pts+'" fill="none" stroke="#2563eb" stroke-width="2.4" stroke-linejoin="round"/>';
   vals.forEach(function(v,i){
     var isMax=(i===iMax&&mx>0), isMin=(i===iMin&&mnPos>0&&iMin!==iMax);
-    var col=isMax?'#dc2626':isMin?'#0d9488':'#2563eb';
-    g+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="'+(isMax||isMin?6:4)+'" fill="'+col+'"'+(isMax||isMin?' stroke="#fff" stroke-width="2"':'')+'/>';
+    var isSel=!!opt.monthPick&&(+opt.selectedMonth===i+1), col=isSel?'#7c3aed':isMax?'#dc2626':isMin?'#0d9488':'#2563eb';
+    if(isSel)g+='<rect x="'+(x(i)-24)+'" y="'+(T-5)+'" width="48" height="'+(ih+32)+'" rx="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="1.2" opacity=".9"/>';
+    if(opt.monthPick)g+='<g class="cmMonthPick" data-month="'+(i+1)+'" role="button" tabindex="0" aria-label="'+(i+1)+'월 거래내역 보기" style="cursor:pointer"><rect x="'+(x(i)-30)+'" y="'+(T-7)+'" width="60" height="'+(ih+38)+'" fill="transparent"/>';
+    g+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="'+(isSel?7:(isMax||isMin?6:4))+'" fill="'+col+'"'+(isMax||isMin||isSel?' stroke="#fff" stroke-width="2"':'')+'/>';
     /* 금액은 늘 접점 위, 최고·최저 표시는 접점 <b>아래</b>에 답니다. */
     g+='<text x="'+x(i)+'" y="'+(y(v)-11)+'" text-anchor="middle" font-size="11" font-weight="800" fill="'+(isMax||isMin?col:'#1e293b')+'" stroke="#fff" stroke-width="3" paint-order="stroke">'+FV(v)+'</text>';
     if(isMax||isMin){
@@ -8720,7 +8751,8 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
       g+='<rect x="'+(x(i)-bw/2)+'" y="'+by+'" width="'+bw+'" height="17" rx="8" fill="'+(isMax?'#fef2f2':'#f0fdfa')+'" stroke="'+col+'"/>'
         +'<text x="'+x(i)+'" y="'+(by+12)+'" text-anchor="middle" font-size="10.5" font-weight="900" fill="'+col+'">'+lab+'</text>';
     }
-    g+='<text x="'+x(i)+'" y="'+(T+ih+20)+'" text-anchor="middle" font-size="11" fill="'+(isMax?'#dc2626':isMin?'#0d9488':'#475569')+'" font-weight="'+(isMax||isMin?'800':'400')+'">'+(i+1)+'월</text>';
+    g+='<text x="'+x(i)+'" y="'+(T+ih+20)+'" text-anchor="middle" font-size="11" fill="'+(isSel?'#7c3aed':isMax?'#dc2626':isMin?'#0d9488':'#475569')+'" font-weight="'+(isSel||isMax||isMin?'800':'400')+'">'+(i+1)+'월</text>';
+    if(opt.monthPick)g+='</g>';
   });
   g+='<line x1="'+L+'" y1="'+(T+ih)+'" x2="'+(W-Rr)+'" y2="'+(T+ih)+'" stroke="#cbd5e1"/></svg>';
   /* 연도 버튼 */
@@ -8747,9 +8779,11 @@ function custTradeHistoryV665(cust,back){
   var yrs=[...new Set(all.map(function(r){ return r.d?r.d.getFullYear():0; }).filter(Boolean))].sort(function(a,b){return b-a;});
   if(!yrs.length){ alert(cust+' 의 거래내역이 없습니다.'); return; }
   state.price=state.price||{};
+  if(state.price.thMonthCust!==cust){ state.price.thMonthCust=cust; state.price.thMonth=0; }
   var yr=+state.price.thYear; if(!yr||yrs.indexOf(yr)<0)yr=yrs[0];
   state.price.thYear=yr;
-  var rows=all.filter(function(r){ return r.d&&r.d.getFullYear()===yr; })
+  var selMonth=+state.price.thMonth;if(selMonth<1||selMonth>12)selMonth=0;
+  var rows=all.filter(function(r){ return r.d&&r.d.getFullYear()===yr&&(!selMonth||r.d.getMonth()+1===selMonth); })
               .sort(function(a,b){ return (+b.d)-(+a.d)||String(a.code||'').localeCompare(String(b.code||''),'ko'); });
   var arr=rows.map(function(r,i){
     return {key:i,d:r.d,ym:(r.d?(r.d.getMonth()+1):0),code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',
@@ -8758,13 +8792,17 @@ function custTradeHistoryV665(cust,back){
   var tabs='<div class="ctrlbar" style="flex-wrap:wrap;gap:6px"><b style="font-size:12px">연도</b>'
     +yrs.map(function(y2){ return '<button type="button" class="btn'+(y2===yr?'':' ghost')+' thYearBtn" data-y="'+y2+'" style="font-size:12px;padding:5px 12px'+(y2===yr?';background:#1e3a5f;color:#fff;border-color:#1e3a5f':'')+'">'+y2+'년</button>'; }).join('')
     +'<span style="width:1px;height:24px;background:#dbe2ea;display:inline-block;margin:0 4px"></span>'
+    +'<b style="font-size:12px">월 선택</b>'
+    +'<button type="button" class="btn'+(selMonth?' ghost':'')+'" id="thMonthAll" style="font-size:12px;padding:5px 12px'+(!selMonth?';background:#7c3aed;color:#fff;border-color:#7c3aed':'')+'">전체 월</button>'
+    +(selMonth?'<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:9px;background:#f5f3ff;border:1px solid #c4b5fd;color:#7c3aed;font-size:12px;font-weight:800">'+selMonth+'월 선택됨</span>':'<span class="sub2">그래프의 점이나 월 이름을 선택하세요.</span>')
+    +'<span style="width:1px;height:24px;background:#dbe2ea;display:inline-block;margin:0 4px"></span>'
     +'<b style="font-size:12px">표 검색</b>'
     +'<input type="search" id="thQ" autocomplete="off" spellcheck="false" lang="ko" inputmode="text" placeholder="품번 · 품명 · 규격 · 비고 · 일자 (띄어쓰기로 여러 개)" '
     +'style="font-family:inherit;font-size:12.5px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;width:330px">'
     +'<button type="button" class="btn ghost" id="thQClear" style="font-size:12px;padding:5px 10px">\u2715 지우기</button>'
     +'<span class="sub2" id="thQCnt"></span>'
-    +'<span class="sub2" style="margin-left:8px">연도를 고르면 그래프와 표가 함께 바뀝니다 · 표 제목을 눌러 정렬</span></div>';
-  var chart=custMonthChartV665(cust,yr,all);
+    +'<span class="sub2" style="margin-left:8px">연도·월 선택 시 그래프와 표가 함께 바뀝니다 · 선택 월을 다시 누르면 전체 월로 복귀 · 표 제목을 눌러 정렬</span></div>';
+  var chart=custMonthChartV665(cust,yr,all,null,{monthPick:true,selectedMonth:selMonth});
   var totAmt=arr.reduce(function(a,o){return a+o.amt;},0), totQty=arr.reduce(function(a,o){return a+o.qty;},0);
   var cols=[ {k:'rank',t:'순위',cls:'rank',cell:function(o,i){return i+1;}},
     {k:'d',t:'일자',cell:function(o){return fmtD(o.d);},sortVal:function(o){return +o.d;}},
@@ -8778,15 +8816,20 @@ function custTradeHistoryV665(cust,back){
     {k:'bigo',t:'비고(원본)',cls:'l',cell:function(o){return o.bigo?('<span title="'+esc(o.bigo)+'">'+esc(o.bigo)+'</span>'):'<span class="sub2">-</span>';},sortVal:function(o){return o.bigo;}} ];
   state.sortKey='d'; state.sortDir=-1; state._search='';
   render(esc(cust)+' \u25b8 거래내역',
-    yr+'년 '+won(arr.length)+'건 · 수량 '+won(totQty)+' · 금액 '+disp(totAmt),
+    yr+'년'+(selMonth?' '+selMonth+'월':'')+' · '+won(arr.length)+'건 · 수량 '+won(totQty)+' · 금액 '+disp(totAmt),
     arr, cols, 'd',
-    '<b>'+esc(cust)+'</b>의 <b>'+yr+'년 거래내역</b>입니다. 위 연도 탭으로 연도를 바꾸고, 그래프는 그 연도의 월별 매출입니다. <b>비고(원본)</b>은 업로드한 매출자료의 비고 칸을 그대로 보여 줍니다.',
+    '<b>'+esc(cust)+'</b>의 <b>'+yr+'년'+(selMonth?' '+selMonth+'월':'')+' 거래내역</b>입니다. 그래프의 <b>점·월 이름을 선택</b>하면 해당 월 거래만 표에 표시되고, 같은 월을 다시 선택하거나 <b>전체 월</b>을 누르면 연간 거래내역으로 돌아옵니다. <b>비고(원본)</b>은 업로드한 매출자료의 비고 칸을 그대로 보여 줍니다.',
     {back:{label:'\u2190 단가표로',fn:back}, controlsHtml:chart+tabs, pageLimit:300,
      onMount:function(){
        var root=document.getElementById('result');
        root.querySelectorAll('.thYearBtn,.cmYearBtn').forEach(function(b){
-         b.addEventListener('click',function(){ state.price.thYear=+b.dataset.y; custTradeHistoryV665(cust,back); });
+         b.addEventListener('click',function(){ state.price.thYear=+b.dataset.y; state.price.thMonth=0; custTradeHistoryV665(cust,back); });
        });
+       root.querySelectorAll('.cmMonthPick').forEach(function(g){
+         var pick=function(){var m=+g.dataset.month;state.price.thMonth=(+state.price.thMonth===m)?0:m;custTradeHistoryV665(cust,back);};
+         g.addEventListener('click',pick);g.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}});
+       });
+       var ma=document.getElementById('thMonthAll');if(ma)ma.addEventListener('click',function(){state.price.thMonth=0;custTradeHistoryV665(cust,back);});
        /* v666 : 표 검색 — 화면을 다시 그리지 않고 행만 숨기므로 한글 입력 중에도 커서가 그대로 있습니다.
           조합(한글 입력) 중에는 거르지 않고, 조합이 끝난 뒤에 반영합니다. */
        var q=document.getElementById('thQ'), cl=document.getElementById('thQClear'), cn=document.getElementById('thQCnt');
@@ -9150,15 +9193,17 @@ function productCategoryDetail(label,src,backFn,view,allSrc){
   const base=Array.isArray(allSrc)?allSrc:(Array.isArray(src)?src:periodRows());
   const current=(label==='전체'||mixCats().includes(label))?label:'전체';
   const detailSrc=current==='전체'?base:base.filter(r=>mixCatOf(r)===current);
-  const prefix=mixDetailChartV798(current)+productCategoryDetailToggle(view);
+  /* v815.5 : 제품구분 추이는 월별보기 도구 안이 아니라 표 상단의 독립 영역에 둡니다. */
+  const chart=mixDetailChartV798(current);
+  const prefix=productCategoryDetailToggle(view);
   const filterHtml=view==='product'?productCategoryProductFilterHtml(current):'';
   const bind=()=>{
     mixDetailChartBindV798(()=>productCategoryDetail(current,detailSrc,backFn,view,base));
     $('#result').querySelectorAll('#mixCatDetailSeg button').forEach(b=>b.addEventListener('click',()=>productCategoryDetail(current,detailSrc,backFn,b.dataset.v,base)));
     $('#result').querySelectorAll('#mixCatProductFilterSeg button').forEach(b=>b.addEventListener('click',()=>{const c=b.dataset.v==='all'?'전체':b.dataset.v;productCategoryDetail(c,c==='전체'?base:base.filter(r=>mixCatOf(r)===c),backFn,'product',base);}));
   };
-  if(view==='product')return custProdDrill(current,detailSrc,backFn,null,true,true,{title:`${current} ▸ 제품별 매출`,backLabel:'← 제품구분으로',note:current==='전체'?'전체 제품구분의 품목·규격별 매출입니다.':`${esc(current)} 제품구분의 품목·규격별 매출입니다.`,monthlyPrefixHtml:prefix,monthlyOffText:'선택 제품구분의 제품별 월 매출을 펼쳐봅니다.',controlsHtml:filterHtml,onMount:bind});
-  return custDrillView(current,detailSrc,backFn,'rank-mix',{monthly:true,mixSalesPage:true,monthlyPrefixHtml:prefix,onMount:bind,rowDrill:(crow,backToCust)=>custProdDrill(crow.label,detailSrc.filter(r=>r.cust===crow.key),backToCust,null,true,true)});
+  if(view==='product')return custProdDrill(current,detailSrc,backFn,null,true,true,{title:`${current} ▸ 제품별 매출`,backLabel:'← 제품구분으로',note:current==='전체'?'전체 제품구분의 품목·규격별 매출입니다.':`${esc(current)} 제품구분의 품목·규격별 매출입니다.`,topHtml:chart,monthlyPrefixHtml:prefix,monthlyOffText:'선택 제품구분의 제품별 월 매출을 펼쳐봅니다.',controlsHtml:filterHtml,onMount:bind});
+  return custDrillView(current,detailSrc,backFn,'rank-mix',{monthly:true,mixSalesPage:true,topHtml:chart,monthlyPrefixHtml:prefix,onMount:bind,rowDrill:(crow,backToCust)=>custProdDrill(crow.label,detailSrc.filter(r=>r.cust===crow.key),backToCust,null,true,true,{chartRows:(CUR||[]).filter(r=>r.cust===crow.key&&(current==='전체'||mixCatOf(r)===current))})});
 }
 function productCategorySales(){
   state.mixSalesView=state.mixSalesView==='cust'?'cust':'category';
@@ -9548,11 +9593,23 @@ function rankCore(rows,keyFn,labelFn,dimLabel,metaPrefix,drillBy,drillByLabel,mo
 
 let SPECX_REFOCUS=false,SPECX_CARET=null;
 function specStandardEnsure(){
-  const d={type:'all',basis:'amt',group:'전체',groupExpanded:false,productOpen:'',vendorSort:{key:'amt',dir:'desc'},search:'',sort:{key:'amt',dir:'desc'},groupSort:{key:'total',dir:'desc'}};if(!state.specStandardSales)state.specStandardSales=d;Object.keys(d).forEach(k=>{if(state.specStandardSales[k]===undefined)state.specStandardSales[k]=d[k];});const st=state.specStandardSales;if(!['all','std','non','oem','other'].includes(st.type))st.type='all';if(!['amt','qty','count'].includes(st.basis))st.basis='amt';if(!st.sort||typeof st.sort!=='object')st.sort={key:'amt',dir:'desc'};if(!st.groupSort||typeof st.groupSort!=='object')st.groupSort={key:'total',dir:'desc'};if(!st.vendorSort||typeof st.vendorSort!=='object')st.vendorSort={key:'amt',dir:'desc'};return st;
+  const d={view:'product',type:'all',basis:'amt',group:'전체',groupExpanded:false,productOpen:'',vendorSort:{key:'amt',dir:'desc'},search:'',customerSearch:'',customerSort:{key:'total',dir:'desc'},sort:{key:'amt',dir:'desc'},groupSort:{key:'total',dir:'desc'}};if(!state.specStandardSales)state.specStandardSales=d;Object.keys(d).forEach(k=>{if(state.specStandardSales[k]===undefined)state.specStandardSales[k]=d[k];});const st=state.specStandardSales;if(!['product','customer'].includes(st.view))st.view='product';if(!['all','std','non','oem','other'].includes(st.type))st.type='all';if(!['amt','qty','count'].includes(st.basis))st.basis='amt';if(!st.sort||typeof st.sort!=='object')st.sort={key:'amt',dir:'desc'};if(!st.groupSort||typeof st.groupSort!=='object')st.groupSort={key:'total',dir:'desc'};if(!st.customerSort||typeof st.customerSort!=='object')st.customerSort={key:'total',dir:'desc'};if(!st.vendorSort||typeof st.vendorSort!=='object')st.vendorSort={key:'amt',dir:'desc'};return st;
 }
 function specStandardModel(){
   const src=periodRows(),monthCount=Math.max(1,new Set(src.map(r=>r.ym).filter(Boolean)).size),map=new Map();src.forEach(r=>{const key=dfProdKey(r);let o=map.get(key);if(!o){o={key,code:r.code||'',name:r.name||'',spec:r.spec||'',amt:0,qty:0,custs:new Set(),last:null};map.set(key,o);}o.amt+=amtOf(r);o.qty+=(+r.qty||0);o.custs.add(r.cust||'(미상)');if(!o.last||r.d>o.last)o.last=r.d;});
   return [...map.values()].map(o=>{const mixCat=mixCatOf(o),autoKind=mixCat==='유통/OEM'?'oem':(isNonStdAuto(o.spec,o.name)?'non':'std'),overrideKind=(state.specKindOverride||{})[o.key],kind=['std','non','oem','other'].includes(overrideKind)?overrideKind:autoKind;return {...o,kind,autoKind,kindOverride:overrideKind||'',group:dfGroupOf(o)||'미지정',mixCat,custN:o.custs.size,monthAvgQty:o.qty/monthCount};});
+}
+/* v815.6 : 규격/비규격을 거래처별로 다시 집계합니다. 품목수는 거래처 안의 고유 품번·규격 수입니다. */
+function specCustomerModel(st){
+  const kinds=['std','non','oem','other'],makeKind=()=>({amt:0,qty:0,keys:new Set()}),map=new Map();
+  periodRows().forEach(r=>{const cust=r.cust||'(미상)',key=dfProdKey(r),mix=mixCatOf(r),autoKind=mix==='유통/OEM'?'oem':(isNonStdAuto(r.spec,r.name)?'non':'std'),ov=(state.specKindOverride||{})[key],kind=kinds.includes(ov)?ov:autoKind;let o=map.get(cust);if(!o){o={cust,std:makeKind(),non:makeKind(),oem:makeKind(),other:makeKind()};map.set(cust,o);}const b=o[kind];b.amt+=amtOf(r);b.qty+=(+r.qty||0);b.keys.add(key);});
+  const pick=b=>st.basis==='qty'?b.qty:st.basis==='count'?b.keys.size:b.amt;
+  let rows=[...map.values()].map(o=>{const x={cust:o.cust};kinds.forEach(k=>x[k]=pick(o[k]));x.total=kinds.reduce((s,k)=>s+x[k],0);return x;});
+  const globalTotal=rows.reduce((s,o)=>s+o.total,0),q=String(st.customerSearch||'').trim().toLowerCase();
+  rows=rows.filter(o=>(st.type==='all'||o[st.type]>0)&&(!q||String(o.cust).toLowerCase().includes(q)));
+  const sort=st.customerSort||{key:'total',dir:'desc'},mul=sort.dir==='asc'?1:-1,val=o=>sort.key==='cust'?o.cust:sort.key==='totalShare'?(globalTotal?o.total/globalTotal:0):sort.key==='stdShare'?(o.total?o.std/o.total:0):sort.key==='nonShare'?(o.total?o.non/o.total:0):sort.key==='oemShare'?(o.total?o.oem/o.total:0):sort.key==='otherShare'?(o.total?o.other/o.total:0):sort.key==='nonRate'?(o.total?o.non/o.total:0):sort.key==='composition'?(o.total?o.std/o.total:0):(o[sort.key]||0);
+  rows.sort((a,b)=>{const av=val(a),bv=val(b),c=typeof av==='string'?av.localeCompare(bv,'ko'):av-bv;return c*mul||String(a.cust).localeCompare(String(b.cust),'ko');});
+  return {rows,globalTotal,totalCustomers:map.size};
 }
 function specStandardSales(){
   const st=specStandardEnsure(),all=specStandardModel(),stdRows=all.filter(o=>o.kind==='std'),nonRows=all.filter(o=>o.kind==='non'),oemRows=all.filter(o=>o.kind==='oem'),otherRows=all.filter(o=>o.kind==='other'),basisVal=o=>st.basis==='qty'?(o.qty||0):st.basis==='count'?1:(o.amt||0),basisLabel=st.basis==='qty'?'출고수량':st.basis==='count'?'품목수':'매출액',basisValueHead=st.basis==='qty'?'수량':st.basis==='count'?'품목수':'금액',fmtBasis=v=>st.basis==='qty'?won(v):st.basis==='count'?won(v)+'종':disp(v)+' '+unitLabel(),fmtGroupBasis=v=>st.basis==='qty'?won(v):st.basis==='count'?won(v)+'종':disp(v),total=all.reduce((s,o)=>s+basisVal(o),0),stdVal=stdRows.reduce((s,o)=>s+basisVal(o),0),nonVal=nonRows.reduce((s,o)=>s+basisVal(o),0),oemVal=oemRows.reduce((s,o)=>s+basisVal(o),0),otherVal=otherRows.reduce((s,o)=>s+basisVal(o),0),pct=v=>total?v/total*100:0;
@@ -9567,13 +9624,16 @@ function specStandardSales(){
   const visibleAmt=view.reduce((s,o)=>s+o.amt,0),arrow=key=>st.sort.key===key?(st.sort.dir==='asc'?'▲':'▼'):'↕',head=(label,key,cls='')=>`<th class="${cls}" data-spec-sort="${key}">${label}<span class="specx-sort-arrow">${arrow(key)}</span></th>`,prodBody=view.length?view.map((o,i)=>{const open=st.productOpen===o.key;return `<tr class="specx-product-row ${open?'open':''}" data-spec-product-key="${esc(o.key)}" title="선택하면 출고된 업체 목록이 바로 아래에 표시됩니다."><td>${i+1}</td><td style="text-align:center"><select class="specx-kind-select ${o.kind}" data-spec-kind-key="${esc(o.key)}" data-spec-kind-name="${esc(o.name||o.code||'품목')}" title="규격품·비규격품·유통/OEM·기타로 직접 변경하거나 자동 판정으로 되돌립니다."><option value="auto"${!o.kindOverride?' selected':''}>자동 · ${o.autoKind==='std'?'규격':o.autoKind==='non'?'비규격':o.autoKind==='oem'?'유통/OEM':'기타'}</option><option value="std"${o.kindOverride==='std'?' selected':''}>규격품</option><option value="non"${o.kindOverride==='non'?' selected':''}>비규격품</option><option value="oem"${o.kindOverride==='oem'?' selected':''}>유통/OEM</option><option value="other"${o.kindOverride==='other'?' selected':''}>기타</option></select></td><td style="text-align:center">${mixBadge(o.mixCat)}</td><td class="l">${esc(o.group)}</td><td class="l">${esc(o.code||'(품번 없음)')}</td><td class="l" title="${esc(o.name)}"><span class="specx-product-caret">${open?'▼':'▶'}</span>${esc(o.name||'(품명 없음)')}</td><td class="l" title="${esc(o.spec)}">${esc(o.spec||'(규격 없음)')}</td><td>${o.amt?disp(o.amt):''}</td><td>${amtTotal?(o.amt/amtTotal*100).toFixed(2)+'%':'-'}</td><td>${o.qty?won(o.qty):''}</td><td>${o.monthAvgQty?won(Math.round(o.monthAvgQty)):''}</td><td>${won(o.custN)}</td><td>${o.last?fmtD(o.last):''}</td></tr>${open?rankGroupProductVendorsHtml(o.key,periodRows(),null,13):''}`;}).join(''):`<tr><td colspan="13" class="specx-empty">선택 조건에 해당하는 품목이 없습니다.</td></tr>`;
   const kindRows={all:all,std:stdRows,non:nonRows,oem:oemRows,other:otherRows},kindVals={all:total,std:stdVal,non:nonVal,oem:oemVal,other:otherVal},typeBtn=(key,label)=>`<button type="button" data-spec-type="${key}" class="${st.type===key?'on':''}" title="${label} ${pct(kindVals[key]).toFixed(1)}%">${label} ${won(kindRows[key].length)} · ${pct(kindVals[key]).toFixed(1)}%</button>`,typeBtns=`<div class="specx-seg">${typeBtn('all','전체')}${typeBtn('std','규격품')}${typeBtn('non','비규격품')}${typeBtn('oem','유통/OEM')}${typeBtn('other','기타')}</div>`;
   const basisShare=mode=>{const f=o=>mode==='qty'?(o.qty||0):mode==='count'?1:(o.amt||0),den=all.reduce((s,o)=>s+f(o),0),src=st.type==='all'?all:kindRows[st.type];return den?src.reduce((s,o)=>s+f(o),0)/den*100:0;},basisBtn=(key,label)=>`<button type="button" data-spec-basis="${key}" class="${st.basis===key?'on':''}" title="현재 품목표시의 ${label} 비중 ${basisShare(key).toFixed(1)}%">${label}</button>`,basisBtns=`<div class="specx-seg">${basisBtn('amt','매출액 기준')}${basisBtn('qty','수량 기준')}${basisBtn('count','품목수 기준')}</div>`;
+  const customerData=specCustomerModel(st),customerRows=customerData.rows,cs=st.customerSort||{key:'total',dir:'desc'},cArrow=key=>cs.key===key?(cs.dir==='asc'?'▲':'▼'):'↕',cHead=(label,key)=>`${label}<span class="specx-sort-arrow">${cArrow(key)}</span>`,customerBody=customerRows.length?customerRows.map((o,i)=>{const gs=o.total?o.std/o.total*100:0,gn=o.total?o.non/o.total*100:0,gu=o.total?o.oem/o.total*100:0,go=o.total?o.other/o.total*100:0,allShare=customerData.globalTotal?o.total/customerData.globalTotal*100:0;return `<tr><td>${i+1}</td><td class="l"><b>${esc(o.cust)}</b> ${catChip(o.cust)}</td><td>${fmtGroupBasis(o.total)}</td><td>${allShare.toFixed(1)}%</td><td>${fmtGroupBasis(o.std)}</td><td>${gs.toFixed(1)}%</td><td>${fmtGroupBasis(o.non)}</td><td>${gn.toFixed(1)}%</td><td>${fmtGroupBasis(o.oem)}</td><td>${gu.toFixed(1)}%</td><td>${fmtGroupBasis(o.other)}</td><td>${go.toFixed(1)}%</td><td><b style="color:${gn>=30?'#dc2626':gn>0?'#ea580c':'#16a34a'}">${gn.toFixed(1)}%</b></td><td><div class="specx-group-bar"><span class="std" style="width:${gs.toFixed(1)}%"></span><span class="non" style="width:${gn.toFixed(1)}%"></span><span class="oem" style="width:${gu.toFixed(1)}%"></span><span class="other" style="width:${go.toFixed(1)}%"></span></div></td></tr>`;}).join(''):`<tr><td colspan="14" class="specx-empty">검색 조건에 해당하는 거래처가 없습니다.</td></tr>`;
+  const customerMain=`${cards}<div class="specx-toolbar"><span class="specx-label">거래처 표시</span>${typeBtns}<span class="specx-label">비중 기준</span>${basisBtns}<input id="specxSearch" class="specx-search" type="search" value="${esc(st.customerSearch)}" placeholder="거래처명 검색" autocomplete="off"><button type="button" id="specxExport" class="specx-btn">📥 엑셀</button></div><div class="specx-section"><div class="specx-section-head"><span class="specx-section-title">🏢 거래처별 규격·비규격 매출</span><span class="specx-section-meta">${basisLabel} 기준 · 표시 ${won(customerRows.length)}개사 / 전체 ${won(customerData.totalCustomers)}개사 · 각 거래처 안의 규격·비규격 구성비</span></div><div class="specx-group-scroll expanded"><table class="specx-group-table specx-customer-table"><colgroup><col><col><col><col><col><col><col><col><col><col><col><col><col><col></colgroup><thead><tr><th rowspan="2">NO.</th><th rowspan="2" data-spec-customer-sort="cust">${cHead('거래처','cust')}</th><th colspan="2" class="specx-group-band">전체</th><th colspan="2" class="specx-group-band">규격품</th><th colspan="2" class="specx-group-band">비규격품</th><th colspan="2" class="specx-group-band">유통/OEM</th><th colspan="2" class="specx-group-band">기타</th><th rowspan="2" data-spec-customer-sort="nonRate">${cHead('비규격률','nonRate')}</th><th rowspan="2" data-spec-customer-sort="composition">${cHead('구성','composition')}</th></tr><tr><th data-spec-customer-sort="total">${cHead(basisValueHead,'total')}</th><th data-spec-customer-sort="totalShare">${cHead('비중','totalShare')}</th><th data-spec-customer-sort="std">${cHead(basisValueHead,'std')}</th><th data-spec-customer-sort="stdShare">${cHead('비중','stdShare')}</th><th data-spec-customer-sort="non">${cHead(basisValueHead,'non')}</th><th data-spec-customer-sort="nonShare">${cHead('비중','nonShare')}</th><th data-spec-customer-sort="oem">${cHead(basisValueHead,'oem')}</th><th data-spec-customer-sort="oemShare">${cHead('비중','oemShare')}</th><th data-spec-customer-sort="other">${cHead(basisValueHead,'other')}</th><th data-spec-customer-sort="otherShare">${cHead('비중','otherShare')}</th></tr></thead><tbody>${customerBody}</tbody></table></div></div><div class="specx-note">거래처별 비중은 각 거래처의 전체 ${basisLabel} 안에서 규격품·비규격품·유통/OEM·기타가 차지하는 비율입니다. 품목 구분은 오른쪽 <b>품목 구분 설정</b>에서 지정한 값과 동일하게 적용됩니다.</div>`;
   const _df=dfEnsure();
-  const specSettingsBtn=`<div class="specx-head-tools"><button type="button" id="specxSettingsBtn" class="df-settings-btn ${_df.settingsOpen?'on':''}">📦 품목 구분 설정${_df.settingsOpen?' ✓':''}</button></div>`;
-  const specHead=`<div class="specx-head"><div><div class="specx-title">📐 규격/비규격 매출</div><div class="specx-meta">${esc(periodLabel())} · 전체 품목 ${won(all.length)}종 · 규격품·비규격품·유통/OEM·기타의 매출·수량·품목수 비중 및 품목군별 구성 비교</div></div>${specSettingsBtn}</div>`;
+  const specSettingsBtn=`<div class="specx-head-tools"><button type="button" id="specxCustomerBtn" class="df-settings-btn specx-view-btn ${st.view==='customer'?'on':''}">${st.view==='customer'?'📊 품목군별':'🏢 거래처별'}</button><button type="button" id="specxSettingsBtn" class="df-settings-btn ${_df.settingsOpen?'on':''}">📦 품목 구분 설정${_df.settingsOpen?' ✓':''}</button></div>`;
+  const specHead=`<div class="specx-head"><div><div class="specx-title">📐 규격/비규격 매출</div><div class="specx-meta">${esc(periodLabel())} · 전체 품목 ${won(all.length)}종 · 규격품·비규격품·유통/OEM·기타의 매출·수량·품목수 비중 및 ${st.view==='customer'?'거래처별':'품목군별'} 구성 비교</div></div>${specSettingsBtn}</div>`;
   const specMain=`${cards}<div class="specx-toolbar"><span class="specx-label">품목 표시</span>${typeBtns}<span class="specx-label">비중 기준</span>${basisBtns}<input id="specxSearch" class="specx-search" type="search" value="${esc(st.search)}" placeholder="품번 · 품명 · 규격 · 품목군 검색" autocomplete="off"><button type="button" id="specxExport" class="specx-btn">📥 엑셀</button></div><div class="specx-section"><div class="specx-section-head"><span class="specx-section-title">📊 품목군별 규격·비규격 비중</span><span class="specx-section-meta">${basisLabel} 기준 · 품목군 행 선택 시 아래 전체 품목리스트 필터</span><span class="spacer"></span><button type="button" id="specxGroupReset" class="specx-group-reset ${st.group==='전체'?'on':''}">전체 품목군${st.group!=='전체'?` · 현재 ${esc(st.group)}`:''}</button><button type="button" id="specxGroupExpand" class="specx-expand-btn ${st.groupExpanded?'on':''}">${st.groupExpanded?'이전 크기로':'전체 펼쳐보기'}</button></div><div class="specx-group-scroll ${st.groupExpanded?'expanded':''}"><table class="specx-group-table"><colgroup><col><col><col><col><col><col><col><col><col><col><col><col><col><col></colgroup><thead><tr><th rowspan="2" data-spec-group-sort="no">NO.<span class="specx-sort-arrow">${groupArrow('no')}</span></th><th rowspan="2" data-spec-group-sort="name">품목군<span class="specx-sort-arrow">${groupArrow('name')}</span></th><th colspan="2" class="specx-group-band">전체</th><th colspan="2" class="specx-group-band">규격품</th><th colspan="2" class="specx-group-band">비규격품</th><th colspan="2" class="specx-group-band">유통/OEM</th><th colspan="2" class="specx-group-band">기타</th><th rowspan="2" data-spec-group-sort="nonRate">비규격률<span class="specx-sort-arrow">${groupArrow('nonRate')}</span></th><th rowspan="2" data-spec-group-sort="composition">구성<span class="specx-sort-arrow">${groupArrow('composition')}</span></th></tr><tr><th data-spec-group-sort="total">금액<span class="specx-sort-arrow">${groupArrow('total')}</span></th><th data-spec-group-sort="totalShare">비중<span class="specx-sort-arrow">${groupArrow('totalShare')}</span></th><th data-spec-group-sort="std">금액<span class="specx-sort-arrow">${groupArrow('std')}</span></th><th data-spec-group-sort="stdShare">비중<span class="specx-sort-arrow">${groupArrow('stdShare')}</span></th><th data-spec-group-sort="non">금액<span class="specx-sort-arrow">${groupArrow('non')}</span></th><th data-spec-group-sort="nonShare">비중<span class="specx-sort-arrow">${groupArrow('nonShare')}</span></th><th data-spec-group-sort="oem">금액<span class="specx-sort-arrow">${groupArrow('oem')}</span></th><th data-spec-group-sort="oemShare">비중<span class="specx-sort-arrow">${groupArrow('oemShare')}</span></th><th data-spec-group-sort="other">금액<span class="specx-sort-arrow">${groupArrow('other')}</span></th><th data-spec-group-sort="otherShare">비중<span class="specx-sort-arrow">${groupArrow('otherShare')}</span></th></tr></thead><tbody>${groupBody}</tbody></table></div></div><div class="specx-section"><div class="specx-section-head"><span class="specx-section-title">📋 전체 품목리스트</span><span class="specx-section-meta">표시 ${won(view.length)}종 · 매출 ${disp(visibleAmt)} ${unitLabel()}${st.group!=='전체'?` · 품목군 ${esc(st.group)}`:''} · 품목 행 선택 시 출고 업체 표시</span></div><div class="specx-table-scroll"><table class="specx-table"><colgroup><col style="width:46px"><col style="width:105px"><col style="width:92px"><col style="width:125px"><col style="width:120px"><col style="width:18%"><col><col style="width:105px"><col style="width:80px"><col style="width:95px"><col style="width:105px"><col style="width:75px"><col style="width:105px"></colgroup><thead><tr><th>NO.</th>${head('규격구분','kind')}${head('제품구분','mix')}${head('품목군','group','l')}${head('품번','code','l')}${head('품명','name','l')}${head('규격','spec','l')}${head(`매출액(${unitLabel()})`,'amt')}${head('매출비중','share')}${head('출고수량','qty')}${head('월평균 출고량','monthAvgQty')}${head('업체수','custN')}${head('마지막출고','last')}</tr></thead><tbody>${prodBody}</tbody></table></div></div><div class="specx-note">비규격 자동 판정: 규격에 ‘비규격’이 포함되거나, 품명에 ‘임가공’이 포함되거나, 규격이 지급자재·자사자재·자사재고인 품목입니다. 유통/OEM 제품구분은 자동으로 유통/OEM 규격구분에 포함됩니다. 규격구분 선택상자에서 규격품·비규격품·유통/OEM·기타로 직접 변경하거나 자동 판정으로 되돌릴 수 있습니다.</div>`;
   const specMainView=st.basis==='amt'?specMain:specMain.replace(/>금액(<span class="specx-sort-arrow">)/g,`>${basisValueHead}$1`);
-  const html=`<div class="specx-page">${specHead}${_df.settingsOpen?`<div class="specx-settings-wrap">${dfProductListHtml()}</div>`:specMainView}</div>`;
+  const html=`<div class="specx-page">${specHead}${_df.settingsOpen?`<div class="specx-settings-wrap">${dfProductListHtml()}</div>`:(st.view==='customer'?customerMain:specMainView)}</div>`;
   renderCustom(html,()=>{
+    const _cb=document.getElementById('specxCustomerBtn');if(_cb)_cb.addEventListener('click',()=>{_df.settingsOpen=false;st.view=st.view==='customer'?'product':'customer';specStandardSales();});
     const _sb=document.getElementById('specxSettingsBtn');if(_sb)_sb.addEventListener('click',()=>{_df.settingsOpen=!_df.settingsOpen;specStandardSales();});
     if(_df.settingsOpen){dfBindProductSettings(specStandardSales);return;}
     const redrawSpecFixed=mutate=>{const pageX=window.scrollX,pageY=window.scrollY,tableBox=document.querySelector('.specx-table-scroll'),groupBox=document.querySelector('.specx-group-scroll'),tableTop=tableBox?tableBox.scrollTop:0,tableLeft=tableBox?tableBox.scrollLeft:0,groupTop=groupBox?groupBox.scrollTop:0,groupLeft=groupBox?groupBox.scrollLeft:0;mutate();specStandardSales();requestAnimationFrame(()=>{const nextTable=document.querySelector('.specx-table-scroll'),nextGroup=document.querySelector('.specx-group-scroll');if(nextTable){nextTable.scrollTop=tableTop;nextTable.scrollLeft=tableLeft;}if(nextGroup){nextGroup.scrollTop=groupTop;nextGroup.scrollLeft=groupLeft;}window.scrollTo({left:pageX,top:pageY,behavior:'auto'});});};
@@ -9584,14 +9644,15 @@ function specStandardSales(){
     document.querySelectorAll('[data-spec-basis]').forEach(b=>b.addEventListener('click',()=>{st.basis=b.dataset.specBasis;specStandardSales();}));
     document.querySelectorAll('[data-spec-group]').forEach(tr=>tr.addEventListener('click',()=>redrawSpecFixed(()=>{st.group=st.group===tr.dataset.specGroup?'전체':tr.dataset.specGroup;})));
     document.querySelectorAll('[data-spec-group-sort]').forEach(th=>th.addEventListener('click',()=>{const key=th.dataset.specGroupSort;redrawSpecFixed(()=>{st.groupSort={key,dir:st.groupSort.key===key?(st.groupSort.dir==='asc'?'desc':'asc'):(['no','name'].includes(key)?'asc':'desc')};});}));
+    document.querySelectorAll('[data-spec-customer-sort]').forEach(th=>th.addEventListener('click',()=>{const key=th.dataset.specCustomerSort;st.customerSort={key,dir:st.customerSort.key===key?(st.customerSort.dir==='asc'?'desc':'asc'):(key==='cust'?'asc':'desc')};specStandardSales();}));
     const reset=document.getElementById('specxGroupReset');if(reset)reset.addEventListener('click',()=>redrawSpecFixed(()=>{st.group='전체';}));
     const expand=document.getElementById('specxGroupExpand');if(expand)expand.addEventListener('click',()=>redrawSpecFixed(()=>{st.groupExpanded=!st.groupExpanded;}));
     document.querySelectorAll('[data-spec-kind-key]').forEach(sel=>sel.addEventListener('change',async e=>{e.stopPropagation();const pageX=window.scrollX,pageY=window.scrollY,tableBox=document.querySelector('.specx-table-scroll'),groupBox=document.querySelector('.specx-group-scroll'),tableTop=tableBox?tableBox.scrollTop:0,tableLeft=tableBox?tableBox.scrollLeft:0,groupTop=groupBox?groupBox.scrollTop:0,groupLeft=groupBox?groupBox.scrollLeft:0,key=sel.dataset.specKindKey||'',name=sel.dataset.specKindName||key,value=sel.value;state.specKindOverride=state.specKindOverride||{};if(['std','non','oem','other'].includes(value))state.specKindOverride[key]=value;else delete state.specKindOverride[key];if(typeof logEdit==='function')logEdit('규격구분',`${name} → ${value==='std'?'규격품':value==='non'?'비규격품':value==='oem'?'유통/OEM':value==='other'?'기타':'자동 판정'}`);await sharedSettingCommit('규격구분 지정');specStandardSales();requestAnimationFrame(()=>{const nextTable=document.querySelector('.specx-table-scroll'),nextGroup=document.querySelector('.specx-group-scroll');if(nextTable){nextTable.scrollTop=tableTop;nextTable.scrollLeft=tableLeft;}if(nextGroup){nextGroup.scrollTop=groupTop;nextGroup.scrollLeft=groupLeft;}window.scrollTo({left:pageX,top:pageY,behavior:'auto'});});}));
     document.querySelectorAll('[data-spec-product-key]').forEach(tr=>tr.addEventListener('click',e=>{if(e.target.closest('select,button,a,input'))return;e.stopPropagation();const key=tr.dataset.specProductKey||'';redrawSpecFixed(()=>{st.productOpen=st.productOpen===key?'':key;});}));
     document.querySelectorAll('[data-spec-vendor-sort]').forEach(th=>th.addEventListener('click',e=>{e.stopPropagation();const key=th.dataset.specVendorSort||'';redrawSpecFixed(()=>{const cur=st.vendorSort||{};st.vendorSort={key,dir:cur.key===key?(cur.dir==='asc'?'desc':'asc'):(['no','cust','name','spec'].includes(key)?'asc':'desc')};});}));
     document.querySelectorAll('[data-spec-sort]').forEach(th=>th.addEventListener('click',()=>{const key=th.dataset.specSort;st.sort={key,dir:st.sort.key===key?(st.sort.dir==='asc'?'desc':'asc'):(['kind','mix','group','code','name','spec'].includes(key)?'asc':'desc')};specStandardSales();}));
-    const inp=document.getElementById('specxSearch');if(inp){let composing=false,t=null;const apply=()=>{if(t)clearTimeout(t);st.search=inp.value;SPECX_REFOCUS=true;SPECX_CARET=inp.selectionStart;specStandardSales();};inp.addEventListener('compositionstart',()=>{composing=true;});inp.addEventListener('compositionend',()=>{composing=false;t=setTimeout(apply,120);});inp.addEventListener('input',e=>{st.search=inp.value;if(e.isComposing||composing)return;if(t)clearTimeout(t);t=setTimeout(apply,220);});}
-    const ex=document.getElementById('specxExport');if(ex)ex.addEventListener('click',()=>{const aoa=[['규격구분','제품구분','품목군','품번','품명','규격','매출액','매출비중(%)','출고수량','월평균 출고량','업체수','마지막출고']];view.forEach(o=>aoa.push([kindLabel(o.kind),o.mixCat,o.group,o.code,o.name,o.spec,Math.round(o.amt),amtTotal?+(o.amt/amtTotal*100).toFixed(2):0,o.qty,+o.monthAvgQty.toFixed(1),o.custN,o.last?fmtD(o.last):'']));dlXLSX('규격_비규격_매출_'+new Date().toISOString().slice(0,10)+'.xlsx','규격비규격',aoa);});
+    const inp=document.getElementById('specxSearch');if(inp){let composing=false,t=null;const apply=()=>{if(t)clearTimeout(t);if(st.view==='customer')st.customerSearch=inp.value;else st.search=inp.value;SPECX_REFOCUS=true;SPECX_CARET=inp.selectionStart;specStandardSales();};inp.addEventListener('compositionstart',()=>{composing=true;});inp.addEventListener('compositionend',()=>{composing=false;t=setTimeout(apply,120);});inp.addEventListener('input',e=>{if(st.view==='customer')st.customerSearch=inp.value;else st.search=inp.value;if(e.isComposing||composing)return;if(t)clearTimeout(t);t=setTimeout(apply,220);});}
+    const ex=document.getElementById('specxExport');if(ex)ex.addEventListener('click',()=>{if(st.view==='customer'){const aoa=[['거래처','전체 '+basisLabel,'전체비중(%)','규격품 '+basisLabel,'규격품비중(%)','비규격품 '+basisLabel,'비규격품비중(%)','유통/OEM '+basisLabel,'유통/OEM비중(%)','기타 '+basisLabel,'기타비중(%)','비규격률(%)']];customerRows.forEach(o=>{const den=o.total||0;aoa.push([o.cust,o.total,customerData.globalTotal?+(o.total/customerData.globalTotal*100).toFixed(1):0,o.std,den?+(o.std/den*100).toFixed(1):0,o.non,den?+(o.non/den*100).toFixed(1):0,o.oem,den?+(o.oem/den*100).toFixed(1):0,o.other,den?+(o.other/den*100).toFixed(1):0,den?+(o.non/den*100).toFixed(1):0]);});dlXLSX('거래처별_규격_비규격_매출_'+new Date().toISOString().slice(0,10)+'.xlsx','거래처별',aoa);return;}const aoa=[['규격구분','제품구분','품목군','품번','품명','규격','매출액','매출비중(%)','출고수량','월평균 출고량','업체수','마지막출고']];view.forEach(o=>aoa.push([kindLabel(o.kind),o.mixCat,o.group,o.code,o.name,o.spec,Math.round(o.amt),amtTotal?+(o.amt/amtTotal*100).toFixed(2):0,o.qty,+o.monthAvgQty.toFixed(1),o.custN,o.last?fmtD(o.last):'']));dlXLSX('규격_비규격_매출_'+new Date().toISOString().slice(0,10)+'.xlsx','규격비규격',aoa);});
     if(SPECX_REFOCUS){SPECX_REFOCUS=false;requestAnimationFrame(()=>{const x=document.getElementById('specxSearch');if(!x)return;x.focus();const p=Number.isFinite(+SPECX_CARET)?Math.min(+SPECX_CARET,x.value.length):x.value.length;try{x.setSelectionRange(p,p);}catch(_){}});}
   });setGlobalBar(true);
 }
