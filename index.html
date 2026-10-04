@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v814</title>
-<script>window.APP_BUILD='v814';</script>
+<title>동방파스텍 매출 분석 도구 v815</title>
+<script>window.APP_BUILD='v815';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1920,7 +1920,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v814</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v815</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -34498,5 +34498,140 @@ if(document.readyState==='complete')setTimeout(boot,420);
 else window.addEventListener('load',function(){ setTimeout(boot,420); },{once:true});
 })();
 </script>
+<script id="v815-auth-url-selfheal">
+/* ══════════ v815 · 로그인 서버 주소 «자가 복구» ══════════
+   문제 : 프로그램 안에 박아 둔 기본 서버주소가 옛 배포(다른 스크립트가 올라간 주소)를 가리키면,
+          그 주소를 저장해 둔 적 없는 «새 PC·새 브라우저»에서만 로그인이 막힙니다.
+          쓰던 PC 는 브라우저에 올바른 주소가 저장돼 있어 멀쩡하므로 뒤늦게 발견됩니다.
+   해결 : 주소가 로그인 서버가 맞는지 먼저 확인(auVer)하고, 아니면 알려진 후보 주소를
+          차례로 찔러 «진짜 로그인 서버»를 찾아 자동으로 바꿔 끼웁니다. 사용자는 아무것도 안 해도 됩니다.
+   판별 : 로그인 서버만 {ok:true, ver:"v4xx"} 를 돌려줍니다.
+          챗봇 등 다른 스크립트는 ver 없이 {alive/models/...} 또는 "질문이 비어 있습니다" 를 돌려줍니다. */
+(function(){
+'use strict';
+var LS_FOUND='au_url_found_v815', LS_TRIED='au_url_tried_v815';
+var BAD_RE=/알아보지 못했|질문이 비어|알 수 없는 요청|JSON이 아닌|HTTP\s*404|배포가 존재하지|서버 주소가 설정되지/;
+
+/* 알려진 후보 주소(앞에서부터 확인). 새 배포를 만들면 맨 앞에 한 줄만 추가하면 됩니다. */
+var CAND=[
+  'https://script.google.com/macros/s/AKfycbxSlND4ZKOpxISNQMRdV2d-LA5YxXS1BDe0k2TXKq6g7Tfm6PZ1Rse3mp0Nm4ndZXZdiQ/exec'
+];
+window.AU_URL_CANDIDATES_V815=CAND;
+
+function isAuth(d){ return !!(d&&d.ok===true&&d.ver); }                 /* 진짜 로그인 서버 */
+function isOther(d){ return !!(d&&!d.ver&&(d.models||d.alive!=null||d.answer!=null)); }  /* 챗봇 등 다른 스크립트 */
+
+/* 주소 하나가 «로그인 서버»인지 확인합니다. POST 로 보고, 막히면 GET 으로 한 번 더 봅니다. */
+async function probe(u,ms){
+  u=String(u||'').trim(); if(!u)return null;
+  var body=JSON.stringify({action:'auVer',key:(typeof AU_KEY!=='undefined'?AU_KEY:'')});
+  var ways=[
+    function(){ return fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body}); },
+    function(){ return fetch(u+(u.indexOf('?')>=0?'&':'?')+'action=auVer',{method:'GET'}); }
+  ];
+  for(var i=0;i<ways.length;i++){
+    var ctl=(typeof AbortController!=='undefined')?new AbortController():null;
+    var t=ctl?setTimeout(function(){try{ctl.abort();}catch(_){}} ,ms||9000):null;
+    try{
+      var r=await ways[i](); if(t)clearTimeout(t);
+      var tx=await r.text(), d=null; try{ d=JSON.parse(tx); }catch(_p){ d=null; }
+      if(isAuth(d))return {ok:true,url:u,ver:d.ver};
+      if(isOther(d))return {ok:false,url:u,why:'다른 스크립트(로그인 서버 아님)'};
+    }catch(_e){ if(t)clearTimeout(t); }
+  }
+  return {ok:false,url:u,why:'응답 없음/형식 불일치'};
+}
+
+/* 같은 폴더의 auth_url.json 이 있으면 후보 맨 앞에 넣습니다(주소가 또 바뀌면 이 파일만 고치면 됩니다).
+   예) {"url":"https://script.google.com/macros/s/…/exec"}  또는  {"urls":["…","…"]} */
+async function remoteList(){
+  try{
+    if(!/^https?:$/.test(location.protocol))return [];
+    var ctl=(typeof AbortController!=='undefined')?new AbortController():null;
+    var t=ctl?setTimeout(function(){try{ctl.abort();}catch(_){}} ,5000):null;
+    var r=await fetch('auth_url.json?t='+Date.now(),{cache:'no-store',signal:ctl?ctl.signal:undefined});
+    if(t)clearTimeout(t);
+    if(!r.ok)return [];
+    var j=await r.json();
+    var a=[].concat(j&&j.urls||[],(j&&j.url)?[j.url]:[]);
+    return a.filter(function(x){ return /^https:\/\/script\.google\.com\/macros\/s\//.test(String(x||'')); });
+  }catch(_e){ return []; }
+}
+
+/* 진짜 로그인 서버를 찾아 저장합니다. 찾으면 그 주소를 돌려줍니다. */
+var _busy=null;
+window.auUrlHealV815=function(opt){
+  if(_busy)return _busy;
+  _busy=(async function(){
+    try{
+      var cur=''; try{ cur=auUrl(); }catch(_u){}
+      var list=[], seen={};
+      (await remoteList()).forEach(function(u){ if(!seen[u]){seen[u]=1;list.push(u);} });
+      if(cur&&!seen[cur]&&!(opt&&opt.skipCurrent)){ seen[cur]=1; list.push(cur); }
+      CAND.forEach(function(u){ if(!seen[u]){seen[u]=1;list.push(u);} });
+      try{ var saved=JSON.parse(localStorage.getItem(LS_FOUND)||'null'); if(saved&&saved.url&&!seen[saved.url]){seen[saved.url]=1;list.unshift(saved.url);} }catch(_s){}
+      for(var i=0;i<list.length;i++){
+        var res=await probe(list[i]);
+        if(res&&res.ok){
+          try{ localStorage.setItem(LS_FOUND,JSON.stringify({url:res.url,ver:res.ver,at:Date.now()})); }catch(_w){}
+          if(res.url!==cur){
+            try{ AU.urlOverride=res.url; auUrlLsSet(res.url); }catch(_a){}
+            try{ state.gsync=state.gsync||{}; state.gsync.url=res.url; }catch(_g){}
+            try{ await idbSet(AU_STORE,{token:AU.token,id:AU.id,name:AU.name,role:AU.role,exp:AU.exp,urlOverride:res.url}); }catch(_i){}
+            try{ console.info('[v815] 로그인 서버 주소를 자동으로 바로잡았습니다 →',res.url,'(auth '+res.ver+')'); }catch(_c){}
+          }
+          return res.url;
+        }
+      }
+      return '';
+    }catch(_e){ return ''; }
+    finally{ setTimeout(function(){_busy=null;},50); }
+  })();
+  return _busy;
+};
+
+/* ① auCall 이 «서버가 요청을 알아보지 못함» 류로 실패하면, 주소를 고쳐 한 번만 다시 시도합니다. */
+if(typeof auCall==='function'&&!auCall.__v815){
+  var _orig=auCall;
+  var wrapped=async function(payload,timeoutMs){
+    var heal=async function(){
+      var before=''; try{ before=auUrl(); }catch(_b){}
+      var found=await window.auUrlHealV815({skipCurrent:true});
+      return (found&&found!==before)?found:'';
+    };
+    var d;
+    try{ d=await _orig(payload,timeoutMs); }
+    catch(e){
+      var msg=String((e&&e.message)||e);
+      if(!BAD_RE.test(msg)||(payload&&payload.__healedV815))throw e;
+      if(!await heal())throw e;
+      payload.__healedV815=1;
+      return await _orig(payload,timeoutMs);
+    }
+    /* 오류 없이 «엉뚱한 응답»(챗봇 등)이 온 경우도 주소 문제입니다 — 바로잡고 한 번 더 */
+    if(isOther(d)&&!(payload&&payload.__healedV815)){
+      if(await heal()){ payload.__healedV815=1; return await _orig(payload,timeoutMs); }
+    }
+    return d;
+  };
+  wrapped.__v815=true;
+  window.auCall=wrapped; try{ auCall=wrapped; }catch(_x){}
+}
+
+/* ② 이 브라우저에서 처음 쓰는 경우(저장된 주소 없음)에는 로그인 화면이 뜰 때 미리 확인해 둡니다. */
+function boot(){
+  try{
+    var had=''; try{ had=(AU&&AU.urlOverride)||auUrlLsGet()||''; }catch(_h){}
+    var tried=''; try{ tried=localStorage.getItem(LS_TRIED)||''; }catch(_t){}
+    if(had&&tried)return;                      /* 이미 쓰던 PC 는 건드리지 않습니다 */
+    try{ localStorage.setItem(LS_TRIED,String(Date.now())); }catch(_w){}
+    setTimeout(function(){ try{ window.auUrlHealV815(); }catch(_e){} },600);
+  }catch(_e){}
+}
+if(document.readyState==='complete')setTimeout(boot,400);
+else window.addEventListener('load',function(){setTimeout(boot,400);},{once:true});
+})();
+</script>
+
 </body>
 </html>
