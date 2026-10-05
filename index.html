@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v825</title>
-<script>window.APP_BUILD='v825';</script>
+<title>동방파스텍 매출 분석 도구 v827</title>
+<script>window.APP_BUILD='v827';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1923,7 +1923,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v825</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v827</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -28363,6 +28363,19 @@ function sgMatrixDefsV825(){return[
   {id:'core_comp',k:'risk',raw:9.3,fill:'#a5f3fc',txt:'#1f2937',a:'포괄납품·단가조정',b:'복수거래 물량 전환'}
 ];}
 function sgMatrixCellDefV825(id){return sgMatrixDefsV825().filter(function(o){return o.id===id;})[0]||null;}
+function sgMatrixLabelsV826(year,plan){
+  var pl=sgPlan(),Y=String(year||''),P=plan==='2'?'2':'1';
+  if(!pl.matrixLabels||typeof pl.matrixLabels!=='object')pl.matrixLabels={};
+  if(!pl.matrixLabels[Y])pl.matrixLabels[Y]={};
+  if(!pl.matrixLabels[Y][P])pl.matrixLabels[Y][P]={};
+  return pl.matrixLabels[Y][P];
+}
+function sgMatrixLabelV826(labels,key,fallback){
+  return labels&&labels[key]!=null?String(labels[key]):String(fallback||'');
+}
+function sgMatrixEditInputV826(x,y,w,h,key,value,align,weight){
+  return '<foreignObject x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'"><input xmlns="http://www.w3.org/1999/xhtml" class="sgMxTextEditV826" data-label-key="'+sgEsc(key)+'" value="'+sgEsc(value)+'" style="width:100%;height:100%;box-sizing:border-box;border:1px solid #60a5fa;border-radius:4px;background:#fff;color:#0f172a;text-align:'+(align||'center')+';font: '+(weight||'500')+' 10px sans-serif;padding:2px 4px;outline:none" /></foreignObject>';
+}
 function sgMatrixCellRowsV825(year,plan,id,create){
   var pl=sgPlan(),Y=String(year||''),P=plan==='2'?'2':'1';
   if(!pl.matrixCellData||typeof pl.matrixCellData!=='object'){if(!create)return[];pl.matrixCellData={};}
@@ -28418,26 +28431,28 @@ function sgMatrixCellEditorV825(A,cellId,year,plan,alloc){
 }
 function sgMekkoV814(o){
   var goal=Math.max(0,+o.goal||0),end=Math.max(0,+o.end||0),year=+o.year||0,plan=o.plan==='2'?'2':'1',selCell=o.selectedCell||'';
-  var W=1400,H=500,mx=160,my=65,cw=225,ch=105,bx=1070,bw=230,cells=sgMatrixDefsV825(),valsById=sgMatrixTargetValsV825(o),vals=cells.map(function(c){return valsById[c.id]||0;}),total=vals.reduce(function(a,v){return a+v;},0);
+  var W=1400,H=500,mx=160,my=65,cw=225,ch=105,bx=1070,bw=230,cells=sgMatrixDefsV825(),valsById=sgMatrixTargetValsV825(o),vals=cells.map(function(c){return valsById[c.id]||0;}),total=vals.reduce(function(a,v){return a+v;},0),pl=sgPlan(),edit=!!pl.matrixTextEdit,labels=sgMatrixLabelsV826(year,plan);
   if(total<=0)return '<svg class="sg-waterfall-svg sg-mekko-v814" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="3×3 방화문 부자재 계획 매트릭스"><rect x="'+mx+'" y="'+my+'" width="'+(cw*3)+'" height="'+(ch*3)+'" fill="#f8fafc" stroke="#cbd5e1"/><text x="'+(mx+cw*1.5)+'" y="'+(my+ch*1.5)+'" text-anchor="middle" font-size="12" fill="#94a3b8">A 워터폴에 표시할 계획 금액이 없습니다.</text></svg>';
   var rows=[{t:'수입·대체 하드웨어',s:'직수입·대리점·대체전환'},{t:'주문·협업 개발품',s:'주문생산·협업개발·품질대응'},{t:'전용·공용품 주력 부자재',s:'규격·비규격·레이저·철판'}];
   var cols=[{t:'기존 거래처',s:'방화문 제조사 반복거래'},{t:'신규 및 복수거래처',s:'신규 진입·제품구색 확대'},{t:'경쟁사 거래처',s:'타사 부자재 사용처 윈백'}];
+  rows.forEach(function(r,i){r.t=sgMatrixLabelV826(labels,'row'+i+'t',r.t);r.s=sgMatrixLabelV826(labels,'row'+i+'s',r.s);});
+  cols.forEach(function(c,i){c.t=sgMatrixLabelV826(labels,'col'+i+'t',c.t);c.s=sgMatrixLabelV826(labels,'col'+i+'s',c.s);});
   var pct=function(i){return(total>0?vals[i]/total*100:0).toFixed(1)+'%';},gap=goal-end,rate=goal?end/goal*100:0;
   var s='<svg class="sg-waterfall-svg sg-mekko-v814" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="'+year+'년 A 워터폴 연동 3×3 방화문 부자재 계획 매트릭스"><title>'+year+'년 A 워터폴 연동 3×3 방화문 부자재 계획 매트릭스</title>'
-    +'<text x="'+(mx+cw*1.5)+'" y="22" text-anchor="middle" font-size="12" font-weight="800" fill="#0f172a">[ '+year+'년 A 워터폴 연동 3×3 방화문 부자재 계획 매트릭스 ]</text>';
+    +'<text x="'+(mx+cw*1.5)+'" y="22" text-anchor="middle" font-size="12" style="font-size:12px!important" font-weight="800" fill="#0f172a">[ '+year+'년 A 워터폴 연동 3×3 방화문 부자재 계획 매트릭스 ]</text>';
   s+='<text x="'+(mx-8)+'" y="'+(my-10)+'" text-anchor="end" font-size="11" font-weight="800" fill="#dc2626">▲ 제품 구분</text>';
-  rows.forEach(function(r,i){var y=my+ch*i+ch/2;s+='<text x="'+(mx-12)+'" y="'+(y-4)+'" text-anchor="end" font-size="11" font-weight="800" fill="#1e293b">'+r.t+'</text><text x="'+(mx-12)+'" y="'+(y+12)+'" text-anchor="end" font-size="9.2" fill="#64748b">('+r.s+')</text>';});
+  rows.forEach(function(r,i){var y=my+ch*i+ch/2;if(edit){s+=sgMatrixEditInputV826(4,y-25,mx-20,22,'row'+i+'t',r.t,'right','800')+sgMatrixEditInputV826(4,y+1,mx-20,20,'row'+i+'s',r.s,'right','500');}else{s+='<text x="'+(mx-12)+'" y="'+(y-4)+'" text-anchor="end" font-size="11" font-weight="800" fill="#1e293b">'+sgEsc(r.t)+'</text><text x="'+(mx-12)+'" y="'+(y+12)+'" text-anchor="end" font-size="9.2" fill="#64748b">('+sgEsc(r.s)+')</text>';}});
   cells.forEach(function(c,i){var col=i%3,row=Math.floor(i/3),x=mx+col*cw,y=my+row*ch,cx=x+cw/2,cy=y+ch/2,isSel=selCell===c.id,linkedRows=sgMatrixCellRowsV825(year,plan,c.id,false),linked=linkedRows.reduce(function(a,o){return a+(+o.amount||0);},0),hasLinked=linkedRows.length>0;
     s+='<g class="sg-wf-selectable'+(isSel?' is-selected':'')+'" data-wf-key="'+c.k+'" data-matrix-cell="'+c.id+'" tabindex="0" role="button" aria-label="'+sgEsc(cols[col].t+' × '+rows[row].t)+' 목표 연결" style="cursor:pointer">'
       +'<rect class="sg-matrix-cell-rect" x="'+x+'" y="'+y+'" width="'+cw+'" height="'+ch+'" fill="'+c.fill+'" stroke="'+(isSel?'#1d4ed8':'#ffffff')+'" stroke-width="'+(isSel?3:2)+'"><title>'+sgEsc(cols[col].t+' × '+rows[row].t)+' : A 워터폴 배분 '+sgWon(vals[i])+'원 · 연결 '+sgWon(linked)+'원</title></rect>'
-      +'<text x="'+cx+'" y="'+(cy+(hasLinked?-25:-19))+'" text-anchor="middle" font-size="10.2" fill="'+c.txt+'">'+c.a+'</text><text x="'+cx+'" y="'+(cy+(hasLinked?-8:0))+'" text-anchor="middle" font-size="9.5" fill="'+c.txt+'">'+c.b+'</text>'
+      +(edit?(sgMatrixEditInputV826(x+12,cy+(hasLinked?-41:-35),cw-24,22,'cell_'+c.id+'_a',sgMatrixLabelV826(labels,'cell_'+c.id+'_a',c.a),'center','500')+sgMatrixEditInputV826(x+12,cy+(hasLinked?-17:-11),cw-24,21,'cell_'+c.id+'_b',sgMatrixLabelV826(labels,'cell_'+c.id+'_b',c.b),'center','500')):('<text x="'+cx+'" y="'+(cy+(hasLinked?-25:-19))+'" text-anchor="middle" font-size="10.2" fill="'+c.txt+'">'+sgEsc(sgMatrixLabelV826(labels,'cell_'+c.id+'_a',c.a))+'</text><text x="'+cx+'" y="'+(cy+(hasLinked?-8:0))+'" text-anchor="middle" font-size="9.5" fill="'+c.txt+'">'+sgEsc(sgMatrixLabelV826(labels,'cell_'+c.id+'_b',c.b))+'</text>'))
       +'<text x="'+cx+'" y="'+(cy+(hasLinked?12:21))+'" text-anchor="middle" font-size="11.2" font-weight="700" fill="#dc2626">계획 '+sgShort(vals[i])+' ('+pct(i)+')</text>'
       +(hasLinked?'<text x="'+cx+'" y="'+(cy+29)+'" text-anchor="middle" font-size="9.5" fill="'+c.txt+'">연결 '+linkedRows.length+'건 · '+sgShort(linked)+'</text>':'')+'</g>';});
   var matrixBottom=my+ch*3,matrixRight=mx+cw*3;
   s+='<rect x="'+mx+'" y="'+my+'" width="'+(cw*3)+'" height="'+(ch*3)+'" fill="none" stroke="#64748b" stroke-width="1"/>'
     +'<line x1="'+mx+'" y1="'+(my-24)+'" x2="'+mx+'" y2="'+matrixBottom+'" stroke="#1e3a5f" stroke-width="2"/>'
     +'<line x1="'+mx+'" y1="'+matrixBottom+'" x2="'+(matrixRight+20)+'" y2="'+matrixBottom+'" stroke="#1e3a5f" stroke-width="2"/>';
-  cols.forEach(function(c,i){var x=mx+cw*i+cw/2;s+='<text x="'+x+'" y="'+(matrixBottom+24)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#1e293b">'+c.t+'</text><text x="'+x+'" y="'+(matrixBottom+40)+'" text-anchor="middle" font-size="9.5" fill="#64748b">('+c.s+')</text>';});
+  cols.forEach(function(c,i){var x=mx+cw*i+cw/2;if(edit){s+=sgMatrixEditInputV826(x-cw/2+12,matrixBottom+9,cw-24,21,'col'+i+'t',c.t,'center','800')+sgMatrixEditInputV826(x-cw/2+12,matrixBottom+32,cw-24,20,'col'+i+'s',c.s,'center','500');}else{s+='<text x="'+x+'" y="'+(matrixBottom+24)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#1e293b">'+sgEsc(c.t)+'</text><text x="'+x+'" y="'+(matrixBottom+40)+'" text-anchor="middle" font-size="9.5" fill="#64748b">('+sgEsc(c.s)+')</text>';}});
   s+='<text x="'+(matrixRight+25)+'" y="'+(matrixBottom+4)+'" text-anchor="start" font-size="11" font-weight="800" fill="#dc2626">매출처 구분 ▶</text>';
   var groups=[
     {a:'기존처 × 주력부자재',b:'반복·증량',v:vals[6],p:vals[6]/total*100,c:'#1d4ed8'},
@@ -28639,7 +28654,8 @@ function sgWaterfall(A){
   /* v826 : A 워터폴 / A와 금액이 완전 연동된 B 매트릭스 전환 */
   var _typeSegV814='<span class="sg-wf-type-v814" style="display:inline-flex;border:1px solid #93c5fd;border-radius:7px;overflow:hidden">'
     +'<button type="button" class="sgWfTypeBtnV814" data-t="A" title="워터폴 — 무엇을 더하고 빼서 목표를 채우는지" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:none;cursor:pointer;background:'+(_wfTypeV814==='A'?'#1d4ed8':'#fff')+';color:'+(_wfTypeV814==='A'?'#fff':'#1e3a5f')+'">A 워터폴</button>'
-    +'<button type="button" class="sgWfTypeBtnV814" data-t="B" '+(_matrixEnabledV814?'':'disabled aria-disabled="true"')+' title="'+(_matrixEnabledV814?'A 워터폴 연동 3×3 제품·매출처 계획 매트릭스':'2026년에는 B 매트릭스를 사용할 수 없습니다.')+'" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:none;border-left:1px solid #bfdbfe;cursor:'+(_matrixEnabledV814?'pointer':'not-allowed')+';opacity:'+(_matrixEnabledV814?'1':'.45')+';background:'+(_wfTypeV814==='B'?'#1d4ed8':'#fff')+';color:'+(_wfTypeV814==='B'?'#fff':'#1e3a5f')+'">B 매트릭스</button></span>';
+    +'<button type="button" class="sgWfTypeBtnV814" data-t="B" '+(_matrixEnabledV814?'':'disabled aria-disabled="true"')+' title="'+(_matrixEnabledV814?'A 워터폴 연동 3×3 제품·매출처 계획 매트릭스':'2026년에는 B 매트릭스를 사용할 수 없습니다.')+'" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:none;border-left:1px solid #bfdbfe;cursor:'+(_matrixEnabledV814?'pointer':'not-allowed')+';opacity:'+(_matrixEnabledV814?'1':'.45')+';background:'+(_wfTypeV814==='B'?'#1d4ed8':'#fff')+';color:'+(_wfTypeV814==='B'?'#fff':'#1e3a5f')+'">B 매트릭스</button></span>'
+    +(_wfTypeV814==='B'?'<button type="button" id="sgMxTextToggleV826" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:1px solid '+(pl.matrixTextEdit?'#0f766e':'#93c5fd')+';border-radius:7px;background:'+(pl.matrixTextEdit?'#0f766e':'#fff')+';color:'+(pl.matrixTextEdit?'#fff':'#1d4ed8')+';cursor:pointer;line-height:normal">'+(pl.matrixTextEdit?'완료':'수정')+'</button>':'');
   var _typeNoteV814=(_wfTypeV814==='B')
     ? ''
     : '<span><b>형광 제목</b> 계획 합계 반영 · <b>진한 누적막대</b> 기존업체＋신규업체＋신규제품－거래축소＋신규사업 · <b>점선막대</b> 중복 합산 제외</span>';
@@ -30844,6 +30860,20 @@ function sgBind(A){
   /* v814 : 달성 구성 그래프 A/B 전환 */
   $$('.sgWfTypeBtnV814').forEach(function(b){ b.addEventListener('click',function(){
     pl.wfChartType=(b.dataset.t==='B')?'B':'A'; sgSave(); sgRe(); }); });
+  /* v826 : 매트릭스 문구는 수정 모드에서만 입력선이 보이며 계획 금액·비율은 편집 대상에서 제외합니다. */
+  var mxTextToggle=document.getElementById('sgMxTextToggleV826');
+  if(mxTextToggle)mxTextToggle.addEventListener('click',function(e){
+    e.preventDefault();e.stopPropagation();pl.matrixTextEdit=!pl.matrixTextEdit;sgSave();sgRe(true);
+  });
+  $$('.sgMxTextEditV826').forEach(function(inp){
+    var stop=function(e){e.stopPropagation();};
+    inp.addEventListener('click',stop);inp.addEventListener('mousedown',stop);inp.addEventListener('keydown',stop);
+    inp.addEventListener('input',function(){
+      var ctx=sgGoalContext(A),labels=sgMatrixLabelsV826(ctx.year,ctx.plan),key=inp.dataset.labelKey||'';
+      if(key)labels[key]=inp.value;
+    });
+    inp.addEventListener('change',sgSave);
+  });
   $$('.sg-wf-selectable[data-wf-key]').forEach(function(el){
     /* 같은 항목을 다시 선택하면 선택을 해제합니다. */
     var open=function(){
