@@ -28373,7 +28373,7 @@ function sgMatrixLabelV826(labels,key,fallback){
   return labels&&labels[key]!=null?String(labels[key]):String(fallback||'');
 }
 function sgMatrixEditInputV826(x,y,w,h,key,value,align,weight){
-  return '<foreignObject x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'"><input xmlns="http://www.w3.org/1999/xhtml" class="sgMxTextEditV826" data-label-key="'+sgEsc(key)+'" value="'+sgEsc(value)+'" style="width:100%;height:100%;box-sizing:border-box;border:1px solid #60a5fa;border-radius:4px;background:#fff;color:#0f172a;text-align:'+(align||'center')+';font: '+(weight||'500')+' 10px sans-serif;padding:2px 4px;outline:none" /></foreignObject>';
+  return '<foreignObject x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'"><input xmlns="http://www.w3.org/1999/xhtml" class="sgMxTextEditV826" data-label-key="'+sgEsc(key)+'" value="'+sgEsc(value)+'" style="width:100%;height:100%;box-sizing:border-box;border:1px solid #60a5fa;border-radius:4px;background:#fff;color:#0f172a;text-align:'+(align||'center')+';font: '+(weight||'500')+' 11px sans-serif;padding:2px 4px;outline:none" /></foreignObject>';
 }
 function sgMatrixCellRowsV825(year,plan,id,create){
   var pl=sgPlan(),Y=String(year||''),P=plan==='2'?'2':'1';
@@ -28444,7 +28444,7 @@ function sgMekkoV814(o){
   cells.forEach(function(c,i){var col=i%3,row=Math.floor(i/3),x=mx+col*cw,y=my+row*ch,cx=x+cw/2,cy=y+ch/2,isSel=selCell===c.id,linkedRows=sgMatrixCellRowsV825(year,plan,c.id,false),linked=linkedRows.reduce(function(a,o){return a+(+o.amount||0);},0),hasLinked=linkedRows.length>0;
     s+='<g class="sg-wf-selectable'+(isSel?' is-selected':'')+'" data-wf-key="'+c.k+'" data-matrix-cell="'+c.id+'" tabindex="0" role="button" aria-label="'+sgEsc(cols[col].t+' × '+rows[row].t)+' 목표 연결" style="cursor:pointer">'
       +'<rect class="sg-matrix-cell-rect" x="'+x+'" y="'+y+'" width="'+cw+'" height="'+ch+'" fill="'+c.fill+'" stroke="'+(isSel?'#1d4ed8':'#ffffff')+'" stroke-width="'+(isSel?3:2)+'"><title>'+sgEsc(cols[col].t+' × '+rows[row].t)+' : A 워터폴 배분 '+sgWon(vals[i])+'원 · 연결 '+sgWon(linked)+'원</title></rect>'
-      +(edit?(sgMatrixEditInputV826(x+12,cy+(hasLinked?-41:-35),cw-24,22,'cell_'+c.id+'_a',sgMatrixLabelV826(labels,'cell_'+c.id+'_a',c.a),'center','500')+sgMatrixEditInputV826(x+12,cy+(hasLinked?-17:-11),cw-24,21,'cell_'+c.id+'_b',sgMatrixLabelV826(labels,'cell_'+c.id+'_b',c.b),'center','500')):('<text x="'+cx+'" y="'+(cy+(hasLinked?-25:-19))+'" text-anchor="middle" font-size="10.2" fill="'+c.txt+'">'+sgEsc(sgMatrixLabelV826(labels,'cell_'+c.id+'_a',c.a))+'</text><text x="'+cx+'" y="'+(cy+(hasLinked?-8:0))+'" text-anchor="middle" font-size="9.5" fill="'+c.txt+'">'+sgEsc(sgMatrixLabelV826(labels,'cell_'+c.id+'_b',c.b))+'</text>'))
+      +(edit?(sgMatrixEditInputV826(x+12,cy+(hasLinked?-41:-35),cw-24,22,'cell_'+c.id+'_a',sgMatrixLabelV826(labels,'cell_'+c.id+'_a',c.a),'center','800')+sgMatrixEditInputV826(x+12,cy+(hasLinked?-17:-11),cw-24,21,'cell_'+c.id+'_b',sgMatrixLabelV826(labels,'cell_'+c.id+'_b',c.b),'center','500')):('<text x="'+cx+'" y="'+(cy+(hasLinked?-25:-19))+'" text-anchor="middle" font-size="10.2" font-weight="800" fill="'+c.txt+'">'+sgEsc(sgMatrixLabelV826(labels,'cell_'+c.id+'_a',c.a))+'</text><text x="'+cx+'" y="'+(cy+(hasLinked?-8:0))+'" text-anchor="middle" font-size="9.5" fill="'+c.txt+'">'+sgEsc(sgMatrixLabelV826(labels,'cell_'+c.id+'_b',c.b))+'</text>'))
       +'<text x="'+cx+'" y="'+(cy+(hasLinked?12:21))+'" text-anchor="middle" font-size="11.2" font-weight="700" fill="#dc2626">계획 '+sgShort(vals[i])+' ('+pct(i)+')</text>'
       +(hasLinked?'<text x="'+cx+'" y="'+(cy+29)+'" text-anchor="middle" font-size="9.5" fill="'+c.txt+'">연결 '+linkedRows.length+'건 · '+sgShort(linked)+'</text>':'')+'</g>';});
   var matrixBottom=my+ch*3,matrixRight=mx+cw*3;
@@ -30872,9 +30872,19 @@ function sgBind(A){
     inp.addEventListener('click',stop);inp.addEventListener('mousedown',stop);inp.addEventListener('keydown',stop);
     inp.addEventListener('input',function(){
       var ctx=sgGoalContext(A),labels=sgMatrixLabelsV826(ctx.year,ctx.plan),key=inp.dataset.labelKey||'';
-      if(key)labels[key]=inp.value;
+      if(key){
+        labels[key]=inp.value;
+        $$('.sgMxTextEditV826[data-label-key="'+key+'"]').forEach(function(peer){
+          if(peer!==inp&&peer.value!==inp.value)peer.value=inp.value;
+        });
+        clearTimeout(window._sgMxTextSaveTimerV826);
+        window._sgMxTextSaveTimerV826=setTimeout(sgSave,150);
+      }
     });
-    inp.addEventListener('change',sgSave);
+    inp.addEventListener('change',function(){
+      clearTimeout(window._sgMxTextSaveTimerV826);
+      sgSave();
+    });
   });
   $$('.sg-wf-selectable[data-wf-key]').forEach(function(el){
     /* 같은 항목을 다시 선택하면 선택을 해제합니다. */
