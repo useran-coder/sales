@@ -8801,18 +8801,26 @@ function custTradeHistoryV665(cust,back){
   var yr=+state.price.thYear; if(!yr||yrs.indexOf(yr)<0)yr=yrs[0];
   state.price.thYear=yr;
   var selMonth=+state.price.thMonth;if(selMonth<1||selMonth>12)selMonth=0;
-  var rows=all.filter(function(r){ return r.d&&r.d.getFullYear()===yr&&(!selMonth||r.d.getMonth()+1===selMonth); })
-              .sort(function(a,b){ return (+b.d)-(+a.d)||String(a.code||'').localeCompare(String(b.code||''),'ko'); });
-  var arr=rows.map(function(r,i){
-    return {key:i,d:r.d,ym:(r.d?(r.d.getMonth()+1):0),code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',
+  /* v843: 화면의 선택 월과 검색 대상을 분리합니다. 검색은 언제나 선택 연도의 1~12월 전체를 대상으로 합니다. */
+  var yearRows=all.filter(function(r){ return r.d&&r.d.getFullYear()===yr; })
+                  .sort(function(a,b){ return (+b.d)-(+a.d)||String(a.code||'').localeCompare(String(b.code||''),'ko'); });
+  var rows=yearRows.filter(function(r){ return !selMonth||r.d.getMonth()+1===selMonth; });
+  var toTradeRow=function(r,i){
+    var o={key:i,d:r.d,ym:(r.d?(r.d.getMonth()+1):0),code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',
       qty:+r.qty||0,price:unitPrice(r),amt:amtOf(r),bigo:r.bigo||''};
-  });
+    o._search=[fmtD(o.d),o.ym+'월',o.code,o.name,o.spec,o.bigo,o.qty,o.price,o.amt].join(' ');
+    return o;
+  };
+  var arr=rows.map(toTradeRow), arrYear=yearRows.map(toTradeRow);
   var tabs='<div class="ctrlbar" style="flex-wrap:wrap;gap:6px"><b style="font-size:12px">연도</b>'
     +yrs.map(function(y2){ return '<button type="button" class="btn'+(y2===yr?'':' ghost')+' thYearBtn" data-y="'+y2+'" style="font-size:12px;padding:5px 12px'+(y2===yr?';background:#1e3a5f;color:#fff;border-color:#1e3a5f':'')+'">'+y2+'년</button>'; }).join('')
     +'<span style="width:1px;height:24px;background:#dbe2ea;display:inline-block;margin:0 4px"></span>'
     +'<b style="font-size:12px">월 선택</b>'
-    +'<button type="button" class="btn'+(selMonth?' ghost':'')+'" id="thMonthAll" style="font-size:12px;padding:5px 12px'+(!selMonth?';background:#7c3aed;color:#fff;border-color:#7c3aed':'')+'">전체 월</button>'
-    +(selMonth?'<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:9px;background:#f5f3ff;border:1px solid #c4b5fd;color:#7c3aed;font-size:12px;font-weight:800">'+selMonth+'월 선택됨</span>':'<span class="sub2">그래프의 점이나 월 이름을 선택하세요.</span>')
+    +'<select id="thMonthSelect" aria-label="거래내역 월 선택" style="font-family:inherit;font-size:12px;font-weight:800;padding:5px 28px 5px 12px;border:1px solid '+(selMonth?'#c4b5fd':'#7c3aed')+';border-radius:8px;background:'+(selMonth?'#f5f3ff':'#7c3aed')+';color:'+(selMonth?'#6d28d9':'#fff')+'">'
+    +'<option value="0"'+(!selMonth?' selected':'')+'>전체월</option>'
+    +Array.from({length:12},function(_,i){var m=i+1;return '<option value="'+m+'"'+(selMonth===m?' selected':'')+'>'+m+'월</option>';}).join('')
+    +'</select>'
+    +'<span class="sub2">전체월 또는 1월~12월을 선택하세요.</span>'
     +'<span style="width:1px;height:24px;background:#dbe2ea;display:inline-block;margin:0 4px"></span>'
     +'<b style="font-size:12px">표 검색</b>'
     +'<input type="search" id="thQ" autocomplete="off" spellcheck="false" lang="ko" inputmode="text" placeholder="품번 · 품명 · 규격 · 비고 · 일자 (띄어쓰기로 여러 개)" '
@@ -8837,7 +8845,7 @@ function custTradeHistoryV665(cust,back){
     yr+'년'+(selMonth?' '+selMonth+'월':'')+' · '+won(arr.length)+'건 · 수량 '+won(totQty)+' · 금액 '+disp(totAmt),
     arr, cols, 'd',
     '<b>'+esc(cust)+'</b>의 <b>'+yr+'년'+(selMonth?' '+selMonth+'월':'')+' 거래내역</b>입니다. 그래프의 <b>점·월 이름을 선택</b>하면 해당 월 거래만 표에 표시되고, 같은 월을 다시 선택하거나 <b>전체 월</b>을 누르면 연간 거래내역으로 돌아옵니다. <b>비고(원본)</b>은 업로드한 매출자료의 비고 칸을 그대로 보여 줍니다.',
-    {back:{label:'\u2190 단가표로',fn:back}, controlsHtml:chart+tabs, pageLimit:300,
+    {back:{label:'\u2190 단가표로',fn:back}, controlsHtml:chart+tabs, pageLimit:300, searchData:arrYear, searchCols:cols,
      onMount:function(){
        var root=document.getElementById('result');
        root.querySelectorAll('.thYearBtn,.cmYearBtn').forEach(function(b){
@@ -8847,27 +8855,22 @@ function custTradeHistoryV665(cust,back){
          var pick=function(){var m=+g.dataset.month;state.price.thMonth=(+state.price.thMonth===m)?0:m;custTradeHistoryV665(cust,back);};
          g.addEventListener('click',pick);g.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}});
        });
-       var ma=document.getElementById('thMonthAll');if(ma)ma.addEventListener('click',function(){state.price.thMonth=0;custTradeHistoryV665(cust,back);});
+        var ms=document.getElementById('thMonthSelect');if(ms)ms.addEventListener('change',function(){state.price.thMonth=+ms.value||0;custTradeHistoryV665(cust,back);});
        /* v666 : 표 검색 — 화면을 다시 그리지 않고 행만 숨기므로 한글 입력 중에도 커서가 그대로 있습니다.
           조합(한글 입력) 중에는 거르지 않고, 조합이 끝난 뒤에 반영합니다. */
        var q=document.getElementById('thQ'), cl=document.getElementById('thQClear'), cn=document.getElementById('thQCnt');
        if(!q)return;
        var composing=false, t=null;
-       var apply=function(){
-         var v=String(q.value||'').normalize('NFC').trim().toLocaleLowerCase('ko-KR');
-         var toks=v.split(/\s+/).filter(Boolean);
-         var trs=root.querySelectorAll('tbody tr'), shown=0, sum=0;
-         trs.forEach(function(tr){
-           if(tr.classList.contains('total-row'))return;
-           var txt=(tr.innerText||'').normalize('NFC').toLocaleLowerCase('ko-KR');
-           var ok=!toks.length||toks.every(function(t2){ return txt.indexOf(t2)>=0; });
-           tr.style.display=ok?'':'none';
-           if(ok){ shown++;
-             try{ var td=tr.children[8]; if(td)sum+=(+String(td.innerText||'').replace(/[^0-9.-]/g,'')||0); }catch(_e){}
-           }
-         });
-         if(cn)cn.innerHTML=toks.length?('<b style="color:#1d4ed8">'+won(shown)+'건</b> 표시 · 금액 '+won(sum)):'';
-       };
+        var apply=function(){
+          var raw=String(q.value||'').normalize('NFC').trim(), toks=raw.toLocaleLowerCase('ko-KR').split(/\s+/).filter(Boolean);
+          /* 전용 검색란도 공통 표 검색과 같은 연간 전체 데이터(arrYear)를 사용합니다. */
+          state._search=raw;
+          if(state.lastData&&state.lastData.opts&&state.lastData.opts.pageLimit)state._pageShown=state.lastData.opts.pageLimit;
+          drawTable();
+          var matched=toks.length?arrYear.filter(function(o){return srchMatch(o._search,toks);}):arr;
+          var sum=matched.reduce(function(a,o){return a+(+o.amt||0);},0);
+          if(cn)cn.innerHTML=toks.length?('<b style="color:#1d4ed8">'+won(matched.length)+'건</b> 표시 · 금액 '+won(sum)):'';
+        };
        var sched=function(){ if(composing)return; clearTimeout(t); t=setTimeout(apply,180); };
        q.addEventListener('compositionstart',function(){ composing=true; });
        q.addEventListener('compositionend',function(){ composing=false; clearTimeout(t); apply(); });
