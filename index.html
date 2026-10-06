@@ -11539,11 +11539,12 @@ function pdPanelHTML(cyRaw,lastAct,tgtArr){
   const won2r=v=>{ const t=won2(v); return (+v<0)?`<span class="pd-neg">${t}</span>`:t; };
   let body='',tL=0,tP=0,tI=0,tSum=0;
   for(let m=1;m<=12;m++){
-    const isAct = m<=fcCutoffMonth() || !!(pd.actual&&pd.actual[m]);
+    const _pdNextYear=(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode());
+    const isAct = (!_pdNextYear&&m<=fcCutoffMonth()) || !!(pd.actual&&pd.actual[m]);
     const L=+pd.labor[m]||0,P=+pd.process[m]||0,I=+pd.indirect[m]||0;
     const Lv=pd.useLabor?pdCatVal('labor',m):0, Pv=pd.useProcess?pdCatVal('process',m):0, Iv=pd.useIndirect?pdCatVal('indirect',m):0;
     const sum=Lv+Pv+Iv; tL+=L;tP+=P;tI+=I;tSum+=sum;
-    const isFut=m>lastAct; const saleRef = isFut ? Math.max(0,(tgtArr?tgtArr[m]:0)-(fcPdInAnnualTarget()?pdMonth(m):0)) : (cyRaw[m]||0); const ratio=saleRef>0?(sum/saleRef*100):null;
+    const isFut=_pdNextYear||m>lastAct; const saleRef = isFut ? Math.max(0,(tgtArr?tgtArr[m]:0)-(fcPdInAnnualTarget()?pdMonth(m):0)) : (cyRaw[m]||0); const ratio=saleRef>0?(sum/saleRef*100):null;
     const estM = m>fcCutoffMonth() && !isAct && pd.estimate;
     const inp=(cat,val,w)=>`<input type="text" inputmode="${cat==='indirect'?'text':'numeric'}" class="pdin${val<0?' pd-neg':''}" data-cat="${cat}" data-m="${m}" value="${fmtIn(val)}" placeholder="${estM?fmtIn(pdAvg(cat)):'0'}" title="${cat==='indirect'?'인력 지원 시 +, 인력 지원받을 시 - 금액 입력':'금액 입력'}" style="width:${w}px;text-align:right;font-size:12px${val<0?';color:#dc2626;font-weight:700':''}${estM&&!val?';color:#9333ea;font-style:italic':''}">`;
     body+=`<tr><td class="l">${m}월 ${m>fcCutoffMonth()?`<label style="font-size:10px;font-weight:400;color:#475569;cursor:pointer"><input type="checkbox" class="pdact" data-m="${m}" ${isAct?'checked':''}> 실적</label> <span class="tag ${isAct?'a':'f'}" style="font-size:9px">${isAct?'실적':'목표'}</span>`:`<span class="tag a" style="font-size:9px">실적</span>`}</td>`
@@ -11558,7 +11559,7 @@ function pdPanelHTML(cyRaw,lastAct,tgtArr){
   const totRow=`<tr class="total-row"><td class="l">총합계</td><td style="text-align:right">${won2r(tL)}</td><td style="text-align:right">${won2r(tP)}</td><td style="text-align:right">${won2r(tI)}</td><td style="font-weight:800;color:#dc2626">${won2(tSum)}</td><td>${won2r(tSale)}</td><td>${tSale>0?`<span${(tSum/tSale)<0?' class="pd-neg"':''}>${(tSum/tSale*100).toFixed(1)}%</span>`:'-'}</td></tr>`;
   const ck=(k,lab)=>`<label style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;cursor:pointer;color:#374151"><input type="checkbox" class="pdck" data-k="${k}" ${pd[k]?'checked':''}> ${lab}</label>`;
   return `<div style="margin-top:4px;border:1px solid var(--line);border-radius:12px;overflow:hidden">
-    <button id="pdToggle" type="button" style="width:100%;text-align:left;border:none;cursor:pointer;background:#fff;color:#334155;font-weight:800;font-size:13px;padding:12px 15px;font-family:inherit"><span style="background:#d97706;color:#fff;padding:4px 11px;border-radius:7px">🏭 PD 사업부 임가공비 ${open?'▾':'▸'}</span> <span class="sub2" style="color:#92400e;font-weight:600">· 체크 항목만 매출 가산 · 연 ${won2r(pdYearTotal())}원 · ${(typeof fcTargetYear==='function'?fcTargetYear():2026)}년</span></button>
+    <button id="pdToggle" type="button" style="width:100%;text-align:left;border:none;cursor:pointer;background:#fff;color:#334155;font-weight:800;font-size:13px;padding:12px 15px;font-family:inherit"><span style="background:#d97706;color:#fff;padding:4px 11px;border-radius:7px">🏭 PD 사업부 임가공비 ${open?'▾':'▸'}</span> <span class="sub2" style="color:#92400e;font-weight:600">· 체크 항목만 매출 가산 · 연 ${won2r(pdYearTotal())}원 · ${(typeof fcTargetYear==='function'?fcTargetYear():2026)}년 목표 계획</span></button>
     <div id="pdWrap" style="display:${open?'block':'none'};padding:13px 15px">
       <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:11px;padding:9px 12px;background:#f8fafc;border:1px solid var(--line);border-radius:9px">${ck('useLabor','✅ PD생산 노무비')} ${ck('useProcess','✅ PD생산 공정비')} ${ck('useIndirect','✅ PD지원 인건비')} <span style="border-left:1px solid var(--line);padding-left:14px"><label style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;cursor:pointer;color:#7c3aed"><input type="checkbox" id="pdEst" ${pd.estimate?'checked':''}> 🔮 목표예상 자동(${fcFutLabel()}=${fcCutLabel()} 평균)</label></span></div>
       <div class="tablewrap"><table><thead><tr><th class="l">구분</th><th>PD생산 노무비</th><th>PD생산 공정비</th><th>PD지원 인건비<br><span class="sub2" style="font-size:9px;font-weight:600;color:#64748b">지원 + / 지원받음 -</span></th><th>합계</th><th>월 매출</th><th>비중%</th></tr></thead><tbody>${body}${totRow}</tbody></table></div>
@@ -11574,6 +11575,9 @@ function histTableHTML(){
   return `<div style="margin-top:16px"><div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px">📋 연도별 월 매출비 (과년도 참고 · 합계 전년대비% · 월평균)</div><div class="tablewrap" style="overflow:auto"><table style="font-size:11px"><thead><tr><th class="l">구분</th>${Array.from({length:12},(_,i)=>`<th>${i+1}월</th>`).join('')}<th>합계</th><th>월평균</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 function monthlyTrend(){
+  /* v849 : 월별 실적·목표에 들어올 때 현재 선택한 목표연도의 PD 계획을 다시 적용합니다. */
+  try{ if(typeof fcApplyYearContext==='function')fcApplyYearContext('trend'); }catch(_e){}
+  try{ if(typeof fcReapplyYearV721==='function')fcReapplyYearV721({skipPlans:true}); }catch(_e){}
   const ys=dataYears();
   const _fy=(typeof fcYearsV712==='function')?fcYearsV712():{PY:ys[0],CY:ys[ys.length-1]};
   const PY=_fy.PY, CY=_fy.CY;
@@ -11681,7 +11685,7 @@ function monthlyTrend(){
   const editor=`<div class="mtarget"><div class="mthead"><b id="mtToggle" title="클릭하면 1~12월 목표 % 입력칸이 펼쳐집니다. 전년 동월 대비 목표 %를 입력하면 그래프·표·매출 목표에 즉시 반영·저장됩니다." style="cursor:pointer;user-select:none;background:#0d9488;color:#fff;padding:4px 11px;border-radius:7px;font-size:13px;display:inline-block">월별 목표 % ${open?'▾':'▸'}</b> ${bulkBadge} <span class="sub2">제목을 클릭하면 1~12월 입력칸이 펼쳐집니다. 전년 동월 대비 목표 %를 입력 → 그래프·표·<b>매출 목표</b>에 즉시 반영·저장. (맨 끝 칸: 미래월 일괄 적용 / 초기화)</span></div>
     <div class="mgrid" id="mtGrid" style="display:${open?'grid':'none'}">${cells?cells+bulkCell:'<span class="sub2">표시할 월이 없습니다.</span>'}</div></div>`;
   /* v716 : 목표안·목표연도·기준목표안·실적확정 등 조작 영역을 제목 «아래 줄»로 내립니다 */
-  const html=`<div class="rhead"><span class="title">월별 실적 목표 (${PY} vs ${CY})</span><span class="meta">${fcTargetPlanLabel()} · 연매출 목표 ${won(annualMix)} (실적 ${fcCutLabel()} + 목표 ${fcFutLabel()}) · 월별 목표합계 ${won(tgtTAll)} · 실적(1~${actualLastMonth}월) ${won(cyActT)} · 단위: 원</span></div>
+  const html=`<div class="rhead"><span class="title">${CY}년 목표</span><span class="meta">${fcTargetPlanLabel()} · 연매출 목표 ${won(annualMix)} (실적 ${fcCutLabel()} + 목표 ${fcFutLabel()}) · 월별 목표합계 ${won(tgtTAll)} · 실적(1~${actualLastMonth}월) ${won(cyActT)} · 단위: 원</span></div>
   <div class="fc-ctlbar">${fcYearSelectorHTML()}${fcTargetPlanSelectorHTML('fcTargetPlanSel')}${fcCutoffSelectorHTML()}<button class="btn ghost" id="trCsv">엑셀 내보내기</button></div>
     <div class="fckpi" style="margin:8px 0 4px">
       <div class="kpi" style="border-left:4px solid #94a3b8"><div class="lab">전년 연매출(${PY})</div><div class="val" style="color:#475569">${won(pyT)}<small> 원</small></div><div class="sub2" style="margin-top:2px">${PY}년 전체 실적</div></div>
@@ -11698,6 +11702,7 @@ function monthlyTrend(){
     ${scrapPanelHTML()}
     ${pdPanelHTML(cyRaw,lastAct,tgt)}
     <div class="note" style="margin:10px 0 4px">아래 표 적용 현황: ${bulkNote} · 빨간 수평선 = 올해 목표 1~12월 <b>월평균 ${won(tgtAvg)}원</b> · 실제 실적은 <b>1~${actualLastMonth}월</b>까지 그래프·표·목표달성률에 표시 · 연매출 목표 금액은 <b>${fcCutLabel()} 실적 + ${fcFutLabel()} 목표</b>로 고정 · 💡 <b>실적 월 클릭</b> 시 그 달 거래처별 매출</div>
+    <div style="font-size:14px;font-weight:900;color:#1e3a5f;margin:10px 2px 6px">${CY}년 목표</div>
     <div class="tablewrap" style="margin-top:4px"><table><thead><tr><th class="l">월</th><th>전년(${PY})</th><th>올해목표</th><th>증감액</th><th>증%</th><th>실적(${CY})</th><th>증감액</th><th title="실적 vs 전년 동월(합계=동기간)">전년比</th><th>목표달성</th></tr></thead><tbody>${rows}${tot}</tbody></table></div>
     <div class="note">목표 %는 1~12월 모두 입력 가능하며, 그래프(목표 막대·평균선)·표·<b>매출 목표</b> 메뉴에 자동 반영·저장됩니다. <b>고철업체·고철 품목 매출은 원매출의 80%</b>로 모든 실적·목표에 반영됩니다. 전년 막대는 체크박스로 표시/숨김.</div>`;
   renderCustom(html,()=>{
@@ -35118,6 +35123,55 @@ document.addEventListener('change',function(e){
     state.fc.matchBaseExact=null;
   }catch(_e){}
 },true);
+})();
+</script>
+
+<!-- v849: 거래처 담당자 표에서 선택한 거래처의 월별 그래프를 표 위에 표시 -->
+<script id="v849-cmgr-selected-customer-chart">
+(function(){
+'use strict';
+function valsFor(cust,year){
+  var a=new Array(13).fill(0);
+  try{(CUR||[]).forEach(function(r){if(r.cust===cust&&+r.y===+year){var m=+(String(r.ym||'').slice(5,7))||(r.d?r.d.getMonth()+1:0);if(m>=1&&m<=12)a[m]+=amtOf(r);}});}catch(_e){}
+  return a;
+}
+function targetFor(cust,year){
+  var a=new Array(13).fill(0);
+  try{
+    var ty=(typeof fcTargetYear==='function')?+fcTargetYear():year;
+    if(+year!==ty)return a;
+    var f=(typeof fcFutureTotals==='function')?fcFutureTotals():null;
+    if(f&&f.custMon)for(var m=1;m<=12;m++)a[m]=(f.custMon[m]&&f.custMon[m].get(cust))||0;
+  }catch(_e){}
+  return a;
+}
+function sum(a){var s=0;for(var i=1;i<=12;i++)s+=+a[i]||0;return s;}
+function draw(host,cust){
+  if(!host)return;
+  if(!cust){host.innerHTML='';host.style.display='none';delete host.dataset.sig;return;}
+  var ys=(typeof dataYears==='function')?dataYears():[],dm=ys.length?ys[ys.length-1]:new Date().getFullYear();
+  var cy=(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode())?fcTargetYear():dm;
+  var yr=(state.cmgr&&state.cmgr.year==='py')?cy-1:cy;
+  var actual=valsFor(cust,yr),target=targetFor(cust,yr),series=[];
+  var sig=cust+'|'+yr+'|'+sum(actual)+'|'+sum(target);if(host.dataset.sig===sig)return;host.dataset.sig=sig;
+  if(sum(target)>0)series.push({vals:target,color:'#fbbf24'});
+  if(sum(actual)>0||!series.length)series.push({vals:actual,color:'#2563eb'});
+  var chart=(typeof svgGrouped==='function')?svgGrouped(series,260,[],null):'';
+  host.style.display='block';
+  host.innerHTML='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:5px"><b style="font-size:13px;color:#1e3a5f">📈 '+esc(cust)+' · '+yr+'년 월별 매출'+(sum(target)>0?'·목표':'')+'</b><span class="sub2">'+(sum(actual)>0?'실적 '+won(Math.round(sum(actual)))+'원':'실적 없음')+(sum(target)>0?' · 목표 '+won(Math.round(sum(target)))+'원':'')+'</span><span style="margin-left:auto;display:flex;gap:13px;font-size:11px;font-weight:700">'+(sum(target)>0?'<span style="color:#d97706">■ 목표</span>':'')+(sum(actual)>0?'<span style="color:#2563eb">■ 실적</span>':'')+'<button type="button" id="cmgrChartCloseV849" class="btn ghost" style="font-size:11px;padding:3px 9px">닫기</button></span></div>'+chart;
+  var b=document.getElementById('cmgrChartCloseV849');if(b)b.onclick=function(){state.cmgr.chartCust='';draw(host,'');document.querySelectorAll('.cmgr-chart-selected').forEach(function(x){x.classList.remove('cmgr-chart-selected');x.style.background='';});};
+}
+function mount(){
+  try{
+    var table=document.querySelector('#result .cmgr-tbl');if(!table)return;
+    var wrap=table.parentElement,host=document.getElementById('cmgrSelectedChartV849');
+    if(!host){host=document.createElement('div');host.id='cmgrSelectedChartV849';host.style.cssText='display:none;border:1px solid #dbe4ee;border-radius:10px;background:#fff;padding:10px 12px;margin:8px 0;';wrap.parentNode.insertBefore(host,wrap);}
+    document.querySelectorAll('#result .cmgr-cust').forEach(function(td){if(td.__v849)return;td.__v849=1;td.title='클릭: 표 위에 월별 그래프 표시';td.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();var c=td.getAttribute('data-c')||((td.closest('tr')||{}).dataset||{}).cust;if(!c)return;state.cmgr.chartCust=c;document.querySelectorAll('#result .cmgr-rowclick').forEach(function(tr){var on=tr.dataset.cust===c;tr.classList.toggle('cmgr-chart-selected',on);tr.style.background=on?'#eff6ff':'';});draw(host,c);host.scrollIntoView({behavior:'smooth',block:'nearest'});});});
+    if(state.cmgr&&state.cmgr.chartCust){draw(host,state.cmgr.chartCust);document.querySelectorAll('#result .cmgr-rowclick').forEach(function(tr){if(tr.dataset.cust===state.cmgr.chartCust){tr.classList.add('cmgr-chart-selected');tr.style.background='#eff6ff';}});}
+  }catch(_e){}
+}
+var t=null;new MutationObserver(function(){clearTimeout(t);t=setTimeout(mount,80);}).observe(document.getElementById('result')||document.body,{childList:true,subtree:true});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else setTimeout(mount,50);
 })();
 </script>
 
