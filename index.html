@@ -12896,6 +12896,7 @@ function forecast(){ state._inDrill=false;
     const _resetYearScopedV807=async (what)=>{
       const yr=(typeof fcTargetYear==='function')?fcTargetYear():'';
       if(!await uiConfirm('<b>'+yr+'년 목표</b>의 모든 거래처 <b>'+what+'</b>(연간 + 월별보기)를 초기화할까요?<br><span class="sub2">다른 목표연도 값은 그대로 둡니다.</span>'))return false;
+      try{if(typeof fcResetRememberV841==='function')fcResetRememberV841(yr,what==='조정%'?['override','custMonthPct']:['addPct']);}catch(_e){}
       if(what==='조정%'){ state.fc.override={}; state.fc.overrideAt={}; state.fc.custMonthPct={}; _clearFieldsNowV838('.fcov,.fc-cust-month-pct'); }
       else { state.fc.addPct={}; state.fc.addPctAt={}; _clearFieldsNowV838('.fcadd'); }
       try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_e){}
@@ -12944,6 +12945,7 @@ function forecast(){ state._inDrill=false;
       if(!n){ await uiConfirm('초기화할 제품 조정%가 없습니다.'); return; }
       const yr=(typeof fcTargetYear==='function')?fcTargetYear():'';
       if(!await uiConfirm('<b>'+yr+'년 목표</b>의 모든 제품 <b>조정%</b>(연간 + 월별보기)를 초기화할까요?<br><span class="sub2">다른 목표연도 값은 그대로 둡니다.</span>'))return;
+      try{if(typeof fcResetRememberV841==='function')fcResetRememberV841(yr,['prodOverride','prodMonthPct']);}catch(_e){}
       state.fc.prodOverride={}; state.fc.prodMonthPct={};
       _clearFieldsNowV838('.fcpov,.fc-prod-month-pct');
       try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_e){}
@@ -12953,7 +12955,7 @@ function forecast(){ state._inDrill=false;
       try{ if(typeof fcSnapSaveV803==='function')await fcSnapSaveV803(); }catch(_e){}
       try{ fcOrderUnlockV802(); }catch(_e){}
       await saveSettings(); forecast(); });
-    const paR=$('#fcProdAddReset'); paR&&paR.addEventListener('click',async()=>{ if(!Object.keys(state.fc.prodAddPct||{}).length){ await uiConfirm('초기화할 제품 추가%가 없습니다.'); return; } if(!await uiConfirm('모든 제품의 <b>추가%</b>를 초기화할까요?'))return; state.fc.prodAddPct={}; _clearFieldsNowV838('.fcpadd'); const yr=(typeof fcTargetYear==='function')?fcTargetYear():''; try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(yr);if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();}catch(_e){} await saveSettings(); forecast(); });
+    const paR=$('#fcProdAddReset'); paR&&paR.addEventListener('click',async()=>{ if(!Object.keys(state.fc.prodAddPct||{}).length){ await uiConfirm('초기화할 제품 추가%가 없습니다.'); return; } if(!await uiConfirm('모든 제품의 <b>추가%</b>를 초기화할까요?'))return; const yr=(typeof fcTargetYear==='function')?fcTargetYear():''; try{if(typeof fcResetRememberV841==='function')fcResetRememberV841(yr,['prodAddPct']);}catch(_e){} state.fc.prodAddPct={}; _clearFieldsNowV838('.fcpadd'); try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(yr);if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();}catch(_e){} await saveSettings(); forecast(); });
     const pmR=$('#fcProdMemoReset'); pmR&&pmR.addEventListener('click',async()=>{ const n=Object.keys(state.fc.prodMemo||{}).filter(k=>String(state.fc.prodMemo[k]||'').trim()).length; if(!n){ await uiConfirm('초기화할 제품(규격) 메모가 없습니다.'); return; } if(!await uiConfirm('모든 제품(규격)의 <b>메모 내용</b>을 초기화할까요?'))return; state.fc.prodMemo={}; _clearFieldsNowV838('.fcpmemo'); try{localStorage.setItem('fcProdMemoResetSigV838',typeof sgMemoPlanSigV838==='function'?sgMemoPlanSigV838():'');}catch(_e){} await saveSettings(); forecast(); });
     /* 제품 목표 검색은 위의 단일 업체/제품 선택 검색기에서 IME 조합을 유지한 채 처리합니다. */
     fcBindNegativeFields($('#result'));
@@ -33854,6 +33856,7 @@ function doReset(msg){
   try{
     var F=state.fc, Y=(typeof fcTargetYear==='function')?String(fcTargetYear()):'';
     F._ctxYear=Y;
+    try{if(typeof fcResetRememberV841==='function')fcResetRememberV841(Y,['pct','override','addPct','prodOverride','prodAddPct','custProdOverride','custMonthPct','prodMonthPct','newCusts','newProds','newCustReplacements','newLines']);}catch(_r){}
     /* v774 : «비우기»가 아니라 «0/해제로 확정»만 합니다.
        예전에는 0 으로 바꾼 뒤 다시 항목을 통째로 지웠는데(F[k]={}),
        구글 서버는 «없어진 항목»을 지우지 않고 자기 값을 유지하기 때문에
@@ -33895,6 +33898,7 @@ function doReset(msg){
     try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_x){}
     try{_fcBaseAggCache=null;_fcBase27Cache=null;window.FC_CHART_V677=null;window.__nyAggV737=null;}catch(_x){}
     try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_x){}
+    try{document.querySelectorAll('#result .fc-inline-pct,#result .fcov,#result .fcadd,#result .fcpov,#result .fcpadd,#result .fc-cust-month-pct,#result .fc-prod-month-pct').forEach(function(inp){inp.value='';inp.classList.remove('edited','fc-cust-month-pct-neg','fc-prod-month-pct-neg');});}catch(_x){}
     try{ if(typeof logEdit==='function')logEdit('매출 목표',Y+'년 목표 조정값 전체 초기화(기준과 동일)'); }catch(_x){}
     /* 저장 → 서버 반영까지 마친 뒤 한 번만 다시 그립니다(중간에 또 보내지 않습니다) */
     afterWrite(msg,Y+'년 조정값 '+_cnt+'건을 지웠습니다.');
@@ -34932,6 +34936,29 @@ window.sgSyncProdMemoV836=syncProductMemo;
   function decorate(){var list=document.querySelectorAll('#result .fcpmemo');for(var i=0;i<list.length;i++){var el=list[i];if(el.dataset.prodMemoV836)continue;el.dataset.prodMemoV836='1';el.title='② 영업전략 추진현황에 등록한 <거래처 / 비고·아이템>이 '+MARK+' 뒤에 자동으로 표시됩니다.\n'+MARK+' 앞부분은 직접 쓴 메모로 유지되며, 전략을 지우면 뒷부분만 사라집니다.';if(!el.placeholder||el.placeholder==='이슈 메모')el.placeholder='이슈 메모 ('+MARK+' 자동연동)';}}
   var t=null,obs=new MutationObserver(function(){clearTimeout(t);t=setTimeout(decorate,120);});function start(){var r=document.getElementById('result');if(!r){setTimeout(start,600);return;}obs.observe(r,{childList:true,subtree:true});try{syncProductMemo();}catch(_e){}decorate();}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
+})();
+</script>
+
+<!-- v841: 목표 초기화 tombstone을 연도별로 보관하여 지연 저장·전략 재계산·동기화 복원이 값을 되살리지 못하게 함 -->
+<script id="v841-forecast-reset-ledger">
+(function(){
+'use strict';
+var LS='fcResetLedgerV841';
+function cp(v){try{return JSON.parse(JSON.stringify(v||{}));}catch(_e){return {};}}
+function load(){var a={};try{a=JSON.parse(localStorage.getItem(LS)||'{}')||{};}catch(_e){}var b={};try{b=(state.fc&&state.fc.resetLedgerV841)||{};}catch(_e2){};Object.keys(b).forEach(function(y){a[y]=a[y]||{at:0,keys:{}};Object.assign(a[y].keys,b[y].keys||{});a[y].at=Math.max(+a[y].at||0,+b[y].at||0);});try{state.fc.resetLedgerV841=a;}catch(_e3){}return a;}
+function persist(a){try{state.fc.resetLedgerV841=a;localStorage.setItem(LS,JSON.stringify(a));}catch(_e){}}
+function addFrom(dst,o,names){if(!o)return;names.forEach(function(k){var v=o[k];if(k==='newLines'){if(Array.isArray(v)&&v.length)dst['newLines\u0001*']=1;return;}if(!v||typeof v!=='object')return;if(k==='custMonthPct'||k==='prodMonthPct'){Object.keys(v).forEach(function(a){var row=v[a];if(!row||typeof row!=='object')return;Object.keys(row).forEach(function(m){dst[k+'\u0001'+a+'\u0001'+m]=1;});});}else Object.keys(v).forEach(function(a){dst[k+'\u0001'+a]=1;});});}
+function remember(year,names){var y=String(year||''),a=load(),e=a[y]||(a[y]={at:0,keys:{}});addFrom(e.keys,state.fc,names);try{['1','2'].forEach(function(p){addFrom(e.keys,state.fc.targetPlans&&state.fc.targetPlans[p],names);});var ys=state.fc.yearPlans&&state.fc.yearPlans[y];if(ys&&ys.targetPlans)['1','2'].forEach(function(p){addFrom(e.keys,ys.targetPlans[p],names);});}catch(_e){}e.at=Date.now();persist(a);return Object.keys(e.keys).length;}
+function clearOne(o,key){if(!o)return false;var p=key.split('\u0001'),k=p[0],changed=false;if(k==='newLines'){if(Array.isArray(o.newLines)&&o.newLines.length){o.newLines=[];changed=true;}return changed;}if(k==='custMonthPct'||k==='prodMonthPct'){var mp=o[k],row=mp&&mp[p[1]];if(row&&Object.prototype.hasOwnProperty.call(row,p[2])){delete row[p[2]];changed=true;if(!Object.keys(row).length)delete mp[p[1]];}return changed;}var map=o[k];if(map&&Object.prototype.hasOwnProperty.call(map,p[1])){delete map[p[1]];changed=true;}return changed;}
+function enforce(year){var y=String(year||((typeof fcTargetYear==='function')?fcTargetYear():'')),a=load(),e=a[y];if(!e||!e.keys)return 0;var n=0,all=[state.fc];try{['1','2'].forEach(function(p){if(state.fc.targetPlans&&state.fc.targetPlans[p])all.push(state.fc.targetPlans[p]);});var ys=state.fc.yearPlans&&state.fc.yearPlans[y];if(ys&&ys.targetPlans)['1','2'].forEach(function(p){if(ys.targetPlans[p])all.push(ys.targetPlans[p]);});}catch(_e){}Object.keys(e.keys).forEach(function(k){all.forEach(function(o){if(clearOne(o,k))n++;});});return n;}
+function releaseForInput(inp){var y=String((typeof fcTargetYear==='function')?fcTargetYear():''),a=load(),e=a[y]||(a[y]={at:0,keys:{}}),k='',id='',m='';if(inp.classList.contains('fcov')){k='override';id=inp.dataset.c;}else if(inp.classList.contains('fcadd')){k='addPct';id=inp.dataset.c;}else if(inp.classList.contains('fcpov')){k='prodOverride';id=inp.dataset.pk;}else if(inp.classList.contains('fcpadd')){k='prodAddPct';id=inp.dataset.pk;}else if(inp.classList.contains('fc-cust-month-pct')){k='custMonthPct';id=inp.dataset.c;m=inp.dataset.m;}else if(inp.classList.contains('fc-prod-month-pct')){k='prodMonthPct';id=inp.dataset.pk;m=inp.dataset.m;}else if(inp.classList.contains('fc-inline-pct')||inp.classList.contains('fcm')){k='pct';id=inp.dataset.m;}if(!k||!id)return;var full=k+'\u0001'+id+(m?'\u0001'+m:''),raw=String(inp.value||'').trim(),num=parseFloat(raw);if(raw===''||(isFinite(num)&&num===0)){e.keys[full]=1;e.at=Date.now();}else delete e.keys[full];persist(a);}
+window.fcResetRememberV841=remember;window.fcResetEnforceV841=enforce;
+document.addEventListener('input',function(e){var t=e.target;if(t&&t.matches&&t.matches('.fcov,.fcadd,.fcpov,.fcpadd,.fc-cust-month-pct,.fc-prod-month-pct,.fc-inline-pct,.fcm'))releaseForInput(t);},true);
+try{var nf=window.forecast;if(typeof nf==='function'&&!nf.__resetV841){var wf=function(){enforce();return nf.apply(this,arguments);};wf.__resetV841=true;window.forecast=wf;forecast=wf;}}catch(_e){}
+try{var ns=window.saveSettings;if(typeof ns==='function'&&!ns.__resetV841){var ws=async function(){enforce();try{fcSyncActivePlan();fcSaveYearPlan(fcTargetYear());if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();}catch(_x){}return await ns.apply(this,arguments);};ws.__resetV841=true;window.saveSettings=ws;saveSettings=ws;}}catch(_e){}
+try{var ng=window.gsLoad;if(typeof ng==='function'&&!ng.__resetV841){var wg=async function(){var r=await ng.apply(this,arguments),n=enforce();if(n&&state.act==='forecast')setTimeout(function(){try{forecast();}catch(_x){}},0);return r;};wg.__resetV841=true;window.gsLoad=wg;gsLoad=wg;}}catch(_e){}
+try{var gf=window.gsFields;if(typeof gf==='function'&&!gf.__resetV841){var wgf=function(){var rows=gf.apply(this,arguments);if(!rows.some(function(r){return r[0]==='fcResetLedgerV841';}))rows.push(['fcResetLedgerV841',state.fc,'resetLedgerV841']);return rows;};wgf.__resetV841=true;window.gsFields=wgf;gsFields=wgf;}}catch(_e){}
+enforce();
 })();
 </script>
 
