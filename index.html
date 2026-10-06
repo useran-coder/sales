@@ -11385,31 +11385,6 @@ function bindFcCutoffSelector(rerun){ bindFcTargetPlanSelector('fcTargetPlanSel'
     if(typeof rerun==='function')rerun(); else if(typeof forecast==='function')forecast();
   }); }
   var sel=document.getElementById('fcCutoffSel'); if(!sel)return; sel.addEventListener('change',function(){ var m=fcNormalizeCutoff(sel.value); state.fc.actualCutoffMonth=m; if(typeof logEdit==='function')logEdit('실적확정',m===0?'확정 없음':'확정월 '+m+'월'); saveSettings(); if(typeof rerun==='function')rerun(); }); }
-/* v835 : 월별 목표 %를 화면값·활성 목표안·연도별 보관함에 동시에 기록합니다.
-   이전에는 영구 저장이 지연되는 동안 재계산/동기화가 먼저 실행되면 이전 값이 다시 표시될 수 있었습니다. */
-function fcSetMonthlyTargetPctV835(month,raw,stamp){
-  var m=Math.max(1,Math.min(12,parseInt(month,10)||0)); if(!m)return 0;
-  var n=parseFloat(String(raw==null?'':raw).replace(',','.')); if(!isFinite(n))n=0;
-  state.fc.pct=state.fc.pct||{}; state.fc.pct[m]=n;
-  if(stamp!==false){
-    state.fc.pctAt=state.fc.pctAt||{};
-    state.fc.pctAt[m]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};
-  }
-  try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_e){}
-  try{
-    var y=(typeof fcTargetYear==='function')?fcTargetYear():state.fc._ctxYear;
-    if(y!=null&&y!==''){ state.fc._ctxYear=String(y); if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(y); }
-  }catch(_e){}
-  try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_e){}
-  try{ _fcBaseAggCache=null; _fcBase27Cache=null; window.FC_CHART_V677=null; window.__nyAggV737=null; }catch(_e){}
-  return n;
-}
-async function fcCommitMonthlyTargetPctV835(month,raw){
-  var n=fcSetMonthlyTargetPctV835(month,raw,true);
-  try{ if(typeof saveSettings==='function')await saveSettings(); }catch(_e){}
-  try{ if(typeof fcSnapSaveV803==='function')await fcSnapSaveV803(); }catch(_e){}
-  return n;
-}
 function fcMonthlyTargetPanelHTML(PY,CY,pyMonTot,cyMonTot,lastAct){
   const pct=state.fc.pct||{}, future=[]; for(let m=lastAct+1;m<=12;m++)if((pyMonTot[m]||0)>0)future.push(m);
   const cards=Array.from({length:12},(_,k)=>{ const m=k+1,py=+pyMonTot[m]||0,cy=+cyMonTot[m]||0,v=pct[m]!=null&&pct[m]!==''?+pct[m]:0,target=py*(1+v/100),actual=m<=lastAct,yoy=py?((cy-py)/py*100):null; const info=actual?`실적 ${won(cy)}<br>전년比 <b style="color:${yoy==null?'var(--muted)':yoy>=0?'var(--green)':'var(--red)'}">${yoy==null?'-':(yoy>=0?'+':'')+yoy.toFixed(1)+'%'}</b>`:`전년 ${won(py)}<br>→ 목표 <b>${won(target)}</b>`; return `<div class="mcell ${actual?'act':'fc'}"><div class="mhd">${m}월 <span class="tag ${actual?'a':'f'}">${actual?'실적':'목표'}</span></div><div class="mbig"><input type="number" class="fc-inline-pct" data-m="${m}" value="${v.toFixed(1)}" step="0.1"> %</div><div class="msub">${info}</div></div>`; }).join('');
@@ -11701,16 +11676,12 @@ function monthlyTrend(){
     $('#result').querySelectorAll('.trmrow').forEach(tr=>tr.addEventListener('click',()=>trendMonthDrill(+tr.dataset.m)));
     bindFcCutoffSelector(monthlyTrend);
     const tg=$('#mtToggle'); tg&&tg.addEventListener('click',()=>{ state.trend.editorOpen=!state.trend.editorOpen; monthlyTrend(); });
-    $('#result').querySelectorAll('.fcm').forEach(inp=>{
-      inp.addEventListener('input',e=>fcSetMonthlyTargetPctV835(+e.target.dataset.m,e.target.value,false));
-      inp.addEventListener('change',async e=>{ await fcCommitMonthlyTargetPctV835(+e.target.dataset.m,e.target.value); monthlyTrend(); });
-      inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();e.target.blur();} });
-    });
+    $('#result').querySelectorAll('.fcm').forEach(inp=>inp.addEventListener('change',e=>{ state.fc.pct[+e.target.dataset.m]=parseFloat(e.target.value)||0; (state.fc.pctAt=state.fc.pctAt||{})[+e.target.dataset.m]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'}; saveSettings(); monthlyTrend(); }));
     $('#result').querySelectorAll('.missue').forEach(inp=>inp.addEventListener('change',e=>{ const ym=`${CY}-${String(+e.target.dataset.m).padStart(2,'0')}`; const v=e.target.value.trim(); state.monthIssueAt=state.monthIssueAt||{}; if(v){state.monthIssue[ym]=v; state.monthIssueAt[ym]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'}; if(typeof logEdit==='function')logEdit('월이슈',ym+' 이슈 입력');} else {delete state.monthIssue[ym]; delete state.monthIssueAt[ym];} saveSettings(); monthlyTrend(); }));
     $('#result').querySelectorAll('.wdm').forEach(inp=>inp.addEventListener('change',e=>{ const ym=`${CY}-${String(+e.target.dataset.m).padStart(2,'0')}`; const v=e.target.value.trim(); if(v==='')delete state.workdays[ym]; else state.workdays[ym]=Math.max(0,parseInt(v)||0); if(typeof logEdit==='function')logEdit('영업일수',ym+' 영업일수 변경'); saveSettings(); monthlyTrend(); }));
     const wr=$('#wdReset'); wr&&wr.addEventListener('click',async()=>{ if(!await uiConfirm(`${CY}년 조업일수를 모두 기본값(달력 기준)으로 되돌릴까요?`))return; for(let m=1;m<=12;m++)delete state.workdays[`${CY}-${String(m).padStart(2,'0')}`]; saveSettings(); monthlyTrend(); });
-    const ab=$('#fcAllBtn'); ab&&ab.addEventListener('click',async()=>{ const v=parseFloat($('#fcAll').value); if(isNaN(v))return; fcMonths.forEach(m=>fcSetMonthlyTargetPctV835(m,v,true)); if(typeof logEdit==='function')logEdit('월목표','월별 목표% 일괄('+v+'%)'); await saveSettings(); monthlyTrend(); });
-    const rb=$('#fcResetBtn'); rb&&rb.addEventListener('click',async()=>{ if(!await uiConfirm('월별 목표 %를 모두 초기화할까요?<br>(매출 목표의 조정%·추가%는 유지됩니다)'))return; state.fc.pct={}; state.fc.pctAt={}; try{fcSyncActivePlan();fcSaveYearPlan(fcTargetYear());if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();}catch(_e){} await saveSettings(); monthlyTrend(); });
+    const ab=$('#fcAllBtn'); ab&&ab.addEventListener('click',()=>{ const v=parseFloat($('#fcAll').value); if(isNaN(v))return; fcMonths.forEach(m=>state.fc.pct[m]=v); if(typeof logEdit==='function')logEdit('월목표','월별 목표% 일괄('+v+'%)'); saveSettings(); monthlyTrend(); });
+    const rb=$('#fcResetBtn'); rb&&rb.addEventListener('click',async()=>{ if(!await uiConfirm('월별 목표 %를 모두 초기화할까요?<br>(매출 목표의 조정%·추가%는 유지됩니다)'))return; state.fc.pct={}; saveSettings(); monthlyTrend(); });
     const pt=$('#pdToggle'); pt&&pt.addEventListener('click',()=>{ state.trend.pdOpen=!state.trend.pdOpen; monthlyTrend(); });
     const st2=$('#scrapToggle'); st2&&st2.addEventListener('click',()=>{ state.trend=state.trend||{}; state.trend.scrapOpen=!state.trend.scrapOpen; monthlyTrend(); });
     if(typeof populateScrapDatalist==='function')populateScrapDatalist();
@@ -12719,7 +12690,7 @@ function forecast(){ state._inDrill=false;
     setGlobalBar(false); bindFcCutoffSelector(fcFastForecast);
     if(fcCutoffMonth()===0)document.querySelectorAll('#result th').forEach(th=>{if(th.textContent.includes('실적(1~0월)'))th.innerHTML=th.innerHTML.replace('실적(1~0월)','실적(없음)');});
     const mtJump=document.getElementById('fcMonthlyTargetToggle');
-    if(mtJump){ mtJump.textContent='월별 목표 % '+(state.fc.monthTargetOpen?'▾':'▸'); const mtHost=mtJump.parentElement; if(mtHost){ const holder=document.createElement('div'); holder.innerHTML=fcMonthlyTargetPanelHTML(PY,CY,pyMonTot,cyMonTot,lastAct); const panel=holder.firstElementChild; if(panel){ mtHost.insertAdjacentElement('afterend',panel); mtJump.addEventListener('click',()=>{ state.fc.monthTargetOpen=!state.fc.monthTargetOpen;panel.style.display=state.fc.monthTargetOpen?'block':'none';mtJump.textContent='월별 목표 % '+(state.fc.monthTargetOpen?'▾':'▸'); }); const all=panel.querySelector('#fcInlineAll'),allBtn=panel.querySelector('#fcInlineAllBtn'),reset=panel.querySelector('#fcInlineResetBtn'); panel.querySelectorAll('.fc-inline-pct').forEach(inp=>{ inp.addEventListener('input',()=>{ fcSetMonthlyTargetPctV835(+inp.dataset.m,inp.value,false); v796SaveSoon(); }); inp.addEventListener('change',async()=>{ await fcCommitMonthlyTargetPctV835(+inp.dataset.m,inp.value); fcFastForecast(); }); inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}}); }); allBtn&&allBtn.addEventListener('click',async()=>{ const v=parseFloat(all&&all.value); if(!isFinite(v))return; for(const m of fcMonths)fcSetMonthlyTargetPctV835(m,v,true); await saveSettings(); fcFastForecast(); }); reset&&reset.addEventListener('click',async()=>{ if(!await uiConfirm('월별 목표 %를 모두 초기화할까요?<br>(매출 목표의 조정%·추가%는 유지됩니다)'))return; state.fc.pct={}; state.fc.pctAt={}; try{fcSyncActivePlan();fcSaveYearPlan(fcTargetYear());if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();}catch(_e){} await saveSettings(); fcFastForecast(); }); } } }
+    if(mtJump){ mtJump.textContent='월별 목표 % '+(state.fc.monthTargetOpen?'▾':'▸'); const mtHost=mtJump.parentElement; if(mtHost){ const holder=document.createElement('div'); holder.innerHTML=fcMonthlyTargetPanelHTML(PY,CY,pyMonTot,cyMonTot,lastAct); const panel=holder.firstElementChild; if(panel){ mtHost.insertAdjacentElement('afterend',panel); mtJump.addEventListener('click',()=>{ state.fc.monthTargetOpen=!state.fc.monthTargetOpen;panel.style.display=state.fc.monthTargetOpen?'block':'none';mtJump.textContent='월별 목표 % '+(state.fc.monthTargetOpen?'▾':'▸'); }); const all=panel.querySelector('#fcInlineAll'),allBtn=panel.querySelector('#fcInlineAllBtn'),reset=panel.querySelector('#fcInlineResetBtn'); panel.querySelectorAll('.fc-inline-pct').forEach(inp=>inp.addEventListener('change',()=>{ const m=+inp.dataset.m,v=parseFloat(inp.value); state.fc.pct[m]=isFinite(v)?v:0; (state.fc.pctAt=state.fc.pctAt||{})[m]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'}; v796SaveSoon(); v797Defer(fcFastForecast); })); allBtn&&allBtn.addEventListener('click',()=>{ const v=parseFloat(all&&all.value); if(!isFinite(v))return; for(const m of fcMonths)state.fc.pct[m]=v; saveSettings(); fcFastForecast(); }); reset&&reset.addEventListener('click',async()=>{ if(!await uiConfirm('월별 목표 %를 모두 초기화할까요?<br>(매출 목표의 조정%·추가%는 유지됩니다)'))return; state.fc.pct={}; state.fc.pctAt={}; saveSettings(); fcFastForecast(); }); } } }
     if(state.fc.dim==='cust'){
       const head=$('#result').querySelector('h4.fch');
       const annualWrap=[...$('#result').querySelectorAll('.tablewrap')].find(w=>w.querySelector('tr.fcrow'));
@@ -34819,6 +34790,75 @@ function boot(){
 }
 if(document.readyState==='complete')setTimeout(boot,400);
 else window.addEventListener('load',function(){setTimeout(boot,400);},{once:true});
+})();
+</script>
+
+<!-- v835: 목표추이 % 입력값의 활성 수정안·목표연도 보관함 즉시 동기화 -->
+<script id="v835-target-pct-live-sync">
+(function(){
+'use strict';
+var SEL='.fcm,.fc-inline-pct,.fcov,.fcadd,.fcpov,.fcpadd,.fc-cust-month-pct,.fc-prod-month-pct';
+var saveTimer=null;
+function numberOf(v){ var s=String(v==null?'':v).trim().replace(',','.'); if(s==='')return {ok:true,blank:true,n:0}; var n=Number(s); return {ok:isFinite(n),blank:false,n:n}; }
+function setNested(store,key,month,raw){
+  var p=numberOf(raw); if(!p.ok||!key||!month)return false;
+  store[key]=store[key]||{};
+  if(p.blank||p.n===0)delete store[key][month]; else store[key][month]=p.n;
+  if(!Object.keys(store[key]).length)delete store[key];
+  return true;
+}
+function applyValue(inp,stamp){
+  if(typeof state==='undefined'||!state.fc||!inp)return false;
+  var f=state.fc,p=numberOf(inp.value),c=inp.dataset.c||'',pk=inp.dataset.pk||'',m=+(inp.dataset.m||0);
+  if(!p.ok)return false;
+  if(inp.classList.contains('fcm')||inp.classList.contains('fc-inline-pct')){
+    if(!m)return false; f.pct=f.pct||{}; f.pct[m]=p.blank?0:p.n;
+    if(stamp){f.pctAt=f.pctAt||{};f.pctAt[m]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};}
+  }else if(inp.classList.contains('fcov')){
+    if(!c)return false; f.override=f.override||{}; f.override[c]=p.blank?'':p.n;
+    if(stamp){f.overrideAt=f.overrideAt||{};f.overrideAt[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};}
+  }else if(inp.classList.contains('fcadd')){
+    if(!c)return false; f.addPct=f.addPct||{}; f.addPct[c]=(p.blank||p.n===0)?'':p.n;
+    if(stamp){f.addPctAt=f.addPctAt||{};f.addPctAt[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};}
+  }else if(inp.classList.contains('fcpov')){
+    if(!pk)return false; f.prodOverride=f.prodOverride||{}; f.prodOverride[pk]=p.blank?'':p.n;
+  }else if(inp.classList.contains('fcpadd')){
+    if(!pk)return false; f.prodAddPct=f.prodAddPct||{}; f.prodAddPct[pk]=(p.blank||p.n===0)?'':p.n;
+  }else if(inp.classList.contains('fc-cust-month-pct')){
+    f.custMonthPct=f.custMonthPct||{}; if(!setNested(f.custMonthPct,c,m,inp.value))return false;
+  }else if(inp.classList.contains('fc-prod-month-pct')){
+    f.prodMonthPct=f.prodMonthPct||{}; if(!setNested(f.prodMonthPct,pk,m,inp.value))return false;
+  }else return false;
+  return true;
+}
+function syncStores(){
+  try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_e){}
+  try{
+    var y=(typeof fcTargetYear==='function')?fcTargetYear():(state.fc&&state.fc._ctxYear);
+    if(y!=null&&y!==''){ state.fc._ctxYear=String(y); if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(y); }
+  }catch(_e){}
+  try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_e){}
+  try{ _fcBaseAggCache=null; _fcBase27Cache=null; window.FC_CHART_V677=null; window.__nyAggV737=null; }catch(_e){}
+}
+async function persist(){
+  clearTimeout(saveTimer); saveTimer=null; syncStores();
+  try{ if(typeof saveSettings==='function')await saveSettings(); }catch(_e){}
+  try{ if(typeof fcSnapSaveV803==='function')await fcSnapSaveV803(); }catch(_e){}
+}
+document.addEventListener('input',function(e){
+  var t=e.target; if(!t||!t.matches||!t.matches(SEL))return;
+  if(!applyValue(t,false))return; syncStores();
+  clearTimeout(saveTimer); saveTimer=setTimeout(persist,700);
+},true);
+document.addEventListener('change',function(e){
+  var t=e.target; if(!t||!t.matches||!t.matches(SEL))return;
+  if(!applyValue(t,true))return; syncStores(); persist();
+},true);
+document.addEventListener('keydown',function(e){
+  var t=e.target; if(e.key==='Enter'&&t&&t.matches&&t.matches(SEL)){e.preventDefault();t.blur();}
+},true);
+window.addEventListener('pagehide',function(){try{syncStores();if(typeof v797SaveNow==='function')v797SaveNow();}catch(_e){};});
+window.fcPctLiveSyncV835={apply:applyValue,sync:syncStores,persist:persist};
 })();
 </script>
 
