@@ -12140,10 +12140,10 @@ function fcRenderIfDone(){ clearTimeout(_fcReT); _fcReT=setTimeout(fcRerenderKee
 function fcScheduleRender(){ clearTimeout(_fcReT); _fcReT=setTimeout(fcRerenderKeepFocus,320); }
 /* v845: 월별 % 변경은 계산 결과를 즉시 다시 만들되, v842 화면 고정 장치로 현재 행과 스크롤을 유지합니다. */
 function fcCommitRenderNoJumpV845(inp){
-  var box=null;
-  try{ if(window.fcEditScrollLockV842)window.fcEditScrollLockV842.capture(inp); box=document.getElementById('result');if(box&&box.offsetHeight)box.style.minHeight=box.offsetHeight+'px'; }catch(_e){}
+  try{ if(window.fcEditScrollLockV842)window.fcEditScrollLockV842.capture(inp); }catch(_e){}
   try{ if(typeof saveSettings==='function')saveSettings(); forecast(); }catch(_e2){}
-  try{ if(window.fcEditScrollLockV842){ window.fcEditScrollLockV842.restore(); requestAnimationFrame(function(){window.fcEditScrollLockV842.restore();}); [60,180,420,800].forEach(function(ms){setTimeout(function(){try{window.fcEditScrollLockV842.restore();}catch(_e){}},ms);}); } setTimeout(function(){try{if(box)box.style.minHeight='';}catch(_e){}},900); }catch(_e4){}
+  /* 결과 높이(min-height)를 지연 해제하던 코드가 약 1초 뒤 화면을 움직이게 했으므로 사용하지 않습니다. */
+  try{ if(window.fcEditScrollLockV842){ window.fcEditScrollLockV842.restore(); requestAnimationFrame(function(){window.fcEditScrollLockV842.restore();}); [60,180,420,800,1200,1800,2400].forEach(function(ms){setTimeout(function(){try{window.fcEditScrollLockV842.restore();}catch(_e){}},ms);}); } }catch(_e4){}
 }
 window.fcCommitRenderNoJumpV845=fcCommitRenderNoJumpV845;
 /* v556: 매출 목표 화면 재진입/수정 때 원본 전체를 반복 집계하지 않도록 기본 집계를 캐시합니다. */
@@ -12200,6 +12200,8 @@ var _fcBase27Cache=null;
   };
 })();
 function forecast(){ state._inDrill=false;
+  /* v846: 목표 화면에서는 담당자·업체분류·신용상태 필터를 사용하지 않습니다. 이전 선택도 해제합니다. */
+  try{ mgrFilter.s='전체';mgrFilter.t='전체';clsFilter='전체';statusFilter='전체';state.fc.fOpen=null; }catch(_e){}
   syncExcludedCustMaps();
   const ys=dataYears(); const _fy=(typeof fcYearsV712==='function')?fcYearsV712():{PY:ys[0],CY:ys[ys.length-1]};
   const PY=_fy.PY, CY=_fy.CY; const pdYear=pdYearTotal();
@@ -12682,14 +12684,7 @@ function forecast(){ state._inDrill=false;
       ${outsideCardHTML}
       <div class="kpi"><div class="lab">전년比</div><div class="val" style="color:${projPct>=0?'var(--green)':'var(--red)'}">${projPct>=0?'+':''}${projPct.toFixed(1)}<small>%</small></div></div>
       <div class="kpi"><div class="lab">1인당 월 목표매출 <small>(${rLab}·${perMonths}개월)</small></div><div class="val">${won(fcPerCapMon)}<small> 원/월</small></div></div></div>
-    <div id="fcMgrFilterBar" style="margin:12px 0">
-      <button class="btn ghost" id="fcMgrToggle" type="button"><span class="fc-filter-icon">👤</span> 담당자 필터<span id="fcMgrToggleState"></span> <span id="fcMgrToggleArrow">▾</span></button><button class="btn ghost${clsFilter!=='전체'?' fc-filter-selected':''}" id="fcClsBtn" type="button" style="margin-left:6px;${clsFilter!=='전체'?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':''}"><span class="fc-filter-icon">🏷️</span> 업체분류 필터${clsFilter!=='전체'?': '+esc(clsFilter):''} <span style="font-size:10px">▾</span></button><button class="btn ghost${statusFilter!=='전체'?' fc-filter-selected':''}" id="fcStBtn" type="button" style="margin-left:6px;${statusFilter!=='전체'?'background:#0d9488;color:#fff;border-color:#0d9488':''}"><span class="fc-filter-icon">💳</span> 신용상태 필터${statusFilter!=='전체'?': '+esc(statusFilter):''} <span style="font-size:10px">▾</span></button>
-      <div id="fcMgrChips">
-        <div class="mgrgrp"><span class="glab">고객관리</span><span id="fcMgrChipsS"></span></div>
-        <div class="mgrgrp"><span class="glab">기술개발</span><span id="fcMgrChipsT"></span></div>
-        <button class="btn ghost mgrresetbtn" id="fcMgrReset" type="button" style="display:none">↺ 초기화</button>
-        <span class="sub2 mgrhint">담당자를 선택하면 해당 거래처만 표시됩니다.</span>
-      </div></div>${(()=>{ if(!state.fc.fOpen)return''; const chip=(f,cur,v,lab,col)=>`<button class="f2chip" data-f="${f}" data-v="${esc(v)}" style="cursor:pointer;border:1px solid ${cur===v?col:'#cbd5e1'};background:${cur===v?col:'#fff'};color:${cur===v?'#fff':'#475569'};border-radius:13px;padding:3px 11px;font-size:11px;font-weight:700;font-family:inherit;margin:2px">${esc(lab)}</button>`; let inner=''; if(state.fc.fOpen==='cls'){ inner=chip('cls',clsFilter,'전체','전체 분류','#1e3a5f')+CLS_CATS.map(c=>chip('cls',clsFilter,c.k,c.k,'#1e3a5f')).join(''); } else { inner=chip('st',statusFilter,'전체','전체 상태','#0d9488')+['정상','관리','주의','선결제','거래제한','거래중지','위험'].map(s=>chip('st',statusFilter,s,s,'#0d9488')).join(''); } return `<div id="fcFiltChips" style="margin:8px 0;padding:8px 10px;background:#f8fafc;border:1px solid var(--line);border-radius:8px">${inner}</div>`; })()}${state.showElog?elogPanel(null):''}
+    ${state.showElog?elogPanel(null):''}
     <div class="ctrlbar"><b style="font-size:12px">목표 리스트</b>
       <div class="seg" id="fcDim"><button data-v="cust" class="${state.fc.dim==='cust'?'on':''}" style="${state.fc.dim==='cust'?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':'color:#1e3a5f'}">거래처</button><button data-v="prod" class="${state.fc.dim==='prod'?'on':''}" style="${state.fc.dim==='prod'?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488'}">제품(규격)</button></div>
       <b style="font-size:12px">기간(전년 대비)</b> ${perBtns} ${rangeSel} <span class="sub2">그래프·KPI는 연간 기준</span>
@@ -12851,7 +12846,7 @@ function forecast(){ state._inDrill=false;
           inp.addEventListener('change',()=>{const pk=inp.dataset.pk,m=+inp.dataset.m,v=inp.value.trim();v796SetMonthPct(monthPct,pk,m,v);logEdit('제품월별목표조정',pk+' '+m+'월 조정% 변경');fcCommitRenderNoJumpV845(inp);});});
       }
     }
-    { const _cb=document.getElementById('fcClsBtn'); if(_cb)_cb.addEventListener('click',()=>{ state.fc.fOpen=state.fc.fOpen==='cls'?null:'cls'; fcFastForecast(); }); const _sb=document.getElementById('fcStBtn'); if(_sb)_sb.addEventListener('click',()=>{ state.fc.fOpen=state.fc.fOpen==='st'?null:'st'; fcFastForecast(); }); document.querySelectorAll('#fcFiltChips .f2chip').forEach(ch=>ch.addEventListener('click',e=>{ const t=e.target.closest('.f2chip'); const f=t.dataset.f,v=t.dataset.v; if(f==='cls')clsFilter=v; else statusFilter=v; state.fc.fOpen=null; fcFastForecast(); })); } { const _fe=document.getElementById('fcElogBtn'); if(_fe)_fe.addEventListener('click',()=>{ state.showElog=!state.showElog; if(state.showElog&&typeof elogMarkSeen==='function')elogMarkSeen(); fcFastForecast(); if(typeof injectGlobalElog==='function')injectGlobalElog(); }); } setTimeout(()=>mountFilters2(fcFastForecast),0); mountMgrFilter('fcMgr', fcFastForecast);
+    { const _fe=document.getElementById('fcElogBtn'); if(_fe)_fe.addEventListener('click',()=>{ state.showElog=!state.showElog; if(state.showElog&&typeof elogMarkSeen==='function')elogMarkSeen(); fcFastForecast(); if(typeof injectGlobalElog==='function')injectGlobalElog(); }); }
     const fcCMap={}; custArr.forEach(o=>fcCMap[o.c]=o);
     const _rowMapC={}; $('#result').querySelectorAll('tr.fcrow').forEach(tr=>{_rowMapC[tr.dataset.c]=tr;});
     $('#result').querySelectorAll('.fcov,.fcadd,.fcmemo,.fcpov,.fcpadd,.fcpmemo').forEach(i=>{ i.addEventListener('mousedown',e=>e.stopPropagation()); i.addEventListener('click',e=>e.stopPropagation()); });
@@ -35046,15 +35041,16 @@ function restore(){
 function burst(){
   restore();
   try{requestAnimationFrame(function(){restore();requestAnimationFrame(restore);});}catch(_e){}
-  [40,100,220,450,800].forEach(function(ms){setTimeout(restore,ms);});
+  [40,100,220,450,800,1200,1800,2400].forEach(function(ms){setTimeout(restore,ms);});
 }
 function isField(t){return !!(t&&t.matches&&t.matches(SEL));}
 document.addEventListener('focusin',function(e){if(!isField(e.target))return;stopQueuedFullRender();take(e.target);burst();},true);
 document.addEventListener('input',function(e){if(!isField(e.target))return;take(e.target);stopQueuedFullRender();burst();},true);
 document.addEventListener('change',function(e){if(!isField(e.target))return;take(e.target);stopQueuedFullRender();burst();},true);
-document.addEventListener('focusout',function(e){if(!isField(e.target))return;var tok=lock&&lock.token;burst();clearTimeout(releaseTimer);releaseTimer=setTimeout(function(){if(lock&&lock.token===tok){restore();lock=null;}},1000);},true);
+document.addEventListener('focusout',function(e){if(!isField(e.target))return;var tok=lock&&lock.token;burst();clearTimeout(releaseTimer);releaseTimer=setTimeout(function(){if(lock&&lock.token===tok){restore();lock=null;}},2800);},true);
 document.addEventListener('pointerdown',function(e){if(isField(e.target)){take(e.target);stopQueuedFullRender();}else if(lock){restore();lock=null;}},true);
 window.addEventListener('scroll',function(){if(restoring||!lock)return;lock.x=window.scrollX||0;lock.y=window.scrollY||document.documentElement.scrollTop||0;try{if(lock.row){var r=document.querySelector('#result '+lock.row);if(r)lock.rowTop=r.getBoundingClientRect().top;}}catch(_e){}},{passive:true});
+document.addEventListener('scroll',function(e){if(restoring||!lock)return;var w=e.target;if(!w||!w.matches||!w.matches('#result .tablewrap'))return;for(var i=0;i<lock.wraps.length;i++){var s=lock.wraps[i],same=s.id?(w.id===s.id):(document.querySelectorAll('#result .tablewrap')[s.i]===w);if(same){s.top=w.scrollTop;s.left=w.scrollLeft;break;}}},true);
 window.fcEditScrollLockV842={capture:take,restore:restore,cancelRender:stopQueuedFullRender};
 })();
 </script>
