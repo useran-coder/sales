@@ -128,6 +128,7 @@
   .mcell.bulk .mhd{color:#15803d}
   #fcFiltChips .f2chip{font-size:12px!important}
   #result .fcov,#result .fcadd,#result .fcpov,#result .fcpadd{text-align:center!important}
+  #result .fc-cust-annual-table th[data-sk="ytd"]>div{font-size:10px!important}
   #result th[title*="재분배"],#result th[title*="해당%로"],#result th[title*="목표에 가산"],#result th[title*="합계 유지"],#result th[title*="합계·그래프"]{text-align:center!important}
   .hidden{display:none!important}
 
@@ -2051,7 +2052,7 @@ body.fpopen #fpSum{display:block}
         </div>
       </div>
       <div id="bepHeadBoxV792" style="display:none">
-      <div class="ctrl-row" style="margin-top:12px;align-items:center;border-top:1px solid var(--line);padding-top:12px">
+      <div class="ctrl-row" id="bepRowV837" style="margin-top:12px;align-items:center;border-top:1px solid var(--line);padding-top:12px">
         <b style="font-size:13px">📊 BEP(손익분기점) <span id="bepYrV791" style="font-size:12px;color:#7c3aed;font-weight:800"></span></b>
         <input type="text" inputmode="numeric" id="bepInput" placeholder="연 손익분기 매출액(원)" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;width:200px;text-align:right">
         <span class="sub2" style="margin:0 2px">↔</span>
@@ -2059,7 +2060,7 @@ body.fpopen #fpSum{display:block}
         <button class="btn ghost" id="bepClear" style="font-size:11px;padding:5px 10px">지우기</button>
         <span class="sub2"><b>연</b>·<b>월</b> 중 한쪽에 입력하면 다른 쪽이 자동 계산됩니다(월=연÷12). 그래프에 보라색 BEP 라인과 남은 월 필요액이 표시됩니다.</span>
       </div>
-      <div class="ctrl-row" style="margin-top:12px;align-items:center;border-top:1px solid var(--line);padding-top:12px">
+      <div class="ctrl-row" id="headRowV837" style="margin-top:12px;align-items:center;border-top:1px solid var(--line);padding-top:12px">
         <b style="font-size:13px">👥 사업부 인원 <span class="sub2" style="font-weight:400">(월별, 1인 매출 반영)</span></b>
         <button class="btn ghost" id="headMonBtn" type="button">월별 인원 입력 ▾</button>
         <span class="sub2">월별 인원을 입력하면 1인당 월매출/목표에 즉시 반영됩니다.</span>
@@ -3061,15 +3062,24 @@ function v791SyncYearUI(){
   try{ if(typeof bepHeadMoveV792==='function')bepHeadMoveV792(); }catch(_e){}
 }
 window.v791SyncYearUI=v791SyncYearUI;
-/* v792 : 📊 BEP · 👥 사업부 인원 상자를 «매출 목표» 화면의 🔍 기준 대비 점검 바로 아랫줄로 옮깁니다.
-   (설정 화면에서 요소를 그대로 옮기므로 입력·버튼 동작은 전부 그대로입니다) */
+/* v837 : 📊 BEP · 👥 사업부 인원을 «월별 목표 %» 오른쪽의 탭으로 옮깁니다. */
 function bepHeadMoveV792(){
   try{
     var box=document.getElementById('bepHeadBoxV792'); if(!box)return;
     var home=document.getElementById('bepHeadHomeV792');
     var onFc=(typeof state!=='undefined'&&state.act==='forecast');
-    var panel=document.getElementById('fcDiffPanelV757');
-    if(onFc&&panel){
+    var monthly=document.getElementById('fcMonthlyTargetToggle');
+    if(onFc&&monthly){
+      var toolbar=monthly.parentElement;
+      var makeTab=function(id,label,key){
+        var b=document.getElementById(id);
+        if(!b){b=document.createElement('button');b.id=id;b.type='button';b.className='btn ghost';b.style.cssText='font-size:13px;font-weight:800;margin-right:6px';b.textContent=label;toolbar.insertBefore(b,document.getElementById('fcNotesToggle')||null);}
+        var active=state.fc._bepHeadTab===key;
+        b.style.background=active?'#1e3a5f':'#fff';b.style.color=active?'#fff':'#1e3a5f';b.style.borderColor=active?'#1e3a5f':'#cbd5e1';
+        b.onclick=function(e){e.preventDefault();var sy=window.scrollY||0;state.fc._bepHeadTab=state.fc._bepHeadTab===key?'':key;try{saveSettings();}catch(_e){}bepHeadMoveV792();requestAnimationFrame(function(){window.scrollTo(0,sy);});};
+      };
+      makeTab('fcBepTabV837','📊 BEP(손익분기점)','bep');
+      makeTab('fcHeadTabV837','👥 사업부 인원','head');
       var host=document.getElementById('bepHeadHostV792');
       if(!host){
         host=document.createElement('div');
@@ -3077,11 +3087,16 @@ function bepHeadMoveV792(){
         host.style.cssText='margin:8px 0 10px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#fff';
         box.classList.add('bep-head-onfc-v792');
       }
-      if(host.parentNode!==panel.parentNode||host.previousElementSibling!==panel){
-        panel.insertAdjacentElement('afterend',host);
+      if(host.parentNode!==toolbar.parentNode||host.previousElementSibling!==toolbar){
+        toolbar.insertAdjacentElement('afterend',host);
       }
       if(box.parentNode!==host)host.appendChild(box);
-      box.style.display='';
+      var activeTab=state.fc._bepHeadTab||'';
+      var br=document.getElementById('bepRowV837'),hr=document.getElementById('headRowV837'),hw=document.getElementById('headMonWrap');
+      if(br)br.style.display=activeTab==='bep'?'flex':'none';
+      if(hr)hr.style.display=activeTab==='head'?'flex':'none';
+      if(hw&&activeTab!=='head')hw.style.display='none';
+      box.style.display=activeTab?'':'none';host.style.display=activeTab?'':'none';
       box.classList.add('bep-head-onfc-v792');
     }else{
       var host2=document.getElementById('bepHeadHostV792');
@@ -11867,7 +11882,13 @@ let _fcReT=null;
 let _fcFastRenderSeq=0;
 /* 보기·필터 버튼은 클릭 상태를 먼저 한 프레임 표시한 뒤 무거운 목표표를 다시 그린다. 연속 클릭은 마지막 요청만 실행한다. */
 function fcFastForecast(){
-  const seq=++_fcFastRenderSeq,run=()=>{if(seq!==_fcFastRenderSeq)return;forecast();};
+  const seq=++_fcFastRenderSeq,sy=window.scrollY||document.documentElement.scrollTop||0;
+  const anchor=document.getElementById('fcMgrFilterBar'),anchorTop=anchor?anchor.getBoundingClientRect().top:null;
+  const lock=document.getElementById('result'),lockH=lock&&lock.offsetHeight>0?lock.offsetHeight:0;
+  const wraps=[...document.querySelectorAll('#result .tablewrap')].map((w,i)=>({k:w.id||('#'+i),t:w.scrollTop,l:w.scrollLeft}));
+  if(lockH)lock.style.minHeight=lockH+'px';
+  const restore=()=>{try{window.scrollTo(0,sy);document.querySelectorAll('#result .tablewrap').forEach((w,i)=>{const k=w.id||('#'+i),s=wraps.find(x=>x.k===k);if(s){w.scrollTop=s.t;w.scrollLeft=s.l;}});const a=document.getElementById('fcMgrFilterBar');if(a&&anchorTop!=null){const d=a.getBoundingClientRect().top-anchorTop;if(Math.abs(d)>1)window.scrollBy(0,d);}}catch(_e){}};
+  const run=()=>{if(seq!==_fcFastRenderSeq)return;forecast();restore();requestAnimationFrame(()=>requestAnimationFrame(restore));[80,220,500].forEach(ms=>setTimeout(restore,ms));setTimeout(()=>{try{if(lock)lock.style.minHeight='';}catch(_e){}},650);};
   if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>requestAnimationFrame(run));
   else setTimeout(run,0);
 }
@@ -12041,8 +12062,10 @@ function fcRerenderKeepFocus(){
         pos:(a.selectionStart!=null?a.selectionStart:null),end:(a.selectionEnd!=null?a.selectionEnd:null)};
     }
   }catch(_e){}
-  let sy=0, wraps=[], _lockEl=null;
+  let sy=0, wraps=[], _lockEl=null, _rowAnchor=null;
   try{ sy=window.scrollY||document.documentElement.scrollTop||0;
+    var _ae=document.activeElement,_ar=_ae&&_ae.closest?_ae.closest('tr[data-c],tr[data-pk]'):null;
+    if(_ar)_rowAnchor={c:_ar.getAttribute('data-c'),pk:_ar.getAttribute('data-pk'),top:_ar.getBoundingClientRect().top};
     /* v799 : 표 상자를 «순서»가 아니라 «id»로 기억합니다. 월별보기 표는 나중에 따로 만들어지기 때문에
        순서로 맞추면 엉뚱한 상자에 복원되거나 아예 복원되지 않아 표가 맨 위로 튀었습니다. */
     wraps=[...document.querySelectorAll('#result .tablewrap')].map((w,i)=>({k:w.id||('#'+i),t:w.scrollTop,l:w.scrollLeft}));
@@ -12068,6 +12091,7 @@ function fcRerenderKeepFocus(){
         nw.forEach((w,i)=>{ const k=w.id||('#'+i); const st=wraps.find(x=>x.k===k)||((!w.id)?wraps[i]:null);
           if(st){ if(st.t&&w.scrollTop!==st.t)w.scrollTop=st.t; if(st.l&&w.scrollLeft!==st.l)w.scrollLeft=st.l; } });
         if(Math.abs((window.scrollY||0)-sy)>1)window.scrollTo(0,sy);
+        if(_rowAnchor){var _sel=_rowAnchor.c!=null?'tr[data-c="'+_v801Esc(_rowAnchor.c)+'"]':'tr[data-pk="'+_v801Esc(_rowAnchor.pk)+'"]',_nr=document.querySelector('#result '+_sel);if(_nr){var _dy=_nr.getBoundingClientRect().top-_rowAnchor.top;if(Math.abs(_dy)>1)window.scrollBy(0,_dy);}}
       }catch(_e2){}
     };
     _restore();
@@ -12650,8 +12674,8 @@ function forecast(){ state._inDrill=false;
       <div class="seg" id="fcDim"><button data-v="cust" class="${state.fc.dim==='cust'?'on':''}" style="${state.fc.dim==='cust'?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':'color:#1e3a5f'}">거래처</button><button data-v="prod" class="${state.fc.dim==='prod'?'on':''}" style="${state.fc.dim==='prod'?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488'}">제품(규격)</button></div>
       <b style="font-size:12px">기간(전년 대비)</b> ${perBtns} ${rangeSel} <span class="sub2">그래프·KPI는 연간 기준</span>
       <span class="fc-reset-group-v804">${state.fc.dim==='cust'
-        ?`<button class="btn ghost" id="fcOvReset" type="button">조정% 초기화</button><button class="btn ghost" id="fcAddReset" type="button" style="color:var(--red);border-color:#f3c0c0">추가% 초기화</button>`
-        :`<button class="btn ghost" id="fcProdOvReset" type="button">조정% 초기화</button><button class="btn ghost" id="fcProdAddReset" type="button" style="color:var(--red);border-color:#f3c0c0">추가% 초기화</button>`}<button class="btn ghost fcSnapBtnV803" type="button" style="color:#1d4ed8;border-color:#bfdbfe" title="최근 20개 시점의 목표 % 값 중에서 골라 되돌립니다">🕘 % 되돌리기</button></span></div>
+        ?`<button class="btn ghost" id="fcOvReset" type="button">조정% 초기화</button><button class="btn ghost" id="fcAddReset" type="button" style="color:var(--red);border-color:#f3c0c0">추가% 초기화</button><button class="btn ghost" id="fcMemoReset" type="button" style="color:#92400e;border-color:#f3d6a5" title="직접 입력한 거래처 메모를 초기화합니다">메모 초기화</button>`
+        :`<button class="btn ghost" id="fcProdOvReset" type="button">조정% 초기화</button><button class="btn ghost" id="fcProdAddReset" type="button" style="color:var(--red);border-color:#f3c0c0">추가% 초기화</button><button class="btn ghost" id="fcProdMemoReset" type="button" style="color:#92400e;border-color:#f3d6a5" title="직접 입력한 제품(규격) 메모를 초기화합니다">메모 초기화</button>`}<button class="btn ghost fcSnapBtnV803" type="button" style="color:#1d4ed8;border-color:#bfdbfe" title="최근 20개 시점의 목표 % 값 중에서 골라 되돌립니다">🕘 % 되돌리기</button></span></div>
     ${state.fc.dim==='cust'?`
     <h4 class="fch">📋 업체별 매출 목표 · ${rLab} <span class="fc-target-search fc-cust-unified-search"><input type="search" id="fcCustSearch" autocomplete="off" spellcheck="false" placeholder="거래처명 포함 검색" value="${esc(state.fc._csearch||'')}"><span class="fc-target-search-label">🏢 거래처</span><button type="button" id="fcCustSearchBtn" class="fc-target-search-btn" aria-label="거래처 검색" title="검색"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="M12.5 12.5L17 17"></path></svg></button></span> <span style="float:right"><button class="btn" id="fcAddCust" style="font-size:13px;padding:3px 10px">＋ 업체추가</button> <button class="btn ghost" id="fcNewOnlyV807" style="font-size:13px;padding:3px 10px;${state.fc._newOnly?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe'}" title="목표표에 「업체추가」로 등록한 신규목표 업체만 봅니다">🎯 신규목표(${Object.keys(state.fc.newCusts||{}).length})${state.fc._newOnly?' ✓':''}</button> <button class="btn ghost" id="fcIssueCust" style="font-size:13px;padding:3px 10px;${state.fc.issC?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.fc.issC?' (해제)':''}</button> <button class="btn ghost" id="fcExclRows" style="font-size:13px;padding:3px 8px;${state.fc.showExclRows?'background:#dc2626;color:#fff;border-color:#dc2626':''}">📋 ${state.fc.showExclRows?'일반 업체 보기':'제외 업체만 보기'}(${excludedCustCount()})${state.fc.showExclRows?' ✓':''}</button> <button class="btn ghost fcexcltoggle" style="font-size:13px;padding:3px 8px;${state.fc.showExcl?'background:#0d9488;color:#fff;border-color:#0d9488':''}">🚫 제외옵션(거래처 ${excludedCustCount()} · 목표 ${targetOnlyExcludedCustCount()})${state.fc.showExcl?' ✓':''}</button> <button class="btn ghost" id="fcCustCsv" style="font-size:13px;padding:3px 8px">엑셀</button></span></h4>
     <div id="fcNewForm" style="display:none;margin:0 0 8px;padding:10px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px">
@@ -12691,6 +12715,7 @@ function forecast(){ state._inDrill=false;
     if(fcCutoffMonth()===0)document.querySelectorAll('#result th').forEach(th=>{if(th.textContent.includes('실적(1~0월)'))th.innerHTML=th.innerHTML.replace('실적(1~0월)','실적(없음)');});
     const mtJump=document.getElementById('fcMonthlyTargetToggle');
     if(mtJump){ mtJump.textContent='월별 목표 % '+(state.fc.monthTargetOpen?'▾':'▸'); const mtHost=mtJump.parentElement; if(mtHost){ const holder=document.createElement('div'); holder.innerHTML=fcMonthlyTargetPanelHTML(PY,CY,pyMonTot,cyMonTot,lastAct); const panel=holder.firstElementChild; if(panel){ mtHost.insertAdjacentElement('afterend',panel); mtJump.addEventListener('click',()=>{ state.fc.monthTargetOpen=!state.fc.monthTargetOpen;panel.style.display=state.fc.monthTargetOpen?'block':'none';mtJump.textContent='월별 목표 % '+(state.fc.monthTargetOpen?'▾':'▸'); }); const all=panel.querySelector('#fcInlineAll'),allBtn=panel.querySelector('#fcInlineAllBtn'),reset=panel.querySelector('#fcInlineResetBtn'); panel.querySelectorAll('.fc-inline-pct').forEach(inp=>inp.addEventListener('change',()=>{ const m=+inp.dataset.m,v=parseFloat(inp.value); state.fc.pct[m]=isFinite(v)?v:0; (state.fc.pctAt=state.fc.pctAt||{})[m]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'}; v796SaveSoon(); v797Defer(fcFastForecast); })); allBtn&&allBtn.addEventListener('click',()=>{ const v=parseFloat(all&&all.value); if(!isFinite(v))return; for(const m of fcMonths)state.fc.pct[m]=v; saveSettings(); fcFastForecast(); }); reset&&reset.addEventListener('click',async()=>{ if(!await uiConfirm('월별 목표 %를 모두 초기화할까요?<br>(매출 목표의 조정%·추가%는 유지됩니다)'))return; state.fc.pct={}; state.fc.pctAt={}; saveSettings(); fcFastForecast(); }); } } }
+    try{ if(typeof bepHeadMoveV792==='function')bepHeadMoveV792(); }catch(_e){}
     if(state.fc.dim==='cust'){
       const head=$('#result').querySelector('h4.fch');
       const annualWrap=[...$('#result').querySelectorAll('.tablewrap')].find(w=>w.querySelector('tr.fcrow'));
@@ -12875,6 +12900,7 @@ function forecast(){ state._inDrill=false;
     };
     const ovR=$('#fcOvReset'); ovR&&ovR.addEventListener('click',async()=>{ const n=Object.keys(state.fc.override||{}).length+Object.keys(state.fc.custMonthPct||{}).length; if(!n){ await uiConfirm('초기화할 조정%가 없습니다.'); return; } await _resetYearScopedV807('조정%'); });
     const adR=$('#fcAddReset'); adR&&adR.addEventListener('click',async()=>{ if(!Object.keys(state.fc.addPct||{}).length){ await uiConfirm('초기화할 추가%가 없습니다.'); return; } await _resetYearScopedV807('추가%'); });
+    const memoR=$('#fcMemoReset'); memoR&&memoR.addEventListener('click',async()=>{ const n=Object.keys(state.fc.custMemo||{}).filter(k=>String(state.fc.custMemo[k]||'').split('[전략]')[0].trim()).length; if(!n){ await uiConfirm('초기화할 직접 입력 거래처 메모가 없습니다.<br><span class="sub2">전략 자동연동 문구는 등록된 전략이 있는 동안 유지됩니다.</span>'); return; } if(!await uiConfirm('모든 거래처의 <b>직접 입력 메모</b>를 초기화할까요?<br><span class="sub2">[전략] 자동연동 문구는 유지됩니다.</span>'))return; const next={}; Object.keys(state.fc.custMemo||{}).forEach(k=>{ const cur=String(state.fc.custMemo[k]||''),i=cur.indexOf('[전략]'); if(i>=0)next[k]=cur.slice(i).trim(); }); state.fc.custMemo=next; await saveSettings(); forecast(); });
     $('#result').querySelectorAll('#fcPer button').forEach(b=>b.addEventListener('click',()=>{ state.fc.period=b.dataset.v; b.parentElement.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); fcFastForecast(); }));
     $('#result').querySelectorAll('#fcDim button').forEach(b=>b.addEventListener('click',()=>{ fcOrderUnlockV802(); state.fc.dim=b.dataset.v; state.fc.sortKey=null; b.parentElement.querySelectorAll('button').forEach(x=>{const on=x===b,col=x.dataset.v==='prod'?'#0d9488':'#1e3a5f';x.classList.toggle('on',on);x.style.background=on?col:'';x.style.color=on?'#fff':col;x.style.borderColor=on?col:'';}); fcFastForecast(); }));
     $('#result').querySelectorAll('.fcSnapBtnV803').forEach(b=>b.addEventListener('click',()=>fcSnapOpenV803()));
@@ -12919,6 +12945,7 @@ function forecast(){ state._inDrill=false;
       try{ fcOrderUnlockV802(); }catch(_e){}
       await saveSettings(); forecast(); });
     const paR=$('#fcProdAddReset'); paR&&paR.addEventListener('click',async()=>{ if(!Object.keys(state.fc.prodAddPct).length){ await uiConfirm('초기화할 제품 추가%가 없습니다.'); return; } if(!await uiConfirm('모든 제품의 <b>추가%</b>를 초기화할까요?'))return; state.fc.prodAddPct={}; saveSettings(); forecast(); });
+    const pmR=$('#fcProdMemoReset'); pmR&&pmR.addEventListener('click',async()=>{ const n=Object.keys(state.fc.prodMemo||{}).filter(k=>String(state.fc.prodMemo[k]||'').split('[전략]')[0].trim()).length; if(!n){ await uiConfirm('초기화할 직접 입력 제품(규격) 메모가 없습니다.<br><span class="sub2">전략 자동연동 문구는 등록된 전략이 있는 동안 유지됩니다.</span>'); return; } if(!await uiConfirm('모든 제품(규격)의 <b>직접 입력 메모</b>를 초기화할까요?<br><span class="sub2">[전략] 자동연동 문구는 유지됩니다.</span>'))return; const next={}; Object.keys(state.fc.prodMemo||{}).forEach(k=>{ const cur=String(state.fc.prodMemo[k]||''),i=cur.indexOf('[전략]'); if(i>=0)next[k]=cur.slice(i).trim(); }); state.fc.prodMemo=next; await saveSettings(); forecast(); });
     /* 제품 목표 검색은 위의 단일 업체/제품 선택 검색기에서 IME 조합을 유지한 채 처리합니다. */
     fcBindNegativeFields($('#result'));
     $('#result').querySelectorAll('.fcov,.fcadd,.fcpov,.fcpadd').forEach(inp=>{inp.addEventListener('blur',()=>{const v=parseFloat(inp.value);if(inp.value.trim()!==''&&isFinite(v))inp.value=(v===0?'':v.toFixed(1));fcPaintNegativeField(inp);});});
@@ -34799,66 +34826,95 @@ else window.addEventListener('load',function(){setTimeout(boot,400);},{once:true
 'use strict';
 var SEL='.fcm,.fc-inline-pct,.fcov,.fcadd,.fcpov,.fcpadd,.fc-cust-month-pct,.fc-prod-month-pct';
 var saveTimer=null;
-function numberOf(v){ var s=String(v==null?'':v).trim().replace(',','.'); if(s==='')return {ok:true,blank:true,n:0}; var n=Number(s); return {ok:isFinite(n),blank:false,n:n}; }
+function numberOf(v){v=String(v==null?'':v).replace(/,/g,'').trim();if(v==='')return null;var n=Number(v);return Number.isFinite(n)?n:null;}
 function setNested(store,key,month,raw){
-  var p=numberOf(raw); if(!p.ok||!key||!month)return false;
-  store[key]=store[key]||{};
-  if(p.blank||p.n===0)delete store[key][month]; else store[key][month]=p.n;
-  if(!Object.keys(store[key]).length)delete store[key];
-  return true;
+  store=store||{}; var n=numberOf(raw),m=String(month||'');
+  if(n==null){if(store[key]){delete store[key][m];if(!Object.keys(store[key]).length)delete store[key];}}
+  else{(store[key]||(store[key]={}))[m]=n;}
+  return store;
 }
 function applyValue(inp,stamp){
-  if(typeof state==='undefined'||!state.fc||!inp)return false;
-  var f=state.fc,p=numberOf(inp.value),c=inp.dataset.c||'',pk=inp.dataset.pk||'',m=+(inp.dataset.m||0);
-  if(!p.ok)return false;
-  if(inp.classList.contains('fcm')||inp.classList.contains('fc-inline-pct')){
-    if(!m)return false; f.pct=f.pct||{}; f.pct[m]=p.blank?0:p.n;
-    if(stamp){f.pctAt=f.pctAt||{};f.pctAt[m]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};}
-  }else if(inp.classList.contains('fcov')){
-    if(!c)return false; f.override=f.override||{}; f.override[c]=p.blank?'':p.n;
-    if(stamp){f.overrideAt=f.overrideAt||{};f.overrideAt[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};}
-  }else if(inp.classList.contains('fcadd')){
-    if(!c)return false; f.addPct=f.addPct||{}; f.addPct[c]=(p.blank||p.n===0)?'':p.n;
-    if(stamp){f.addPctAt=f.addPctAt||{};f.addPctAt[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};}
-  }else if(inp.classList.contains('fcpov')){
-    if(!pk)return false; f.prodOverride=f.prodOverride||{}; f.prodOverride[pk]=p.blank?'':p.n;
-  }else if(inp.classList.contains('fcpadd')){
-    if(!pk)return false; f.prodAddPct=f.prodAddPct||{}; f.prodAddPct[pk]=(p.blank||p.n===0)?'':p.n;
-  }else if(inp.classList.contains('fc-cust-month-pct')){
-    f.custMonthPct=f.custMonthPct||{}; if(!setNested(f.custMonthPct,c,m,inp.value))return false;
-  }else if(inp.classList.contains('fc-prod-month-pct')){
-    f.prodMonthPct=f.prodMonthPct||{}; if(!setNested(f.prodMonthPct,pk,m,inp.value))return false;
-  }else return false;
-  return true;
+  if(!inp||!inp.matches(SEL)||typeof state==='undefined'||!state.fc)return;
+  var F=state.fc,n=numberOf(inp.value),now=Date.now(),k,m;
+  F.pct=F.pct||{};F.override=F.override||{};F.addPct=F.addPct||{};F.prodOverride=F.prodOverride||{};F.prodAddPct=F.prodAddPct||{};F.custMonthPct=F.custMonthPct||{};F.prodMonthPct=F.prodMonthPct||{};
+  if(inp.classList.contains('fcm')||inp.classList.contains('fc-inline-pct')){k=inp.dataset.m||inp.dataset.month||inp.dataset.c||inp.dataset.cust||'';if(!k)return;if(n==null)delete F.pct[k];else F.pct[k]=n;if(stamp){F.pctAt=F.pctAt||{};F.pctAt[k]=now;}}
+  else if(inp.classList.contains('fcov')){k=inp.dataset.c||'';if(!k)return;if(n==null)delete F.override[k];else F.override[k]=n;if(stamp){F.overrideAt=F.overrideAt||{};F.overrideAt[k]=now;}}
+  else if(inp.classList.contains('fcadd')){k=inp.dataset.c||'';if(!k)return;if(n==null)delete F.addPct[k];else F.addPct[k]=n;if(stamp){F.addPctAt=F.addPctAt||{};F.addPctAt[k]=now;}}
+  else if(inp.classList.contains('fcpov')){k=inp.dataset.pk||'';if(!k)return;if(n==null)delete F.prodOverride[k];else F.prodOverride[k]=n;}
+  else if(inp.classList.contains('fcpadd')){k=inp.dataset.pk||'';if(!k)return;if(n==null)delete F.prodAddPct[k];else F.prodAddPct[k]=n;}
+  else if(inp.classList.contains('fc-cust-month-pct')){k=inp.dataset.c||inp.dataset.cust||'';m=inp.dataset.m||inp.dataset.month||'';if(!k||!m)return;F.custMonthPct=setNested(F.custMonthPct,k,m,inp.value);}
+  else if(inp.classList.contains('fc-prod-month-pct')){k=inp.dataset.pk||'';m=inp.dataset.m||inp.dataset.month||'';if(!k||!m)return;F.prodMonthPct=setNested(F.prodMonthPct,k,m,inp.value);}
 }
 function syncStores(){
-  try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_e){}
-  try{
-    var y=(typeof fcTargetYear==='function')?fcTargetYear():(state.fc&&state.fc._ctxYear);
-    if(y!=null&&y!==''){ state.fc._ctxYear=String(y); if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(y); }
-  }catch(_e){}
-  try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_e){}
-  try{ _fcBaseAggCache=null; _fcBase27Cache=null; window.FC_CHART_V677=null; window.__nyAggV737=null; }catch(_e){}
+  try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();}catch(_e){}
+  try{var y=typeof fcTargetYear==='function'?fcTargetYear():'';if(y){state.fc._ctxYear=String(y);if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(y);}}
+  catch(_e2){}
+  try{if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();}catch(_e3){}
+  try{if(typeof fcInvalidateCache==='function')fcInvalidateCache();}catch(_e4){}
 }
 async function persist(){
-  clearTimeout(saveTimer); saveTimer=null; syncStores();
-  try{ if(typeof saveSettings==='function')await saveSettings(); }catch(_e){}
-  try{ if(typeof fcSnapSaveV803==='function')await fcSnapSaveV803(); }catch(_e){}
+  clearTimeout(saveTimer);saveTimer=null;syncStores();
+  try{if(typeof saveSettings==='function')await saveSettings();}catch(_e){}
+  try{if(typeof fcSnapSaveV803==='function')await fcSnapSaveV803();}catch(_e2){}
 }
-document.addEventListener('input',function(e){
-  var t=e.target; if(!t||!t.matches||!t.matches(SEL))return;
-  if(!applyValue(t,false))return; syncStores();
-  clearTimeout(saveTimer); saveTimer=setTimeout(persist,700);
-},true);
-document.addEventListener('change',function(e){
-  var t=e.target; if(!t||!t.matches||!t.matches(SEL))return;
-  if(!applyValue(t,true))return; syncStores(); persist();
-},true);
-document.addEventListener('keydown',function(e){
-  var t=e.target; if(e.key==='Enter'&&t&&t.matches&&t.matches(SEL)){e.preventDefault();t.blur();}
-},true);
-window.addEventListener('pagehide',function(){try{syncStores();if(typeof v797SaveNow==='function')v797SaveNow();}catch(_e){};});
-window.fcPctLiveSyncV835={apply:applyValue,sync:syncStores,persist:persist};
+document.addEventListener('input',function(e){var inp=e.target;if(!inp||!inp.matches||!inp.matches(SEL))return;applyValue(inp,false);syncStores();clearTimeout(saveTimer);saveTimer=setTimeout(persist,700);},true);
+document.addEventListener('change',function(e){var inp=e.target;if(!inp||!inp.matches||!inp.matches(SEL))return;applyValue(inp,true);syncStores();persist();},true);
+document.addEventListener('keydown',function(e){var inp=e.target;if(e.key==='Enter'&&inp&&inp.matches&&inp.matches(SEL)){e.preventDefault();inp.blur();}},true);
+window.addEventListener('pagehide',function(){syncStores();try{if(typeof v797SaveNow==='function')v797SaveNow();}catch(_e){};});
+window.fcPctLiveSyncV835={apply:applyValue,sync:syncStores,save:persist};
+})();
+</script>
+
+<!-- v836: 제품(규격) 메모에 영업전략 추진현황 자동연동 -->
+<script id="v836-product-strategy-memo-sync">
+(function(){
+'use strict';
+var MARK='[전략]';
+function norm(v){try{v=String(v||'').normalize('NFKC');}catch(_e){v=String(v||'');}return v.toLowerCase().replace(/[\s·│\/()\[\]{}_.-]+/g,'');}
+function productCatalog(){
+  var by={};
+  function add(pk,code,name,spec){
+    pk=String(pk||'').trim();if(!pk)return;
+    var o=by[pk]||(by[pk]={pk:pk,aliases:[]}),vals=[code,name,spec,String(code||'')+String(spec||''),String(name||'')+String(spec||''),String(code||'')+String(name||'')+String(spec||'')];
+    vals.forEach(function(v){v=norm(v);if(v.length>=2&&o.aliases.indexOf(v)<0)o.aliases.push(v);});
+  }
+  try{(CUR||[]).forEach(function(r){add((r.code||'(미상)')+'│'+(r.spec||''),r.code,r.name,r.spec);});}catch(_e){}
+  try{Object.keys((state.fc&&state.fc.newProds)||{}).forEach(function(pk){var p=state.fc.newProds[pk]||{},parts=pk.split('│');add(pk,p.code||parts[0],p.name||'',p.spec||parts.slice(1).join('│'));});}catch(_e2){}
+  try{Object.keys((state.fc&&state.fc.prodMemo)||{}).forEach(function(pk){var parts=pk.split('│');add(pk,parts[0],'',parts.slice(1).join('│'));});}catch(_e3){}
+  return Object.keys(by).map(function(k){return by[k];});
+}
+function matchesFor(raw,catalog){
+  var q=norm(raw),best=0,out=[];if(q.length<2)return out;
+  catalog.forEach(function(o){var score=0;o.aliases.forEach(function(a){if(q===a)score=Math.max(score,1000+a.length);else if(q.indexOf(a)>=0)score=Math.max(score,a.length);else if(q.length>=4&&a.indexOf(q)>=0)score=Math.max(score,q.length);});if(score>best){best=score;out=[o.pk];}else if(score&&score===best)out.push(o.pk);});
+  return out;
+}
+function memoText(it){
+  var cust=String((it&&it.cust)||'').trim(),note='';
+  try{note=String(typeof sgItemNote==='function'?sgItemNote(it):((it&&it.note)||'')).trim();}catch(_e){note=String((it&&it.note)||'').trim();}
+  if(note&&note===cust)note='';
+  if(cust&&note)return cust+' / '+note;
+  return cust||note||'';
+}
+function collect(){
+  var items=[];try{items=typeof sgPlanItems==='function'?(sgPlanItems()||[]):(((state.strategyPlan||{}).items)||[]);}catch(_e){items=[];}
+  var cat=productCatalog(),by={};
+  items.forEach(function(it){if(!it||it.off)return;var prod=String(it.prod||'').trim(),s=memoText(it);if(!prod||!s)return;matchesFor(prod,cat).forEach(function(pk){(by[pk]=by[pk]||[]).push(s);});});
+  return by;
+}
+function syncProductMemo(){
+  var S;try{S=state;}catch(_e){return false;}if(!S||!S.fc)return false;
+  var memo=S.fc.prodMemo||(S.fc.prodMemo={}),by=collect(),changed=false,seen={};
+  Object.keys(by).forEach(function(pk){seen[pk]=1;var uniq=[],has={};by[pk].forEach(function(s){if(!has[s]){has[s]=1;uniq.push(s);}});var block=MARK+' '+uniq.join(' ; '),cur=String(memo[pk]||''),i=cur.indexOf(MARK),manual=(i>=0?cur.slice(0,i):cur).replace(/\s+$/,''),next=(manual?manual+' ':'')+block;if(cur!==next){memo[pk]=next;changed=true;}});
+  Object.keys(memo).forEach(function(pk){if(seen[pk])return;var cur=String(memo[pk]||''),i=cur.indexOf(MARK);if(i<0)return;var manual=cur.slice(0,i).replace(/\s+$/,'');if(manual)memo[pk]=manual;else delete memo[pk];changed=true;});
+  return changed;
+}
+window.sgSyncProdMemoV836=syncProductMemo;
+(function(){var native=window.saveSettings;if(typeof native!=='function'||native.__prodMemoV836)return;var wrapped=function(){try{syncProductMemo();}catch(_e){}return native.apply(this,arguments);};wrapped.__prodMemoV836=true;window.saveSettings=wrapped;try{saveSettings=wrapped;}catch(_e){}})();
+(function(){var native=window.forecast;if(typeof native!=='function'||native.__prodMemoV836)return;var wrapped=function(){try{syncProductMemo();}catch(_e){}return native.apply(this,arguments);};wrapped.__prodMemoV836=true;window.forecast=wrapped;try{forecast=wrapped;}catch(_e){}})();
+(function(){
+  function decorate(){var list=document.querySelectorAll('#result .fcpmemo');for(var i=0;i<list.length;i++){var el=list[i];if(el.dataset.prodMemoV836)continue;el.dataset.prodMemoV836='1';el.title='② 영업전략 추진현황에 등록한 <거래처 / 비고·아이템>이 '+MARK+' 뒤에 자동으로 표시됩니다.\n'+MARK+' 앞부분은 직접 쓴 메모로 유지되며, 전략을 지우면 뒷부분만 사라집니다.';if(!el.placeholder||el.placeholder==='이슈 메모')el.placeholder='이슈 메모 ('+MARK+' 자동연동)';}}
+  var t=null,obs=new MutationObserver(function(){clearTimeout(t);t=setTimeout(decorate,120);});function start(){var r=document.getElementById('result');if(!r){setTimeout(start,600);return;}obs.observe(r,{childList:true,subtree:true});try{syncProductMemo();}catch(_e){}decorate();}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
 })();
 </script>
 
