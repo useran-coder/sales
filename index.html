@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v834</title>
-<script>window.APP_BUILD='v834';</script>
+<title>동방파스텍 매출 분석 도구 v836</title>
+<script>window.APP_BUILD='v836';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1927,7 +1927,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v834</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v836</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -2519,7 +2519,9 @@ function fcApplyYearContext(act){
       if(!f._ctxYear||f._ctxYear===_dmS)return;
     }
     try{ fcMigrateYearMiscV718(); }catch(_m){}
-    const FC_YEAR_ACTS={forecast:1,trend:1,strategy:1,cmgr:1};   /* v731 : 거래처 담당자도 목표연도 기준 */
+    /* v836 : 거래처 담당자 현황은 «올해»까지만 봅니다. 매출 목표에서 2027년을 골라도 따라가지 않습니다.
+       (해가 바뀌어 2027년이 실제 올해가 되면 그때 자연히 2027년이 됩니다) */
+    const FC_YEAR_ACTS={forecast:1,trend:1,strategy:1};
     const want=FC_YEAR_ACTS[act]?String(fcTargetYear()):String(fcDataYearMax());
     const now=String(f._ctxYear||fcTargetYear());
     if(now===want)return;
@@ -3504,10 +3506,12 @@ function renderDrill1(){
   /* v760 : 선택한 항목(거래처·품목군 등)의 월별 추이를 표 위에 표시합니다 */
   const _ttKey='drill1:'+String((state._parent&&state._parent.act)||'')+':'+String(parentRow.key||parentRow.label||'');
   const _ttTop=trendTopV760(String(parentRow.label||''),src,_ttKey,{year:monOn?yr:0,hint:'표 아래 목록에서 세부 항목을 볼 수 있습니다.'});
-  const customerTradeBtn=(state._parent&&state._parent.act==='rank-cust')?`<button class="btn" id="rankCustTradeHistV855" type="button" style="font-size:13px;padding:5px 12px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">📒 거래내역</button>`:'';
+  /* v835 : 거래처 매출순위뿐 아니라 «거래처 담당자 현황»에서 들어왔을 때도 거래내역 버튼을 보여 줍니다 */
+  const _fromCmgrV835=!!(state._parent&&state._parent.act==='cmgr');
+  const customerTradeBtn=(state._parent&&(state._parent.act==='rank-cust'||_fromCmgrV835))?`<button class="btn" id="rankCustTradeHistV855" type="button" style="font-size:13px;padding:5px 12px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">📒 거래내역</button>`:'';
   const controls=_ttTop+(monthly?`<div class="ctrlbar">${customerTradeBtn}<button class="btn ghost" id="prodDrillMonBtn" style="font-size:13px;padding:5px 12px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별보기${monOn?' 끄기':''}</button>${yrBtns}${metricBtns}<span class="sub2">${monOn?`${yr}년 거래처별 1~12월 ${groupRankDrill?(groupMetric==='qty'?'수량':'매출액'):'매출액'}입니다.`:'선택 제품의 거래처별 월 매출을 펼쳐봅니다.'}</span></div>${productQtyTrend}${trend}`:'');
   const onMount=()=>{
-    const th=$('#rankCustTradeHistV855'); if(th)th.addEventListener('click',()=>custTradeHistoryV665(parentRow.label,renderDrill1,'← 거래처 매출로'));
+    const th=$('#rankCustTradeHistV855'); if(th)th.addEventListener('click',()=>custTradeHistoryV665(parentRow.label,renderDrill1,_fromCmgrV835?'← 품목군별 매출로':'← 거래처 매출로'));
     const b=$('#prodDrillMonBtn'); if(b)b.addEventListener('click',()=>{state.prodDrillMonthly=!state.prodDrillMonthly;renderDrill1();});
     $('#result').querySelectorAll('#prodDrillYrSeg button').forEach(x=>x.addEventListener('click',()=>{state.prodDrillYear=+x.dataset.y;renderDrill1();}));
     $('#result').querySelectorAll('#rankGroupDrillMetric button').forEach(x=>x.addEventListener('click',()=>{state.rankGroupDrillMetric=x.dataset.metric==='qty'?'qty':'amt';renderDrill1();}));
@@ -3517,7 +3521,7 @@ function renderDrill1(){
   const viewUnit=groupRankDrill&&monOn&&groupMetric==='qty'?'개':'원';
   render(`${parentRow.label} ▸ ${cfg.byLabel}별 매출`,`${monOn?yr+'년 · ':''}${arr.length.toLocaleString()}건 · 합계 ${won(viewTot)}${viewUnit} · ${groupRankDrill&&monOn&&groupMetric==='qty'?'수량':'매출'} 내림차순`,arr,cols,monOn?'yrTot':'amt',
     `선택 항목의 ${cfg.byLabel}별 매출입니다.${drillable?' <b>품목군 행을 클릭</b>하면 품목·규격이 나옵니다.':''} '← 목록으로'로 돌아갑니다.`,
-    {tableClass:groupRankDrill&&monOn?'rank-group-drill-month-table':'',controlsHtml:controls,onMount,total:{label:'합 계',amt:viewTot,col:monOn?'yrTot':'amt',cells:monthlyTotalCells||{}},back:{label:'← 목록으로',fn:closeDrill}, drill: drillable?{custom:row=>openDrill2(row)}:null});
+    {tableClass:groupRankDrill&&monOn?'rank-group-drill-month-table':'',controlsHtml:controls,onMount,total:{label:'합 계',amt:viewTot,col:monOn?'yrTot':'amt',cells:monthlyTotalCells||{}},back:{label:_fromCmgrV835?'← 담당자 현황으로':'← 목록으로',fn:closeDrill}, drill: drillable?{custom:row=>openDrill2(row)}:null});
 }
 function openDrill2(row){
   state._search=''; state.sortKey=null;
@@ -5851,8 +5855,10 @@ function custManagers(){
   setCmgrMode(true);
   const ys=dataYears();
   /* v731 : 목표 연도가 다음 해(예 2027)면 올해=2027(목표), 전년=2026(실적)으로 표를 만듭니다 */
-  const _nyCm=(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode());
-  const CY=_nyCm?fcTargetYear():ys[ys.length-1], PY=CY-1;
+  /* v836 : 목표연도(2027 등)와 무관하게 «올해»를 씁니다.
+     올해 = 자료가 있는 마지막 연도, 단 달력상 올해를 넘지 않습니다. */
+  const _nyCm=false;
+  const CY=Math.min(ys[ys.length-1], new Date().getFullYear()), PY=CY-1;
   { const q=cmgrQuickAgg(); _cmgrRanks=q.ranks; }
   const CF=state.cmgr; if(typeof CF.visitOnly!=='boolean')CF.visitOnly=false; const YR = CF.year==='py'? PY : CY;
   const prevYr=YR-1;
@@ -5929,7 +5935,7 @@ function custManagers(){
   const monHead=showM?MN.map((x,idx)=>{const mm=idx+1;return `<th class="num cmgr-sort" data-sk="m${mm}" style="text-align:center;cursor:pointer">${x}${arrow('m'+mm)}<span class="cmgr-mini-head">매출/목표/대비</span></th>`;}).join(''):'';
   const lmonHead=showL?MN.map((x,idx)=>{const mm=idx+1;return `<th class="num cmgr-sort" data-sk="lm${mm}" style="text-align:center;cursor:pointer">${x}${arrow('lm'+mm)}<span style="font-size:8px;color:#94a3b8;display:block">L원</span></th>`;}).join(''):'';
   const head=`<tr><th>#</th>${showSum?`<th class="cmgr-sort" data-sk="key" style="text-align:center;font-size:9px;cursor:pointer;padding-left:0;padding-right:0" title="주요업체(★) · 클릭 정렬">주요${arrow('key')}</th>`:''}<th class="l cmgr-sort cmgr-cust-head" data-sk="cust" style="cursor:pointer;text-align:left!important;padding-left:12px!important;padding-right:8px!important"><span class="cmgr-head-inner">거래처${arrow('cust')}</span></th><th class="num cmgr-sort cmgr-share-head" data-sk="p" style="cursor:pointer;text-align:right!important">점유율${arrow('p')}</th><th class="num cmgr-sort cmgr-actual-head" data-sk="a" style="cursor:pointer;text-align:right!important">${YR===CY?('실적<br><span style="font-size:8px;font-weight:400;color:#94a3b8">('+(lastActM>0?('1~'+lastActM+'월'):(CY+'년 실적 없음'))+')</span>'):('실적<br><span style="font-size:8px;font-weight:400;color:#94a3b8">('+YR+'년)</span>')}${arrow('a')}</th>${showSum?`<th class="num cmgr-sort" data-sk="remavg" style="cursor:pointer">남은월평균${arrow('remavg')}</th>${state.cmgr.showPrev?`<th class="num cmgr-sort" data-sk="prev" style="cursor:pointer">전년매출<br>(${prevYr})${arrow('prev')}</th>`:''}<th class="num cmgr-sort" data-sk="proj" style="cursor:pointer">올해목표<br>(${CY})${arrow('proj')}</th><th class="num cmgr-sort" data-sk="diff" style="cursor:pointer">증감액<div style="font-size:9px;color:#94a3b8;font-weight:400">증감%↓</div>${arrow('diff')}</th><th class="num cmgr-sort" data-sk="rate" style="cursor:pointer">달성률${arrow('rate')}</th>`:''}${monHead}${lmonHead}${state.cmgr.showLaser?`<th class="num cmgr-sort" data-sk="lz" style="cursor:pointer">레이저${arrow('lz')}</th><th class="num cmgr-sort" data-sk="lr" style="cursor:pointer">레이저%${arrow('lr')}</th>`:''}${showSum?`<th class="cmgr-sort" data-sk="emgr" style="cursor:pointer;text-align:center">영업${arrow('emgr')}</th><th class="cmgr-sort" data-sk="smgr" style="cursor:pointer;text-align:center">고객관리${arrow('smgr')}</th><th class="cmgr-sort" data-sk="tmgr" style="cursor:pointer;text-align:center">기술개발${arrow('tmgr')}</th><th>매출처<div style="font-size:8px;color:#94a3b8;font-weight:400">담당정보</div></th>`:''}</tr>`;
-  const body=view.map((r,i)=>{ let mc=showM?MN.map((_,k)=>{const mm=k+1, v=r.mon[mm]||0, tv=(r.tmon&&r.tmon[mm])||0, ach=tv>0?(v/tv*100):null;return `<td class="num" style="font-size:10.5px;line-height:1.22"><div style="color:${v>0?'#334155':'#e2e8f0'};font-weight:${v>0?600:400}">${mil(v)}</div>${YR===CY?`<div style="margin-top:2px;font-size:9px;color:${tv>0?'#2563eb':'#cbd5e1'};font-weight:400">${mil(tv)}</div><div style="margin-top:1px;font-size:8.5px;color:${ach==null?'#cbd5e1':ach>=100?'#16a34a':'#dc2626'};font-weight:400">${ach==null?'–':ach.toFixed(0)+'%'}</div>`:''}</td>`;}).join(''):''; let lm=showL?MN.map((_,k)=>{const v=r.lmon[k+1]||0;return `<td class="num" style="color:${v>0?'#334155':'#e2e8f0'};font-size:9.5px">${mil(v)}</td>`;}).join(''):''; const c=lrCol(r.lr); const sumCells=showSum?`<td class="num" style="color:#0d9488;font-weight:700">${r.remavg>0?thou(r.remavg):'–'}</td>${state.cmgr.showPrev?`<td class="num">${r.prev>0?thou(r.prev):'–'}</td>`:''}<td class="num" style="font-weight:700;color:#1e3a5f">${r.proj>0?thou(r.proj):'–'}</td><td class="num">${thouDiff(r.diff)}<div class="sub2" style="margin-top:1px">${pctSpan(r.pct)}</div></td><td class="num">${r.rate==null?'–':`<b style="color:${r.rate>=(lastActM/12*100)?'#16a34a':'#dc2626'}">${r.rate.toFixed(0)}%</b><div class="sub2" style="font-size:8px">잔여 ${thou(Math.max(0,r.proj-r.a))}</div>`}</td>`:''; return `<tr class="cmgr-rowclick${((CF.exclMode||CF.exclOnly)&&fcIsExcludedCust(r.cust))?' cmgr-excl':''}" data-cust="${esc(r.cust)}"><td style="text-align:center;color:#94a3b8">${i+1}</td>${showSum?`<td style="text-align:center"><button class="cmgr-key" data-c="${esc(r.cust)}" title="주요업체 지정" onclick="event.stopPropagation()" style="border:none;background:none;cursor:pointer;font-size:18px;line-height:1;padding:0;color:${(state.cmgrKey&&state.cmgrKey[r.cust])?'#f59e0b':'#cbd5e1'}">${(state.cmgrKey&&state.cmgrKey[r.cust])?'★':'☆'}</button></td>`:''}<td class="l cmgr-cust" data-c="${esc(r.cust)}" style="font-weight:600;cursor:pointer;color:#1e3a5f" title="클릭: 품목·규격별 매출"><div style="display:flex;align-items:center;gap:4px;white-space:nowrap">${(CF.exclMode||CF.exclOnly)?`<label onclick="event.stopPropagation()" title="체크 시 목표 제외" style="cursor:pointer"><input type="checkbox" class="cmgr-exclcb" data-c="${esc(r.cust)}" ${fcIsExcludedCust(r.cust)?'checked':''} style="vertical-align:middle;margin:0"></label> `:''}${esc(r.cust)} ${catChip(r.cust)} ${fcIsTargetExcludedCust(r.cust)?`<span style="font-size:9px;font-weight:700;color:${fcIsTargetOnlyExcludedCust(r.cust)&&!fcIsExcludedCust(r.cust)?'#b45309':'#dc2626'};background:${fcIsTargetOnlyExcludedCust(r.cust)&&!fcIsExcludedCust(r.cust)?'#fff7ed':'#fef2f2'};border:1px solid ${fcIsTargetOnlyExcludedCust(r.cust)&&!fcIsExcludedCust(r.cust)?'#fdba74':'#fecaca'};border-radius:7px;padding:1px 5px">${fcIsTargetOnlyExcludedCust(r.cust)&&!fcIsExcludedCust(r.cust)?'목표합산 제외':'목표 0원'}</span>`:''} <span class="sub2" style="color:#94a3b8">▸</span></div></td><td class="num" style="color:${r.p>5?'#dc2626':r.p>1?'#0f172a':'#94a3b8'};font-weight:${r.p>1?700:400}">${r.p>0?r.p.toFixed(2)+'%':'–'}</td><td class="num" style="font-weight:600;min-width:116px;white-space:nowrap">${r.a>0?thou(r.a):'–'}<div class="sub2" style="font-size:9px;font-weight:400;color:#0d9488;line-height:1.12;white-space:nowrap"><span class="cmgr-kolabel">월평균</span> ${r.a>0&&lastActM>0?thou(r.a/lastActM):'–'}</div><div class="sub2" style="font-size:9px;font-weight:400;color:#2563eb;line-height:1.12;white-space:nowrap"><span class="cmgr-kolabel">남은평균</span> ${r.remavg>0?thou(r.remavg):'–'}</div></td>${sumCells}${mc}${lm}${state.cmgr.showLaser?`<td class="num" style="color:${r.lz>0?'#9333ea':'#cbd5e1'};font-weight:${r.lz>0?600:400}">${r.lz>0?thou(r.lz):'–'}</td><td class="num"><span style="display:inline-block;width:36px;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;vertical-align:middle;margin-right:4px"><span style="display:block;height:6px;background:${c};width:${Math.min(r.lr,100)}%"></span></span><div style="font-size:9px;font-weight:700;color:${c};margin-top:2px;line-height:1.1">${r.lr>0?r.lr.toFixed(1)+'%':''}</div></td>`:''}${showSum?`<td class="cmgr-mgrcell" style="text-align:center">${mgrCell('e',r.cust,r.effE,eOpts)}</td><td class="cmgr-mgrcell" style="text-align:center">${mgrCell('s',r.cust,r.effS,sOpts)}</td><td class="cmgr-mgrcell" style="text-align:center">${mgrCell('t',r.cust,r.effT,tOpts)}</td><td style="text-align:center"><button class="cmgr-info" data-c="${esc(r.cust)}" title="매출처 담당자 정보" style="border:1px solid #e2e8f0;background:#f8fafc;border-radius:6px;cursor:pointer;font-size:13px;padding:2px 5px">👤<span class="cmgr-caret" style="font-size:9px;color:#94a3b8">▾</span></button></td>`:''}</tr>`; }).join('');
+  const body=view.map((r,i)=>{ let mc=showM?MN.map((_,k)=>{const mm=k+1, v=r.mon[mm]||0, tv=(r.tmon&&r.tmon[mm])||0, ach=tv>0?(v/tv*100):null;return `<td class="num" style="font-size:10.5px;line-height:1.22"><div style="color:${v>0?'#334155':'#e2e8f0'};font-weight:${v>0?600:400}">${mil(v)}</div>${YR===CY?`<div style="margin-top:2px;font-size:9px;color:${tv>0?'#2563eb':'#cbd5e1'};font-weight:400">${mil(tv)}</div><div style="margin-top:1px;font-size:8.5px;color:${ach==null?'#cbd5e1':ach>=100?'#16a34a':'#dc2626'};font-weight:400">${ach==null?'–':ach.toFixed(0)+'%'}</div>`:''}</td>`;}).join(''):''; let lm=showL?MN.map((_,k)=>{const v=r.lmon[k+1]||0;return `<td class="num" style="color:${v>0?'#334155':'#e2e8f0'};font-size:9.5px">${mil(v)}</td>`;}).join(''):''; const c=lrCol(r.lr); const sumCells=showSum?`<td class="num" style="color:#0d9488;font-weight:700">${r.remavg>0?thou(r.remavg):'–'}</td>${state.cmgr.showPrev?`<td class="num">${r.prev>0?thou(r.prev):'–'}</td>`:''}<td class="num" style="font-weight:700;color:#1e3a5f">${r.proj>0?thou(r.proj):'–'}</td><td class="num">${thouDiff(r.diff)}<div class="sub2" style="margin-top:1px">${pctSpan(r.pct)}</div></td><td class="num">${r.rate==null?'–':`<b style="color:${r.rate>=(lastActM/12*100)?'#16a34a':'#dc2626'}">${r.rate.toFixed(0)}%</b><div class="sub2" style="font-size:8px">잔여 ${thou(Math.max(0,r.proj-r.a))}</div>`}</td>`:''; return `<tr class="cmgr-rowclick${((CF.exclMode||CF.exclOnly)&&fcIsExcludedCust(r.cust))?' cmgr-excl':''}" data-cust="${esc(r.cust)}"><td style="text-align:center;color:#94a3b8">${i+1}</td>${showSum?`<td style="text-align:center"><button class="cmgr-key" data-c="${esc(r.cust)}" title="주요업체 지정" onclick="event.stopPropagation()" style="border:none;background:none;cursor:pointer;font-size:18px;line-height:1;padding:0;color:${(state.cmgrKey&&state.cmgrKey[r.cust])?'#f59e0b':'#cbd5e1'}">${(state.cmgrKey&&state.cmgrKey[r.cust])?'★':'☆'}</button></td>`:''}<td class="l cmgr-cust" data-c="${esc(r.cust)}" style="font-weight:600;cursor:pointer;color:#1e3a5f" title="클릭: 월별 매출 추이 · 품목군별 매출 보기"><div style="display:flex;align-items:center;gap:4px;white-space:nowrap">${(CF.exclMode||CF.exclOnly)?`<label onclick="event.stopPropagation()" title="체크 시 목표 제외" style="cursor:pointer"><input type="checkbox" class="cmgr-exclcb" data-c="${esc(r.cust)}" ${fcIsExcludedCust(r.cust)?'checked':''} style="vertical-align:middle;margin:0"></label> `:''}${esc(r.cust)} ${catChip(r.cust)} ${fcIsTargetExcludedCust(r.cust)?`<span style="font-size:9px;font-weight:700;color:${fcIsTargetOnlyExcludedCust(r.cust)&&!fcIsExcludedCust(r.cust)?'#b45309':'#dc2626'};background:${fcIsTargetOnlyExcludedCust(r.cust)&&!fcIsExcludedCust(r.cust)?'#fff7ed':'#fef2f2'};border:1px solid ${fcIsTargetOnlyExcludedCust(r.cust)&&!fcIsExcludedCust(r.cust)?'#fdba74':'#fecaca'};border-radius:7px;padding:1px 5px">${fcIsTargetOnlyExcludedCust(r.cust)&&!fcIsExcludedCust(r.cust)?'목표합산 제외':'목표 0원'}</span>`:''} <span class="sub2" style="color:#94a3b8">▸</span></div></td><td class="num" style="color:${r.p>5?'#dc2626':r.p>1?'#0f172a':'#94a3b8'};font-weight:${r.p>1?700:400}">${r.p>0?r.p.toFixed(2)+'%':'–'}</td><td class="num" style="font-weight:600;min-width:116px;white-space:nowrap">${r.a>0?thou(r.a):'–'}<div class="sub2" style="font-size:9px;font-weight:400;color:#0d9488;line-height:1.12;white-space:nowrap"><span class="cmgr-kolabel">월평균</span> ${r.a>0&&lastActM>0?thou(r.a/lastActM):'–'}</div><div class="sub2" style="font-size:9px;font-weight:400;color:#2563eb;line-height:1.12;white-space:nowrap"><span class="cmgr-kolabel">남은평균</span> ${r.remavg>0?thou(r.remavg):'–'}</div></td>${sumCells}${mc}${lm}${state.cmgr.showLaser?`<td class="num" style="color:${r.lz>0?'#9333ea':'#cbd5e1'};font-weight:${r.lz>0?600:400}">${r.lz>0?thou(r.lz):'–'}</td><td class="num"><span style="display:inline-block;width:36px;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;vertical-align:middle;margin-right:4px"><span style="display:block;height:6px;background:${c};width:${Math.min(r.lr,100)}%"></span></span><div style="font-size:9px;font-weight:700;color:${c};margin-top:2px;line-height:1.1">${r.lr>0?r.lr.toFixed(1)+'%':''}</div></td>`:''}${showSum?`<td class="cmgr-mgrcell" style="text-align:center">${mgrCell('e',r.cust,r.effE,eOpts)}</td><td class="cmgr-mgrcell" style="text-align:center">${mgrCell('s',r.cust,r.effS,sOpts)}</td><td class="cmgr-mgrcell" style="text-align:center">${mgrCell('t',r.cust,r.effT,tOpts)}</td><td style="text-align:center"><button class="cmgr-info" data-c="${esc(r.cust)}" title="매출처 담당자 정보" style="border:1px solid #e2e8f0;background:#f8fafc;border-radius:6px;cursor:pointer;font-size:13px;padding:2px 5px">👤<span class="cmgr-caret" style="font-size:9px;color:#94a3b8">▾</span></button></td>`:''}</tr>`; }).join('');
   const fa=view.reduce((s,r)=>s+r.a,0), fl=view.reduce((s,r)=>s+r.lz,0);
   const monT=showM?MN.map((_,k)=>view.reduce((s,r)=>s+(r.mon[k+1]||0),0)):[];
   const tmonT=showM?MN.map((_,k)=>view.reduce((s,r)=>s+((r.tmon&&r.tmon[k+1])||0),0)):[];
@@ -6066,7 +6072,16 @@ function custManagers(){
   $('#result').querySelectorAll('.cmgr-key').forEach(btn=>btn.addEventListener('click',e=>{ e.stopPropagation(); const c=btn.dataset.c; state.cmgrKey=state.cmgrKey||{}; const _wk=!!state.cmgrKey[c]; if(_wk)delete state.cmgrKey[c]; else state.cmgrKey[c]=true; if(typeof logEdit==='function')logEdit('주요업체',c+(_wk?' 주요업체 해제':' 주요업체 지정')); saveSettings(); custManagers(); }));
   $('#result').querySelectorAll('.cmgr-exclcb').forEach(cb=>{ cb.addEventListener('mousedown',e=>e.stopPropagation()); cb.addEventListener('click',e=>e.stopPropagation()); cb.addEventListener('change',e=>{ const c=e.target.dataset.c; setExcludedCust(c,e.target.checked); const tr=e.target.closest('tr'); if(tr)tr.classList.toggle('cmgr-excl',e.target.checked); if(typeof logEdit==='function')logEdit('거래처제외',c+' 제외 '+(e.target.checked?'설정':'해제')+' (매출목표/담당자 동시)'); saveSettings(); const _n2=excludedCustCount(); const _xb=document.getElementById('cmExclBtn'); if(_xb){ _xb.innerHTML='🚫 체크제외'+(_n2>0?'('+_n2+')':'')+(state.cmgr.exclMode?' ✓':''); } const _co2=document.getElementById('cmExclOnlyBtn'); if(_co2){ _co2.innerHTML='📋 제외업체'+(_n2>0?'('+_n2+')':'')+(state.cmgr.exclOnly?' ✓':''); } if(state.cmgr.exclOnly){ custManagers(); } }); });
   $('#result').querySelectorAll('.cmgr-info').forEach(btn=>btn.addEventListener('click',e=>{ e.stopPropagation(); const cust=btn.dataset.c; const tr=btn.closest('tr'); const tbl=tr.closest('table'); const car=btn.querySelector('.cmgr-caret'); const nx=tr.nextElementSibling; const reset=()=>{ if(car)car.textContent='▾'; tbl.style.minWidth=''; }; if(nx&&nx.classList.contains('cmgr-detail')&&nx.dataset.cust===cust){ nx.remove(); reset(); return; } $('#result').querySelectorAll('tr.cmgr-detail').forEach(d=>d.remove()); $('#result').querySelectorAll('.cmgr-caret').forEach(c=>c.textContent='▾'); const W=tbl.offsetWidth; tbl.style.minWidth=W+'px'; const dr=document.createElement('tr'); dr.className='cmgr-detail'; dr.dataset.cust=cust; const td=document.createElement('td'); td.colSpan=tr.children.length; td.style.padding='0'; const box=document.createElement('div'); box.style.width=(W-2)+'px'; box.style.boxSizing='border-box'; box.innerHTML=cmgrInfoBox(cust); td.appendChild(box); dr.appendChild(td); tr.after(dr); bindCmgrInfo(box,cust,()=>{ dr.remove(); reset(); }); if(car)car.textContent='▴'; }));
-  $('#result').querySelectorAll('.cmgr-tbl tbody tr.cmgr-rowclick').forEach(tr=>tr.addEventListener('click',e=>{ if(e.target.closest('.cmgr-mgrcell'))return; const cust=tr.dataset.cust; if(!cust)return; const ys=dataYears(); const YR=state.cmgr.year==='py'?ys[ys.length-1]-1:ys[ys.length-1]; const src=CUR.filter(r=>r.cust===cust && +r.y===YR); custProdDrill(cust+' ('+YR+'년)', src, ()=>{ state.act='cmgr'; runAct(); }); }));
+  /* v836 : 행 어디를 눌러도 업체명 칸과 같은 «그래프가 있는 품목군별 매출» 페이지로 갑니다.
+     (품목·규격 리스트는 그 페이지에서 품목군을 한 번 더 누르면 나옵니다) */
+  $('#result').querySelectorAll('.cmgr-tbl tbody tr.cmgr-rowclick').forEach(tr=>tr.addEventListener('click',e=>{
+    if(e.target.closest('.cmgr-mgrcell'))return;
+    if(e.target.closest('button,a,input,select,label'))return;
+    const cust=tr.dataset.cust; if(!cust)return;
+    if(typeof window.cmgrOpenCustPageV835==='function'){ window.cmgrOpenCustPageV835(cust); return; }
+    const ys=dataYears(); const YR=state.cmgr.year==='py'?ys[ys.length-1]-1:ys[ys.length-1];
+    const src=CUR.filter(r=>r.cust===cust && +r.y===YR);
+    custProdDrill(cust+' ('+YR+'년)', src, ()=>{ state.act='cmgr'; runAct(); }); }));
   $('#result').querySelectorAll('.cmgr-mgr').forEach(sel=>sel.addEventListener('change',()=>{ const cust=sel.dataset.c, role=sel.dataset.role, val=(sel.value||'').trim()==='미배정'?'':(sel.value||'').trim(); const rec=Object.assign({}, state.mgrOverride[cust]||{}); rec[role]=val; state.mgrOverride[cust]=rec; state.cmgr.editKey=null; if(typeof logEdit==='function')logEdit('담당자',cust+' '+(role==='s'?'고객관리':'기술개발')+' → '+(val||'미배정')); saveSettings(); custManagers(); }));
   const back=$('#cmgrBack'); back&&back.addEventListener('click',()=>{ setCmgrMode(false); state.act=state._prevAct||'rank-cust'; document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.toggle('active',x.dataset.act===state.act)); runAct(); });
   applySearch();
@@ -35230,8 +35245,18 @@ function mount(){
     var table=document.querySelector('#result .cmgr-tbl');if(!table)return;var wrap=table.parentElement,host=document.getElementById('cmgrSelectedChartV852');
     var old=document.getElementById('cmgrSelectedChartV849');if(old)old.remove();
     if(!host){host=document.createElement('div');host.id='cmgrSelectedChartV852';wrap.parentNode.insertBefore(host,wrap);}
-    document.querySelectorAll('#result .cmgr-cust').forEach(function(td){if(td.__v852)return;td.__v852=1;td.title='클릭: 올해 매출 그래프·품목군·거래내역 보기';td.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();var c=td.getAttribute('data-c')||((td.closest('tr')||{}).dataset||{}).cust;if(!c)return;state.cmgr.chartCust=c;state.cmgr.chartMonth=0;state.cmgr.chartGroup='';state.cmgr.chartTradeOpen=false;document.querySelectorAll('#result .cmgr-rowclick').forEach(function(tr){var on=tr.dataset.cust===c;tr.classList.toggle('cmgr-chart-selected',on);tr.style.background=on?'#eff6ff':'';});delete host.dataset.sig;draw(host,c);host.scrollIntoView({behavior:'smooth',block:'nearest'});});});
-    if(state.cmgr&&state.cmgr.chartCust){draw(host,state.cmgr.chartCust);document.querySelectorAll('#result .cmgr-rowclick').forEach(function(tr){if(tr.dataset.cust===state.cmgr.chartCust){tr.classList.add('cmgr-chart-selected');tr.style.background='#eff6ff';}});}
+    /* v835 : 업체를 고르면 «거래처 매출순위»와 똑같이 «다음 페이지»로 넘어갑니다.
+       (예전처럼 표 위에 그래프를 펼쳐 보려면 window.CMGR_INLINE_V852=true 로 두면 됩니다) */
+    document.querySelectorAll('#result .cmgr-cust').forEach(function(td){if(td.__v852)return;td.__v852=1;
+      td.title='클릭: 이 거래처의 품목군별 매출 페이지로 이동';
+      td.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();
+        var c=td.getAttribute('data-c')||((td.closest('tr')||{}).dataset||{}).cust;if(!c)return;
+        if(!window.CMGR_INLINE_V852&&typeof window.cmgrOpenCustPageV835==='function'){ window.cmgrOpenCustPageV835(c); return; }
+        state.cmgr.chartCust=c;state.cmgr.chartMonth=0;state.cmgr.chartGroup='';state.cmgr.chartTradeOpen=false;
+        document.querySelectorAll('#result .cmgr-rowclick').forEach(function(tr){var on=tr.dataset.cust===c;tr.classList.toggle('cmgr-chart-selected',on);tr.style.background=on?'#eff6ff':'';});
+        delete host.dataset.sig;draw(host,c);host.scrollIntoView({behavior:'smooth',block:'nearest'});});});
+    if(window.CMGR_INLINE_V852&&state.cmgr&&state.cmgr.chartCust){draw(host,state.cmgr.chartCust);document.querySelectorAll('#result .cmgr-rowclick').forEach(function(tr){if(tr.dataset.cust===state.cmgr.chartCust){tr.classList.add('cmgr-chart-selected');tr.style.background='#eff6ff';}});}
+    else if(!window.CMGR_INLINE_V852&&host){host.innerHTML='';host.style.display='none';delete host.dataset.sig;}
   }catch(_e){console.error(_e);}
 }
 var t=null;new MutationObserver(function(){clearTimeout(t);t=setTimeout(mount,80);}).observe(document.getElementById('result')||document.body,{childList:true,subtree:true});
@@ -35249,5 +35274,46 @@ try{var nativeFields=window.gsFields;if(typeof nativeFields==='function'&&!nativ
 (async function(){try{var s=await idbGet('settings');if(s&&s.scrapRate!=null)state.scrapRate=Math.max(0,Math.min(100,+s.scrapRate||0));}catch(_e){}})();
 })();
 </script>
+<script id="v835-cmgr-customer-page">
+/* ══════════ v835 · 거래처 담당자 현황에서 업체를 고르면 «다음 페이지»로 ══════════
+   「거래처 매출순위」 표에서 업체를 골랐을 때와 똑같은 화면(거래처 ▸ 품목군별 매출)을 엽니다.
+   · 표 위에 그래프가 펼쳐지고 아래에 업체 목록이 그대로 남던 방식을 페이지 이동으로 바꿉니다.
+   · 금액 기준은 담당자 현황 표와 같은 «그 해 1~12월»입니다(기간 설정과 무관).
+   · 왼쪽 위 «← 담당자 현황으로» 를 누르면 보던 목록·정렬·검색 그대로 돌아옵니다. */
+(function(){
+'use strict';
+function cmgrYearV835(){
+  try{
+    var ys=dataYears();
+    /* v836 : 담당자 현황과 같은 규칙 — 목표연도(2027 등)를 따라가지 않습니다 */
+    var CY=Math.min(ys[ys.length-1], new Date().getFullYear());
+    return ((state.cmgr&&state.cmgr.year)==='py')?(CY-1):CY;
+  }catch(_e){ return new Date().getFullYear(); }
+}
+function yearOf(r){ return +(r.y||(r.d&&r.d.getFullYear())||0); }
+window.cmgrOpenCustPageV835=function(cust){
+  cust=String(cust||''); if(!cust)return;
+  try{
+    var YR=cmgrYearV835();
+    /* 담당자 현황 표와 같은 기준: 그 해 1~12월 전체 */
+    var yrRows=(CUR||[]).filter(function(r){ return r.cust===cust&&yearOf(r)===YR; });
+    var allRows=(CUR||[]).filter(function(r){ return r.cust===cust; });
+    if(!yrRows.length&&!allRows.length){ try{ uiConfirm('<b>'+esc(cust)+'</b> 의 매출 자료가 없습니다.'); }catch(_m){} return; }
+    /* 이전 방식(표 위 그래프)의 흔적을 지웁니다 */
+    try{ state.cmgr.chartCust=''; state.cmgr.chartGroup=''; state.cmgr.chartTradeOpen=false;
+      var h=document.getElementById('cmgrSelectedChartV852'); if(h){h.innerHTML='';h.style.display='none';delete h.dataset.sig;} }catch(_c){}
+    state._inDrill=true;
+    state.prodDrillYear=YR;
+    openDrill({key:cust,label:cust},{
+      by:'name', byLabel:'품목군', monthly:true,
+      rowsFor:function(){ return yrRows.slice(); },
+      monRowsFor:function(){ return allRows.slice(); }
+    });
+    try{ var r=document.getElementById('result'); if(r)r.scrollIntoView({block:'start'}); window.scrollTo(0,0); }catch(_s){}
+  }catch(e){ try{ console.error('[v835]',e); }catch(_x){} }
+};
+})();
+</script>
+
 </body>
 </html>
