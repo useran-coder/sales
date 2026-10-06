@@ -2244,12 +2244,12 @@ let state={ basis:'공급가', unit:1, period:'year', periodKey:null, periodYear
   inv:{lt:14,z:'95',dfilter:'전체',actual:{},exclude:{},stab:'rec'}, cmgr:{fs:'전체',fe:'전체',ft:'전체',search:'',mode:'none',year:'cy',sortKey:'a',sortDir:-1,editKey:null,cardsOpen:false,infoMode:false,addrMode:false,addrSort:'amt',exclMode:false,showPrev:false,showLaser:false}, custInfo:{}, custAddr:{}, pd:{labor:{1:18912008,2:11016122,3:10729149,4:6283887,5:3589118},process:{1:33311650,2:23295890,3:19221300,4:13994850,5:12362080},indirect:{1:2016627,2:338637,3:1667136,4:625176,5:2298824},useLabor:true,useProcess:true,useIndirect:true,actual:{},estimate:false}, pareto:{dim:'cust',mode:'pct',topN:20,threshold:80,showRest:false,period:'all',m1:1,m2:12,year:'all'}, cmp:{period:'1분기',dim:'cust',m1:1,m2:12,year:null,filter:null}, trend:{showPY:false,editorOpen:false,pdOpen:false,scrapOpen:false}, fc:{actualCutoffMonth:5,activePlan:'1',targetPlans:null,pct:{},override:{},addPct:{},newCusts:{},newCustReplacements:{},prodOverride:{},prodAddPct:{},custProdOverride:{},custMonthPct:{},prodMonthPct:{},newProds:{},newLines:[],custMemo:{},prodMemo:{},notesHtml:'',notesTeam:'',notesSales:'',notesTech:'',notesTab:'main',notesMeta:{main:{},team:{},sales:{},tech:{}},issC:false,issP:false,hideActTgt:false,exclCust:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true},targetExclCust:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true},exclProd:{},showExcl:false,showExclRows:false,annualHist:{2019:7531847061,2020:7404376660,2021:8806423871,2022:10484011261,2023:12035275080,2024:11218223843},annualOpen:false,period:'all',m1:6,m2:12,dim:'cust',showPY:false,sortKey:null,sortDir:-1} };
 
 /* 목표수정액 안별 저장: 기존 값은 수정 1안으로 유지하고, 수정 2안은 1안 복사본으로 최초 생성합니다. */
-const FC_TARGET_PLAN_KEYS=['pct','pctAt','override','overrideAt','addPct','addPctAt','newCusts','newCustReplacements','prodOverride','prodAddPct','custProdOverride','custMonthPct','prodMonthPct','newProds','newLines','actualCutoffMonth'];
+const FC_TARGET_PLAN_KEYS=['pct','pctAt','override','overrideAt','addPct','addPctAt','newCusts','newCustReplacements','prodOverride','prodAddPct','custProdOverride','custMonthPct','prodMonthPct','newProds','newLines','actualCutoffMonth','matchBaseExact'];
 function fcPlanClone(v){ const src=(v==null?(Array.isArray(v)?[]:{}):v);
   /* v776 : structuredClone 이 있으면 그것을 씁니다(JSON 왕복보다 2~3배 빠르고 결과는 같습니다). */
   if(typeof structuredClone==='function'&&(src===null||typeof src!=='object'||!(src instanceof Date))){ try{return structuredClone(src);}catch(_s){} }
   try{return JSON.parse(JSON.stringify(src));}catch(_){return Array.isArray(v)?[]:{};} }
-function fcPlanFallback(k){ return k==='newLines'?[]:(k==='actualCutoffMonth'?5:{}); }
+function fcPlanFallback(k){ return k==='newLines'?[]:(k==='actualCutoffMonth'?5:(k==='matchBaseExact'?null:{})); }
 function fcNormalizeCutoff(v){ if(v==null||v==='')return 5; const n=parseInt(v,10); return isFinite(n)?Math.max(0,Math.min(12,n)):5; }
 function fcPlanSnapshot(src){ const f=src||state.fc||{}; const o={}; FC_TARGET_PLAN_KEYS.forEach(k=>{const v=f[k]; o[k]=fcPlanClone(v==null||v===''?fcPlanFallback(k):v);}); return o; }
 function fcApplyTargetPlan(plan){ const f=state.fc; const p=plan||{}; FC_TARGET_PLAN_KEYS.forEach(k=>{const v=p[k]; f[k]=fcPlanClone(v==null||v===''?fcPlanFallback(k):v);}); }
@@ -12447,6 +12447,14 @@ function forecast(){ state._inDrill=false;
     });
     _unV757=_un;
   }catch(_e){} })();
+  /* v848 : 「기준과 동일하게 맞추기」로 확정한 목표안은 자동 배분·PD·제외 계산이
+     다시 끼어들어도 마지막 단계에서 기준연도의 월 금액과 원 단위로 정확히 맞춥니다. */
+  try{
+    const _mx=state.fc&&state.fc.matchBaseExact;
+    if(_mx&&_mx.enabled&&+_mx.year===+CY){
+      for(let _m=1;_m<=12;_m++)tgtV[_m]=+py[_m]||0;
+    }
+  }catch(_e){}
   let _tc2=0,_ts2=0; for(let m=1;m<=12;m++) if(pyMonTot[m]>0){_ts2+=tgtV[m];_tc2++;}
   const tgtAvgV=_tc2?_ts2/_tc2:tgtAvg;
   /* v677 : 그래프가 실제로 그린 월별 목표·실적을 그대로 보관합니다.
@@ -33807,15 +33815,15 @@ function build(){
     if(pv)cs+=chip('월별 목표% '+pv+'%','#dc2626');
     var a=cntMon(f.custMonthPct,m); cs+=ebtn('업체 월% '+a+'건','#ea580c','cust',m,a);
     var c2=cntMon(f.prodMonthPct,m); cs+=ebtn('제품 월% '+c2+'건','#ca8a04','prod',m,c2);
-    var un=+(C.unMon&&C.unMon[m])||0; if(Math.abs(un)>=1000)cs+=chip('신규 배분 +'+M(un)+'백만','#7c3aed');
-    var pd=+(C.pdMon&&C.pdMon[m])||0; if(Math.abs(pd)>=1000)cs+=chip('PD +'+M(pd)+'백만','#0d9488');
-    var ex=+(C.exTgt&&C.exTgt[m])||0; if(Math.abs(ex)>=1000)cs+=chip('목표제외 -'+M(ex)+'백만','#64748b');
+    var un=+(C.unMon&&C.unMon[m])||0; if(Math.abs(un)>=1000)cs+=chip('신규 배분 +'+W(un)+'원','#7c3aed');
+    var pd=+(C.pdMon&&C.pdMon[m])||0; if(Math.abs(pd)>=1000)cs+=chip('PD +'+W(pd)+'원','#0d9488');
+    var ex=+(C.exTgt&&C.exTgt[m])||0; if(Math.abs(ex)>=1000)cs+=chip('목표제외 -'+W(ex)+'원','#64748b');
     if(!cs)cs='<span style="color:#94a3b8">-</span>';
     var dc=(Math.abs(d)<500000)?'#94a3b8':(d>0?'#b91c1c':'#1d4ed8');
     rows+='<tr><td style="'+TD+';text-align:center;font-weight:700">'+m+'월</td>'+
-      '<td style="'+TD+';text-align:right">'+M(b)+'</td>'+
-      '<td style="'+TD+';text-align:right;font-weight:700">'+M(t)+'</td>'+
-      '<td style="'+TD+';text-align:right;color:'+dc+';font-weight:700">'+(d>0?'+':'')+M(d)+'</td>'+
+      '<td style="'+TD+';text-align:right">'+W(b)+'</td>'+
+      '<td style="'+TD+';text-align:right;font-weight:700">'+W(t)+'</td>'+
+      '<td style="'+TD+';text-align:right;color:'+dc+';font-weight:700">'+(d>0?'+':'')+W(d)+'</td>'+
       '<td style="'+TD+';text-align:right;color:'+dc+'">'+(b>0?((t/b-1)*100).toFixed(1)+'%':'-')+'</td>'+
       '<td style="'+TD+';text-align:left">'+cs+'</td></tr>';
   }
@@ -33828,7 +33836,7 @@ function build(){
   if(nc)yr+=chip('신규업체 '+nc+'개','#7c3aed'); if(np)yr+=chip('신규제품 '+np+'개','#7c3aed'); if(nl)yr+=chip('신규라인 '+nl+'건','#7c3aed');
   if(!yr)yr='<span style="color:#94a3b8">연간 조정값 없음</span>';
   var th='border:1px solid #cbd5e1;padding:4px 8px;background:#1e3a5f;color:#fff;font-size:11px;white-space:nowrap';
-  var head='기준 합계 '+M(tot)+'백만 · 목표 합계 '+M(tot+gap)+'백만 · 차이 <b style="color:'+(gap>0?'#b91c1c':'#1d4ed8')+'">'+(gap>0?'+':'')+M(gap)+'백만</b> ('+W(gap)+'원)';
+  var head='기준 합계 '+W(tot)+'원 · 목표 합계 '+W(tot+gap)+'원 · 차이 <b style="color:'+(gap>0?'#b91c1c':'#1d4ed8')+'">'+(gap>0?'+':'')+W(gap)+'원</b>';
   el.innerHTML='<details id="fcDiffDetV757"'+(OPEN?' open':'')+' style="margin:8px 0 2px;border:1px solid #fed7aa;border-radius:10px;background:#fffbeb">'+
     '<summary style="cursor:pointer;font-weight:800;font-size:12.5px;color:#9a3412;padding:7px 11px">🔍 기준 대비 점검 — '+head+'</summary>'+
     '<div style="padding:4px 11px 11px">'+
@@ -33836,15 +33844,10 @@ function build(){
     ' <button type="button" id="fcDiffResetV757" class="btn ghost" style="font-size:11px;padding:4px 10px;margin-left:6px;background:#fee2e2;color:#b91c1c;border-color:#fca5a5;font-weight:800">기준과 동일하게 맞추기</button>'+
     ' <span id="fcDiffMsgV757" style="margin-left:6px;font-size:11px;color:#b91c1c;font-weight:700"></span></div>'+
     '<div style="overflow:auto"><table style="border-collapse:collapse;min-width:640px;width:100%">'+
-    '<thead><tr><th style="'+th+';width:52px">월</th><th style="'+th+';width:104px">기준액(백만)</th><th style="'+th+';width:104px">목표액(백만)</th><th style="'+th+';width:86px">차이</th><th style="'+th+';width:70px">배율</th><th style="'+th+';text-align:left">차이를 만든 설정</th></tr></thead>'+
+    '<thead><tr><th style="'+th+';width:52px">월</th><th style="'+th+';width:132px">기준액 ('+(+C.CY-1)+'년)</th><th style="'+th+';width:132px">목표액 ('+C.CY+'년)</th><th style="'+th+';width:112px">차이 (원)</th><th style="'+th+';width:70px">배율</th><th style="'+th+';text-align:left">차이를 만든 설정</th></tr></thead>'+
     '<tbody>'+rows+'</tbody></table></div>'+
     '<div id="fcDiffEditV757"></div>'+
     '<div style="margin-top:6px;font-size:11px;color:#64748b">기준액 = 화면 상단에서 고른 «기준 연도 목표안»의 월별 금액(확정월까지 실적 + 이후월 목표수정액/월 목표). 목표액 = 그 기준액에 아래 설정을 적용한 결과입니다.</div>'+
-    (function(){ try{ var L=window.__fcPerfLog||[]; if(!L.length)return '';
-      var rows=L.slice(-8).map(function(x){ return x.t+' 계산 '+x.ms+'ms'+(x.ui?(' + 화면 '+x.ui+'ms'):'')+(x.year?(' · '+x.year+'년'):''); }).join('  |  ');
-      var mx=Math.max.apply(null,L.map(function(x){return (x.ms||0)+(x.ui||0);}));
-      return '<div style="margin-top:4px;font-size:11px;color:'+(mx>1500?'#b91c1c':'#64748b')+'">⏱ 최근 화면 그리기 : '+rows+'  (자료 '+(L[L.length-1].rows||0).toLocaleString()+'건 · «계산»은 프로그램, «화면»은 브라우저가 표를 그리는 시간입니다)</div>';
-    }catch(_e){ return ''; } })()+
     '</div></details>';
   var det=document.getElementById('fcDiffDetV757');
   if(det)det.addEventListener('toggle',function(){ OPEN=!!det.open; });
@@ -33906,9 +33909,12 @@ function doReset(msg){
     if(F.targetPlans)['1','2'].forEach(function(k){ zero(F.targetPlans[k]); });
     var stY=(F.yearPlans&&F.yearPlans[Y])||null;
     if(stY&&stY.targetPlans)['1','2'].forEach(function(k){ count(stY.targetPlans[k]); zero(stY.targetPlans[k]); });
+    /* v848 : 단순 초기화만으로 남는 자동 계산 차이도 없애도록, 현재 목표연도를
+       기준연도의 월별 금액과 정확히 맞추는 상태를 목표안에 함께 저장합니다. */
     F._resetAtV774=Date.now(); F._resetKeysV774=_mark;
     F._targetPlanLoaded=null;
     try{ fcEnsureTargetPlans(); }catch(_x){}
+    F.matchBaseExact={enabled:true,year:+Y,baseYear:(+Y)-1,at:Date.now()};
     try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_x){}
     try{_fcBaseAggCache=null;_fcBase27Cache=null;window.FC_CHART_V677=null;window.__nyAggV737=null;}catch(_x){}
     try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_x){}
@@ -35098,6 +35104,20 @@ document.addEventListener('change',function(e){var t=e.target;if(!t||!t.matches|
 window.fcYearIsolationV847={run:run,cleanPlan:cleanPlan};
 function boot(){if(window.__V718_RESTORED){run();return;}setTimeout(boot,300);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,300);},{once:true});else setTimeout(boot,300);
+})();
+</script>
+
+<!-- v848: 기준연도와 정확히 맞춘 뒤 사용자가 다시 수정하면 자동 맞춤을 해제 -->
+<script id="v848-exact-base-match-controls">
+(function(){
+'use strict';
+var SEL='.fcov,.fcadd,.fcpov,.fcpadd,.fc-cust-month-pct,.fc-prod-month-pct,.fc-inline-pct,.fcm,.fccpov,.fc-month-adjust,.fcnewt';
+document.addEventListener('change',function(e){
+  try{
+    var t=e.target;if(!t||!t.matches||!t.matches(SEL)||!state.fc||!state.fc.matchBaseExact)return;
+    state.fc.matchBaseExact=null;
+  }catch(_e){}
+},true);
 })();
 </script>
 
