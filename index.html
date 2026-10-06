@@ -3504,8 +3504,10 @@ function renderDrill1(){
   /* v760 : 선택한 항목(거래처·품목군 등)의 월별 추이를 표 위에 표시합니다 */
   const _ttKey='drill1:'+String((state._parent&&state._parent.act)||'')+':'+String(parentRow.key||parentRow.label||'');
   const _ttTop=trendTopV760(String(parentRow.label||''),src,_ttKey,{year:monOn?yr:0,hint:'표 아래 목록에서 세부 항목을 볼 수 있습니다.'});
-  const controls=_ttTop+(monthly?`<div class="ctrlbar"><button class="btn ghost" id="prodDrillMonBtn" style="font-size:13px;padding:5px 12px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별보기${monOn?' 끄기':''}</button>${yrBtns}${metricBtns}<span class="sub2">${monOn?`${yr}년 거래처별 1~12월 ${groupRankDrill?(groupMetric==='qty'?'수량':'매출액'):'매출액'}입니다.`:'선택 제품의 거래처별 월 매출을 펼쳐봅니다.'}</span></div>${productQtyTrend}${trend}`:'');
+  const customerTradeBtn=(state._parent&&state._parent.act==='rank-cust')?`<button class="btn" id="rankCustTradeHistV855" type="button" style="font-size:13px;padding:5px 12px;background:#1d4ed8;color:#fff;border-color:#1d4ed8">📒 거래내역</button>`:'';
+  const controls=_ttTop+(monthly?`<div class="ctrlbar">${customerTradeBtn}<button class="btn ghost" id="prodDrillMonBtn" style="font-size:13px;padding:5px 12px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별보기${monOn?' 끄기':''}</button>${yrBtns}${metricBtns}<span class="sub2">${monOn?`${yr}년 거래처별 1~12월 ${groupRankDrill?(groupMetric==='qty'?'수량':'매출액'):'매출액'}입니다.`:'선택 제품의 거래처별 월 매출을 펼쳐봅니다.'}</span></div>${productQtyTrend}${trend}`:'');
   const onMount=()=>{
+    const th=$('#rankCustTradeHistV855'); if(th)th.addEventListener('click',()=>custTradeHistoryV665(parentRow.label,renderDrill1,'← 거래처 매출로'));
     const b=$('#prodDrillMonBtn'); if(b)b.addEventListener('click',()=>{state.prodDrillMonthly=!state.prodDrillMonthly;renderDrill1();});
     $('#result').querySelectorAll('#prodDrillYrSeg button').forEach(x=>x.addEventListener('click',()=>{state.prodDrillYear=+x.dataset.y;renderDrill1();}));
     $('#result').querySelectorAll('#rankGroupDrillMetric button').forEach(x=>x.addEventListener('click',()=>{state.rankGroupDrillMetric=x.dataset.metric==='qty'?'qty':'amt';renderDrill1();}));
@@ -8805,7 +8807,7 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
     +g+'</div>';
 }
 /* v665 : 업체 거래내역 — 연도 탭 · 일자별 원본 행(비고 포함) */
-function custTradeHistoryV665(cust,back){
+function custTradeHistoryV665(cust,back,backLabel){
   var all=(CUR||[]).filter(function(r){ return r.cust===cust; });
   var yrs=[...new Set(all.map(function(r){ return r.d?r.d.getFullYear():0; }).filter(Boolean))].sort(function(a,b){return b-a;});
   if(!yrs.length){ alert(cust+' 의 거래내역이 없습니다.'); return; }
@@ -8858,7 +8860,7 @@ function custTradeHistoryV665(cust,back){
     yr+'년'+(selMonth?' '+selMonth+'월':'')+' · '+won(arr.length)+'건 · 수량 '+won(totQty)+' · 금액 '+disp(totAmt),
     arr, cols, 'd',
     '<b>'+esc(cust)+'</b>의 <b>'+yr+'년'+(selMonth?' '+selMonth+'월':'')+' 거래내역</b>입니다. 그래프의 <b>점·월 이름을 선택</b>하면 해당 월 거래만 표에 표시되고, 같은 월을 다시 선택하거나 <b>전체 월</b>을 누르면 연간 거래내역으로 돌아옵니다. <b>비고(원본)</b>은 업로드한 매출자료의 비고 칸을 그대로 보여 줍니다.',
-    {back:{label:'\u2190 단가표로',fn:back}, controlsHtml:chart+tabs, pageLimit:300, searchData:arrYear, searchCols:cols,
+    {back:{label:backLabel||'\u2190 단가표로',fn:back}, controlsHtml:chart+tabs, pageLimit:300, searchData:arrYear, searchCols:cols,
      onMount:function(){
        var root=document.getElementById('result');
        root.querySelectorAll('.thYearBtn,.cmYearBtn').forEach(function(b){
