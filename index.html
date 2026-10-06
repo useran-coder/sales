@@ -2303,7 +2303,11 @@ function fcSwitchYear(y){
   fcSaveYearPlan(cur);
   f.targetYear=next;
   const st=fcYearStore()[String(next)];
-  if(st&&st.targetPlans){ f.targetPlans=fcPlanClone(st.targetPlans); f.activePlan=(st.activePlan==='2'?'2':'1'); }
+  if(st&&st.targetPlans){
+    f.targetPlans=fcPlanClone(st.targetPlans); f.activePlan=(st.activePlan==='2'?'2':'1');
+    /* v847: 새 연도의 빈 목표안을 불러오기 전에 이전 연도의 live 값을 legacy 값으로 재주입하던 문제 차단 */
+    fcApplyTargetPlan(f.targetPlans[f.activePlan]||{}); f._targetPlanLoaded=f.activePlan;
+  }
   else{
     /* 새 연도 : 현재 목표안을 복사해 시작하되
        · 실적 확정월 = «없음»
@@ -12542,7 +12546,7 @@ function forecast(){ state._inDrill=false;
   // table period range
   const [m1,m2]=fcRange(); const rLab=fcRangeLabel();
   /* v844: 연간 목표표 제목에는 현재 선택된 목표 연도를 함께 표시합니다. */
-  const custRLab=(state.fc.period==='all')?('전체('+CY+' 연간)'):rLab;
+  const custRLab=(state.fc.period==='all')?('전체 ('+CY+' 연간)'):rLab;
   let perMonths=0, perSum=0; for(let m=m1;m<=m2;m++){ const s=tgt[m]; if(s>0){ perSum+=s/headFor(`${CY}-${String(m).padStart(2,'0')}`); perMonths++; } }
   const fcPerCapMon=perMonths?perSum/perMonths:0;
   const sumC=(arr,c)=>{let s=0;for(let m=m1;m<=m2;m++)s+=arr[m].get(c)||0;return s;};
@@ -12766,7 +12770,7 @@ function forecast(){ state._inDrill=false;
         const allPctVals=(!monOn)?[]:custArr.flatMap(o=>fcMonths.map(m=>{const v=pct(o.c,m);return v===''?0:(+v||0);})); const avgAllPct=allPctVals.length?allPctVals.reduce((s,v)=>s+v,0)/allPctVals.length:0;
         const _afterTotV805=(!monOn)?0:custArr.reduce((s,o)=>{ let a=0; for(let m=lastAct+1;m<=12;m++)a+=actAfterV805(o.c,m); return s+a; },0);
         const monTotalRow=(!monOn)?'':'<tr class="total-row"><td></td><td class="l">합 계</td>'+Array.from({length:12},(_,k)=>'<td><b>'+disp(monTotal[k+1])+'</b>'+((k+1)>lastAct?(function(){ const a=custArr.reduce((s,o)=>s+actAfterV805(o.c,k+1),0); return a>0?('<div class="fc-act-after-v805">실적 '+disp(a)+'</div>'):''; })():'')+'</td>').join('')+'<td><b>'+disp(monTotal.reduce((s,v)=>s+v,0))+'</b>'+(_afterTotV805>0?('<div class="fc-act-after-v805 over">실적포함 '+disp(monTotal.reduce((s,v)=>s+v,0)+_afterTotV805)+'</div>'):'')+'<div class="fc-cust-month-avg">평균 '+avgAllPct.toFixed(1)+'%</div></td></tr>';
-        const monBox=document.createElement('div'); monBox.id='fcCustMonthlyView'; monBox.className='tablewrap'; monBox.style.cssText='max-height:1120px;margin-bottom:8px;'+(monOn?'':'display:none'); monBox.innerHTML='<table class="fc-cust-month-table"><colgroup><col style="width:3%"><col style="width:17%">'+Array.from({length:12},()=>'<col style="width:6%">').join('')+'<col style="width:8%"></colgroup><thead><tr><th>순위</th><th class="l">거래처</th>'+Array.from({length:12},(_,k)=>'<th>'+((k+1)+'월')+'</th>').join('')+'<th style="text-align:right">합계</th></tr></thead><tbody>'+monRows+monTotalRow+'</tbody></table><div class="note" style="margin:0">'+v805AfterNote()+'확정실적 월은 실적액으로 표시하고, 미래 목표월에는 거래처별 <b>월 조정%</b>를 입력할 수 있습니다. 입력값은 해당 거래처·해당 월 목표액에만 적용됩니다.<br><b style="color:#1d4ed8">0원인 달에 %를 넣으면</b> — 그 달 목표가 0원이면 곱할 것이 없으므로 <b>거래가 있었던 달의 월평균</b>을 기준으로 그 %만큼 넣습니다. 기준은 ① 미래월 목표 평균 → ② 올해 실적 평균 → ③ 전년 실적 평균 순으로 찾습니다. <b>-100</b>을 넣으면 그 달은 <b>0원</b>이 됩니다. 모든 거래처·제품에 같은 규칙이 적용됩니다.</div>';
+        const monBox=document.createElement('div'); monBox.id='fcCustMonthlyView'; monBox.className='tablewrap'; monBox.style.cssText='max-height:1120px;margin-bottom:8px;'+(monOn?'':'display:none'); monBox.innerHTML='<table class="fc-cust-month-table"><colgroup><col style="width:3%"><col style="width:17%">'+Array.from({length:12},()=>'<col style="width:6%">').join('')+'<col style="width:8%"></colgroup><thead><tr><th>순위</th><th class="l">거래처</th>'+Array.from({length:12},(_,k)=>'<th>'+((k+1)+'월')+'</th>').join('')+'<th style="text-align:right">합계</th></tr></thead><tbody>'+monRows+monTotalRow+'</tbody></table><div class="note" style="margin:0">'+v805AfterNote()+'확정실적 월은 실적액으로 표시하고, 미래 목표월에는 거래처별 <b>월 조정%</b>를 입력할 수 있습니다. 입력값은 해당 거래처·해당 월 목표액에만 적용됩니다. <b style="color:#b45309">1000%는 기준금액에 1000%를 더한 값(기준의 11배)</b>이며, 기준금액 자체가 작으면 결과금액도 작습니다.<br><b style="color:#1d4ed8">0원인 달에 %를 넣으면</b> — 그 달 목표가 0원이면 곱할 것이 없으므로 <b>거래가 있었던 달의 월평균</b>을 기준으로 그 %만큼 넣습니다. 기준은 ① 미래월 목표 평균 → ② 올해 실적 평균 → ③ 전년 실적 평균 순으로 찾습니다. <b>-100</b>을 넣으면 그 달은 <b>0원</b>이 됩니다. 모든 거래처·제품에 같은 규칙이 적용됩니다.</div>';
         monBox.querySelectorAll('.fc-cust-month-pct').forEach(inp=>{ inp.step='0.1'; const v=parseFloat(inp.value); inp.value=(isFinite(v)&&v!==0)?v.toFixed(1):''; });
         annualWrap.parentNode.insertBefore(monBox,annualWrap);
         if(monOn)annualWrap.style.display='none';
@@ -32875,7 +32879,7 @@ window.sgSyncCustMemoV617=syncMemo;
       var f=state&&state.fc; if(!f)return;
       var K=String((f&&f._ctxYear)||fcTargetYear());   /* v732 : 현재 화면의 연도 기준 */
       var st=(opts&&opts.skipPlans)?null:(f.yearPlans||{})[K];
-      if(st&&st.targetPlans){ f.targetPlans=fcPlanClone(st.targetPlans); f.activePlan=(st.activePlan==='2'?'2':'1'); f._targetPlanLoaded=null; fcEnsureTargetPlans(); }
+      if(st&&st.targetPlans){ f.targetPlans=fcPlanClone(st.targetPlans); f.activePlan=(st.activePlan==='2'?'2':'1'); fcApplyTargetPlan(f.targetPlans[f.activePlan]||{}); f._targetPlanLoaded=f.activePlan; fcEnsureTargetPlans(); }
       var mv=(state.fcYearMisc||{})[K];
       if(mv){
         if(mv.exclCust)f.exclCust=cp(mv.exclCust)||{};
@@ -32972,7 +32976,7 @@ window.sgSyncCustMemoV617=syncMemo;
         if(ty&&typeof fcDataYearMax==='function'&&(ty===fcDataYearMax()+1||ty===fcDataYearMax())){
           state.fc.targetYear=ty; state.fc._ctxYear=String(ty);
           var K=String(ty), st=(state.fc.yearPlans||{})[K];
-          if(st&&st.targetPlans){ state.fc.targetPlans=fcPlanClone(st.targetPlans); state.fc.activePlan=(st.activePlan==='2'?'2':'1'); state.fc._targetPlanLoaded=null; fcEnsureTargetPlans(); }
+           if(st&&st.targetPlans){ state.fc.targetPlans=fcPlanClone(st.targetPlans); state.fc.activePlan=(st.activePlan==='2'?'2':'1'); fcApplyTargetPlan(state.fc.targetPlans[state.fc.activePlan]||{}); state.fc._targetPlanLoaded=state.fc.activePlan; fcEnsureTargetPlans(); }
           var mv=(state.fcYearMisc||{})[K];
           if(mv){ if(mv.exclCust)state.fc.exclCust=cp(mv.exclCust)||{}; if(mv.cmgrExcl)state.cmgrExcl=cp(mv.cmgrExcl)||{}; if(mv.sgTomb)state.strategyActionTombstones=cp(mv.sgTomb)||{}; if(mv.sgRestoreAt!=null)state.strategyActionRestoreAt=+mv.sgRestoreAt||0; state.fc.targetExclCust=cp(mv.targetExclCust)||{}; state.fc.targetOnlyExcl=cp(mv.targetOnlyExcl)||{}; if(mv.strategyPlan)state.strategyPlan=cp(mv.strategyPlan); }
           var pv=(state.pdYears||{})[K]; if(pv)state.pd=cp(pv);
@@ -35052,6 +35056,48 @@ document.addEventListener('pointerdown',function(e){if(isField(e.target)){take(e
 window.addEventListener('scroll',function(){if(restoring||!lock)return;lock.x=window.scrollX||0;lock.y=window.scrollY||document.documentElement.scrollTop||0;try{if(lock.row){var r=document.querySelector('#result '+lock.row);if(r)lock.rowTop=r.getBoundingClientRect().top;}}catch(_e){}},{passive:true});
 document.addEventListener('scroll',function(e){if(restoring||!lock)return;var w=e.target;if(!w||!w.matches||!w.matches('#result .tablewrap'))return;for(var i=0;i<lock.wraps.length;i++){var s=lock.wraps[i],same=s.id?(w.id===s.id):(document.querySelectorAll('#result .tablewrap')[s.i]===w);if(same){s.top=w.scrollTop;s.left=w.scrollLeft;break;}}},true);
 window.fcEditScrollLockV842={capture:take,restore:restore,cancelRender:stopQueuedFullRender};
+})();
+</script>
+
+<!-- v847: 목표 연도별 월%·조정% 완전 분리 및 과거 복사 오염 1회 정리 -->
+<script id="v847-forecast-year-isolation">
+(function(){
+'use strict';
+var KEY='fcYearIsolationV847',TAG='year-plan-isolation-v847';
+var NEST=['custMonthPct','prodMonthPct'];
+var FLAT=['pct','override','addPct','prodOverride','prodAddPct','custProdOverride'];
+function cp(v){try{return JSON.parse(JSON.stringify(v==null?{}:v));}catch(_e){return {};}}
+function meaningful(v){return v!=null&&v!==''&&isFinite(+v)&&+v!==0;}
+function same(a,b){return meaningful(a)&&meaningful(b)&&(+a===+b);}
+function cleanPlan(next,base){
+  if(!next||!base)return 0;var n=0;
+  NEST.forEach(function(k){var nm=next[k],bm=base[k];if(!nm||!bm)return;Object.keys(nm).forEach(function(id){var nr=nm[id],br=bm[id];if(!nr||!br)return;Object.keys(nr).forEach(function(m){if(same(nr[m],br[m])){delete nr[m];n++;}});if(!Object.keys(nr).length)delete nm[id];});});
+  FLAT.forEach(function(k){var nm=next[k],bm=base[k];if(!nm||!bm)return;Object.keys(nm).forEach(function(id){if(same(nm[id],bm[id])){delete nm[id];n++;}});});
+  return n;
+}
+async function run(){
+  try{
+    if(typeof state==='undefined'||!state.fc||typeof fcDataYearMax!=='function')return false;
+    var done=null;try{done=await idbGet(KEY);}catch(_e){}
+    if(done===TAG)return false;
+    var f=state.fc,baseY=String(fcDataYearMax()),nextY=String(+baseY+1),store=f.yearPlans||{},bs=store[baseY],ns=store[nextY];
+    if(!bs||!bs.targetPlans||!ns||!ns.targetPlans)return false;
+    var n=0;['1','2'].forEach(function(p){n+=cleanPlan(ns.targetPlans[p],bs.targetPlans[p]);});
+    /* 현재 2027 화면을 보고 있으면 정리된 2027 전용안을 즉시 live 값으로 다시 적용합니다. */
+    var live=String((typeof fcTargetYear==='function')?fcTargetYear():(f._ctxYear||''));
+    if(live===nextY){f.targetPlans=cp(ns.targetPlans);f.activePlan=ns.activePlan==='2'?'2':'1';fcApplyTargetPlan(f.targetPlans[f.activePlan]||{});f._targetPlanLoaded=f.activePlan;f._ctxYear=nextY;}
+    try{await idbSet(KEY,TAG);}catch(_e2){}
+    try{if(typeof saveSettings==='function')await saveSettings();}catch(_e3){}
+    if(n&&state.act==='forecast')try{forecast();}catch(_e4){}
+    return n;
+  }catch(_e){return false;}
+}
+/* % 입력은 반드시 현재 목표연도의 보관함 한 곳에만 기록합니다. */
+var SEL='.fcov,.fcadd,.fcpov,.fcpadd,.fc-cust-month-pct,.fc-prod-month-pct,.fc-inline-pct,.fcm,.fccpov,.fc-month-adjust';
+document.addEventListener('change',function(e){var t=e.target;if(!t||!t.matches||!t.matches(SEL))return;setTimeout(function(){try{var y=String(fcTargetYear());state.fc._ctxYear=y;fcSyncActivePlan();var s=fcYearStore();s[y]={targetPlans:fcPlanClone(state.fc.targetPlans),activePlan:state.fc.activePlan==='2'?'2':'1'};}catch(_e){}},0);},true);
+window.fcYearIsolationV847={run:run,cleanPlan:cleanPlan};
+function boot(){if(window.__V718_RESTORED){run();return;}setTimeout(boot,300);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,300);},{once:true});else setTimeout(boot,300);
 })();
 </script>
 
