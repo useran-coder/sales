@@ -11706,14 +11706,15 @@ function pdEnforceResetV866(pd){
 function pdTouchV866(cat,m){
   const pd=(state.pd&&typeof state.pd==='object')?state.pd:(state.pd={}), meta=pdMetaV866(pd), now=Math.max(Date.now(),(+meta.resetAt||0)+1,(+meta.updatedAt||0)+1);
   meta.cells[String(cat)+':'+String(m)]=now; meta.updatedAt=now;
-  try{ const y=String((typeof fcTargetYear==='function')?fcTargetYear():((state.fc||{})._ctxYear||'')); if(y){state.pdYears=state.pdYears||{};state.pdYears[y]=JSON.parse(JSON.stringify(pd));} }catch(_e){}
+  try{ const y=String((typeof fcTargetYear==='function')?fcTargetYear():((state.fc||{})._ctxYear||'')); if(y){meta.year=y;state.pdYears=state.pdYears||{};state.pdYears[y]=JSON.parse(JSON.stringify(pd));} }catch(_e){}
 }
-function pdTouchFlagV866(k){ const pd=pdEnsure(),meta=pdMetaV866(pd),now=Math.max(Date.now(),(+meta.resetAt||0)+1,(+meta.updatedAt||0)+1);meta.flags[k]=now;meta.updatedAt=now; }
+function pdTouchFlagV866(k){ const pd=pdEnsure(),meta=pdMetaV866(pd),now=Math.max(Date.now(),(+meta.resetAt||0)+1,(+meta.updatedAt||0)+1);meta.flags[k]=now;meta.updatedAt=now;try{const y=String((typeof fcTargetYear==='function')?fcTargetYear():((state.fc||{})._ctxYear||''));if(y){meta.year=y;state.pdYears=state.pdYears||{};state.pdYears[y]=JSON.parse(JSON.stringify(pd));}}catch(_e){} }
 function pdResetYearV866(y){
   const pd=pdEnsure(), now=Date.now();
   pd.labor={};pd.process={};pd.indirect={};pd.actual={};pd.estimate=false;
-  pd._syncV866={resetAt:now,updatedAt:now,cells:{},flags:{estimate:now}};
-  try{ const Y=String(y||((typeof fcTargetYear==='function')?fcTargetYear():'')); if(Y){state.pdYears=state.pdYears||{};state.pdYears[Y]=JSON.parse(JSON.stringify(pd));} }catch(_e){}
+  const Y=String(y||((typeof fcTargetYear==='function')?fcTargetYear():'')||'');
+  pd._syncV866={year:Y,resetAt:now,updatedAt:now,cells:{},flags:{estimate:now}};
+  try{ if(Y){state.pdYears=state.pdYears||{};state.pdYears[Y]=JSON.parse(JSON.stringify(pd));} }catch(_e){}
   return pd;
 }
 function pdAvg(cat){ pdEnsure(); let s=0,n=0; for(let mm=1;mm<=fcCutoffMonth();mm++){ const v=+state.pd[cat][mm]||0; if(v){s+=v;n++;} } return n?Math.round(s/n):0; }
@@ -36582,6 +36583,136 @@ else window.addEventListener('load',check,{once:true});
 setTimeout(check,250);
 /* requestJson의 장시간 재시도와 관계없이 화면 차단을 해제하는 최종 안전장치 */
 setTimeout(check,MAX_WAIT+50);
+})();
+</script>
+
+<script id="v870-year-pd-exclusion-persistence">
+/* v870 · PD 연도 병합 보호 + 사용자가 다시 지정한 연도별 제외업체 영구 보존 */
+(function(){
+'use strict';
+function cp(v){try{return JSON.parse(JSON.stringify(v==null?null:v));}catch(_e){return v;}}
+function plain(v){return !!v&&typeof v==='object'&&!Array.isArray(v);}
+function year(){try{return String((typeof fcTargetYear==='function')?fcTargetYear():((state.fc||{})._ctxYear||''));}catch(_e){return '';}}
+function custKey(v){try{return fcCustKey(v);}catch(_e){return String(v||'').normalize('NFKC').replace(/\s+/g,'').toLowerCase();}}
+
+/* ── 사용자가 해당 목표연도에서 직접 지정한 제외 상태 ── */
+state.fcUserExclYears=plain(state.fcUserExclYears)?state.fcUserExclYears:{};
+function box(y,kind){
+  y=String(y||year());kind=kind==='target'?'target':'trade';
+  var root=state.fcUserExclYears||(state.fcUserExclYears={});
+  var b=root[y]||(root[y]={trade:{},target:{}});
+  if(!plain(b.trade))b.trade={};if(!plain(b.target))b.target={};return b[kind];
+}
+function mark(c,on,kind,y,at){
+  c=String(c||'').trim();if(!c)return;
+  var k=custKey(c),m=box(y,kind),rec={name:c,on:!!on,at:+at||Date.now()};m[k]=rec;
+  var Y=String(y||year()),mm=(state.fcYearMisc||(state.fcYearMisc={}))[Y]||(state.fcYearMisc[Y]={});
+  if(kind==='target'){
+    mm.targetExclCust=plain(mm.targetExclCust)?mm.targetExclCust:{};mm.targetOnlyExcl=plain(mm.targetOnlyExcl)?mm.targetOnlyExcl:{};
+    Object.keys(mm.targetExclCust).forEach(function(n){if(custKey(n)===k)delete mm.targetExclCust[n];});
+    Object.keys(mm.targetOnlyExcl).forEach(function(n){if(custKey(n)===k)delete mm.targetOnlyExcl[n];});
+    if(on){mm.targetExclCust[c]=true;mm.targetOnlyExcl[c]=true;}
+  }else{
+    mm.exclCust=plain(mm.exclCust)?mm.exclCust:{};mm.cmgrExcl=plain(mm.cmgrExcl)?mm.cmgrExcl:{};
+    Object.keys(mm.exclCust).forEach(function(n){if(custKey(n)===k)delete mm.exclCust[n];});
+    Object.keys(mm.cmgrExcl).forEach(function(n){if(custKey(n)===k)delete mm.cmgrExcl[n];});
+    if(on){mm.exclCust[c]=true;mm.cmgrExcl[c]=true;}
+  }
+}
+function active(kind,y){var m=box(y,kind),out=[];Object.keys(m).forEach(function(k){var r=m[k];if(r&&r.on)out.push(r);});return out;}
+function applyExplicit(kind){
+  var f=state.fc||(state.fc={}),Y=year(),rows=active(kind,Y);
+  if(kind==='target'){
+    f.targetExclCust=plain(f.targetExclCust)?f.targetExclCust:{};f.targetOnlyExcl=plain(f.targetOnlyExcl)?f.targetOnlyExcl:{};
+    rows.forEach(function(r){f.targetExclCust[r.name]=true;f.targetOnlyExcl[r.name]=true;});
+  }else{
+    f.exclCust=plain(f.exclCust)?f.exclCust:{};state.cmgrExcl=plain(state.cmgrExcl)?state.cmgrExcl:{};
+    rows.forEach(function(r){f.exclCust[r.name]=true;state.cmgrExcl[r.name]=true;});
+  }
+  return rows;
+}
+try{
+  var nativeSetEx=window.setExcludedCust;
+  if(typeof nativeSetEx==='function'&&!nativeSetEx.__v870){var setEx=function(c,on){var r=nativeSetEx.apply(this,arguments);mark(c,on,'trade');applyExplicit('trade');return r;};setEx.__v870=true;window.setExcludedCust=setEx;try{setExcludedCust=setEx;}catch(_e){}}
+  var nativeSetTx=window.setTargetExcludedCust;
+  if(typeof nativeSetTx==='function'&&!nativeSetTx.__v870){var setTx=function(c,on){var r=nativeSetTx.apply(this,arguments);mark(c,on,'target');applyExplicit('target');return r;};setTx.__v870=true;window.setTargetExcludedCust=setTx;try{setTargetExcludedCust=setTx;}catch(_e){}}
+  var nativeSyncEx=window.syncExcludedCustMaps;
+  if(typeof nativeSyncEx==='function'&&!nativeSyncEx.__v870){var syncEx=function(){applyExplicit('trade');var r=nativeSyncEx.apply(this,arguments);applyExplicit('trade');return r;};syncEx.__v870=true;window.syncExcludedCustMaps=syncEx;try{syncExcludedCustMaps=syncEx;}catch(_e){}}
+  var nativeSyncTx=window.syncTargetExcludedCustMap;
+  if(typeof nativeSyncTx==='function'&&!nativeSyncTx.__v870){var syncTx=function(){applyExplicit('target');var r=nativeSyncTx.apply(this,arguments);applyExplicit('target');return r;};syncTx.__v870=true;window.syncTargetExcludedCustMap=syncTx;try{syncTargetExcludedCustMap=syncTx;}catch(_e){}}
+}catch(_e){}
+
+/* ── PD 연도별 병합: 초기화/수정 시각이 오래된 월 값을 이깁니다 ── */
+function meta(pd){var m=plain(pd&&pd._syncV866)?pd._syncV866:{};return{year:String(m.year||''),resetAt:+m.resetAt||0,updatedAt:+m.updatedAt||0,cells:plain(m.cells)?m.cells:{},flags:plain(m.flags)?m.flags:{}};}
+function mergePd(local,remote,Y){
+  local=plain(local)?cp(local):{};remote=plain(remote)?cp(remote):{};
+  var lm=meta(local),rm=meta(remote);
+  if(lm.year&&lm.year!==String(Y))local={};
+  if(rm.year&&rm.year!==String(Y))remote={};
+  lm=meta(local);rm=meta(remote);
+  var reset=Math.max(lm.resetAt,rm.resetAt),out=Object.assign({},local,remote),cells={},flags={};
+  Object.keys(Object.assign({},lm.cells,rm.cells)).forEach(function(k){cells[k]=Math.max(+lm.cells[k]||0,+rm.cells[k]||0);});
+  Object.keys(Object.assign({},lm.flags,rm.flags)).forEach(function(k){flags[k]=Math.max(+lm.flags[k]||0,+rm.flags[k]||0);});
+  ['labor','process','indirect','actual'].forEach(function(cat){
+    var L=plain(local[cat])?local[cat]:{},R=plain(remote[cat])?remote[cat]:{},M={};
+    Object.keys(Object.assign({},L,R)).forEach(function(mm){
+      var lk=cat+':'+mm,lt=+lm.cells[lk]||0,rt=+rm.cells[lk]||0,t=Math.max(lt,rt);
+      if(t<=reset&&reset)return;
+      if(rt>lt){if(R[mm]!=null&&R[mm]!==false)M[mm]=R[mm];}
+      else if(lt>rt){if(L[mm]!=null&&L[mm]!==false)M[mm]=L[mm];}
+      else if(Object.prototype.hasOwnProperty.call(R,mm)){if(R[mm]!=null&&R[mm]!==false)M[mm]=R[mm];}
+      else if(L[mm]!=null&&L[mm]!==false)M[mm]=L[mm];
+    });out[cat]=M;
+  });
+  ['useLabor','useProcess','useIndirect','estimate'].forEach(function(k){
+    var lt=+lm.flags[k]||0,rt=+rm.flags[k]||0;
+    if(k==='estimate'&&Math.max(lt,rt)<=reset&&reset){out[k]=false;return;}
+    if(rt>lt&&Object.prototype.hasOwnProperty.call(remote,k))out[k]=remote[k];
+    else if(lt>=rt&&Object.prototype.hasOwnProperty.call(local,k))out[k]=local[k];
+  });
+  out._syncV866={year:String(Y),resetAt:reset,updatedAt:Math.max(lm.updatedAt,rm.updatedAt,reset),cells:cells,flags:flags};
+  try{if(typeof pdEnforceResetV866==='function')pdEnforceResetV866(out);}catch(_e){}
+  return out;
+}
+function mergePdYears(local,remote){
+  var out=plain(local)?cp(local):{},R=plain(remote)?remote:{};
+  Object.keys(R).forEach(function(Y){if(R[Y]===null){delete out[Y];return;}out[Y]=mergePd(out[Y],R[Y],Y);});
+  Object.keys(out).forEach(function(Y){out[Y]=mergePd(out[Y],{},Y);});return out;
+}
+try{
+  var nativeApply=window.gsApplyField;
+  if(typeof nativeApply==='function'&&!nativeApply.__v870){var applyField=function(n,p,k,v){if(n==='pdYears'&&plain(v)){p[k]=mergePdYears(p[k],v);var Y=year();if(Y&&p[k][Y]){state.pd=cp(p[k][Y]);try{pdEnsure();}catch(_e){}}return;}return nativeApply.apply(this,arguments);};applyField.__v870=true;window.gsApplyField=applyField;try{gsApplyField=applyField;}catch(_e){}}
+  var nativeYearSync=window.fcSyncYearStoresV718;
+  if(typeof nativeYearSync==='function'&&!nativeYearSync.__v870){var yearSync=function(){try{var Y=year(),p=state.pd||{},m=(typeof pdMetaV866==='function')?pdMetaV866(p):(p._syncV866||(p._syncV866={}));if(Y)m.year=Y;}catch(_e){}return nativeYearSync.apply(this,arguments);};yearSync.__v870=true;window.fcSyncYearStoresV718=yearSync;}
+}catch(_e){}
+
+/* 저장·서버 공유 항목에 사용자 지정 기록을 포함합니다. */
+try{
+  var nativeFields=window.gsFields;
+  if(typeof nativeFields==='function'&&!nativeFields.__v870){var fields=function(){var rows=nativeFields.apply(this,arguments);if(!rows.some(function(r){return r[0]==='fcUserExclYears';}))rows.push(['fcUserExclYears',state,'fcUserExclYears']);return rows;};fields.__v870=true;window.gsFields=fields;try{gsFields=fields;}catch(_e){}}
+  var nativeSave=window.saveSettings;
+  if(typeof nativeSave==='function'&&!nativeSave.__v870){var save=async function(){var r=await nativeSave.apply(this,arguments);try{var s=await idbGet('settings')||{};s.fcUserExclYears=cp(state.fcUserExclYears||{});await idbSet('settings',s);}catch(_e){}return r;};save.__v870=true;window.saveSettings=save;try{saveSettings=save;}catch(_e){}}
+}catch(_e){}
+
+/* v866 적용 뒤 최근에 직접 지정했지만 즉시 사라진 항목을 수정이력에서 한 번 복원합니다. */
+async function restore(){
+  try{
+    var s=await idbGet('settings');if(s&&plain(s.fcUserExclYears))state.fcUserExclYears=cp(s.fcUserExclYears);
+    var Y=year(),cut=Date.parse('2026-10-07T23:22:52+09:00'),logs=(state.editLog||[]).slice().sort(function(a,b){return(+a.t||0)-(+b.t||0);});
+    logs.forEach(function(e){if(!e||(+e.t||0)<cut)return;var d=String(e.d||''),m;
+      if(e.c==='목표합산'&&(m=d.match(/^(.*?)\s+\d{4}\s*목표합산\s+(제외|복원)/)))mark(m[1],m[2]==='제외','target',Y,e.t);
+      else if(e.c==='목표제외'&&(m=d.match(/^(.*?)\s+거래처\s+(제외|복원)/)))mark(m[1],m[2]==='제외','trade',Y,e.t);
+      else if(e.c==='거래처제외'&&(m=d.match(/^(.*?)\s+제외\s+(설정|해제)/)))mark(m[1],m[2]==='설정','trade',Y,e.t);
+    });
+    state.pdYears=mergePdYears(state.pdYears||{},{});var p=(state.pdYears||{})[Y];if(p){state.pd=cp(p);try{pdEnsure();}catch(_e){}}
+    applyExplicit('trade');applyExplicit('target');
+    try{if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();}catch(_e){}
+    try{await saveSettings();}catch(_e){}
+    try{if(state.act==='forecast'&&typeof forecast==='function')forecast();else if(state.act==='trend'&&typeof monthlyTrend==='function')monthlyTrend();}catch(_e){}
+  }catch(_e){}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(restore,900);},{once:true});else setTimeout(restore,900);
+window.fcUserExclMarkV870=mark;window.pdMergeYearsV870=mergePdYears;
 })();
 </script>
 
