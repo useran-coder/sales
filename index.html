@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v842</title>
-<script>window.APP_BUILD='v842';</script>
+<title>동방파스텍 매출 분석 도구 v845</title>
+<script>window.APP_BUILD='v845';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -731,6 +731,12 @@
   .fc-cutoff-ctl{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#1e3a5f;background:#eef2f8;border:1px solid #d4ddea;border-radius:8px;padding:4px 9px}
   .fc-cutoff-ctl select{font-family:inherit;font-size:12px;font-weight:700;padding:2px 4px;border:1px solid #c3cede;border-radius:6px;background:#fff;color:#1e3a5f;cursor:pointer}
   #fcCutoffSel{width:66px;min-width:66px}
+  /* v843 : 윈도우 크롬·엣지에서 펼침 목록이 «검은 상자»로 나오던 문제.
+     목록(option)은 select 의 배경을 물려받는데 값이 비면 검정으로 칠해집니다.
+     밝은 테마로 고정하고 항목 색을 직접 지정합니다. */
+  select{color-scheme:light}
+  select option,select optgroup{background-color:#ffffff;color:#1e3a5f}
+  select option:checked,select option:hover{background-color:#eff6ff;color:#1e3a5f}
   .fc-cutoff-ub{color:#64748b;font-weight:600}
   table.fcd-prod-fit{table-layout:fixed;width:100%;font-size:12px}
   table.fcd-prod-fit thead th{font-size:12px;padding:7px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1927,7 +1933,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v842</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v845</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -11439,7 +11445,16 @@ function bindFcCutoffSelector(rerun){ bindFcTargetPlanSelector('fcTargetPlanSel'
     if(typeof logEdit==='function')logEdit('매출 목표','기준연도 이후월 기준 '+(state.fc.baseFutureMode==='plan'?'월 목표':'목표수정액')+' 선택');
     if(typeof rerun==='function')rerun(); else if(typeof forecast==='function')forecast();
   }); }
-  var sel=document.getElementById('fcCutoffSel'); if(!sel)return; sel.addEventListener('change',function(){ var m=fcNormalizeCutoff(sel.value); state.fc.actualCutoffMonth=m; if(typeof logEdit==='function')logEdit('실적확정',m===0?'확정 없음':'확정월 '+m+'월'); saveSettings(); if(typeof rerun==='function')rerun(); }); }
+  var sel=document.getElementById('fcCutoffSel'); if(!sel)return; sel.addEventListener('change',function(){
+    var m=fcNormalizeCutoff(sel.value); state.fc.actualCutoffMonth=m;
+    /* v843 : 고르는 즉시 목록이 닫히도록 포커스를 풀고, 로그·동기화 밀어내기 같은 «화면과 무관한 뒷일»만
+       그린 뒤로 미룹니다. 값 반영·저장 순서는 예전 그대로라 선택이 되돌아가지 않습니다. */
+    try{ sel.blur(); }catch(_b){}
+    saveSettings();
+    if(typeof rerun==='function')rerun();
+    var later=function(){ try{ if(typeof logEdit==='function')logEdit('실적확정',m===0?'확정 없음':'확정월 '+m+'월'); }catch(_l){} };
+    if(window.requestIdleCallback)requestIdleCallback(later,{timeout:1200}); else setTimeout(later,200);
+  }); }
 function fcMonthlyTargetPanelHTML(PY,CY,pyMonTot,cyMonTot,lastAct){
   const pct=state.fc.pct||{}, future=[]; for(let m=lastAct+1;m<=12;m++)if((pyMonTot[m]||0)>0)future.push(m);
   const cards=Array.from({length:12},(_,k)=>{ const m=k+1,py=+pyMonTot[m]||0,cy=+cyMonTot[m]||0,v=pct[m]!=null&&pct[m]!==''?+pct[m]:0,target=py*(1+v/100),actual=m<=lastAct,yoy=py?((cy-py)/py*100):null; const info=actual?`실적 ${won(cy)}<br>전년比 <b style="color:${yoy==null?'var(--muted)':yoy>=0?'var(--green)':'var(--red)'}">${yoy==null?'-':(yoy>=0?'+':'')+yoy.toFixed(1)+'%'}</b>`:`전년 ${won(py)}<br>→ 목표 <b>${won(target)}</b>`; return `<div class="mcell ${actual?'act':'fc'}"><div class="mhd">${m}월 <span class="tag ${actual?'a':'f'}">${actual?'실적':'목표'}</span></div><div class="mbig"><input type="number" class="fc-inline-pct" data-m="${m}" value="${v.toFixed(1)}" step="0.1"> %</div><div class="msub">${info}</div></div>`; }).join('');
@@ -16428,7 +16443,25 @@ async function arRestore(){try{var saved=await idbGet('ar_management_v150');stat
  var map=new Map((state.ar.receipts||[]).map(function(r){return[arReceiptKey(r),r]}));seed26.concat(seed25).forEach(function(r){if(!map.has(arReceiptKey(r)))map.set(arReceiptKey(r),r)});state.ar.receipts=Array.from(map.values()).sort(function(a,b){return a.date.localeCompare(b.date)||a.no.localeCompare(b.no)});var bal=await arDecodeBlob(AR_BAL25_B64);bal.forEach(function(x){var c=arCust(x[1]||x[0]),k=arKey(2025,c),nk=arKey(2026,c);if(!Object.prototype.hasOwnProperty.call(state.ar.balances,k))state.ar.balances[k]=arN(x[2]);if(!Object.prototype.hasOwnProperty.call(state.ar.opening,nk))state.ar.opening[nk]=arN(x[2]);if(!Object.prototype.hasOwnProperty.call(state.ar.yearEndBills,k))state.ar.yearEndBills[k]=arN(x[3]);if(!Object.prototype.hasOwnProperty.call(state.ar.openingBills,nk))state.ar.openingBills[nk]=arN(x[3]);});state.ar.actualYears[2025]=true;[[AR_SEED26_NAME,seed26,AR_SEED26_ASOF],['25년수금내역.xls',seed25,'2025-12-31']].forEach(function(x){state.ar.sources=state.ar.sources.filter(function(s){return s.name!==x[0]});state.ar.sources.push({name:x[0],rows:x[1].length,asOf:x[2],amount:x[1].reduce(function(a,r){return a+r.amount},0)});});/* v609 : 같은 자료를 사용자가 직접 올린 경우, 행이 하나도 없는 내장 파일 항목은 목록에서 정리합니다. */
  (function(){var live={};(state.ar.receipts||[]).forEach(function(r){if(r&&r.source)live[r.source]=1;});state.ar.sources=(state.ar.sources||[]).filter(function(s){return s&&live[s.name];});})();
  state.ar.seedVersion=607;state.ar.updatedAt=state.ar.updatedAt&&state.ar.updatedAt>AR_SEED26_ASOF?state.ar.updatedAt:AR_SEED26_ASOF;arBackfillCodesV607();await arSave();}catch(e){console.error(e);state.ar.loadError=e.message||String(e);}}
-async function arSave(){try{await idbSet('ar_management_v150',JSON.parse(JSON.stringify(state.ar)));}catch(e){console.error('미수관리 저장 오류',e);}}
+/* v844 : 미수관리 저장이 호출될 때마다 state.ar 전체를 JSON 으로 복사해(수백 ms) 저장했습니다.
+   idbSet 이 어차피 자체 복사를 하므로 복사를 없애고, 연달아 불리면 한 번만 쓰도록 모읍니다. */
+var _arSaveT=null,_arSaveP=null;
+async function arSave(){
+  try{
+    if(_arSaveP)return _arSaveP;
+    _arSaveP=new Promise(function(res){
+      clearTimeout(_arSaveT);
+      _arSaveT=setTimeout(async function(){
+        _arSaveP=null;
+        try{ await idbSet('ar_management_v150',state.ar); }
+        catch(e){ try{ await idbSet('ar_management_v150',JSON.parse(JSON.stringify(state.ar))); }
+                  catch(e2){ console.error('미수관리 저장 오류',e2); } }
+        res();
+      },60);
+    });
+    return _arSaveP;
+  }catch(e){ console.error('미수관리 저장 오류',e); }
+}
 arReady=arRestore();
 function arLatestDate(){var a=state.ar.receipts.map(function(r){return r.date}).filter(Boolean).sort();return a.length?a[a.length-1]:(state.ar.asOf||'');}
 function arYears(){var s=new Set(state.ar.receipts.map(function(r){return +(r.date||'').slice(0,4)}).filter(Boolean));(CUR||[]).forEach(function(r){if(r.d instanceof Date&&!isNaN(r.d))s.add(r.d.getFullYear());});return Array.from(s).sort(function(a,b){return b-a});}
@@ -34976,7 +35009,17 @@ window.fcPctLiveSyncV835={apply:applyValue,sync:syncStores,save:persist};
 'use strict';
 var MARK='[전략]';
 function norm(v){try{v=String(v||'').normalize('NFKC');}catch(_e){v=String(v||'');}return v.toLowerCase().replace(/[\s·│\/()\[\]{}_.-]+/g,'');}
+var _catCacheV844=null,_catSigV844='';
+function _catSignV844(){
+  try{ return (typeof CUR!=='undefined'&&CUR?CUR.length:0)+'|'
+    +Object.keys((state.fc&&state.fc.newProds)||{}).length+'|'
+    +Object.keys((state.fc&&state.fc.prodMemo)||{}).length; }catch(_e){ return 'x'; }
+}
 function productCatalog(){
+  /* v844 : 품목 색인은 매출자료·신규제품·메모가 바뀔 때만 다시 만듭니다.
+     («매출 목표»를 그릴 때마다 전체 행을 다시 훑어 1초 가까이 걸리던 부분입니다) */
+  var sg=_catSignV844();
+  if(_catCacheV844&&_catSigV844===sg)return _catCacheV844;
   var by={};
   function add(pk,code,name,spec){
     pk=String(pk||'').trim();if(!pk)return;
@@ -34986,7 +35029,9 @@ function productCatalog(){
   try{(CUR||[]).forEach(function(r){add((r.code||'(미상)')+'│'+(r.spec||''),r.code,r.name,r.spec);});}catch(_e){}
   try{Object.keys((state.fc&&state.fc.newProds)||{}).forEach(function(pk){var p=state.fc.newProds[pk]||{},parts=pk.split('│');add(pk,p.code||parts[0],p.name||'',p.spec||parts.slice(1).join('│'));});}catch(_e2){}
   try{Object.keys((state.fc&&state.fc.prodMemo)||{}).forEach(function(pk){var parts=pk.split('│');add(pk,parts[0],'',parts.slice(1).join('│'));});}catch(_e3){}
-  return Object.keys(by).map(function(k){return by[k];});
+  _catCacheV844=Object.keys(by).map(function(k){return by[k];});
+  _catSigV844=sg;
+  return _catCacheV844;
 }
 function matchesFor(raw,catalog){
   var q=norm(raw),best=0,out=[];if(q.length<2)return out;
@@ -35006,15 +35051,29 @@ function collect(){
   items.forEach(function(it){if(!it||it.off)return;var prod=String(it.prod||'').trim(),s=memoText(it);if(!prod||!s)return;matchesFor(prod,cat).forEach(function(pk){(by[pk]=by[pk]||[]).push(s);});});
   return by;
 }
+var _memoSigV844='';
 function syncProductMemo(){
   var S;try{S=state;}catch(_e){return false;}if(!S||!S.fc)return false;
+  /* v844 : 영업전략·품목 색인이 그대로면 다시 계산하지 않습니다.
+     (forecast() · saveSettings() 가 불릴 때마다 통째로 다시 돌던 부분) */
+  var _sig='';
+  try{
+    var _it=[];
+    try{ _it=(typeof sgPlanItems==='function')?(sgPlanItems()||[]):(((S.strategyPlan||{}).items)||[]); }catch(_s){}
+    _sig=_catSignV844()+'#'+_it.length+'#';
+    for(var _i=0;_i<_it.length;_i++){ var _o=_it[_i]||{};
+      _sig+=(_o.id||'')+'\u0001'+(_o.off?1:0)+'\u0001'+(_o.prod||'')+'\u0001'+(_o.cust||'')+'\u0001'+(_o.note==null?(_o.title||''):_o.note)+'\u0002'; }
+  }catch(_e1){ _sig=''; }
+  if(_sig&&_sig===_memoSigV844)return false;
   try{var held=localStorage.getItem('fcProdMemoResetSigV838')||'',sig=typeof sgMemoPlanSigV838==='function'?sgMemoPlanSigV838():'';if(held&&held===sig)return false;if(held)localStorage.removeItem('fcProdMemoResetSigV838');}catch(_e0){}
   var memo=S.fc.prodMemo||(S.fc.prodMemo={}),by=collect(),changed=false,seen={};
   Object.keys(by).forEach(function(pk){seen[pk]=1;var uniq=[],has={};by[pk].forEach(function(s){if(!has[s]){has[s]=1;uniq.push(s);}});var block=MARK+' '+uniq.join(' ; '),cur=String(memo[pk]||''),i=cur.indexOf(MARK),manual=(i>=0?cur.slice(0,i):cur).replace(/\s+$/,''),next=(manual?manual+' ':'')+block;if(cur!==next){memo[pk]=next;changed=true;}});
   Object.keys(memo).forEach(function(pk){if(seen[pk])return;var cur=String(memo[pk]||''),i=cur.indexOf(MARK);if(i<0)return;var manual=cur.slice(0,i).replace(/\s+$/,'');if(manual)memo[pk]=manual;else delete memo[pk];changed=true;});
+  try{ _memoSigV844=_sig; }catch(_e9){}
   return changed;
 }
 window.sgSyncProdMemoV836=syncProductMemo;
+window.sgMemoCacheResetV844=function(){ _catCacheV844=null; _catSigV844=''; _memoSigV844=''; };
 (function(){var native=window.saveSettings;if(typeof native!=='function'||native.__prodMemoV836)return;var wrapped=function(){try{syncProductMemo();}catch(_e){}return native.apply(this,arguments);};wrapped.__prodMemoV836=true;window.saveSettings=wrapped;try{saveSettings=wrapped;}catch(_e){}})();
 (function(){var native=window.forecast;if(typeof native!=='function'||native.__prodMemoV836)return;var wrapped=function(){try{syncProductMemo();}catch(_e){}return native.apply(this,arguments);};wrapped.__prodMemoV836=true;window.forecast=wrapped;try{forecast=wrapped;}catch(_e){}})();
 (function(){
@@ -35378,6 +35437,7 @@ function afterMerge(){
   later(function(){
     try{
       if(typeof v801Typing==='function'&&v801Typing())return;
+      if(typeof window.__selOpenV845==='function'&&window.__selOpenV845())return;   /* v845 : 선택창 열림 중엔 보류 */
       var a=state.act;
       if(a==='forecast'||a==='strategy'||a==='trend'){ state._syncDeferred=false; if(typeof runAct==='function')runAct(); }
     }catch(_e){}
@@ -35847,6 +35907,70 @@ function addBtn(){
 }
 try{ new MutationObserver(function(){ addBtn(); }).observe(document.body,{childList:true,subtree:true}); }catch(_e){}
 setInterval(addBtn,1200);
+})();
+</script>
+
+<script id="v845-keep-open-select">
+/* ══════════ v845 · 선택창이 검게 나오고 저절로 닫히던 문제 ══════════
+   원인은 하나입니다 — 목록을 펼쳐 둔 동안 화면이 다시 그려지면서 그 <select> 가 통째로 교체됩니다.
+   (자동 동기화·점검줄 갱신·전략 재계산 등이 수시로 #result 를 다시 그립니다)
+   선택창 본체가 사라지면 윈도우가 띄워 둔 펼침 목록은 주인을 잃어 «검은 상자»로 남았다가 닫힙니다.
+   → 목록을 연 순간부터 고를 때까지는 화면을 다시 그리지 않고 미뤘다가, 고른 뒤에 한 번만 그립니다. */
+(function(){
+'use strict';
+var openEl=null, openAt=0, pending=null;
+var MAXMS=120000;   /* 혹시 닫힘 신호를 놓쳐도 2분 뒤에는 풀립니다 */
+
+function isOpen(){
+  try{
+    if(!openEl)return false;
+    if(!document.contains(openEl)){ openEl=null; return false; }
+    if(Date.now()-openAt>MAXMS){ openEl=null; return false; }
+    return true;
+  }catch(_e){ openEl=null; return false; }
+}
+window.__selOpenV845=isOpen;
+
+function close(run){
+  openEl=null;
+  if(pending){ var f=pending; pending=null;
+    if(run!==false)setTimeout(function(){ try{ f(); }catch(_e){} },0); }
+}
+document.addEventListener('mousedown',function(e){
+  try{ var s=e.target&&e.target.closest&&e.target.closest('select');
+    if(s){ openEl=s; openAt=Date.now(); } else if(isOpen()){ close(); } }catch(_e){}
+},true);
+document.addEventListener('keydown',function(e){
+  try{ if(!isOpen())return;
+    if(e.key==='Escape'||e.key==='Tab'||e.key==='Enter')close(); }catch(_e){}
+},true);
+['change','blur','focusout'].forEach(function(ev){
+  document.addEventListener(ev,function(e){
+    try{ if(openEl&&e.target===openEl)setTimeout(function(){ if(document.activeElement!==openEl||ev==='change')close(); },0); }catch(_e){}
+  },true);
+});
+window.addEventListener('blur',function(){ try{ if(isOpen())close(); }catch(_e){} });
+
+/* 펼쳐 둔 동안 들어오는 «다시 그리기»는 미뤘다가, 닫힌 뒤 한 번만 실행합니다 */
+function guard(name){
+  try{
+    var fn=window[name]; if(typeof fn!=='function'||fn.__v845)return;
+    var w=function(){
+      if(isOpen()&&document.activeElement===openEl){
+        var self=this,args=arguments;
+        pending=function(){ try{ fn.apply(self,args); }catch(_e){} };
+        try{ console.debug('[v845] 선택창이 열려 있어 다시 그리기를 미룹니다 — '+name); }catch(_c){}
+        return;
+      }
+      return fn.apply(this,arguments);
+    };
+    w.__v845=true; window[name]=w; try{ eval(name+'=w'); }catch(_e){}
+  }catch(_e2){}
+}
+function boot(){ ['runAct','forecast','renderCustom'].forEach(guard); }
+if(document.readyState==='complete')setTimeout(boot,400);
+else window.addEventListener('load',function(){setTimeout(boot,400);},{once:true});
+setTimeout(boot,1500);
 })();
 </script>
 
