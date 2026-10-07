@@ -11344,19 +11344,49 @@ function setExcludedCust(c,checked){
 }
 // 거래처 표시 제외와 2026 목표합산 제외를 별도 관리한다.
 // 목표합산 제외만 선택하면 거래처·실적은 정상 표시되고 목표액만 0원 처리된다.
+/* v865 : 목표합산 제외는 목표연도의 바로 전년도에 실제 매출이 있던 업체만 유효합니다.
+   예: 2027 목표에서는 2026 매출이 있어야 하며, 2025년에만 거래한 업체는 자동으로 빠집니다. */
+function fcTargetExclYearKey(c){
+  let s=String(c||'');try{if(typeof custNorm==='function')s=custNorm(s);}catch(_e){}
+  return s.replace(/\([^)]*(?:폐업|영업종료|거래중지)[^)]*\)/g,'').replace(/\s+/g,'').trim();
+}
+function fcTargetExclYearInfo(){
+  let y=0;try{y=+(typeof fcTargetYear==='function'?fcTargetYear():0)||0;}catch(_e){}
+  if(!y){try{const ys=dataYears();y=ys[ys.length-1]||0;}catch(_e){}}
+  const prev=new Map(),cur=new Map(),closed=new Set(),canonical=new Map();
+  const isClosed=c=>{ if(/폐업|영업종료|거래중지/.test(String(c||'')))return true; try{return typeof catOf==='function'&&String(catOf(c)||'')==='거래중지';}catch(_e){return false;} };
+  fcCustomerUniverse().forEach(c=>{ const k=fcTargetExclYearKey(c),old=canonical.get(k); if(!old||(!isClosed(old)&&isClosed(c)))canonical.set(k,c); if(isClosed(c))closed.add(k); });
+  if(typeof CUR!=='undefined'&&Array.isArray(CUR))CUR.forEach(r=>{
+    if(!r||!r.cust)return; const ry=+r.y||0,k=fcTargetExclYearKey(r.cust),a=(typeof amtOf==='function')?(+amtOf(r)||0):(+r.supply||+r.total||0);
+    if(ry===y-1)prev.set(k,(prev.get(k)||0)+a); else if(ry===y)cur.set(k,(cur.get(k)||0)+a);
+  });
+  return {year:y,prev:prev,cur:cur,closed:closed,canonical:canonical};
+}
 function syncTargetExcludedCustMap(){
   state.fc=state.fc||{}; state.fc.targetExclCust=state.fc.targetExclCust||{}; state.fc.targetOnlyExcl=state.fc.targetOnlyExcl||{};
+  let beforeV865='';try{beforeV865=JSON.stringify(state.fc.targetExclCust||{});}catch(_e){}
   /* v856 : 예전 PC가 targetOnlyExcl에만 저장한 목표합산 제외값을 1회 호환합니다.
      현재 맵에 값이 있으면 그것을 우선하고, 정리 뒤에는 두 이름을 같은 내용으로 맞춰
      PC별 버전 차이로 체크가 되살아나거나 사라지지 않게 합니다. */
   const modernHas=Object.values(state.fc.targetExclCust).some(Boolean);
   if(!modernHas)Object.entries(state.fc.targetOnlyExcl).forEach(([c,v])=>{ if(v)state.fc.targetExclCust[c]=true; });
-  const universe=fcCustomerUniverse(), canonical=new Map();
-  universe.forEach(c=>{ const k=fcCustKey(c), prev=canonical.get(k); if(!prev || (/\(폐업\)\s*$/.test(prev) && !/\(폐업\)\s*$/.test(c))) canonical.set(k,c); });
-  const sourceName=new Map(), keys=new Set();
-  Object.entries(state.fc.targetExclCust||{}).forEach(([c,v])=>{ if(!v)return; const k=fcCustKey(c); keys.add(k); if(!sourceName.has(k))sourceName.set(k,String(c||'').trim()); });
-  const merged={}; keys.forEach(k=>{ const name=canonical.get(k)||sourceName.get(k); if(name)merged[name]=true; });
-  state.fc.targetExclCust=merged; state.fc.targetOnlyExcl={...merged}; return merged;
+  const yi=fcTargetExclYearInfo(), sourceName=new Map(), keys=new Set();
+  Object.entries(state.fc.targetExclCust||{}).forEach(([c,v])=>{
+    if(!v)return; const k=fcTargetExclYearKey(c), prevAmt=+yi.prev.get(k)||0, curAmt=+yi.cur.get(k)||0;
+    /* 전년도 매출이 없거나 목표연도에도 정상 매출이 있으면 목표합산 제외 대상이 아닙니다. */
+    if(!(prevAmt>0&&(curAmt<=0||yi.closed.has(k))))return;
+    keys.add(k);if(!sourceName.has(k))sourceName.set(k,String(c||'').trim());
+  });
+  const merged={}; keys.forEach(k=>{ const name=yi.canonical.get(k)||sourceName.get(k); if(name)merged[name]=true; });
+  state.fc.targetExclCust=merged; state.fc.targetOnlyExcl={...merged};
+  /* 자동으로 빠진 과거연도 업체를 로컬·다른 PC에도 동일하게 저장합니다. */
+  try{
+    if(beforeV865!==JSON.stringify(merged)&&!window.__FC_BUILDING_V737&&window.__V718_RESTORED){
+      clearTimeout(window.__FC_TARGET_EXCL_SAVE_V865);
+      window.__FC_TARGET_EXCL_SAVE_V865=setTimeout(function(){try{if(typeof saveSettings==='function')saveSettings();}catch(_e){}},350);
+    }
+  }catch(_e){}
+  return merged;
 }
 function setTargetExcludedCust(c,checked){
   if(!c)return;
@@ -12856,7 +12886,7 @@ function forecast(){
       </div>
       <span class="sub2"><b>업체만 추가</b>: 품목·수량 없이 <b>거래처명+연 목표금액</b>만 등록됩니다. 또는 같은 <b>거래처명</b>으로 제품을 여러 개 추가하세요. 단가는 <b>평균단가 자동</b>(수정가능) · 연목표=Σ(수량×단가) · 추가 제품은 <b>제품 목표에도 연동</b>됩니다. 출고가 발생한 뒤에는 아래 신규 행의 <b>실제 매출처로 교체</b>를 눌러 목표를 실제 거래처에 연결할 수 있습니다.</span>
     </div><datalist id="fcNewCustRealDL">${fcRealCustDL}</datalist>
-    <div class="note" style="margin:0 0 8px"><b>제외 옵션</b>: <b>거래처 제외</b>는 담당자 표에서 숨기고 목표액도 0원 처리합니다. <b>목표합산 제외</b>만 선택하면 거래처와 실적은 정상 표시하고 2026년 목표액만 합계·목표추이에서 제외합니다. <b>조정%</b>: 입력 시 그 거래처가 전년 동월 比 해당%로 고정되고 나머지는 월 목표총액에 맞춰 <b>재배분</b>(전체 합계 유지). 칸에 <i style="color:#b6c0cc">흐린 기울임</i>으로 보이는 숫자는 <b>아직 입력하지 않은 자동 계산값</b>이고, 직접 입력하면 <b style="background:#fff7e6;padding:0 3px;border-radius:3px">노란 칸</b>으로 바뀝니다. <b>Enter</b>를 누르면 바로 반영됩니다. <b>추가%</b>: 그 거래처 목표에 <b>추가로 가산</b>되어 전체 목표금액과 그래프·<b>월별 실적·목표</b>가 함께 늘어납니다(예: 추가 10% → 그만큼 합계 증가). <b>거래처 행 클릭</b> 시 품목군→품번·품명·규격으로 이어집니다.</div>${fcExclOptionSummary}
+    <div class="note" style="margin:0 0 8px"><b>제외 옵션</b>: <b>거래처 제외</b>는 담당자 표에서 숨기고 목표액도 0원 처리합니다. <b>목표합산 제외</b>는 <b>${PY}년 매출이 있고 ${CY}년 매출이 없거나 폐업·거래중지된 업체</b>만 표시하며, 거래처와 실적은 정상 표시하고 ${CY}년 목표액만 합계·목표추이에서 제외합니다. <b>조정%</b>: 입력 시 그 거래처가 전년 동월 比 해당%로 고정되고 나머지는 월 목표총액에 맞춰 <b>재배분</b>(전체 합계 유지). 칸에 <i style="color:#b6c0cc">흐린 기울임</i>으로 보이는 숫자는 <b>아직 입력하지 않은 자동 계산값</b>이고, 직접 입력하면 <b style="background:#fff7e6;padding:0 3px;border-radius:3px">노란 칸</b>으로 바뀝니다. <b>Enter</b>를 누르면 바로 반영됩니다. <b>추가%</b>: 그 거래처 목표에 <b>추가로 가산</b>되어 전체 목표금액과 그래프·<b>월별 실적·목표</b>가 함께 늘어납니다(예: 추가 10% → 그만큼 합계 증가). <b>거래처 행 클릭</b> 시 품목군→품번·품명·규격으로 이어집니다.</div>${fcExclOptionSummary}
     <div class="tablewrap ${state.fc.showExcl?'fcshowexcl':''} ${state.fc.issC?'fcissue-c':''}" style="max-height:1120px"><table class="fc-cust-annual-table"><colgroup><col style="width:44px"><col style="width:150px"><col style="width:84px"><col style="width:84px">${state.fc.issC?'':'<col style="width:92px"><col style="width:92px">'}<col style="width:92px"><col style="width:92px"><col style="width:96px"><col style="width:72px"><col style="width:62px"><col style="width:62px"><col></colgroup><thead><tr><th>순위</th><th class="l fcsort" data-sk="c">거래처${fcArrow('c')}</th><th class="mgr fcsort" data-sk="sales">고객관리${fcArrow('sales')}</th><th class="mgr fcsort" data-sk="tech">기술개발${fcArrow('tech')}</th><th class="fcsort" data-sk="ytd">실적(1~${lastAct}월)${fcArrow('ytd')}<div style="font-size:8px;color:#0d9488;font-weight:700">제외업체 포함</div></th><th class="fcsort" data-sk="prev">전년(${PY})${fcArrow('prev')}</th><th class="fcsort" data-sk="proj">올해목표${fcArrow('proj')}</th><th class="fcsort" data-sk="diff">증감액${fcArrow('diff')}</th><th class="fcsort" data-sk="adj" title="조정%·추가%로 늘거나 줄어든 금액입니다. 기준은 월별 목표%만 적용한 기본 목표이며, 다른 업체의 조정%로 인한 재배분 효과도 함께 반영됩니다.">추가증감액${fcArrow('adj')}</th><th class="fcsort" data-sk="pct">증감%${fcArrow('pct')}</th><th title="해당 월 목표 내에서 재분배(전체 합계 유지)">조정%</th><th title="전체 금액에 추가로 가산(합계·그래프 증가)">추가%</th><th class="l">메모(조정·추가% 이슈)</th></tr></thead><tbody>${custRows}<tr class="total-row"><td></td><td class="l">합 계</td><td></td><td></td><td>${disp(cTotYtdAll)}</td><td>${disp(cTotPrevAll)}</td><td>${disp(cTotProjAll)}</td><td>${diffSpan(cTotProjAll-cTotPrevAll)}</td><td>${fcAdjSpan(custArr.reduce((a,o)=>a+(+o.adj||0),0))}</td><td></td><td></td><td></td><td></td></tr></tbody></table></div>`:`
     <h4 class="fch">📦 제품(규격)별 매출 목표 · ${rLab} <span class="fc-target-search fc-prod-unified-search"><input type="search" id="fcProdSearch" autocomplete="off" spellcheck="false" placeholder="${state.fc._prodSearchMode==='customer'?'업체명 포함 검색':'품번·품명·규격 포함 검색'}" value="${esc(state.fc._prodSearchMode==='customer'?(state.fc._prodCustSearch||''):(state.fc._psearch||''))}"><select id="fcProdSearchMode" aria-label="검색 기준"><option value="customer" ${state.fc._prodSearchMode==='customer'?'selected':''}>🏢 업체</option><option value="product" ${state.fc._prodSearchMode==='customer'?'':'selected'}>📦 제품</option></select><button type="button" id="fcProdSearchBtn" class="fc-target-search-btn" aria-label="제품 목표 검색" title="검색"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="M12.5 12.5L17 17"></path></svg></button></span> <span style="float:right"><button class="btn" id="fcAddProd" style="font-size:13px;padding:3px 10px">＋ 제품추가</button> <button class="btn ghost" id="fcNewOnlyV807" style="font-size:13px;padding:3px 10px;${state.fc._newOnly?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe'}" title="목표표에 「제품추가」로 등록한 신규목표 제품만 봅니다">🎯 신규목표(${Object.keys(state.fc.newProds||{}).length})${state.fc._newOnly?' ✓':''}</button> <button class="btn ghost" id="fcIssueProd" style="font-size:13px;padding:3px 10px;${state.fc.issP?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.fc.issP?' (해제)':''}</button> <button class="btn ghost fcexcltoggle" style="font-size:13px;padding:3px 8px;${state.fc.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">제외 체크 ${state.fc.showExcl?'숨기기':'보이기'}</button> <button class="btn ghost" id="fcProdCsv" style="font-size:13px;padding:3px 8px">엑셀</button></span></h4>
     <div id="fcNewProdForm" style="display:none;margin:0 0 8px;padding:10px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px">
@@ -36393,7 +36423,7 @@ function signature(){
 window.fcSyncAuditV855=function(){
   var s=signature(),h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
   var y=year(),ys=((state.fc||{}).yearPlans||{})[y]||{},p=(ys.targetPlans||{})[ys.activePlan==='2'?'2':'1']||{},m=(state.fcYearMisc||{})[y]||{},pd=(state.pdYears||{})[y]||{};
-  var out={version:'v864',year:y,plan:ys.activePlan==='2'?'2':'1',hash:('00000000'+(h>>>0).toString(16)).slice(-8),
+  var out={version:'v865',year:y,plan:ys.activePlan==='2'?'2':'1',hash:('00000000'+(h>>>0).toString(16)).slice(-8),
     monthlyPct:Object.keys(p.pct||{}).length,custAdjust:Object.keys(p.override||{}).length,custMonthly:Object.keys(p.custMonthPct||{}).length,
     prodAdjust:Object.keys(p.prodOverride||{}).length,prodMonthly:Object.keys(p.prodMonthPct||{}).length,targetExcluded:Object.keys(m.targetExclCust||{}).filter(function(k){return m.targetExclCust[k];}).length,
     workdays:Object.keys(state.workdays||{}).length,bepYears:Object.keys(state.bepYears||{}).length,headMonths:Object.keys(state.headMonthly||{}).length,
