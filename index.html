@@ -12713,7 +12713,9 @@ function forecast(){ state._inDrill=false;
   const fcMemoPlaceholderV857=s=>String(s||'').split('placeholder="이슈 메모"').join('placeholder="이슈 메모 ([전략] 자동연동)"');
   custRows = fcMemoPlaceholderV857(state.fc.showExclRows ? custRows : ((state.fc._newOnly?'':(pdCustRow + lineCustRows)) + newRows + custRows)); const cTotProjNetBase=custArrTotalBase.reduce((a,o)=>a+(o.excl?0:o.proj),0); const isOverallAnnual=!state.fc.showExclRows&&m1===1&&m2===12&&clsFilter==='전체'&&statusFilter==='전체'; const cTotProjAll=state.fc.showExclRows?cTotProj:(isOverallAnnual?annualSummary.annualTarget:(cTotProjNetBase+newProjSum+lineCustTotal+pdYearNet)); const cTotPrevAll=state.fc.showExclRows?cTotPrev:custArrTotalBase.reduce((a,o)=>a+(o.excl?0:o.prev),0); const cTotYtdAll=state.fc.showExclRows?custArr.reduce((a,o)=>a+(o.ytd||0),0):custArrTotalBase.reduce((a,o)=>a+(o.ytd||0),0);
   // products (ALL)
-  const prodKeys=new Set(); for(let m=m1;m<=m2;m++){ pyMonProd[m].forEach((_,pk)=>prodKeys.add(pk)); cyMonProd[m].forEach((_,pk)=>prodKeys.add(pk)); if(m>lastAct)fcProdMon[m].forEach((_,pk)=>prodKeys.add(pk)); }
+  /* v858 : 거래처 화면에서는 화면에 쓰지 않는 제품 수천 건을 매번 다시 만들지 않습니다.
+     제품 탭으로 전환했을 때만 제품 목록·월별 목표를 계산합니다. */
+  const prodKeys=new Set(); if(state.fc.dim==='prod')for(let m=m1;m<=m2;m++){ pyMonProd[m].forEach((_,pk)=>prodKeys.add(pk)); cyMonProd[m].forEach((_,pk)=>prodKeys.add(pk)); if(m>lastAct)fcProdMon[m].forEach((_,pk)=>prodKeys.add(pk)); }
   /* v767 : 제품별 목표를 제품 하나마다 «모든 거래처»를 다시 훑던 부분을 월 1회 집계로 바꿉니다.
      (제품수 × 12개월 × 거래처수 → 12개월 × 자료건수) — 매출 목표 첫 진입이 느리던 가장 큰 원인 */
   const _pTotMon=Array.from({length:13},()=>null);
@@ -12758,7 +12760,7 @@ function forecast(){ state._inDrill=false;
      (합계는 업체별 표와 맞추기 위해 PD 임가공비를 그대로 포함합니다.) */
   prodRows = fcMemoPlaceholderV857(lineProdRows + newProdRows + prodRows);
   state._fcExport={custArr,prodArr,PY,CY,lastAct};
-  const _CAT=prodCatalog(); state._fcCat=_CAT; state._fcCatMap={}; _CAT.forEach(p=>{state._fcCatMap[p.label]=p;}); const _prodDL=_CAT.map(p=>`<option value="${esc(p.label)}">평균 ${won(Math.round(p.price))}</option>`).join(''); const _custDL=custCatalog().map(c=>`<option value="${esc(c)}">`).join('');
+  const _CAT=state.fc.dim==='prod'?prodCatalog():[]; state._fcCat=_CAT; state._fcCatMap={}; _CAT.forEach(p=>{state._fcCatMap[p.label]=p;}); const _prodDL=_CAT.map(p=>`<option value="${esc(p.label)}">평균 ${won(Math.round(p.price))}</option>`).join(''); const _custDL=state.fc.dim==='prod'?custCatalog().map(c=>`<option value="${esc(c)}">`).join(''):'';
   const _codeDL=[...new Set(_CAT.map(p=>p.code))].map(c=>`<option value="${esc(c)}">`).join(''); const _nameDL=[...new Set(_CAT.map(p=>p.name).filter(Boolean))].map(c=>`<option value="${esc(c)}">`).join(''); const _specDL=[...new Set(_CAT.map(p=>p.spec).filter(Boolean))].map(c=>`<option value="${esc(c)}">`).join(''); state._fcByCode={}; _CAT.forEach(p=>{ (state._fcByCode[p.code]=state._fcByCode[p.code]||[]).push(p); });
   const perBtns=`<div class="seg" id="fcPer"><button data-v="all" class="${state.fc.period==='all'?'on':''}">전체</button><button data-v="H1" class="${state.fc.period==='H1'?'on':''}">상반기</button><button data-v="H2" class="${state.fc.period==='H2'?'on':''}">하반기</button><button data-v="Q1" class="${state.fc.period==='Q1'?'on':''}">1분기</button><button data-v="Q2" class="${state.fc.period==='Q2'?'on':''}">2분기</button><button data-v="Q3" class="${state.fc.period==='Q3'?'on':''}">3분기</button><button data-v="Q4" class="${state.fc.period==='Q4'?'on':''}">4분기</button><button data-v="range" class="${state.fc.period==='range'?'on':''}">기간설정</button></div>`;
   const monOpts=(selV)=>{let s='';for(let i=1;i<=12;i++)s+=`<option value="${i}" ${i===selV?'selected':''}>${i}월</option>`;return s;};
@@ -12894,7 +12896,7 @@ function forecast(){ state._inDrill=false;
         annualWrap.parentNode.insertBefore(monBox,annualWrap);
         if(monOn)annualWrap.style.display='none';
         /* v776 : 켤 때 그 시점에 표를 만들도록 다시 그립니다(꺼져 있을 때 미리 만들지 않아 훨씬 빠릅니다). */
-        mb.addEventListener('click',()=>{ fcOrderUnlockV802(); state.fc._custMonView=!state.fc._custMonView; if(typeof saveSettings==='function')saveSettings(); fcFastForecast(); });
+        mb.addEventListener('click',()=>{ fcOrderUnlockV802(); state.fc._custMonView=!state.fc._custMonView; mb.textContent='📅 월별보기'+(state.fc._custMonView?' ✓':''); mb.style.background=state.fc._custMonView?'#1e3a5f':''; mb.style.color=state.fc._custMonView?'#fff':''; mb.style.borderColor=state.fc._custMonView?'#1e3a5f':''; if(typeof v796SaveSoon==='function')v796SaveSoon(); else if(typeof saveSettings==='function')saveSettings(); fcFastForecast(); });
         monBox.querySelectorAll('.fc-cust-month-pct').forEach(inp=>{ const syncPctColor=()=>inp.classList.toggle('fc-cust-month-pct-neg',parseFloat(inp.value)<0); syncPctColor();
           inp.addEventListener('input',()=>{ syncPctColor(); const v=inp.value.trim(); if(v!==''&&!isFinite(parseFloat(v)))return; v796SetMonthPct(monthPct,inp.dataset.c,+inp.dataset.m,v); v796SaveSoon(); });
           inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } });
@@ -12988,8 +12990,8 @@ function forecast(){ state._inDrill=false;
     $('#result').querySelectorAll('.fcexcl').forEach(c=>c.addEventListener('change',e=>{ const k=e.target.dataset.c; setExcludedCust(k,e.target.checked); if(typeof logEdit==='function')logEdit('목표제외',k+' 거래처 '+(e.target.checked?'제외':'복원')+' (매출목표/담당자 동시)'); saveSettings(); forecast(); }));
     $('#result').querySelectorAll('.fctargetexcl').forEach(c=>c.addEventListener('change',e=>{ const k=e.target.dataset.c; setTargetExcludedCust(k,e.target.checked); if(typeof logEdit==='function')logEdit('목표합산',k+' 2026 목표합산 '+(e.target.checked?'제외':'복원')); saveSettings(); forecast(); }));
     $('#result').querySelectorAll('.fcpexcl').forEach(c=>c.addEventListener('change',e=>{ const k=e.target.dataset.pk; if(e.target.checked)state.fc.exclProd[k]=true; else delete state.fc.exclProd[k]; if(typeof logEdit==='function')logEdit('목표제외',k+' 제품 '+(e.target.checked?'제외':'복원')); saveSettings(); forecast(); }));
-    const exRowsBtn=$('#fcExclRows'); exRowsBtn&&exRowsBtn.addEventListener('click',()=>{ state.fc.showExclRows=!state.fc.showExclRows; saveSettings(); forecast(); });
-    $('#result').querySelectorAll('.fcexcltoggle').forEach(b=>b.addEventListener('click',()=>{ state.fc.showExcl=!state.fc.showExcl; saveSettings(); forecast(); }));
+    const exRowsBtn=$('#fcExclRows'); exRowsBtn&&exRowsBtn.addEventListener('click',()=>{ state.fc.showExclRows=!state.fc.showExclRows; exRowsBtn.textContent='📋 '+(state.fc.showExclRows?'일반 업체 보기':'제외 업체만 보기')+'('+excludedCustCount()+')'+(state.fc.showExclRows?' ✓':''); exRowsBtn.style.background=state.fc.showExclRows?'#dc2626':'';exRowsBtn.style.color=state.fc.showExclRows?'#fff':'';exRowsBtn.style.borderColor=state.fc.showExclRows?'#dc2626':''; if(typeof v796SaveSoon==='function')v796SaveSoon();else saveSettings(); fcFastForecast(); });
+    $('#result').querySelectorAll('.fcexcltoggle').forEach(b=>b.addEventListener('click',()=>{ state.fc.showExcl=!state.fc.showExcl; b.textContent='🚫 제외옵션(거래처 '+excludedCustCount()+' · 목표 '+targetOnlyExcludedCustCount()+')'+(state.fc.showExcl?' ✓':'');b.style.background=state.fc.showExcl?'#0d9488':'';b.style.color=state.fc.showExcl?'#fff':'';b.style.borderColor=state.fc.showExcl?'#0d9488':''; if(typeof v796SaveSoon==='function')v796SaveSoon();else saveSettings(); fcFastForecast(); }));
     const annT=$('#annToggle'); annT&&annT.addEventListener('click',()=>{ state.fc.annualOpen=!state.fc.annualOpen;const w=$('#annWrap');if(w)w.style.display=state.fc.annualOpen?'block':'none';const chip=annT.querySelector('span');if(chip)chip.textContent='📈 연간 누계 (전년 比) '+(state.fc.annualOpen?'▾':'▸');if(typeof saveSettings==='function')saveSettings(); });
     $('#result').querySelectorAll('.annin').forEach(inp=>{ inp.addEventListener('input',e=>{ const raw=e.target.value.replace(/[^\d]/g,''); e.target.value=raw?(+raw).toLocaleString():''; }); inp.addEventListener('change',e=>{ const y=e.target.dataset.y; const v=parseFloat((e.target.value||'').replace(/,/g,''))||0; if(v)state.fc.annualHist[y]=v; else delete state.fc.annualHist[y]; if(typeof logEdit==='function')logEdit('목표연혁',y+' 연매출 변경'); v796SaveSoon(); v797Defer(forecast); }); });
     $('#result').querySelectorAll('.fcmemo').forEach(inp=>inp.addEventListener('change',e=>{ const c=e.target.dataset.c; const v=e.target.value.trim(); if(v)state.fc.custMemo[c]=v; else state.fc.custMemo[c]=''; if(typeof logEdit==='function')logEdit('목표메모',c+' 거래처 메모'); v796SaveSoon(); }));
@@ -13143,7 +13145,7 @@ function forecast(){ state._inDrill=false;
     })();
     const cc=$('#fcCustCsv'); cc&&cc.addEventListener('click',()=>fcCSV('cust'));
     const pc=$('#fcProdCsv'); pc&&pc.addEventListener('click',()=>fcCSV('prod'));
-    const ic=$('#fcIssueCust'); ic&&ic.addEventListener('click',()=>{ state.fc.issC=!state.fc.issC; fcFastForecast(); });
+    const ic=$('#fcIssueCust'); ic&&ic.addEventListener('click',()=>{ state.fc.issC=!state.fc.issC; ic.textContent='📌 이슈내용보기'+(state.fc.issC?' (해제)':'');ic.style.background=state.fc.issC?'#0d9488':'';ic.style.color=state.fc.issC?'#fff':'';ic.style.borderColor=state.fc.issC?'#0d9488':''; fcFastForecast(); });
     const ip=$('#fcIssueProd'); ip&&ip.addEventListener('click',()=>{ state.fc.issP=!state.fc.issP; fcFastForecast(); });
     if(state.fc.dim==='cust'&&state.fc.issC){ $('#result').querySelectorAll('tr.fcrow').forEach(tr=>{ const c=tr.dataset.c; const ov=state.fc.override[c],ad=state.fc.addPct[c],mm=state.fc.custMemo[c]; const ed=(ov!=null&&ov!=='')||(ad!=null&&ad!==''&&+ad!==0)||(mm&&String(mm).trim()); tr.style.display=ed?'':'none'; }); fcMemo2Line('.fcmemo','c'); }
     if(state.fc.dim==='prod'&&state.fc.issP){ $('#result').querySelectorAll('tr.fcprow').forEach(tr=>{ const pk=tr.dataset.pk; const ov=state.fc.prodOverride[pk],ad=state.fc.prodAddPct[pk],mm=state.fc.prodMemo[pk]; const ed=(ov!=null&&ov!=='')||(ad!=null&&ad!==''&&+ad!==0)||(mm&&String(mm).trim()); tr.style.display=ed?'':'none'; }); fcMemo2Line('.fcpmemo','pk'); }
@@ -36036,7 +36038,28 @@ function pk(code,spec){ return S(code)+'│'+S(spec); }
 /* ── 내보내기 ── */
 function expo(which){
   var E=state._fcExport||{}; if(!E.custArr){ try{ uiConfirm('표가 아직 준비되지 않았습니다. 잠시 후 다시 눌러 주세요.'); }catch(_e){} return; }
-  var f=state.fc, yr=(typeof fcTargetYear==='function')?fcTargetYear():'';
+  var f=state.fc, F=state._fc||{}, yr=(typeof fcTargetYear==='function')?fcTargetYear():'';
+  /* v858 : 월별보기를 켠 상태에서는 화면과 같은 1~12월 금액(또는 수량)을 저장합니다.
+     뒤쪽에는 월별 조정%·메모도 함께 넣어 기존 불러오기/편집 자료로 계속 활용할 수 있습니다. */
+  if(which==='cust'&&f._custMonView&&F.cyMonCust&&F.fcCustMon){
+    var mh=['순위','거래처'].concat(MON).concat(['합계','거래처 제외','목표합산 제외']).concat(MON.map(function(m){return m+' 조정%';})).concat(['메모']);
+    var ma=[mh];
+    (E.custArr||[]).forEach(function(o,i){
+      var vals=MON.map(function(_,k){var m=k+1,map=m<=E.lastAct?F.cyMonCust[m]:F.fcCustMon[m];return Math.round((map&&map.get(o.c))||0);});
+      var mp=(f.custMonthPct||{})[o.c]||{};
+      ma.push([i+1,o.c].concat(vals).concat([vals.reduce(function(a,b){return a+b;},0),o.excl?'Y':'',o.targetOnly?'Y':'']).concat(MON.map(function(_,k){var v=mp[k+1];return(v==null||v==='')?'':+v;})).concat([(f.custMemo||{})[o.c]||'']));
+    });
+    dlXLSX('forecast_customer_monthly_'+yr+'.xlsx','거래처월별목표',ma);return;
+  }
+  if(which==='prod'&&f._prodMonView&&F.cyMonProd&&F.fcProdMon){
+    var qty=!!f._prodQtyView, ph=['순위','품번','품명','규격'].concat(MON).concat(['합계']).concat(MON.map(function(m){return m+' 조정%';})).concat(['메모']),pa=[ph];
+    (E.prodArr||[]).forEach(function(o,i){
+      var vals=MON.map(function(_,k){var m=k+1,map=m<=E.lastAct?F.cyMonProd[m]:F.fcProdMon[m],e=map&&map.get(o.pk);return Math.round(e?(qty?(e.qty||0):(e.amt||0)):0);});
+      var mp=(f.prodMonthPct||{})[o.pk]||{};
+      pa.push([i+1,o.code,o.name,o.spec].concat(vals).concat([vals.reduce(function(a,b){return a+b;},0)]).concat(MON.map(function(_,k){var v=mp[k+1];return(v==null||v==='')?'':+v;})).concat([(f.prodMemo||{})[o.pk]||'']));
+    });
+    dlXLSX('forecast_product_monthly_'+(qty?'qty_':'')+yr+'.xlsx',qty?'제품월별목표수량':'제품월별목표금액',pa);return;
+  }
   if(which==='cust'){
     var head=['거래처','실적(1~'+E.lastAct+'월)','전년('+E.PY+')','올해목표('+E.CY+')','거래처 제외','목표합산 제외','증감액','증감%','조정%','추가%','메모'].concat(MON.map(function(m){return m+'%';}));
     var aoa=[head];
