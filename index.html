@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v840</title>
-<script>window.APP_BUILD='v840';</script>
+<title>동방파스텍 매출 분석 도구 v842</title>
+<script>window.APP_BUILD='v842';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1927,7 +1927,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v840</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v842</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -35637,6 +35637,216 @@ window.fcSyncSizeWarnV839=function(){
   if(document.readyState==='complete')setTimeout(boot,600);
   else window.addEventListener('load',function(){setTimeout(boot,600);},{once:true});
 })();
+})();
+</script>
+
+<script id="v841-yearplan-fine-sync">
+/* ══════════ v841 · 연도별 목표안을 «작게 쪼개서» 확실히 동기화 ══════════
+   그동안 2027 목표안 전체를 한 덩어리(fcYearPlans)로 보내서, 구글시트 한 칸 한도(50,000자)에
+   걸리면 그 칸이 통째로 저장 실패 → 다른 PC는 영영 못 받았습니다. (v839에서 연도별로 2등분)
+   v841은 여기서 더 나아가 «연도 × 목표안 × 항목» 단위로 쪼갭니다.
+     fcY2027p1_pct · fcY2027p1_custMonthPct · fcY2027p2_override · fcY2027_activePlan …
+   · 한 칸이 커질 일이 없습니다(가장 큰 항목도 15,000자 안팎).
+   · 항목 단위로 합쳐지므로 두 PC가 서로 다른 거래처를 고쳐도 둘 다 살아남습니다.
+   · 예전 방식(fcYearPlans · fcYP_연도)으로 오는 자료도 그대로 받습니다(섞여 있어도 안전).
+   · 「월별 목표 %」(pct)·업체/제품 월%·조정%·추가%·신규등록·확정월·목표안 선택까지 모두 포함합니다. */
+(function(){
+'use strict';
+var KEYS=['pct','pctAt','override','overrideAt','addPct','addPctAt','prodOverride','prodAddPct',
+          'custProdOverride','custMonthPct','prodMonthPct','newCusts','newProds','newLines',
+          'newCustReplacements','actualCutoffMonth'];
+var RE=/^fcY(\d{4})p([12])_([A-Za-z]+)$/, REA=/^fcY(\d{4})_activePlan$/;
+
+function yp(){ try{ var f=state.fc; if(!f)return null;
+  if(!f.yearPlans||typeof f.yearPlans!=='object'||Array.isArray(f.yearPlans))f.yearPlans={};
+  return f.yearPlans; }catch(_e){ return null; } }
+function yearNode(y,make){ var s=yp(); if(!s)return null;
+  var n=s[String(y)]; if(!n&&!make)return null;
+  if(!n||typeof n!=='object'){ if(!make)return null; n=s[String(y)]={}; }
+  if(!n.targetPlans||typeof n.targetPlans!=='object'){ if(!make)return n; n.targetPlans={}; }
+  return n; }
+function planNode(y,p,make){ var n=yearNode(y,make); if(!n||!n.targetPlans)return null;
+  var pl=n.targetPlans[p]; if(!pl||typeof pl!=='object'){ if(!make)return null; pl=n.targetPlans[p]={}; }
+  return pl; }
+function years(){ var s=yp(),out=[]; if(!s)return out;
+  Object.keys(s).forEach(function(y){ if(/^\d{4}$/.test(String(y)))out.push(String(y)); });
+  try{ var t=String((typeof fcTargetYear==='function')?fcTargetYear():''); if(/^\d{4}$/.test(t)&&out.indexOf(t)<0)out.push(t); }catch(_e){}
+  return out.sort(); }
+
+/* ── 보내기 : 큰 덩어리를 빼고 잘게 나눈 항목을 넣습니다 ── */
+if(typeof window.gsFields==='function'&&!window.gsFields.__v841f){
+  var nf=window.gsFields;
+  var wf=function(){
+    var rows=nf.apply(this,arguments);
+    try{
+      if(!yp())return rows;
+      rows=rows.filter(function(r){ return r[0]!=='fcYearPlans'&&String(r[0]).indexOf('fcYP_')!==0; });
+      years().forEach(function(y){
+        var node=yearNode(y,true); if(!node)return;
+        rows.push(['fcY'+y+'_activePlan',node,'activePlan']);
+        ['1','2'].forEach(function(p){
+          var pl=planNode(y,p,true); if(!pl)return;
+          KEYS.forEach(function(k){
+            if(!(k in pl))pl[k]=(k==='newLines')?[]:(k==='actualCutoffMonth'?0:{});
+            rows.push(['fcY'+y+'p'+p+'_'+k,pl,k]);
+          });
+        });
+      });
+    }catch(_e){}
+    return rows;
+  };
+  wf.__v841f=true; window.gsFields=wf; try{ gsFields=wf; }catch(_e){}
+}
+
+/* ── 받기 : 내 PC에 없는 연도·항목까지 빠짐없이 ── */
+window.fcApplyYearFineV841=function(d){
+  if(!d||typeof d!=='object')return 0;
+  var n=0;
+  try{
+    /* 예전 방식 먼저(있으면) */
+    if(d.fcYearPlans){ try{ gsApplyField('fcYearPlans',state.fc,'yearPlans',d.fcYearPlans); n++; }catch(_e){} }
+    Object.keys(d).forEach(function(k){
+      if(k.indexOf('fcYP_')===0){ var y0=k.slice(5); if(/^\d{4}$/.test(y0)){ try{ gsApplyField(k,yp(),y0,d[k]); n++; }catch(_e){} } return; }
+      var m=REA.exec(k);
+      if(m){ var nd=yearNode(m[1],true); if(nd){ var v=d[k]; nd.activePlan=(v==='2')?'2':'1'; n++; } return; }
+      m=RE.exec(k);
+      if(!m)return;
+      if(KEYS.indexOf(m[3])<0)return;
+      var pl=planNode(m[1],m[2],true); if(!pl)return;
+      try{ gsApplyField(k,pl,m[3],d[k]); n++; }catch(_e2){}
+    });
+  }catch(_e){}
+  return n;
+};
+try{
+  var _ad=window.fcAdoptYearPlanV837;
+  if(typeof _ad==='function'&&!_ad.__v841){
+    var w=function(){ try{ window.fcApplyYearFineV841(window.__GS_LAST_DATA_V839); }catch(_e){} return _ad.apply(this,arguments); };
+    w.__v841=true; window.fcAdoptYearPlanV837=w;
+  }
+}catch(_e){}
+
+/* ── 눈으로 확인하는 점검 : 콘솔 또는 window.fcSyncCheckV841() ── */
+window.fcSyncCheckV841=function(){
+  var out={큰항목:[],연도:[],합계:0};
+  try{
+    var o=gsFullObj();
+    Object.keys(o).forEach(function(k){
+      var n=0; try{ n=JSON.stringify(o[k]==null?'':o[k]).length; }catch(_e){ return; }
+      out.합계+=n;
+      if(n>40000)out.큰항목.push(k+' '+n.toLocaleString()+'자');
+    });
+    years().forEach(function(y){
+      var cnt=0,size=0;
+      Object.keys(o).forEach(function(k){ if(k.indexOf('fcY'+y)===0){ cnt++; try{ size+=JSON.stringify(o[k]==null?'':o[k]).length; }catch(_e){} } });
+      var pl=planNode(y,(yearNode(y)||{}).activePlan==='2'?'2':'1');
+      out.연도.push({연도:y,항목수:cnt,크기:size,목표안:(yearNode(y)||{}).activePlan||'1',
+        '월별목표%':pl?Object.keys(pl.pct||{}).filter(function(m){return pl.pct[m]!=null&&pl.pct[m]!=='';}).length:0});
+    });
+  }catch(_e){}
+  try{
+    console.log('%c[동기화 점검] 전체 '+out.합계.toLocaleString()+'자','font-weight:bold');
+    console.table(out.연도);
+    if(out.큰항목.length)console.warn('한 칸 한도(50,000자)에 가까운 항목:',out.큰항목.join(' · '));
+    else console.log('한 칸 한도를 넘는 항목 없음 ✔');
+  }catch(_c){}
+  return out;
+};
+try{ setTimeout(function(){ try{ window.fcSyncCheckV841(); }catch(_e){} },6000); }catch(_e){}
+})();
+</script>
+
+<script id="v842-snapshot-restore-fix">
+/* ══════════ v842 · 「% 값 되돌리기」가 먹지 않던 문제 ══════════
+   「이 시점으로」를 누르면 값을 되돌려 놓지만, 바로 뒤에 호출되는 saveSettings()·forecast() 가
+   «초기화 기록(fcResetLedgerV841)» 을 적용(enforce)해서 방금 되돌린 칸을 **즉시 다시 지웁니다.**
+   그래서 106건을 되돌려도 화면은 0건 그대로였습니다. (목록에 0건 기록이 반복해 쌓인 이유이기도 합니다)
+   또 2026년 목표 시점을 2027년 화면에서 누르면 «다른 연도» 편집값에 덮어써졌습니다.
+   수정 ① 되돌릴 때 그 연도의 해당 항목 초기화 기록을 먼저 지웁니다(사용자가 되돌리라고 한 것이므로).
+        ② 기록이 남긴 연도로 먼저 전환한 뒤 되돌립니다.
+        ③ 되돌린 값을 그 연도 보관함에 확정 저장하고 다시 그립니다.
+        ④ 창에 「초기화 기록 비우기」 버튼을 넣어, 기록이 꼬였을 때 직접 풀 수 있게 합니다. */
+(function(){
+'use strict';
+var LS='fcResetLedgerV841';
+var F8=['custMonthPct','prodMonthPct','override','addPct','prodOverride','prodAddPct','pct','custProdOverride',
+        'newCusts','newProds','newLines','newCustReplacements'];
+
+function readL(){ var a={}; try{ a=JSON.parse(localStorage.getItem(LS)||'{}')||{}; }catch(_e){}
+  try{ var b=(state.fc&&state.fc.resetLedgerV841)||{};
+    Object.keys(b).forEach(function(y){ a[y]=a[y]||{at:0,keys:{}}; Object.assign(a[y].keys,(b[y]&&b[y].keys)||{}); }); }catch(_e2){}
+  return a; }
+function writeL(a){ try{ state.fc.resetLedgerV841=a; localStorage.setItem(LS,JSON.stringify(a)); }catch(_e){} }
+
+/* 그 연도의 «% 관련» 초기화 기록을 지웁니다 */
+window.fcLedgerClearYearV842=function(year){
+  var y=String(year||''), a=readL(), e=a[y], n=0;
+  if(!e||!e.keys)return 0;
+  Object.keys(e.keys).forEach(function(k){
+    var base=String(k).split('\u0001')[0];
+    if(F8.indexOf(base)>=0){ delete e.keys[k]; n++; }
+  });
+  if(n)writeL(a);
+  return n;
+};
+
+/* ── 되돌리기 보강 ── */
+try{
+  var orig=window.fcSnapRestoreV803;
+  if(typeof orig==='function'&&!orig.__v842){
+    var w=async function(idx){
+      var it=null;
+      try{ var list=await fcSnapListV803(); it=list[idx]; }catch(_e){}
+      /* ② 기록이 남긴 연도로 먼저 전환 */
+      try{
+        var sy=it&&it.y?String(it.y):'';
+        var cy=String((typeof fcTargetYear==='function')?fcTargetYear():'');
+        if(sy&&cy&&sy!==cy&&typeof fcSwitchYear==='function'){ fcSwitchYear(+sy); }
+      }catch(_e2){}
+      /* ① 그 연도의 초기화 기록을 먼저 해제 — 안 그러면 되돌리자마자 다시 지워집니다 */
+      var freed=0;
+      try{ freed=window.fcLedgerClearYearV842((it&&it.y)||((typeof fcTargetYear==='function')?fcTargetYear():'')); }catch(_e3){}
+      var r=await orig.call(this,idx);
+      /* ③ 되돌린 값을 그 연도 보관함에 확정 저장 */
+      try{
+        var y2=(typeof fcTargetYear==='function')?fcTargetYear():'';
+        if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
+        if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(y2);
+        if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();
+        if(typeof saveSettings==='function')await saveSettings();
+        if(typeof forecast==='function')forecast();
+      }catch(_e4){}
+      try{ console.info('[v842] 되돌리기 — 초기화 기록 '+freed+'건 해제 후 복원'); }catch(_c){}
+      return r;
+    };
+    w.__v842=true; window.fcSnapRestoreV803=w; try{ fcSnapRestoreV803=w; }catch(_e5){}
+  }
+}catch(_e){}
+
+/* ── ④ 창에 「초기화 기록 비우기」 버튼 ── */
+function addBtn(){
+  try{
+    var box=document.querySelector('.fcsnap-go-v803'); if(!box)return;
+    var root=box.closest('div,section,table'); if(!root)return;
+    var host=root.closest('div'); if(!host||host.querySelector('#fcLedClearV842'))return;
+    var head=host.querySelector('button,summary')||host.firstElementChild; if(!head)return;
+    var b=document.createElement('button');
+    b.id='fcLedClearV842'; b.type='button'; b.className='btn ghost';
+    b.style.cssText='font-size:11.5px;padding:4px 11px;margin-left:8px;background:#fef3c7;color:#92400e;border-color:#fde68a;font-weight:800';
+    b.textContent='🧹 초기화 기록 비우기';
+    b.title='이 연도에서 «비웠다»고 기록된 칸들을 모두 해제합니다. 되돌린 값이 자꾸 다시 지워질 때 사용하세요.';
+    b.onclick=async function(){
+      var y=(typeof fcTargetYear==='function')?fcTargetYear():'';
+      var n=window.fcLedgerClearYearV842(y);
+      try{ if(typeof saveSettings==='function')await saveSettings(); }catch(_e){}
+      try{ if(typeof forecast==='function')forecast(); }catch(_e2){}
+      try{ if(typeof uiConfirm==='function')uiConfirm(y+'년의 초기화 기록 <b>'+n+'건</b>을 비웠습니다.<br>이제 되돌린 값이 다시 지워지지 않습니다.'); }catch(_e3){}
+    };
+    head.parentNode.insertBefore(b,head.nextSibling);
+  }catch(_e){}
+}
+try{ new MutationObserver(function(){ addBtn(); }).observe(document.body,{childList:true,subtree:true}); }catch(_e){}
+setInterval(addBtn,1200);
 })();
 </script>
 
