@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v848</title>
-<script>window.APP_BUILD='v848';</script>
+<title>동방파스텍 매출 분석 도구 v847</title>
+<script>window.APP_BUILD='v847';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -732,6 +732,18 @@
   .fc-cutoff-ctl{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#1e3a5f;background:#eef2f8;border:1px solid #d4ddea;border-radius:8px;padding:4px 9px}
   .fc-cutoff-ctl select{font-family:inherit;font-size:12px;font-weight:700;padding:2px 4px;border:1px solid #c3cede;border-radius:6px;background:#fff;color:#1e3a5f;cursor:pointer}
   #fcCutoffSel{width:66px;min-width:66px}
+  /* v848 : Windows/Chromium이 네이티브 select 목록을 OS 다크 테마로 따로 그리면
+     option CSS가 무시되어 검은 박스가 되는 문제가 있습니다. 실적확정만 HTML 목록으로 표시합니다. */
+  #fcCutoffSel.fc-cutoff-native{display:none!important}
+  .fc-cutoff-ctl.fc-cutoff-custom{position:relative;overflow:visible}
+  .fc-cutoff-btn{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;width:66px;min-width:66px;height:27px;box-sizing:border-box;padding:2px 7px;border:1px solid #c3cede;border-radius:6px;background:#fff!important;color:#1e3a5f!important;font:700 12px/1.2 inherit;cursor:pointer;box-shadow:none!important;transform:none!important;filter:none!important}
+  .fc-cutoff-btn:hover,.fc-cutoff-btn:focus,.fc-cutoff-btn[aria-expanded="true"]{border-color:#60a5fa;background:#eff6ff!important;outline:none;box-shadow:0 0 0 2px rgba(96,165,250,.18)!important}
+  .fc-cutoff-caret{font-size:10px;color:#64748b;line-height:1}
+  .fc-cutoff-menu{position:absolute;z-index:10020;top:calc(100% + 4px);right:26px;width:74px;max-height:318px;overflow-y:auto;box-sizing:border-box;padding:4px;border:1px solid #cbd5e1;border-radius:8px;background:#fff!important;color:#1e3a5f!important;box-shadow:0 10px 28px rgba(15,23,42,.20);color-scheme:light}
+  .fc-cutoff-menu[hidden]{display:none!important}
+  .fc-cutoff-opt{display:block;width:100%;min-height:28px;margin:0;padding:5px 8px;border:0;border-radius:5px;background:#fff!important;color:#1e3a5f!important;font:700 12px/1.2 inherit;text-align:left;cursor:pointer;box-shadow:none!important;transform:none!important;filter:none!important}
+  .fc-cutoff-opt:hover,.fc-cutoff-opt:focus{background:#eff6ff!important;color:#1d4ed8!important;outline:none}
+  .fc-cutoff-opt[aria-selected="true"]{background:#dbeafe!important;color:#1e3a8a!important}
   /* v843 : 윈도우 크롬·엣지에서 펼침 목록이 «검은 상자»로 나오던 문제.
      목록(option)은 select 의 배경을 물려받는데 값이 비면 검정으로 칠해집니다.
      밝은 테마로 고정하고 항목 색을 직접 지정합니다. */
@@ -1938,7 +1950,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v848</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v847</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -2252,6 +2264,20 @@ let datasets=[];     // [{uid, fileName, sheetName, sheetNames:[], recs:[{d,cust
 let RAWMEM={};       // uid -> {sheetName:{headers,rows}}  (session only)
 let CUR=[];          // flattened records w/ Date + period keys
 let uidSeq=1;
+/* v860 : 로컬 일반설정 → 연도별 설정 → 서버설정이 차례로 들어오는 동안
+   매출목표의 중간값을 화면에 노출하지 않습니다. */
+window.__FC_BOOT_BLOCK_V860=true;
+window.__FC_BOOT_WANTS_RENDER_V860=false;
+window.fcBootWaitV860=function(){
+  try{
+    var r=document.getElementById('result'); if(!r)return;
+    if(r.querySelector&&r.querySelector('#fcBootWaitV860'))return;
+    r.innerHTML='<div id="fcBootWaitV860" style="margin:16px 0;padding:34px 24px;border:1px solid #bfdbfe;border-radius:14px;background:#f8fbff;text-align:center;color:#1e3a5f">'
+      +'<div style="display:inline-block;width:18px;height:18px;border:3px solid #93c5fd;border-top-color:#1d4ed8;border-radius:50%;animation:gsSpin .8s linear infinite;vertical-align:-4px;margin-right:9px"></div>'
+      +'<b style="font-size:15px">최신 매출목표를 확인하고 있습니다</b>'
+      +'<div style="margin-top:8px;font-size:12px;color:#64748b">연도별 목표와 동기화 자료를 모두 확인한 뒤 정확한 결과만 표시합니다.</div></div>';
+  }catch(_e){}
+};
 let state={ basis:'공급가', unit:1, period:'year', periodKey:null, periodYear:null, workdays:{}, bep:0, clsOverride:{}, gradeOverride:{}, gbunOverride:{}, specKindOverride:{}, mixCustomCats:[], salesQtyAnalysis:{view:'product',threshold:10,basis:'total',mergeCode:true,show:'low',mix:'전체',group:'전체',search:'',sort:{key:'basisQty',dir:'asc'},selectedKey:'',exLaser:false}, region:{level:'do'}, credit:{cat:null,by:'status'}, retain:{issue:false,showExcl:false,visitOnly:false,exclOnly:false}, retainMemo:{}, retainMemoAt:{}, retainExcl:{}, retainVisit:{}, cmgrExcl:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true}, elogSeenTs:0, cross:{base:'',baseSpec:'',targets:[''],filter:'all'}, ir:{target:'all',view:'spec',sm:10}, trend2:{win:12,dim:'cust',grp:'none',catSel:null,mixSel:'전체'}, clsCat:null, clsCustSearch:'', rankMonthly:false, rankMonYear:null, rankGroupDrillMetric:'amt', prodRankMonthly:false, prodRankYear:null, prodDrillMonthly:false, prodDrillYear:null, mixSalesView:'category', mixSalesMonthly:false, mixSalesYear:null, homeSpecBasis:'amt', monthIssue:{}, price:{mode:'cust',histMode:'all',mixBasis:'qty',rangeStart:'',rangeEnd:''}, weekly:{page:1,year:null,month:null,week:null,periodMode:'week',rangeStart:'',rangeEnd:'',topN:20,topPct:80,rankMode:'count',notes:{},issues:{},newCustomerNotes:{},commonPlans:{},issueScope:'current',issueSearch:'',issueDraft:null,issueEditId:null,issueAuthor:''}, priceSets:[], setDraft:{title:'',items:[{name:'',spec:'',code:'',qty:1,price:'',cost:'',profit:''}]}, rangeStart:null, rangeEnd:null, headcount:53, headMonthly:{}, headYearDefault:{}, mgrOverride:{}, cmgrPrimary:{}, cmgrKey:{}, scrapVendors:[], scrapVendorOff:{}, kvcExclProd:{}, doorFrame:{map:{},view:'cust',listFilter:'전체',search:'',limit:120,sortMode:'sales'}, salesMonthlySync:{}, laserMonthlySync:{}, purchaseMonthlySync:{}, gsync:{url:'',key:'',auto:true,lastSync:'',user:'',syncCount:0},syncLog:{}, act:null, sortKey:null, sortDir:-1, _search:'', chipVal:null, lastData:null,
   inv:{lt:14,z:'95',dfilter:'전체',actual:{},exclude:{},stab:'rec'}, cmgr:{fs:'전체',fe:'전체',ft:'전체',search:'',mode:'none',year:'cy',sortKey:'a',sortDir:-1,editKey:null,cardsOpen:false,infoMode:false,addrMode:false,addrSort:'amt',exclMode:false,showPrev:false,showLaser:false}, custInfo:{}, custAddr:{}, pd:{labor:{1:18912008,2:11016122,3:10729149,4:6283887,5:3589118},process:{1:33311650,2:23295890,3:19221300,4:13994850,5:12362080},indirect:{1:2016627,2:338637,3:1667136,4:625176,5:2298824},useLabor:true,useProcess:true,useIndirect:true,actual:{},estimate:false}, pareto:{dim:'cust',mode:'pct',topN:20,threshold:80,showRest:false,period:'all',m1:1,m2:12,year:'all'}, cmp:{period:'1분기',dim:'cust',m1:1,m2:12,year:null,filter:null}, trend:{showPY:false,editorOpen:false,pdOpen:false,scrapOpen:false}, fc:{actualCutoffMonth:5,activePlan:'1',targetPlans:null,pct:{},override:{},addPct:{},newCusts:{},newCustReplacements:{},prodOverride:{},prodAddPct:{},custProdOverride:{},custMonthPct:{},prodMonthPct:{},newProds:{},newLines:[],custMemo:{},prodMemo:{},notesHtml:'',notesTeam:'',notesSales:'',notesTech:'',notesTab:'main',notesMeta:{main:{},team:{},sales:{},tech:{}},issC:false,issP:false,hideActTgt:false,exclCust:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true},targetExclCust:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true},exclProd:{},showExcl:false,showExclRows:false,annualHist:{2019:7531847061,2020:7404376660,2021:8806423871,2022:10484011261,2023:12035275080,2024:11218223843},annualOpen:false,period:'all',m1:6,m2:12,dim:'cust',showPY:false,sortKey:null,sortDir:-1} };
 
@@ -2311,7 +2337,7 @@ function fcSaveYearPlan(y){ const f=state.fc; fcSyncActivePlan();
   store[K]={targetPlans:fcPlanClone(f.targetPlans),activePlan:(f.activePlan==='2'?'2':'1')}; }
 function fcSwitchYear(y){
   const f=state.fc, cur=fcTargetYear(), next=+y;
-  if(next===cur)return;
+  if(next===cur)return false;
   fcSaveYearPlan(cur);
   f.targetYear=next;
   const st=fcYearStore()[String(next)];
@@ -2391,7 +2417,9 @@ function fcSwitchYear(y){
   fcEnsureTargetPlans();
   try{ _fcBaseAggCache=null; }catch(_e){}
   try{ window.FC_CHART_V677=null; }catch(_e){}
-  try{ saveSettings(); }catch(_e){}
+  /* v859 : 연도 버튼을 누른 순간 무거운 전체 저장을 시작하지 않고 화면을 먼저 바꿉니다. */
+  try{ if(typeof v796SaveSoon==='function')v796SaveSoon(); else setTimeout(function(){try{saveSettings();}catch(_x){}},0); }catch(_e){}
+  return true;
 }
 /* ══════════ v718 · 예전 버전에서 «다음 연도 목표»로 넘어온 설정 1회 이관 ══════════
    v712~v713 시점에 연도를 넘긴 파일은 「목표합산 제외 업체 · 매출 목표전략 · PD 임가공비 ·
@@ -10047,7 +10075,7 @@ function retain(){
     {k:'last',t:'마지막출고',w:'84px',cell:o=>fmtD(o.last)},
     {k:'amt',t:`누적매출(${unitLabel()})`,w:'96px',cell:o=>disp(o.amt)},
     {k:'share',t:'매출비중',w:'78px',cell:o=>`<b>${o.share.toFixed(1)}%</b>`},
-    {k:'_memo',t:'📌 이슈내용',cls:'l rt-memo',w:'255px',nosort:true,cell:o=>{ const v=state.retainMemo[o.key]||''; const at=state.retainMemoAt[o.key]; return `<div onclick="event.stopPropagation()"><input type="text" class="rtmemo${v?' editedm':''}" data-c="${esc(o.key)}" value="${esc(v)}" placeholder="이슈 메모 ([전략] 자동연동)"><div class="rtmemoat" data-c="${esc(o.key)}" style="font-size:9.5px;color:#94a3b8;margin-top:2px">${(state.showElog&&at)?('✎ '+editStamp(at)):''}</div></div>`; }} ];
+    {k:'_memo',t:'📌 이슈내용',cls:'l rt-memo',w:'255px',nosort:true,cell:o=>{ const v=state.retainMemo[o.key]||''; const at=state.retainMemoAt[o.key]; return `<div onclick="event.stopPropagation()"><input type="text" class="rtmemo${v?' editedm':''}" data-c="${esc(o.key)}" value="${esc(v)}" placeholder="이슈 메모"><div class="rtmemoat" data-c="${esc(o.key)}" style="font-size:9.5px;color:#94a3b8;margin-top:2px">${(state.showElog&&at)?('✎ '+editStamp(at)):''}</div></div>`; }} ];
   const _visitCnt=Object.keys(state.retainVisit||{}).filter(k=>state.retainVisit[k]).length;
   const rtHead=`<button class="btn ghost" id="rtVisitBtn" style="font-size:11px;padding:5px 10px;${state.retain.visitOnly?'background:#fef3c7;color:#713f12;border-color:#fcd34d;font-weight:700':''}">🚩 방문필요${_visitCnt>0?'('+_visitCnt+')':''}${state.retain.visitOnly?' ✓':''}</button> <button class="btn ghost" id="rtIssueBtn" style="font-size:11px;padding:5px 10px;${state.retain.issue?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.retain.issue?' (해제)':''}</button> <button class="btn ghost" id="rtExclOnlyBtn" style="font-size:11px;padding:5px 10px;${state.retain.exclOnly?'background:#dc2626;color:#fff;border-color:#dc2626':''}">🚫 제외만 보기${(()=>{const n=Object.values(state.retainExcl||{}).filter(Boolean).length;return n>0?'('+n+')':''})()}${state.retain.exclOnly?' ✓':''}</button> <button class="btn ghost" id="rtExclBtn" style="font-size:11px;padding:5px 8px;${state.retain.showExcl?'background:#dc2626;color:#fff;border-color:#dc2626':''}">체크제외 ${state.retain.showExcl?'숨기기':'보이기'}</button>`;
   const rtBind=()=>{ const t=$('#tbl'); if(t){ t.classList.toggle('rtissue',!!state.retain.issue); t.classList.toggle('rtshowexcl',!!state.retain.showExcl); }
@@ -11317,20 +11345,25 @@ function setExcludedCust(c,checked){
 // 거래처 표시 제외와 2026 목표합산 제외를 별도 관리한다.
 // 목표합산 제외만 선택하면 거래처·실적은 정상 표시되고 목표액만 0원 처리된다.
 function syncTargetExcludedCustMap(){
-  state.fc=state.fc||{}; state.fc.targetExclCust=state.fc.targetExclCust||{};
+  state.fc=state.fc||{}; state.fc.targetExclCust=state.fc.targetExclCust||{}; state.fc.targetOnlyExcl=state.fc.targetOnlyExcl||{};
+  /* v856 : 예전 PC가 targetOnlyExcl에만 저장한 목표합산 제외값을 1회 호환합니다.
+     현재 맵에 값이 있으면 그것을 우선하고, 정리 뒤에는 두 이름을 같은 내용으로 맞춰
+     PC별 버전 차이로 체크가 되살아나거나 사라지지 않게 합니다. */
+  const modernHas=Object.values(state.fc.targetExclCust).some(Boolean);
+  if(!modernHas)Object.entries(state.fc.targetOnlyExcl).forEach(([c,v])=>{ if(v)state.fc.targetExclCust[c]=true; });
   const universe=fcCustomerUniverse(), canonical=new Map();
   universe.forEach(c=>{ const k=fcCustKey(c), prev=canonical.get(k); if(!prev || (/\(폐업\)\s*$/.test(prev) && !/\(폐업\)\s*$/.test(c))) canonical.set(k,c); });
   const sourceName=new Map(), keys=new Set();
   Object.entries(state.fc.targetExclCust||{}).forEach(([c,v])=>{ if(!v)return; const k=fcCustKey(c); keys.add(k); if(!sourceName.has(k))sourceName.set(k,String(c||'').trim()); });
   const merged={}; keys.forEach(k=>{ const name=canonical.get(k)||sourceName.get(k); if(name)merged[name]=true; });
-  state.fc.targetExclCust=merged; return merged;
+  state.fc.targetExclCust=merged; state.fc.targetOnlyExcl={...merged}; return merged;
 }
 function setTargetExcludedCust(c,checked){
   if(!c)return;
-  state.fc=state.fc||{}; state.fc.targetExclCust=state.fc.targetExclCust||{};
+  state.fc=state.fc||{}; state.fc.targetExclCust=state.fc.targetExclCust||{}; state.fc.targetOnlyExcl=state.fc.targetOnlyExcl||{};
   const k=fcCustKey(c);
-  Object.keys(state.fc.targetExclCust).forEach(n=>{ if(fcCustKey(n)===k)delete state.fc.targetExclCust[n]; });
-  if(checked)state.fc.targetExclCust[c]=true;
+  [state.fc.targetExclCust,state.fc.targetOnlyExcl].forEach(obj=>Object.keys(obj).forEach(n=>{ if(fcCustKey(n)===k)delete obj[n]; }));
+  if(checked){ state.fc.targetExclCust[c]=true; state.fc.targetOnlyExcl[c]=true; }
 }
 function fcTargetOnlyKeySet(){
   const keys=new Set();
@@ -11380,7 +11413,7 @@ function fcFutLabel(){ var c=fcCutoffMonth(); return c>=12?'12월 이후 없음'
 /* v717 : 목표 연도·기준 목표안 묶음 (목표안보다 «앞»에 놓기 위해 분리) */
 function fcYearSelectorHTML(){ try{ fcCutoffSelectorHTML(); }catch(_e){} return window.__FC_YEAR_HTML||''; }
 function fcYearNoteHTML(){ return window.__FC_YEAR_NOTE||''; }
-function fcCutoffSelectorHTML(){ var c=fcCutoffMonth(); var o='<option value="0"'+(c===0?' selected':'')+'>없음</option>'; for(var i=1;i<=12;i++){o+='<option value="'+i+'"'+(i===c?' selected':'')+'>'+i+'월</option>';} /* v712 : 목표 연도 선택 — 기준연도(진행 중) / 다음 연도(신규 목표) */
+function fcCutoffSelectorHTML(){ var c=fcCutoffMonth(); var o='<option value="0"'+(c===0?' selected':'')+'>없음</option>', mo='<button type="button" class="fc-cutoff-opt" role="option" data-v="0" aria-selected="'+(c===0?'true':'false')+'">없음</button>'; for(var i=1;i<=12;i++){o+='<option value="'+i+'"'+(i===c?' selected':'')+'>'+i+'월</option>';mo+='<button type="button" class="fc-cutoff-opt" role="option" data-v="'+i+'" aria-selected="'+(i===c?'true':'false')+'">'+i+'월</button>';} /* v712 : 목표 연도 선택 — 기준연도(진행 중) / 다음 연도(신규 목표) */
   var dm=fcDataYearMax(), ty=fcTargetYear(), nx=dm+1;
   var yb='<label class="fc-cutoff-ctl fc-year-ctl" title="다음 연도 목표는 «기준연도 실적(확정월까지) + 기준연도 목표(미도래월)»를 기준으로 계산합니다. 연도별로 목표안이 따로 저장되어 기존 연도 목표는 그대로 남습니다."><span>목표 연도</span> '+
     '<span class="seg" id="fcYearSeg" style="margin-left:4px">'+
@@ -11412,13 +11445,14 @@ function fcCutoffSelectorHTML(){ var c=fcCutoffMonth(); var o='<option value="0"
   }
   var note=fcIsNextYearMode()?('<span class="fc-year-note" style="display:inline-flex;align-items:center;gap:5px;margin-left:6px;padding:3px 10px;border-radius:999px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;font-size:11.5px;font-weight:800">🆕 '+nx+'년 목표 작성 중 · 기준 '+dm+'년 '+((fcBaseYearPlan()||'1')==='2'?'수정 2안':'수정 1안')+(function(){ var _c=fcBasePlanV712().cut; var _fl=(typeof fcBaseFutureLabelV741==='function')?fcBaseFutureLabelV741():'목표수정액'; return _c>=12?'(1~12월 실적)':(_c<=0?'(1~12월 '+_fl+')':('(1~'+_c+'월 실적 + '+(_c+1)+'~12월 '+_fl+')')); })()+'</span>'):'';
   window.__FC_YEAR_HTML=yb+bpick; window.__FC_YEAR_NOTE=note;
-  return '<label class="fc-cutoff-ctl" title="현재 선택한 목표안에만 실적확정 월을 저장합니다. 선택한 달까지를 확정실적으로 고정하고 이후 월은 목표로 계산합니다."><span>실적확정('+fcTargetPlanLabel()+')</span> <select id="fcCutoffSel">'+o+'</select> <span class="fc-cutoff-ub">까지</span></label>'; }
+  var cv=c===0?'없음':c+'월';
+  return '<span class="fc-cutoff-ctl fc-cutoff-custom" title="현재 선택한 목표안에만 실적확정 월을 저장합니다. 선택한 달까지를 확정실적으로 고정하고 이후 월은 목표로 계산합니다."><span>실적확정('+fcTargetPlanLabel()+')</span> <select id="fcCutoffSel" class="fc-cutoff-native" tabindex="-1" aria-hidden="true">'+o+'</select><button type="button" id="fcCutoffBtn" class="fc-cutoff-btn" aria-haspopup="listbox" aria-expanded="false"><span>'+cv+'</span><span class="fc-cutoff-caret">▾</span></button> <span class="fc-cutoff-ub">까지</span><span id="fcCutoffMenu" class="fc-cutoff-menu" role="listbox" hidden>'+mo+'</span></span>'; }
 function bindFcCutoffSelector(rerun){ bindFcTargetPlanSelector('fcTargetPlanSel',rerun);
   /* v712 : 목표 연도 전환 */
   var _ys=document.getElementById('fcYearSeg');
   if(_ys)_ys.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(e){
     e.preventDefault(); e.stopPropagation();
-    fcSwitchYear(+b.dataset.y);
+    if(fcSwitchYear(+b.dataset.y)===false)return;
     if(typeof logEdit==='function')logEdit('매출 목표','목표 연도 '+b.dataset.y+'년으로 전환');
     if(typeof rerun==='function')rerun(); else if(typeof forecast==='function')forecast();
   }); });
@@ -11450,7 +11484,19 @@ function bindFcCutoffSelector(rerun){ bindFcTargetPlanSelector('fcTargetPlanSel'
     if(typeof logEdit==='function')logEdit('매출 목표','기준연도 이후월 기준 '+(state.fc.baseFutureMode==='plan'?'월 목표':'목표수정액')+' 선택');
     if(typeof rerun==='function')rerun(); else if(typeof forecast==='function')forecast();
   }); }
-  var sel=document.getElementById('fcCutoffSel'); if(!sel)return; sel.addEventListener('change',function(){
+  var sel=document.getElementById('fcCutoffSel'); if(!sel)return;
+  /* v848 : 네이티브 펼침 목록을 열지 않고, 항상 밝은 HTML 목록을 사용합니다.
+     선택결과는 기존 select에 change를 보내므로 저장·계산 로직은 그대로입니다. */
+  var _cb=document.getElementById('fcCutoffBtn'), _cm=document.getElementById('fcCutoffMenu');
+  if(_cb&&_cm){
+    var _closeCut=function(){ _cm.hidden=true; _cb.setAttribute('aria-expanded','false'); };
+    var _openCut=function(){ _cm.hidden=false; _cb.setAttribute('aria-expanded','true'); var cur=_cm.querySelector('[aria-selected="true"]'); if(cur)try{cur.focus({preventScroll:true});}catch(_f){cur.focus();} };
+    _cb.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); if(_cm.hidden){_openCut(); setTimeout(function(){document.addEventListener('click',_closeCut,{once:true});},0);}else _closeCut(); });
+    _cb.addEventListener('keydown',function(e){ if(e.key==='ArrowDown'||e.key==='Enter'||e.key===' '){e.preventDefault();_openCut();} });
+    _cm.addEventListener('click',function(e){ var b=e.target.closest('.fc-cutoff-opt'); if(!b)return; e.preventDefault();e.stopPropagation();sel.value=b.dataset.v;_closeCut();sel.dispatchEvent(new Event('change',{bubbles:true})); });
+    _cm.addEventListener('keydown',function(e){ var a=Array.from(_cm.querySelectorAll('.fc-cutoff-opt')),n=a.indexOf(document.activeElement); if(e.key==='Escape'){e.preventDefault();_closeCut();_cb.focus();}else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();n=(n+(e.key==='ArrowDown'?1:-1)+a.length)%a.length;a[n].focus();}else if(e.key==='Enter'||e.key===' '){e.preventDefault();document.activeElement.click();} });
+  }
+  sel.addEventListener('change',function(){
     var m=fcNormalizeCutoff(sel.value); state.fc.actualCutoffMonth=m;
     /* v843 : 고르는 즉시 목록이 닫히도록 포커스를 풀고, 로그·동기화 밀어내기 같은 «화면과 무관한 뒷일»만
        그린 뒤로 미룹니다. 값 반영·저장 순서는 예전 그대로라 선택이 되돌아가지 않습니다. */
@@ -11574,6 +11620,10 @@ fcAnnualTargetSummary=function(plan){
    읽기 직전에 항상 형태를 맞춰 줍니다. */
 function pdEnsure(){ const pd=(state.pd&&typeof state.pd==='object')?state.pd:(state.pd={});
   ['labor','process','indirect','actual'].forEach(function(k){ if(!pd[k]||typeof pd[k]!=='object'||Array.isArray(pd[k]))pd[k]={}; });
+  /* v856 : 구버전/부분 동기화 자료에는 사용 체크값이 없을 수 있습니다.
+     명시적인 false는 그대로 존중하고, 필드 자체가 없을 때만 기존 기본값(true)을 복원합니다. */
+  ['useLabor','useProcess','useIndirect'].forEach(function(k){ if(!Object.prototype.hasOwnProperty.call(pd,k))pd[k]=true; });
+  if(!Object.prototype.hasOwnProperty.call(pd,'estimate'))pd.estimate=false;
   return pd; }
 function pdAvg(cat){ pdEnsure(); let s=0,n=0; for(let mm=1;mm<=fcCutoffMonth();mm++){ const v=+state.pd[cat][mm]||0; if(v){s+=v;n++;} } return n?Math.round(s/n):0; }
 /* v850 : 다음 목표연도 자동계획은 직전연도 1~12월 전체 평균(빈 달은 0원 포함)을 사용합니다. */
@@ -12261,7 +12311,9 @@ var _fcBase27Cache=null;
     return data;
   };
 })();
-function forecast(){ state._inDrill=false;
+function forecast(){
+  if(window.__FC_BOOT_BLOCK_V860){ window.__FC_BOOT_WANTS_RENDER_V860=true; try{window.fcBootWaitV860();}catch(_e){} return; }
+  state._inDrill=false;
   /* v846: 목표 화면에서는 담당자·업체분류·신용상태 필터를 사용하지 않습니다. 이전 선택도 해제합니다. */
   try{ mgrFilter.s='전체';mgrFilter.t='전체';clsFilter='전체';statusFilter='전체';state.fc.fOpen=null; }catch(_e){}
   syncExcludedCustMaps();
@@ -12652,8 +12704,30 @@ function forecast(){ state._inDrill=false;
   custArr.forEach(o=>{ o.excl=fcDisplayExSet.has(o.c); o.targetOnly=fcTargetOnlyKeys.has(fcCustKey(o.c)); o.targetExcl=fcExSet.has(o.c); if(o.targetExcl){ o.proj=0; o.diff=-o.prev; o.pct=o.prev?-100:0; o.ov=''; o.ad=''; } });
   const custArrTotalBase=custArr.slice();
   const fcExclSummaryVisible=state.fc.showExclRows||state.fc.showExcl;
-  const fcTradeExclRows=custArrTotalBase.filter(o=>o.excl).sort((a,b)=>(b.prev+b.ytd)-(a.prev+a.ytd));
-  const fcTargetExclRows=custArrTotalBase.filter(o=>o.targetOnly).sort((a,b)=>(b.prev+b.ytd)-(a.prev+a.ytd));
+  /* v863 : 제외옵션 버튼과 펼친 표가 같은 «전체 거래처 기준»으로 셉니다.
+     기존 표는 금액이 있는 custArr에서만 골라 0원·기간외 업체가 누락됐고,
+     별칭/폐업 표기가 함께 있으면 버튼(정규화 수)과 표(행 수)가 달라질 수 있었습니다. */
+  const fcSelectedExclRows=(selectedKeys)=>{
+    const canonical=new Map();
+    fcCustomerUniverse().forEach(c=>{ const k=fcCustKey(c),old=canonical.get(k); if(!old||(/\(폐업\)\s*$/.test(old)&&!/\(폐업\)\s*$/.test(c)))canonical.set(k,c); });
+    const byKey=new Map();
+    custArrTotalBase.forEach(o=>{
+      const k=fcCustKey(o.c); if(!selectedKeys.has(k)||!canonical.has(k))return;
+      let x=byKey.get(k);
+      if(!x){ x={c:canonical.get(k)||o.c,sales:'',tech:'',ytd:0,prev:0,proj:0}; byKey.set(k,x); }
+      x.ytd+=(+o.ytd||0);x.prev+=(+o.prev||0);x.proj+=(+o.proj||0);
+      if(!x.sales&&o.sales)x.sales=o.sales;if(!x.tech&&o.tech)x.tech=o.tech;
+    });
+    canonical.forEach((c,k)=>{
+      if(!selectedKeys.has(k))return;
+      let x=byKey.get(k);
+      if(!x){ x={c:c,sales:mgrS(c),tech:mgrT(c),ytd:0,prev:0,proj:0}; byKey.set(k,x); }
+      else{ x.c=c;if(!x.sales)x.sales=mgrS(c);if(!x.tech)x.tech=mgrT(c); }
+    });
+    return [...byKey.values()].sort((a,b)=>(b.prev+b.ytd)-(a.prev+a.ytd)||String(a.c).localeCompare(String(b.c),'ko'));
+  };
+  const fcTradeExclRows=fcSelectedExclRows(fcExcludedKeySet());
+  const fcTargetExclRows=fcSelectedExclRows(fcTargetOnlyKeySet());
   const fcExclMini=(title,rows,empty)=>`<div class="fcexcl-mini"><h5>${title}<b>${rows.length}개</b></h5>${rows.length?`<table><thead><tr><th>거래처</th><th>고객관리</th><th>기술개발</th><th>실적</th><th>전년</th><th>목표</th></tr></thead><tbody>${rows.map(o=>`<tr><td>${esc(o.c)}</td><td>${esc(o.sales||'-')}</td><td>${esc(o.tech||'-')}</td><td>${disp(o.ytd||0)}</td><td>${disp(o.prev||0)}</td><td>${disp(o.proj||0)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">${empty}</div>`}</div>`;
   const fcExclOptionSummary=(fcExclSummaryVisible&&(fcTradeExclRows.length||fcTargetExclRows.length))?`<div class="fcexcl-summary"><div class="fcexcl-summary-head">✓ 선택된 제외 옵션만 보기 <span>거래처 제외 ${fcTradeExclRows.length}개 · 목표합산 제외 ${fcTargetExclRows.length}개</span></div><div class="fcexcl-summary-grid">${fcExclMini('거래처 제외 선택',fcTradeExclRows,'선택된 거래처 제외가 없습니다.')}${fcExclMini('목표합산 제외 선택',fcTargetExclRows,'선택된 목표합산 제외가 없습니다.')}</div></div>`:'';
   if(state.fc.showExclRows) custArr=custArr.filter(o=>o.excl); else custArr=custArr.filter(o=>!o.excl);
@@ -12666,17 +12740,22 @@ function forecast(){ state._inDrill=false;
   /* v804 : 값이 0 이면 칸을 비워 둡니다(= 회색 자동값만 보이게). 0 은 «조정 없음»과 같습니다. */
   const fcPctInputValue=v=>{ if(v==null||v==='')return ''; const n=+v; if(isFinite(n))return n===0?'':n.toFixed(1); return v; };
   const fcLinkedTargetEditor=o=>{ const e=fcNewTargetEntry(o.c); if(!e)return ''; return `<span class="fc-linked-target-editor" onclick="event.stopPropagation()"><span>신규목표</span><input type="text" inputmode="numeric" class="fcnewt numfmt" data-c="${esc(e.key)}" value="${(+e.value||0).toLocaleString('en-US')}" title="실제 매출처에 연결된 신규업체 목표액" ${o.targetExcl?'disabled':''}>원</span>`; };
-  let custRows=custArr.map((o,i)=>`<tr class="fcrow${o.excl?' fcexcluded':o.targetOnly?' fctargetexcluded':''}" data-c="${esc(o.c)}"><td class="rank">${i+1}</td><td class="l" style="white-space:nowrap">${esc(o.c)} ${fcNewTargetBadge(o.c)} ${catChip(o.c)} ${o.targetOnly&&!o.excl?'<span class="targetexclbadge">목표합산 제외</span>':''} <label class="exclbox" onclick="event.stopPropagation()" title="거래처 담당자 표에서 숨기고 목표액도 0원 처리"><input type="checkbox" class="fcexcl" data-c="${esc(o.c)}" ${o.excl?'checked':''}>거래처 제외</label><label class="targetexclbox" onclick="event.stopPropagation()" title="거래처와 실적은 표시하고 2026년 목표액만 합계에서 제외"><input type="checkbox" class="fctargetexcl" data-c="${esc(o.c)}" ${o.targetOnly?'checked':''}>목표합산 제외</label></td><td class="mgr">${mgrBadge(mgrS(o.c))}</td><td class="mgr">${mgrBadge(mgrT(o.c))}</td><td>${disp(o.ytd)}${(o.ytdAfter>0)?`<div class="fc-act-after-v805 over" title="실적확정월 이후에도 실제 매출이 있습니다. 목표 기준 표라 합계에는 들어가지 않습니다.">+확정후 ${disp(o.ytdAfter)}</div>`:''}</td><td>${disp(o.prev)}</td><td>${state.fc.issC?`<span class="sub2" style="color:#64748b;font-size:10px;display:block">전년 ${disp(o.prev)}</span>`:''}${disp(o.proj)}${fcLinkedTargetEditor(o)}</td><td>${diffSpan(o.diff)}</td><td>${fcAdjSpan(o.adj)}</td><td>${pctSpan(o.pct)}</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcov" data-c="${esc(o.c)}" value="${fcPctInputValue(o.ov)}" placeholder="${o.targetExcl?'목표제외':fcAutoPctText(o)}" title="자동 적용값 ${fcAutoPctText(o)}% · 직접 입력하면 거래처 조정%로 고정" step="0.1" style="width:56px" ${o.targetExcl?'disabled title="목표합산 제외 업체는 목표액 0원 적용"':''}> %${(state.showElog&&((state.fc.overrideAt&&state.fc.overrideAt[o.c])||(o.ov!==''&&o.ov!=null)))?`<div class="sub2" style="color:#7c3aed;font-size:9px;font-weight:700">✎ 조정 ${o.ov}%${(state.fc.overrideAt&&state.fc.overrideAt[o.c])?' · '+editStamp(state.fc.overrideAt[o.c]):''}</div>`:''}</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcadd" data-c="${esc(o.c)}" value="${fcPctInputValue(o.ad)}" placeholder="${o.targetExcl?'목표제외':'0.0'}" title="신규업체 목표가 연결된 경우에도 전체 업체 목표에 적용됩니다." step="0.1" style="width:56px" ${o.targetExcl?'disabled title="목표합산 제외 업체는 목표액 0원 적용"':''}> %${(state.showElog&&((state.fc.addPctAt&&state.fc.addPctAt[o.c])||(o.ad!==''&&o.ad!=null&&+o.ad!==0)))?`<div class="sub2" style="color:#7c3aed;font-size:9px;font-weight:700">✎ 추가 +${o.ad}%${(state.fc.addPctAt&&state.fc.addPctAt[o.c])?' · '+editStamp(state.fc.addPctAt[o.c]):''}</div>`:''}</td><td onclick="event.stopPropagation()"><input type="text" class="fcmemo" data-c="${esc(o.c)}" value="${esc(state.fc.custMemo[o.c]||'')}" placeholder="이슈 메모 ([전략] 자동연동)" style="width:180px;font-size:11px"></td></tr>`).join('');
+  let custRows=custArr.map((o,i)=>`<tr class="fcrow${o.excl?' fcexcluded':o.targetOnly?' fctargetexcluded':''}" data-c="${esc(o.c)}"><td class="rank">${i+1}</td><td class="l" style="white-space:nowrap">${esc(o.c)} ${fcNewTargetBadge(o.c)} ${catChip(o.c)} ${o.targetOnly&&!o.excl?'<span class="targetexclbadge">목표합산 제외</span>':''} <label class="exclbox" onclick="event.stopPropagation()" title="거래처 담당자 표에서 숨기고 목표액도 0원 처리"><input type="checkbox" class="fcexcl" data-c="${esc(o.c)}" ${o.excl?'checked':''}>거래처 제외</label><label class="targetexclbox" onclick="event.stopPropagation()" title="거래처와 실적은 표시하고 2026년 목표액만 합계에서 제외"><input type="checkbox" class="fctargetexcl" data-c="${esc(o.c)}" ${o.targetOnly?'checked':''}>목표합산 제외</label></td><td class="mgr">${mgrBadge(mgrS(o.c))}</td><td class="mgr">${mgrBadge(mgrT(o.c))}</td><td>${disp(o.ytd)}${(o.ytdAfter>0)?`<div class="fc-act-after-v805 over" title="실적확정월 이후에도 실제 매출이 있습니다. 목표 기준 표라 합계에는 들어가지 않습니다.">+확정후 ${disp(o.ytdAfter)}</div>`:''}</td><td>${disp(o.prev)}</td><td>${state.fc.issC?`<span class="sub2" style="color:#64748b;font-size:10px;display:block">전년 ${disp(o.prev)}</span>`:''}${disp(o.proj)}${fcLinkedTargetEditor(o)}</td><td>${diffSpan(o.diff)}</td><td>${fcAdjSpan(o.adj)}</td><td>${pctSpan(o.pct)}</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcov" data-c="${esc(o.c)}" value="${fcPctInputValue(o.ov)}" placeholder="${o.targetExcl?'목표제외':fcAutoPctText(o)}" title="자동 적용값 ${fcAutoPctText(o)}% · 직접 입력하면 거래처 조정%로 고정" step="0.1" style="width:56px" ${o.targetExcl?'disabled title="목표합산 제외 업체는 목표액 0원 적용"':''}> %${(state.showElog&&((state.fc.overrideAt&&state.fc.overrideAt[o.c])||(o.ov!==''&&o.ov!=null)))?`<div class="sub2" style="color:#7c3aed;font-size:9px;font-weight:700">✎ 조정 ${o.ov}%${(state.fc.overrideAt&&state.fc.overrideAt[o.c])?' · '+editStamp(state.fc.overrideAt[o.c]):''}</div>`:''}</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcadd" data-c="${esc(o.c)}" value="${fcPctInputValue(o.ad)}" placeholder="${o.targetExcl?'목표제외':'0.0'}" title="신규업체 목표가 연결된 경우에도 전체 업체 목표에 적용됩니다." step="0.1" style="width:56px" ${o.targetExcl?'disabled title="목표합산 제외 업체는 목표액 0원 적용"':''}> %${(state.showElog&&((state.fc.addPctAt&&state.fc.addPctAt[o.c])||(o.ad!==''&&o.ad!=null&&+o.ad!==0)))?`<div class="sub2" style="color:#7c3aed;font-size:9px;font-weight:700">✎ 추가 +${o.ad}%${(state.fc.addPctAt&&state.fc.addPctAt[o.c])?' · '+editStamp(state.fc.addPctAt[o.c]):''}</div>`:''}</td><td onclick="event.stopPropagation()"><input type="text" class="fcmemo" data-c="${esc(o.c)}" value="${esc(state.fc.custMemo[o.c]||'')}" placeholder="이슈 메모" style="width:180px;font-size:11px"></td></tr>`).join('');
   let newProjSum=0, newProjSumExcl=0;
   const fcRealCustList=fcRealCustomerList(),fcRealCustKeys=new Set(fcRealCustList.map(fcCustKey)),fcRealCustDL=fcRealCustList.map(c=>`<option value="${esc(c)}"></option>`).join('');
   const integratedNewCustKeys=new Set(custArrTotalBase.map(o=>fcCustKey(o.c)));
-  const newRows=Object.entries(state.fc.newCusts||{}).filter(([c])=>!fcExSet.has(c)&&!integratedNewCustKeys.has(fcCustKey(c))).map(([c,v])=>{ const target=+v||0; const applied=adjustScrapCustAmount(c,target); const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; const proj=applied*af; newProjSum+=proj; if(fcExSet.has(c))newProjSumExcl+=proj; const replaceUI=fcRealCustKeys.has(fcCustKey(c))?'':`<div class="fcnew-replace-box"><input list="fcNewCustRealDL" autocomplete="off" class="fcnewreplace-input" data-c="${esc(c)}" value="${esc((state.fc.newCustReplacements&&state.fc.newCustReplacements[c])||'')}" placeholder="실제 매출처 검색"><button type="button" class="fcnewreplace" data-c="${esc(c)}">실제 매출처로 교체</button></div>`; return `<tr class="fcnewrow" data-c="${esc(c)}"><td class="rank" style="color:#7c3aed;font-weight:700">신규</td><td class="l">${esc(c)} ${isScrapVendor(c)?'<span style="font-size:9px;color:#b45309;font-weight:800">80% 적용</span> ':''}<button class="fcdel" data-c="${esc(c)}" title="삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button>${replaceUI}</td><td class="mgr">${mgrBadge(mgrS(c))}</td><td class="mgr">${mgrBadge(mgrT(c))}</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" inputmode="numeric" class="fcnewt numfmt" data-c="${esc(c)}" value="${target.toLocaleString('en-US')}" style="width:120px;text-align:right" title="연 목표액(원)"></td><td>${diffSpan(proj)}</td><td><span style="color:#cbd5e1">-</span></td><td><span class="sub2" style="color:#7c3aed;font-weight:700">신규</span></td><td onclick="event.stopPropagation()"><input type="number" value="" placeholder="-" style="width:56px" disabled title="신규는 조정% 미적용"> %</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcadd" data-c="${esc(c)}" value="${fcPctInputValue(ad)}" placeholder="0.0" step="0.1" style="width:56px"> %</td><td onclick="event.stopPropagation()"><input type="text" class="fcmemo" data-c="${esc(c)}" value="${esc(state.fc.custMemo[c]||'')}" placeholder="이슈 메모 ([전략] 자동연동)" style="width:180px;font-size:11px"></td></tr>`; }).join('');
-  const lineCustRows=Object.entries(lineCust).filter(([c])=>!fcExSet.has(c)).map(([c,o])=>{ const brk=o.lines.map(l=>`${l.name||l.code} ${won(l.qty)}개×${won(Math.round(l.price))}`).join(' · '); return `<tr class="fcnewrow"><td class="rank" style="color:#0d9488;font-weight:700">신규</td><td class="l">${esc(c)} <span class="sub2" title="${esc(brk)}" style="color:#0d9488">🧾라인 ${o.lines.length}</span> <button class="fclinedelc" data-c="${esc(c)}" title="이 거래처 라인 전체 삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="mgr">${mgrBadge(mgrS(c))}</td><td class="mgr">${mgrBadge(mgrT(c))}</td><td>-</td><td>-</td><td><b>${disp(o.amt)}</b> <span class="sub2" style="color:#0d9488">라인합</span></td><td>${diffSpan(o.amt)}</td><td><span style="color:#cbd5e1">-</span></td><td><span class="sub2" style="color:#0d9488;font-weight:700">신규</span></td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" class="fcmemo" data-c="${esc(c)}" value="${esc(state.fc.custMemo[c]||'')}" placeholder="이슈 메모 ([전략] 자동연동)" style="width:180px;font-size:11px"></td></tr>`; }).join('');
+  const newRows=Object.entries(state.fc.newCusts||{}).filter(([c])=>!fcExSet.has(c)&&!integratedNewCustKeys.has(fcCustKey(c))).map(([c,v])=>{ const target=+v||0; const applied=adjustScrapCustAmount(c,target); const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; const proj=applied*af; newProjSum+=proj; if(fcExSet.has(c))newProjSumExcl+=proj; const replaceUI=fcRealCustKeys.has(fcCustKey(c))?'':`<div class="fcnew-replace-box"><input list="fcNewCustRealDL" autocomplete="off" class="fcnewreplace-input" data-c="${esc(c)}" value="${esc((state.fc.newCustReplacements&&state.fc.newCustReplacements[c])||'')}" placeholder="실제 매출처 검색"><button type="button" class="fcnewreplace" data-c="${esc(c)}">실제 매출처로 교체</button></div>`; return `<tr class="fcnewrow" data-c="${esc(c)}"><td class="rank" style="color:#7c3aed;font-weight:700">신규</td><td class="l">${esc(c)} ${isScrapVendor(c)?'<span style="font-size:9px;color:#b45309;font-weight:800">80% 적용</span> ':''}<button class="fcdel" data-c="${esc(c)}" title="삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button>${replaceUI}</td><td class="mgr">${mgrBadge(mgrS(c))}</td><td class="mgr">${mgrBadge(mgrT(c))}</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" inputmode="numeric" class="fcnewt numfmt" data-c="${esc(c)}" value="${target.toLocaleString('en-US')}" style="width:120px;text-align:right" title="연 목표액(원)"></td><td>${diffSpan(proj)}</td><td><span style="color:#cbd5e1">-</span></td><td><span class="sub2" style="color:#7c3aed;font-weight:700">신규</span></td><td onclick="event.stopPropagation()"><input type="number" value="" placeholder="-" style="width:56px" disabled title="신규는 조정% 미적용"> %</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcadd" data-c="${esc(c)}" value="${fcPctInputValue(ad)}" placeholder="0.0" step="0.1" style="width:56px"> %</td><td onclick="event.stopPropagation()"><input type="text" class="fcmemo" data-c="${esc(c)}" value="${esc(state.fc.custMemo[c]||'')}" placeholder="이슈 메모" style="width:180px;font-size:11px"></td></tr>`; }).join('');
+  const lineCustRows=Object.entries(lineCust).filter(([c])=>!fcExSet.has(c)).map(([c,o])=>{ const brk=o.lines.map(l=>`${l.name||l.code} ${won(l.qty)}개×${won(Math.round(l.price))}`).join(' · '); return `<tr class="fcnewrow"><td class="rank" style="color:#0d9488;font-weight:700">신규</td><td class="l">${esc(c)} <span class="sub2" title="${esc(brk)}" style="color:#0d9488">🧾라인 ${o.lines.length}</span> <button class="fclinedelc" data-c="${esc(c)}" title="이 거래처 라인 전체 삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="mgr">${mgrBadge(mgrS(c))}</td><td class="mgr">${mgrBadge(mgrT(c))}</td><td>-</td><td>-</td><td><b>${disp(o.amt)}</b> <span class="sub2" style="color:#0d9488">라인합</span></td><td>${diffSpan(o.amt)}</td><td><span style="color:#cbd5e1">-</span></td><td><span class="sub2" style="color:#0d9488;font-weight:700">신규</span></td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" class="fcmemo" data-c="${esc(c)}" value="${esc(state.fc.custMemo[c]||'')}" placeholder="이슈 메모" style="width:180px;font-size:11px"></td></tr>`; }).join('');
   const pdCustRow = pdYearNet!==0?`<tr class="fcnewrow"><td class="rank" style="color:#b45309;font-weight:800">PD</td><td class="l">PD사업부 <span class="sub2" style="color:#b45309">🏭임가공비</span></td><td class="mgr">-</td><td class="mgr">-</td><td>-</td><td>-</td><td><b>${disp(pdYearNet)}</b> <span class="sub2" style="color:#b45309">임가공</span></td><td>${diffSpan(pdYearNet)}</td><td><span style="color:#cbd5e1">-</span></td><td><span class="sub2" style="color:#b45309;font-weight:700">PD</span></td><td>-</td><td>-</td><td class="l"><span class="fc-pd-month-link" onclick="event.stopPropagation();state.act='trend';state.trend.pdOpen=true;runAct();setTimeout(()=>{var e=document.getElementById('pdToggle');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});},150);" style="cursor:pointer;color:#1d4ed8;font-size:13px;text-decoration:none" title="월별 실적·목표의 PD 임가공비로 이동">▸ PD사업부 월별 실적·목표</span></td></tr>`:'';
   /* v807 : 「🎯 신규목표」 보기에서는 PD·라인 줄을 숨기고 신규목표 줄만 보여 줍니다. */
-  custRows = state.fc.showExclRows ? custRows : ((state.fc._newOnly?'':(pdCustRow + lineCustRows)) + newRows + custRows); const cTotProjNetBase=custArrTotalBase.reduce((a,o)=>a+(o.excl?0:o.proj),0); const isOverallAnnual=!state.fc.showExclRows&&m1===1&&m2===12&&clsFilter==='전체'&&statusFilter==='전체'; const cTotProjAll=state.fc.showExclRows?cTotProj:(isOverallAnnual?annualSummary.annualTarget:(cTotProjNetBase+newProjSum+lineCustTotal+pdYearNet)); const cTotPrevAll=state.fc.showExclRows?cTotPrev:custArrTotalBase.reduce((a,o)=>a+(o.excl?0:o.prev),0); const cTotYtdAll=state.fc.showExclRows?custArr.reduce((a,o)=>a+(o.ytd||0),0):custArrTotalBase.reduce((a,o)=>a+(o.ytd||0),0);
+  /* v857 : 메모칸을 처음 그릴 때부터 최종 안내문구를 넣습니다.
+     렌더 뒤 MutationObserver가 120ms 후 문구를 바꾸면서 생기던 깜빡임을 없앱니다. */
+  const fcMemoPlaceholderV857=s=>String(s||'').split('placeholder="이슈 메모"').join('placeholder="이슈 메모 ([전략] 자동연동)"');
+  custRows = fcMemoPlaceholderV857(state.fc.showExclRows ? custRows : ((state.fc._newOnly?'':(pdCustRow + lineCustRows)) + newRows + custRows)); const cTotProjNetBase=custArrTotalBase.reduce((a,o)=>a+(o.excl?0:o.proj),0); const isOverallAnnual=!state.fc.showExclRows&&m1===1&&m2===12&&clsFilter==='전체'&&statusFilter==='전체'; const cTotProjAll=state.fc.showExclRows?cTotProj:(isOverallAnnual?annualSummary.annualTarget:(cTotProjNetBase+newProjSum+lineCustTotal+pdYearNet)); const cTotPrevAll=state.fc.showExclRows?cTotPrev:custArrTotalBase.reduce((a,o)=>a+(o.excl?0:o.prev),0); const cTotYtdAll=state.fc.showExclRows?custArr.reduce((a,o)=>a+(o.ytd||0),0):custArrTotalBase.reduce((a,o)=>a+(o.ytd||0),0);
   // products (ALL)
-  const prodKeys=new Set(); for(let m=m1;m<=m2;m++){ pyMonProd[m].forEach((_,pk)=>prodKeys.add(pk)); cyMonProd[m].forEach((_,pk)=>prodKeys.add(pk)); if(m>lastAct)fcProdMon[m].forEach((_,pk)=>prodKeys.add(pk)); }
+  /* v858 : 거래처 화면에서는 화면에 쓰지 않는 제품 수천 건을 매번 다시 만들지 않습니다.
+     제품 탭으로 전환했을 때만 제품 목록·월별 목표를 계산합니다. */
+  const prodKeys=new Set(); if(state.fc.dim==='prod')for(let m=m1;m<=m2;m++){ pyMonProd[m].forEach((_,pk)=>prodKeys.add(pk)); cyMonProd[m].forEach((_,pk)=>prodKeys.add(pk)); if(m>lastAct)fcProdMon[m].forEach((_,pk)=>prodKeys.add(pk)); }
   /* v767 : 제품별 목표를 제품 하나마다 «모든 거래처»를 다시 훑던 부분을 월 1회 집계로 바꿉니다.
      (제품수 × 12개월 × 거래처수 → 12개월 × 자료건수) — 매출 목표 첫 진입이 느리던 가장 큰 원인 */
   const _pTotMon=Array.from({length:13},()=>null);
@@ -12713,15 +12792,15 @@ function forecast(){ state._inDrill=false;
   const _addval=(o)=>{ const v=_pQty?Math.round(o.addQty||0):Math.round(o.addAmt||0); return Math.abs(v)<1?0:v; };
   const _addcell=(o)=>{ const v=_addval(o); if(!v)return '<span style="color:#cbd5e1">-</span>';
     return `<span style="color:${v>=0?'var(--green)':'var(--red)'};font-weight:700">${v>=0?'+':''}${_pQty?won(v):disp(v)}</span>`; };
-  let prodRows=prodArr.map((o,i)=>`<tr class="fcprow${o.excl?' fcexcluded':''}" data-pk="${esc(o.pk)}"><td class="rank">${i+1}</td><td class="l">${esc(o.code)} <label class="exclbox" onclick="event.stopPropagation()" title="올해 제외"><input type="checkbox" class="fcpexcl" data-pk="${esc(o.pk)}" ${o.excl?'checked':''}>제외</label></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td>${_pQty?`<td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.ytdQ||0))}</td><td>${won(Math.round(o.cq))}</td><td>${_qspan((o.cq||0)-(o.pq||0))}</td><td>${_addcell(o)}</td><td>${pctSpan(o.pq?((o.cq||0)-o.pq)/o.pq*100:((o.cq||0)>0?null:0))}</td>`:`<td>${disp(o.prev)}</td><td>${disp(o.ytd)}</td><td>${disp(o.proj)}</td><td>${diffSpan(o.diff)}</td><td>${_addcell(o)}</td><td>${pctSpan(o.pct)}</td>`}<td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcpov" data-pk="${esc(o.pk)}" value="${fcPctInputValue(o.ov)}" placeholder="${o.excl?'제외':fcAutoPctText(o)}" title="자동 적용값 ${fcAutoPctText(o)}% · 직접 입력하면 제품 조정%로 고정" step="0.1" style="width:54px"> %</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcpadd" data-pk="${esc(o.pk)}" value="${fcPctInputValue(o.ad)}" placeholder="0.0" step="0.1" style="width:54px"> %</td><td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.cq))}</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(o.pk)}" value="${esc(state.fc.prodMemo[o.pk]||'')}" placeholder="이슈 메모 ([전략] 자동연동)" style="width:150px;font-size:11px"></td></tr>`).join('');
-  const newProdRows=newProdArr.map(o=>`<tr class="fcnewprow" data-pk="${esc(o.pk)}"><td class="rank" style="color:#7c3aed;font-weight:700">신규</td><td class="l">${esc(o.code)} <button class="fcpdel" data-pk="${esc(o.pk)}" title="삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" inputmode="numeric" class="fcnewp numfmt" data-pk="${esc(o.pk)}" value="${o.amt.toLocaleString('en-US')}" style="width:110px;text-align:right" title="연 목표액(원)"></td><td>${diffSpan(o.proj)}</td><td>-</td><td><span class="sub2" style="color:#7c3aed;font-weight:700">신규</span></td><td onclick="event.stopPropagation()"><input type="number" value="" placeholder="-" style="width:54px" disabled> %</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcpadd" data-pk="${esc(o.pk)}" value="${fcPctInputValue(o.ad)}" placeholder="0.0" step="0.1" style="width:54px"> %</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(o.pk)}" value="${esc(state.fc.prodMemo[o.pk]||'')}" placeholder="이슈 메모 ([전략] 자동연동)" style="width:150px;font-size:11px"></td></tr>`).join('');
-  const lineProdRows=Object.entries(lineProdNet).map(([pk,o])=>{ const brk=o.lines.map(l=>`${l.cust} ${won(l.qty)}개×${won(Math.round(l.price))}`).join(' · '); const tq=o.lines.reduce((a,l)=>a+(+l.qty||0),0); return `<tr class="fcnewprow" data-pk="${esc(pk)}"><td class="rank" style="color:#0d9488;font-weight:700">신규</td><td class="l">${esc(o.code)} <button class="fcplinedel" data-pk="${esc(pk)}" title="이 제품 라인 삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>-</td><td>-</td><td><b>${disp(o.amt)}</b> <span class="sub2" title="${esc(brk)}" style="color:#0d9488">🧾라인 ${o.lines.length}</span></td><td>${diffSpan(o.amt)}</td><td>-</td><td><span class="sub2" style="color:#0d9488;font-weight:700">신규</span></td><td>-</td><td>-</td><td>-</td><td>${won(tq)}</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(pk)}" value="${esc(state.fc.prodMemo[pk]||'')}" placeholder="이슈 메모 ([전략] 자동연동)" style="width:150px;font-size:11px"></td></tr>`; }).join('');
+  let prodRows=prodArr.map((o,i)=>`<tr class="fcprow${o.excl?' fcexcluded':''}" data-pk="${esc(o.pk)}"><td class="rank">${i+1}</td><td class="l">${esc(o.code)} <label class="exclbox" onclick="event.stopPropagation()" title="올해 제외"><input type="checkbox" class="fcpexcl" data-pk="${esc(o.pk)}" ${o.excl?'checked':''}>제외</label></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td>${_pQty?`<td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.ytdQ||0))}</td><td>${won(Math.round(o.cq))}</td><td>${_qspan((o.cq||0)-(o.pq||0))}</td><td>${_addcell(o)}</td><td>${pctSpan(o.pq?((o.cq||0)-o.pq)/o.pq*100:((o.cq||0)>0?null:0))}</td>`:`<td>${disp(o.prev)}</td><td>${disp(o.ytd)}</td><td>${disp(o.proj)}</td><td>${diffSpan(o.diff)}</td><td>${_addcell(o)}</td><td>${pctSpan(o.pct)}</td>`}<td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcpov" data-pk="${esc(o.pk)}" value="${fcPctInputValue(o.ov)}" placeholder="${o.excl?'제외':fcAutoPctText(o)}" title="자동 적용값 ${fcAutoPctText(o)}% · 직접 입력하면 제품 조정%로 고정" step="0.1" style="width:54px"> %</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcpadd" data-pk="${esc(o.pk)}" value="${fcPctInputValue(o.ad)}" placeholder="0.0" step="0.1" style="width:54px"> %</td><td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.cq))}</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(o.pk)}" value="${esc(state.fc.prodMemo[o.pk]||'')}" placeholder="이슈 메모" style="width:150px;font-size:11px"></td></tr>`).join('');
+  const newProdRows=newProdArr.map(o=>`<tr class="fcnewprow" data-pk="${esc(o.pk)}"><td class="rank" style="color:#7c3aed;font-weight:700">신규</td><td class="l">${esc(o.code)} <button class="fcpdel" data-pk="${esc(o.pk)}" title="삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" inputmode="numeric" class="fcnewp numfmt" data-pk="${esc(o.pk)}" value="${o.amt.toLocaleString('en-US')}" style="width:110px;text-align:right" title="연 목표액(원)"></td><td>${diffSpan(o.proj)}</td><td>-</td><td><span class="sub2" style="color:#7c3aed;font-weight:700">신규</span></td><td onclick="event.stopPropagation()"><input type="number" value="" placeholder="-" style="width:54px" disabled> %</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcpadd" data-pk="${esc(o.pk)}" value="${fcPctInputValue(o.ad)}" placeholder="0.0" step="0.1" style="width:54px"> %</td><td>-</td><td>-</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(o.pk)}" value="${esc(state.fc.prodMemo[o.pk]||'')}" placeholder="이슈 메모" style="width:150px;font-size:11px"></td></tr>`).join('');
+  const lineProdRows=Object.entries(lineProdNet).map(([pk,o])=>{ const brk=o.lines.map(l=>`${l.cust} ${won(l.qty)}개×${won(Math.round(l.price))}`).join(' · '); const tq=o.lines.reduce((a,l)=>a+(+l.qty||0),0); return `<tr class="fcnewprow" data-pk="${esc(pk)}"><td class="rank" style="color:#0d9488;font-weight:700">신규</td><td class="l">${esc(o.code)} <button class="fcplinedel" data-pk="${esc(pk)}" title="이 제품 라인 삭제" style="border:none;background:none;color:var(--red);cursor:pointer;font-weight:800;font-size:14px">×</button></td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>-</td><td>-</td><td><b>${disp(o.amt)}</b> <span class="sub2" title="${esc(brk)}" style="color:#0d9488">🧾라인 ${o.lines.length}</span></td><td>${diffSpan(o.amt)}</td><td>-</td><td><span class="sub2" style="color:#0d9488;font-weight:700">신규</span></td><td>-</td><td>-</td><td>-</td><td>${won(tq)}</td><td onclick="event.stopPropagation()"><input type="text" class="fcpmemo" data-pk="${esc(pk)}" value="${esc(state.fc.prodMemo[pk]||'')}" placeholder="이슈 메모" style="width:150px;font-size:11px"></td></tr>`; }).join('');
   const pdProdRow = pdYearNet!==0?`<tr class="fcnewprow"><td class="rank" style="color:#b45309;font-weight:800">PD</td><td class="l">PD</td><td class="l">PD사업부 임가공</td><td class="l">(임가공)</td><td>-</td><td>-</td><td><b>${disp(pdYearNet)}</b></td><td>${diffSpan(pdYearNet)}</td><td><span class="sub2" style="color:#b45309;font-weight:700">PD</span></td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>`:'';
   /* v642 : PD 임가공은 제품(규격)이 아니므로 제품별 표에서는 행을 표시하지 않습니다.
      (합계는 업체별 표와 맞추기 위해 PD 임가공비를 그대로 포함합니다.) */
-  prodRows = lineProdRows + newProdRows + prodRows;
+  prodRows = fcMemoPlaceholderV857(lineProdRows + newProdRows + prodRows);
   state._fcExport={custArr,prodArr,PY,CY,lastAct};
-  const _CAT=prodCatalog(); state._fcCat=_CAT; state._fcCatMap={}; _CAT.forEach(p=>{state._fcCatMap[p.label]=p;}); const _prodDL=_CAT.map(p=>`<option value="${esc(p.label)}">평균 ${won(Math.round(p.price))}</option>`).join(''); const _custDL=custCatalog().map(c=>`<option value="${esc(c)}">`).join('');
+  const _CAT=state.fc.dim==='prod'?prodCatalog():[]; state._fcCat=_CAT; state._fcCatMap={}; _CAT.forEach(p=>{state._fcCatMap[p.label]=p;}); const _prodDL=_CAT.map(p=>`<option value="${esc(p.label)}">평균 ${won(Math.round(p.price))}</option>`).join(''); const _custDL=state.fc.dim==='prod'?custCatalog().map(c=>`<option value="${esc(c)}">`).join(''):'';
   const _codeDL=[...new Set(_CAT.map(p=>p.code))].map(c=>`<option value="${esc(c)}">`).join(''); const _nameDL=[...new Set(_CAT.map(p=>p.name).filter(Boolean))].map(c=>`<option value="${esc(c)}">`).join(''); const _specDL=[...new Set(_CAT.map(p=>p.spec).filter(Boolean))].map(c=>`<option value="${esc(c)}">`).join(''); state._fcByCode={}; _CAT.forEach(p=>{ (state._fcByCode[p.code]=state._fcByCode[p.code]||[]).push(p); });
   const perBtns=`<div class="seg" id="fcPer"><button data-v="all" class="${state.fc.period==='all'?'on':''}">전체</button><button data-v="H1" class="${state.fc.period==='H1'?'on':''}">상반기</button><button data-v="H2" class="${state.fc.period==='H2'?'on':''}">하반기</button><button data-v="Q1" class="${state.fc.period==='Q1'?'on':''}">1분기</button><button data-v="Q2" class="${state.fc.period==='Q2'?'on':''}">2분기</button><button data-v="Q3" class="${state.fc.period==='Q3'?'on':''}">3분기</button><button data-v="Q4" class="${state.fc.period==='Q4'?'on':''}">4분기</button><button data-v="range" class="${state.fc.period==='range'?'on':''}">기간설정</button></div>`;
   const monOpts=(selV)=>{let s='';for(let i=1;i<=12;i++)s+=`<option value="${i}" ${i===selV?'selected':''}>${i}월</option>`;return s;};
@@ -12762,7 +12841,7 @@ function forecast(){ state._inDrill=false;
         ?`<button class="btn ghost" id="fcOvReset" type="button">조정% 초기화</button><button class="btn ghost" id="fcAddReset" type="button" style="color:var(--red);border-color:#f3c0c0">추가% 초기화</button><button class="btn ghost" id="fcMemoReset" type="button" style="color:#92400e;border-color:#f3d6a5" title="직접 입력한 거래처 메모를 초기화합니다">메모 초기화</button>`
         :`<button class="btn ghost" id="fcProdOvReset" type="button">조정% 초기화</button><button class="btn ghost" id="fcProdAddReset" type="button" style="color:var(--red);border-color:#f3c0c0">추가% 초기화</button><button class="btn ghost" id="fcProdMemoReset" type="button" style="color:#92400e;border-color:#f3d6a5" title="직접 입력한 제품(규격) 메모를 초기화합니다">메모 초기화</button>`}<button class="btn ghost fcSnapBtnV803" type="button" style="color:#1d4ed8;border-color:#bfdbfe" title="최근 20개 시점의 목표 % 값 중에서 골라 되돌립니다">🕘 % 되돌리기</button></span></div>
     ${state.fc.dim==='cust'?`
-    <h4 class="fch">📋 업체별 매출 목표 · ${custRLab} <span class="fc-target-search fc-cust-unified-search"><input type="search" id="fcCustSearch" autocomplete="off" spellcheck="false" placeholder="거래처명 포함 검색" value="${esc(state.fc._csearch||'')}"><span class="fc-target-search-label">🏢 거래처</span><button type="button" id="fcCustSearchBtn" class="fc-target-search-btn" aria-label="거래처 검색" title="검색"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="M12.5 12.5L17 17"></path></svg></button></span> <span style="float:right"><button class="btn" id="fcAddCust" style="font-size:13px;padding:3px 10px">＋ 업체추가</button> <button class="btn ghost" id="fcNewOnlyV807" style="font-size:13px;padding:3px 10px;${state.fc._newOnly?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe'}" title="목표표에 「업체추가」로 등록한 신규목표 업체만 봅니다">🎯 신규목표(${Object.keys(state.fc.newCusts||{}).length})${state.fc._newOnly?' ✓':''}</button> <button class="btn ghost" id="fcIssueCust" style="font-size:13px;padding:3px 10px;${state.fc.issC?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.fc.issC?' (해제)':''}</button> <button class="btn ghost" id="fcExclRows" style="font-size:13px;padding:3px 8px;${state.fc.showExclRows?'background:#dc2626;color:#fff;border-color:#dc2626':''}">📋 ${state.fc.showExclRows?'일반 업체 보기':'제외 업체만 보기'}(${excludedCustCount()})${state.fc.showExclRows?' ✓':''}</button> <button class="btn ghost fcexcltoggle" style="font-size:13px;padding:3px 8px;${state.fc.showExcl?'background:#0d9488;color:#fff;border-color:#0d9488':''}">🚫 제외옵션(거래처 ${excludedCustCount()} · 목표 ${targetOnlyExcludedCustCount()})${state.fc.showExcl?' ✓':''}</button> <button class="btn ghost" id="fcCustCsv" style="font-size:13px;padding:3px 8px">엑셀</button></span></h4>
+    <h4 class="fch">📋 업체별 매출 목표 · ${custRLab} <span class="fc-target-search fc-cust-unified-search"><input type="search" id="fcCustSearch" autocomplete="off" spellcheck="false" placeholder="거래처명 포함 검색" value="${esc(state.fc._csearch||'')}"><span class="fc-target-search-label">🏢 거래처</span><button type="button" id="fcCustSearchBtn" class="fc-target-search-btn" aria-label="거래처 검색" title="검색"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="M12.5 12.5L17 17"></path></svg></button></span> <span style="float:right"><button class="btn" id="fcAddCust" style="font-size:13px;padding:3px 10px">＋ 업체추가</button> <button class="btn ghost" id="fcNewOnlyV807" style="font-size:13px;padding:3px 10px;${state.fc._newOnly?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe'}" title="목표표에 「업체추가」로 등록한 신규목표 업체만 봅니다">🎯 신규목표(${Object.keys(state.fc.newCusts||{}).length})${state.fc._newOnly?' ✓':''}</button> <button class="btn ghost" id="fcIssueCust" style="font-size:13px;padding:3px 10px;${state.fc.issC?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.fc.issC?' (해제)':''}</button> <button class="btn ghost" id="fcExclRows" style="font-size:13px;padding:3px 8px;${state.fc.showExclRows?'background:#dc2626;color:#fff;border-color:#dc2626':''}">📋 ${state.fc.showExclRows?'일반 업체 보기':'제외 업체만 보기'}(${fcTradeExclRows.length})${state.fc.showExclRows?' ✓':''}</button> <button class="btn ghost fcexcltoggle" style="font-size:13px;padding:3px 8px;${state.fc.showExcl?'background:#0d9488;color:#fff;border-color:#0d9488':''}">🚫 제외옵션(거래처 ${fcTradeExclRows.length} · 목표 ${fcTargetExclRows.length})${state.fc.showExcl?' ✓':''}</button> <button class="btn ghost" id="fcCustCsv" style="font-size:13px;padding:3px 8px">엑셀</button></span></h4>
     <div id="fcNewForm" style="display:none;margin:0 0 8px;padding:10px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px">
       <b style="font-size:12px">신규 거래처 목표 추가 — 제품·수량·단가 → 연목표</b>
       <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
@@ -12857,7 +12936,7 @@ function forecast(){ state._inDrill=false;
         annualWrap.parentNode.insertBefore(monBox,annualWrap);
         if(monOn)annualWrap.style.display='none';
         /* v776 : 켤 때 그 시점에 표를 만들도록 다시 그립니다(꺼져 있을 때 미리 만들지 않아 훨씬 빠릅니다). */
-        mb.addEventListener('click',()=>{ fcOrderUnlockV802(); state.fc._custMonView=!state.fc._custMonView; if(typeof saveSettings==='function')saveSettings(); fcFastForecast(); });
+        mb.addEventListener('click',()=>{ fcOrderUnlockV802(); state.fc._custMonView=!state.fc._custMonView; mb.textContent='📅 월별보기'+(state.fc._custMonView?' ✓':''); mb.style.background=state.fc._custMonView?'#1e3a5f':''; mb.style.color=state.fc._custMonView?'#fff':''; mb.style.borderColor=state.fc._custMonView?'#1e3a5f':''; if(typeof v796SaveSoon==='function')v796SaveSoon(); else if(typeof saveSettings==='function')saveSettings(); fcFastForecast(); });
         monBox.querySelectorAll('.fc-cust-month-pct').forEach(inp=>{ const syncPctColor=()=>inp.classList.toggle('fc-cust-month-pct-neg',parseFloat(inp.value)<0); syncPctColor();
           inp.addEventListener('input',()=>{ syncPctColor(); const v=inp.value.trim(); if(v!==''&&!isFinite(parseFloat(v)))return; v796SetMonthPct(monthPct,inp.dataset.c,+inp.dataset.m,v); v796SaveSoon(); });
           inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } });
@@ -12951,8 +13030,8 @@ function forecast(){ state._inDrill=false;
     $('#result').querySelectorAll('.fcexcl').forEach(c=>c.addEventListener('change',e=>{ const k=e.target.dataset.c; setExcludedCust(k,e.target.checked); if(typeof logEdit==='function')logEdit('목표제외',k+' 거래처 '+(e.target.checked?'제외':'복원')+' (매출목표/담당자 동시)'); saveSettings(); forecast(); }));
     $('#result').querySelectorAll('.fctargetexcl').forEach(c=>c.addEventListener('change',e=>{ const k=e.target.dataset.c; setTargetExcludedCust(k,e.target.checked); if(typeof logEdit==='function')logEdit('목표합산',k+' 2026 목표합산 '+(e.target.checked?'제외':'복원')); saveSettings(); forecast(); }));
     $('#result').querySelectorAll('.fcpexcl').forEach(c=>c.addEventListener('change',e=>{ const k=e.target.dataset.pk; if(e.target.checked)state.fc.exclProd[k]=true; else delete state.fc.exclProd[k]; if(typeof logEdit==='function')logEdit('목표제외',k+' 제품 '+(e.target.checked?'제외':'복원')); saveSettings(); forecast(); }));
-    const exRowsBtn=$('#fcExclRows'); exRowsBtn&&exRowsBtn.addEventListener('click',()=>{ state.fc.showExclRows=!state.fc.showExclRows; saveSettings(); forecast(); });
-    $('#result').querySelectorAll('.fcexcltoggle').forEach(b=>b.addEventListener('click',()=>{ state.fc.showExcl=!state.fc.showExcl; saveSettings(); forecast(); }));
+    const exRowsBtn=$('#fcExclRows'); exRowsBtn&&exRowsBtn.addEventListener('click',()=>{ state.fc.showExclRows=!state.fc.showExclRows; exRowsBtn.textContent='📋 '+(state.fc.showExclRows?'일반 업체 보기':'제외 업체만 보기')+'('+fcTradeExclRows.length+')'+(state.fc.showExclRows?' ✓':''); exRowsBtn.style.background=state.fc.showExclRows?'#dc2626':'';exRowsBtn.style.color=state.fc.showExclRows?'#fff':'';exRowsBtn.style.borderColor=state.fc.showExclRows?'#dc2626':''; if(typeof v796SaveSoon==='function')v796SaveSoon();else saveSettings(); fcFastForecast(); });
+    $('#result').querySelectorAll('.fcexcltoggle').forEach(b=>b.addEventListener('click',()=>{ state.fc.showExcl=!state.fc.showExcl; b.textContent='🚫 제외옵션(거래처 '+fcTradeExclRows.length+' · 목표 '+fcTargetExclRows.length+')'+(state.fc.showExcl?' ✓':'');b.style.background=state.fc.showExcl?'#0d9488':'';b.style.color=state.fc.showExcl?'#fff':'';b.style.borderColor=state.fc.showExcl?'#0d9488':''; if(typeof v796SaveSoon==='function')v796SaveSoon();else saveSettings(); fcFastForecast(); }));
     const annT=$('#annToggle'); annT&&annT.addEventListener('click',()=>{ state.fc.annualOpen=!state.fc.annualOpen;const w=$('#annWrap');if(w)w.style.display=state.fc.annualOpen?'block':'none';const chip=annT.querySelector('span');if(chip)chip.textContent='📈 연간 누계 (전년 比) '+(state.fc.annualOpen?'▾':'▸');if(typeof saveSettings==='function')saveSettings(); });
     $('#result').querySelectorAll('.annin').forEach(inp=>{ inp.addEventListener('input',e=>{ const raw=e.target.value.replace(/[^\d]/g,''); e.target.value=raw?(+raw).toLocaleString():''; }); inp.addEventListener('change',e=>{ const y=e.target.dataset.y; const v=parseFloat((e.target.value||'').replace(/,/g,''))||0; if(v)state.fc.annualHist[y]=v; else delete state.fc.annualHist[y]; if(typeof logEdit==='function')logEdit('목표연혁',y+' 연매출 변경'); v796SaveSoon(); v797Defer(forecast); }); });
     $('#result').querySelectorAll('.fcmemo').forEach(inp=>inp.addEventListener('change',e=>{ const c=e.target.dataset.c; const v=e.target.value.trim(); if(v)state.fc.custMemo[c]=v; else state.fc.custMemo[c]=''; if(typeof logEdit==='function')logEdit('목표메모',c+' 거래처 메모'); v796SaveSoon(); }));
@@ -12991,6 +13070,8 @@ function forecast(){ state._inDrill=false;
     const _resetYearScopedV807=async (what)=>{
       const yr=state.fc._ctxYear||((typeof fcTargetYear==='function')?fcTargetYear():'');
       if(!await uiConfirm('<b>'+yr+'년 목표</b>의 모든 거래처 <b>'+what+'</b>(연간 + 월별보기)를 초기화할까요?<br><span class="sub2">다른 목표연도 값은 그대로 둡니다.</span>'))return false;
+      /* v859 : 지우기 전 상태를 먼저 보관해야 「% 되돌리기」로 초기화를 취소할 수 있습니다. */
+      try{ if(typeof fcSnapSaveV803==='function')await fcSnapSaveV803(); }catch(_e){}
       try{if(typeof fcResetRememberV841==='function')fcResetRememberV841(yr,what==='조정%'?['override','custMonthPct']:['addPct']);}catch(_e){}
       if(what==='조정%'){ state.fc.override={}; state.fc.overrideAt={}; state.fc.custMonthPct={}; _clearFieldsNowV838('.fcov,.fc-cust-month-pct'); }
       else { state.fc.addPct={}; state.fc.addPctAt={}; _clearFieldsNowV838('.fcadd'); }
@@ -13000,7 +13081,12 @@ function forecast(){ state._inDrill=false;
       try{ if(typeof logEdit==='function')logEdit('매출 목표',yr+'년 '+what+' 초기화(연간+월별)'); }catch(_e){}
       try{ if(typeof fcSnapSaveV803==='function')await fcSnapSaveV803(); }catch(_e){}
       try{ fcOrderUnlockV802(); }catch(_e){}
-      await saveSettings(); forecast(); return true;
+      await saveSettings();
+      /* 초기화는 즉시 서버까지 확정해 다른 PC가 옛값을 다시 올리지 않게 합니다. */
+      try{ if(typeof gsSave==='function'&&state.gsync&&state.gsync.url&&state.gsync.key){
+        await gsSave(true); if(state.gsync.lastOp==='load')await gsSave(true);
+      } }catch(_e){}
+      forecast(); return true;
     };
     const ovR=$('#fcOvReset'); ovR&&ovR.addEventListener('click',async()=>{ const n=Object.keys(state.fc.override||{}).length+Object.keys(state.fc.custMonthPct||{}).length; if(!n){ await uiConfirm('초기화할 조정%가 없습니다.'); return; } await _resetYearScopedV807('조정%'); });
     const adR=$('#fcAddReset'); adR&&adR.addEventListener('click',async()=>{ if(!Object.keys(state.fc.addPct||{}).length){ await uiConfirm('초기화할 추가%가 없습니다.'); return; } await _resetYearScopedV807('추가%'); });
@@ -13106,7 +13192,7 @@ function forecast(){ state._inDrill=false;
     })();
     const cc=$('#fcCustCsv'); cc&&cc.addEventListener('click',()=>fcCSV('cust'));
     const pc=$('#fcProdCsv'); pc&&pc.addEventListener('click',()=>fcCSV('prod'));
-    const ic=$('#fcIssueCust'); ic&&ic.addEventListener('click',()=>{ state.fc.issC=!state.fc.issC; fcFastForecast(); });
+    const ic=$('#fcIssueCust'); ic&&ic.addEventListener('click',()=>{ state.fc.issC=!state.fc.issC; ic.textContent='📌 이슈내용보기'+(state.fc.issC?' (해제)':'');ic.style.background=state.fc.issC?'#0d9488':'';ic.style.color=state.fc.issC?'#fff':'';ic.style.borderColor=state.fc.issC?'#0d9488':''; fcFastForecast(); });
     const ip=$('#fcIssueProd'); ip&&ip.addEventListener('click',()=>{ state.fc.issP=!state.fc.issP; fcFastForecast(); });
     if(state.fc.dim==='cust'&&state.fc.issC){ $('#result').querySelectorAll('tr.fcrow').forEach(tr=>{ const c=tr.dataset.c; const ov=state.fc.override[c],ad=state.fc.addPct[c],mm=state.fc.custMemo[c]; const ed=(ov!=null&&ov!=='')||(ad!=null&&ad!==''&&+ad!==0)||(mm&&String(mm).trim()); tr.style.display=ed?'':'none'; }); fcMemo2Line('.fcmemo','c'); }
     if(state.fc.dim==='prod'&&state.fc.issP){ $('#result').querySelectorAll('tr.fcprow').forEach(tr=>{ const pk=tr.dataset.pk; const ov=state.fc.prodOverride[pk],ad=state.fc.prodAddPct[pk],mm=state.fc.prodMemo[pk]; const ed=(ov!=null&&ov!=='')||(ad!=null&&ad!==''&&+ad!==0)||(mm&&String(mm).trim()); tr.style.display=ed?'':'none'; }); fcMemo2Line('.fcpmemo','pk'); }
@@ -13826,6 +13912,7 @@ function exportCSV(){
   if(typeof renderScrapList==='function')renderScrapList();
   if(typeof refreshElogBtns==='function')setTimeout(refreshElogBtns,100);
   { const gu=document.getElementById('gsUrl'); if(gu)gu.value=(state.gsync&&state.gsync.url)||''; const gk=document.getElementById('gsKey'); if(gk)gk.value=(state.gsync&&state.gsync.key)||''; const gus=document.getElementById('gsUser'); if(gus)gus.value=(state.gsync&&state.gsync.user)||''; }
+  window.__FC_SETTINGS_LOADED_V860=true;
   try{ if(typeof migrateCustKeys==='function'&&migrateCustKeys()&&typeof saveSettings==='function')saveSettings(); }catch(_){}
   const saved=await idbGet('datasets');
   if(saved&&saved.length){ datasets=saved.map(d=>({...d,uid:String((d&&d.uid)||'').indexOf('shared-')===0?d.uid:uidSeq++})); afterDataChanged(); }
@@ -13837,7 +13924,8 @@ function exportCSV(){
     { const _ga=document.getElementById('gsAuto'); if(_ga)_ga.checked=true; }
     const _sc0=(state.gsync.syncCount||0);
     /* v771 : 시작 직후 같은 «불러오기»가 세 번 겹쳐 서버 대기열이 길어지던 것을 한 번으로 줄입니다 */
-    setTimeout(()=>{ if(typeof gsLoad==='function')gsLoad(false); },1400);
+    /* v860 : 화면은 준비 완료까지 차단하므로 서버 확인도 지체 없이 시작합니다. */
+    setTimeout(()=>{ if(typeof gsLoad==='function')gsLoad(false); },120);
     setTimeout(()=>{ if((state.gsync.syncCount||0)===_sc0 && !_gsBusy && typeof gsLoad==='function')gsLoad(true); },12000);
   }
 })();
@@ -14155,7 +14243,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
 
   window.gsLoad=gsLoad=async function(silent){
     await ensureBase();if(_gsBusy){if(silent){setTimeout(function(){gsLoad(true)},BUSY_RETRY)}else status('다른 동기화 작업이 진행 중입니다. 잠시 후 자동으로 다시 시도합니다.','#b45309');return false}
-    var c;try{c=config(!!silent)}catch(e){if(!silent){setFailure(e.message,'load');await persistOnly()}gsUpdateBtn();return false}
+    var c;try{c=config(!!silent)}catch(e){window.__FC_GS_SETTLED_V860=true;if(!silent){setFailure(e.message,'load');await persistOnly()}gsUpdateBtn();return false}
     var firstServerLoad=!sessionServerReady;
     /* v600: 과거 버전에서 공용 항목이 아니었던 목표 구성·월 조정값은 서버에 해당 키가
        아직 없을 때만 현재 PC 값을 1회 보존합니다. 이미 서버 값이 있으면 서버를 우선해
@@ -14191,7 +14279,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
       status('✓ 동기화완료 · 서버 자료 불러오기'+(firstServerLoad?' · 서버 원본 보호 기준 확정':(hasLocal?' · 미전송 변경 보존':''))+' · '+fmtFull(state.gsync.lastSync),'#0f766e');setMode('idle','');
       if(hasLocal)scheduleAuto(900);else{_gsPendingPush=false;_gsPushAt=0;autoRetry=0;gsUpdateBtn()}return true;
     }catch(e){e=classifyError(e);if(silent&&e.retryable){setTransient(e.message);console.warn('background sync retryable:',e.message);setMode('idle','')}else{setFailure(e.message,'load');await persistOnly();if(!silent)status('동기화 실패: '+e.message,'#dc2626');setMode('idle','')}return false}
-    finally{_gsBusy=false;gsUpdateBtn()}
+    finally{window.__FC_GS_SETTLED_V860=true;_gsBusy=false;gsUpdateBtn()}
   };
 
   window.gsSave=gsSave=async function(silent){
@@ -31708,7 +31796,7 @@ try{ clsSales=sgClsSales; }catch(_e){}
        · 그 외(get/save) → 💰 미수관리·설정 동기화 막대
      로 나눠서, 각 메뉴의 올리기·받기가 서로 상관없이 표시됩니다.
      ══════════════════════════════════════════════════════ */
-  function mkState(){ return {on:false,kind:'down',pct:0,label:'',sub:'',t:0,at:0}; }
+  function mkState(){ return {on:false,kind:'down',pct:0,label:'',sub:'',t:0,at:0,started:0}; }
   var CH={ds:mkState(),gs:mkState()};
   var CHNAME={ds:'매출자료 공유',gs:'설정·미수 동기화'};
   function S(ch){ return CH[ch==='ds'?'ds':'gs']; }
@@ -31760,18 +31848,19 @@ try{ clsSales=sgClsSales; }catch(_e){}
     else document.addEventListener('DOMContentLoaded',function(){_mo.observe(document.body,{childList:true,subtree:true});},{once:true});
   }catch(_e){}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paint,{once:true}); else setTimeout(paint,300);
-  /* 응답이 오지 않아 막대가 걸린 채로 남지 않도록, 45초간 변화가 없으면 대기로 돌립니다. */
+  /* v859 : 대기 문구 자체가 매초 at을 갱신하므로 at 기준 감시는 영원히 끝나지 않았습니다.
+     요청 시작 시각을 따로 두어 2분 이상 남은 오래된 표시를 안전하게 닫습니다. */
   setInterval(function(){ ['ds','gs'].forEach(function(c){ var ST=S(c);
-    if(ST.on&&ST.at&&Date.now()-ST.at>30000){ ST.on=false;ST.pct=0;ST.at=0; } }); paint(); },5000);
+    if(ST.on&&ST.started&&Date.now()-ST.started>120000){ ST.on=false;ST.pct=0;ST.at=0;ST.started=0; } }); paint(); },5000);
   var SG={
     kb:kb,
-    show:function(kind,label,sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true;ST.kind=kind;ST.label=label||'';ST.sub=sub||'';ST.pct=3;paint(); },
-    set:function(pct,sub,ch){ var ST=S(ch); if(!ST.on)return; ST.at=Date.now(); if(pct!=null)ST.pct=Math.max(ST.pct,Math.min(99,pct)); if(sub!=null)ST.sub=sub; paint(); },
-    step:function(pct,label,sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true; if(label)ST.label=label; if(pct!=null)ST.pct=Math.min(99,pct); if(sub!=null)ST.sub=sub; paint(); },
+    show:function(kind,label,sub,ch){ var ST=S(ch); ST.at=Date.now();ST.started=ST.at;ST.on=true;ST.kind=kind;ST.label=label||'';ST.sub=sub||'';ST.pct=3;paint(); },
+    set:function(pct,sub,ch){ var ST=S(ch); if(!ST.on||(ST.pct>=100&&(ST.kind==='ok'||ST.kind==='err')))return; ST.at=Date.now(); if(pct!=null)ST.pct=Math.max(ST.pct,Math.min(99,pct)); if(sub!=null)ST.sub=sub; paint(); },
+    step:function(pct,label,sub,ch){ var ST=S(ch); if(ST.on&&ST.pct>=100&&(ST.kind==='ok'||ST.kind==='err'))return; ST.at=Date.now();if(!ST.started)ST.started=ST.at;ST.on=true; if(label)ST.label=label; if(pct!=null)ST.pct=Math.min(99,pct); if(sub!=null)ST.sub=sub; paint(); },
     done:function(sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true;ST.kind='ok';ST.pct=100;ST.label='완료';if(sub!=null)ST.sub=sub;paint();
-      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;ST.at=0;paint(); },2600); },
+      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;ST.at=0;ST.started=0;paint(); },2600); },
     fail:function(sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true;ST.kind='err';ST.pct=100;ST.label='실패';if(sub!=null)ST.sub=sub;paint();
-      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;ST.at=0;paint(); },4200); }
+      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;ST.at=0;ST.started=0;paint(); },4200); }
   };
   window.SG652=SG;
 
@@ -32697,8 +32786,7 @@ window.sgSyncCustMemoV617=syncMemo;
       el.dataset.memoV617='1';
       el.title='② 영업전략 추진현황에 등록한 <대상 제품 / 비고·아이템>이 '+MARK+' 뒤에 자동으로 표시됩니다.\n'
         +MARK+' 앞부분은 직접 쓴 메모로 유지되며, 전략을 지우면 뒷부분만 사라집니다.';
-      /* v848 : 그릴 때 이미 최종 문구가 들어가 있습니다. 비어 있을 때만 채워, 글자가 깜빡이지 않게 합니다. */
-      if(!el.placeholder)el.placeholder='이슈 메모 ('+MARK+' 자동연동)';
+      if(!el.placeholder||el.placeholder==='이슈 메모')el.placeholder='이슈 메모 ('+MARK+' 자동연동)';
     }
   }
   var t=null;
@@ -32937,7 +33025,11 @@ window.sgSyncCustMemoV617=syncMemo;
       var K=String((f&&f._ctxYear)||fcTargetYear());   /* v732 : 현재 화면의 연도 기준 */
       try{ fcSaveYearPlan(K); }catch(_e){}
       state.fcYearMisc=state.fcYearMisc||{};
-      state.fcYearMisc[K]={exclCust:cp(f.exclCust),cmgrExcl:cp(state.cmgrExcl),sgTomb:cp(state.strategyActionTombstones),sgRestoreAt:(+state.strategyActionRestoreAt||0),targetExclCust:cp(f.targetExclCust),targetOnlyExcl:cp(f.targetOnlyExcl),strategyPlan:cp(state.strategyPlan)};
+      /* v855 : 연도 보관함을 새 객체로 교체하면 주요사항(팀별 메모)이 사라집니다.
+         기존 연도 필드를 보존하고, 현재 편집 중인 메모도 같은 연도에 명시적으로 저장합니다. */
+      state.fcYearMisc[K]=Object.assign({},state.fcYearMisc[K]||{},
+        {exclCust:cp(f.exclCust),cmgrExcl:cp(state.cmgrExcl),sgTomb:cp(state.strategyActionTombstones),sgRestoreAt:(+state.strategyActionRestoreAt||0),targetExclCust:cp(f.targetExclCust),targetOnlyExcl:cp(f.targetOnlyExcl),strategyPlan:cp(state.strategyPlan),
+         notesHtml:String(f.notesHtml||''),notesTeam:String(f.notesTeam||''),notesSales:String(f.notesSales||''),notesTech:String(f.notesTech||''),notesMeta:cp(f.notesMeta||{})});
       state.pdYears=state.pdYears||{};
       state.pdYears[K]=cp(state.pd)||{};
     }catch(_e){}
@@ -33029,6 +33121,7 @@ window.sgSyncCustMemoV617=syncMemo;
         baseYearPlan:(state.fc&&state.fc.baseYearPlan)||'',
         baseYearCut:(state.fc&&state.fc.baseYearCut!=null)?state.fc.baseYearCut:'auto',
         baseFutureMode:(state.fc&&state.fc.baseFutureMode==='plan')?'plan':'mod',
+        baseFutureV861:(state.fc&&state.fc._baseFutureV861)||'',
         miscSplit:(state.fc&&state.fc._miscSplitV718)||'',
         exclSplit:(state.fc&&state.fc._exclSplitV720)||'',
         sgSplit:(state.fc&&state.fc._sgSplitV721)||'',
@@ -33058,6 +33151,7 @@ window.sgSyncCustMemoV617=syncMemo;
   var _restored=false;
   async function _v718Restore(){
     if(_restored)return; _restored=true;
+    var _migratedV861=false;
     try{
       var s=await idbGet(KEY);
       if(s&&typeof s==='object'){
@@ -33067,7 +33161,16 @@ window.sgSyncCustMemoV617=syncMemo;
         if(s.targetOnlyExcl&&typeof s.targetOnlyExcl==='object')state.fc.targetOnlyExcl=s.targetOnlyExcl;
         if(s.baseYearPlan)state.fc.baseYearPlan=s.baseYearPlan;
         if(s.baseYearCut!=null)state.fc.baseYearCut=s.baseYearCut;
-        if(s.baseFutureMode)state.fc.baseFutureMode=(s.baseFutureMode==='plan')?'plan':'mod';
+        /* v861 : 다음 연도 기본 기준은 기준연도 그래프의 «월 목표»입니다.
+           기존 저장값(mod)은 한 번만 plan으로 옮기고, 이후 사용자가 직접 바꾼 선택은 보존합니다. */
+        if(s.baseFutureV861){
+          state.fc._baseFutureV861=s.baseFutureV861;
+          if(s.baseFutureMode)state.fc.baseFutureMode=(s.baseFutureMode==='plan')?'plan':'mod';
+        }else{
+          state.fc.baseFutureMode='plan';
+          state.fc._baseFutureV861='monthly-target';
+          _migratedV861=true;
+        }
         if(s.miscSplit)state.fc._miscSplitV718=s.miscSplit;
         if(s.exclSplit)state.fc._exclSplitV720=s.exclSplit;
         if(s.sgSplit)state.fc._sgSplitV721=s.sgSplit;
@@ -33092,8 +33195,13 @@ window.sgSyncCustMemoV617=syncMemo;
       }
     }catch(_e){}
     window.__V718_RESTORED=true;
+    if(_migratedV861)try{ await window.fcSaveYearSettingsV718(); }catch(_e){}
   }
-  function _v718Sched(){ setTimeout(_v718Restore,1200);
+  function _v718Sched(){
+    /* v860 : 임의로 1.2초 기다리지 않고 일반 설정 복원이 끝난 즉시 연도별 설정을 잇달아 복원합니다. */
+    var _n=0,_t=setInterval(function(){
+      _n++; if(window.__FC_SETTINGS_LOADED_V860||_n>100){ clearInterval(_t); _v718Restore(); }
+    },40);
     /* v724 : 늦게 끝나는 다른 복원이 연도값을 덮어쓰는 경우가 있어 한 번 더 맞춰 줍니다 */
     setTimeout(function(){ try{ if(window.__V718_RESTORED&&typeof fcReapplyStrategyV724==='function'){ fcReapplyStrategyV724(); if(state.act==='strategy'&&typeof strategyPage==='function')strategyPage(); } }catch(_e){} },3600); }
   if(document.readyState==='complete')_v718Sched();
@@ -33391,10 +33499,20 @@ function build2026Plan2(){
        (예전에는 2027 화면을 그릴 때마다 2026 화면 전체를 한 번 더 그려 큰 자료에서 «응답 없음»이 났습니다) */
     var _real=document.getElementById('result'), _tmp=null;
     window.__FC_BUILDING_V737=true;
+    var _exactChart=null;
     try{
       if(_real){ _real.id='result__v737hold'; _tmp=document.createElement('div'); _tmp.id='result'; _tmp.style.cssText='display:none!important'; _tmp.setAttribute('aria-hidden','true'); document.body.appendChild(_tmp); }
       var _sil=(typeof _fcSilentV678!=='undefined'); if(_sil)_fcSilentV678=true;
-      try{ forecast(); } finally { if(_sil)_fcSilentV678=false; }
+      try{
+        forecast();
+        var _hc=window.FC_CHART_V677;
+        if(_hc&&+_hc.CY===+dm){
+          _exactChart={
+            tgt:Array.isArray(_hc.tgt)?_hc.tgt.slice():null,
+            act:Array.isArray(_hc.act)?_hc.act.slice():null
+          };
+        }
+      } finally { if(_sil)_fcSilentV678=false; }
     } finally {
       if(_tmp&&_tmp.parentNode)_tmp.parentNode.removeChild(_tmp);
       if(_real)_real.id='result';
@@ -33412,6 +33530,7 @@ function build2026Plan2(){
       if(tot>0)newAlloc={map:nc,tot:tot};
     }catch(_x){}
     var data={cut:_cutB,planCut:fcNormalizeCutoff(p.actualCutoffMonth),tot:(x.fcMonTot||Array(13).fill(0)).slice(),mod:mod,newAlloc:newAlloc,
+      chartTgt:_exactChart&&_exactChart.tgt?_exactChart.tgt:null,chartAct:_exactChart&&_exactChart.act?_exactChart.act:null,
       cust:cloneMonthMaps(x.fcCustMon),prod:cloneMonthProdMaps(x.fcProdMon),cp:cloneMonthCustProd(x.fcCustProdMon)};
     _plan2Cache={sig:sig,cur:CUR,data:data};return data;
   }catch(_e){return null;}
@@ -33439,12 +33558,28 @@ if(typeof window.fcBaseAgg==='function'&&!window.fcBaseAgg.__v729){
     if(window.__nyAggV737&&window.__nyAggV737.plan===plan&&window.__nyAggV737.raw===raw&&window.__nyAggV737.cur===CUR&&window.__nyAggV737.n===CUR.length&&window.__nyAggV737.fmode===_fmode)return window.__nyAggV737.out;
     var M=function(){return Array.from({length:13},function(){return new Map();});};
     var pyTot=Array(13).fill(0),pyCust=M(),pyProd=M(),pyCP=M();
+    /* v861 : 기준연도 화면의 막대 금액과 세부 집계 합계를 원 단위로 맞춥니다.
+       화면 목표에는 PD·제외·신규 목표 같은 후처리가 포함되므로 fcMonTot만 넘기면 금액이 달라졌습니다. */
+    function copyScaledMonth(m,goal,srcCust,srcProd,srcCP,label){
+      goal=Math.max(0,+goal||0); var base=0;
+      if(srcCust&&srcCust.forEach)srcCust.forEach(function(v){base+=(+v||0);});
+      if(base>0){
+        var sc=goal/base;
+        srcCust.forEach(function(v,k){pyCust[m].set(k,(+v||0)*sc);});
+        if(srcProd&&srcProd.forEach)srcProd.forEach(function(v,k){pyProd[m].set(k,{amt:(+v.amt||0)*sc,qty:(+v.qty||0)*sc});});
+        if(srcCP&&srcCP.forEach)srcCP.forEach(function(pm,c){var d=new Map();pm.forEach(function(v,k){d.set(k,{amt:(+v.amt||0)*sc,qty:(+v.qty||0)*sc});});pyCP[m].set(c,d);});
+      }else if(goal>0){
+        var c=label||'(기준연도 금액)', k=c+'\u2502';
+        pyCust[m].set(c,goal);pyProd[m].set(k,{amt:goal,qty:0});
+        var d=new Map();d.set(k,{amt:goal,qty:0});pyCP[m].set(c,d);
+      }
+      pyTot[m]=goal;
+    }
     for(var m=1;m<=12;m++){
       if(m<=plan.cut){
-        pyTot[m]=+raw.cyMonTot[m]||0;
-        raw.cyMonCust[m].forEach(function(v,k){pyCust[m].set(k,v);});
-        raw.cyMonProd[m].forEach(function(v,k){pyProd[m].set(k,{amt:+v.amt||0,qty:+v.qty||0});});
-        raw.cyMonCustProd[m].forEach(function(pm,c){var d=new Map();pm.forEach(function(v,k){d.set(k,{amt:+v.amt||0,qty:+v.qty||0});});pyCP[m].set(c,d);});
+        /* 확정월은 2026 화면의 남색 «실적» 막대 금액을 그대로 사용합니다. */
+        var actualGoal=(plan.chartAct&&plan.chartAct[m]!=null)?plan.chartAct[m]:raw.cyMonTot[m];
+        copyScaledMonth(m,actualGoal,raw.cyMonCust[m],raw.cyMonProd[m],raw.cyMonCustProd[m],'(기준연도 확정실적)');
       }else if((typeof fcBaseFutureModeV741!=='function'||fcBaseFutureModeV741()==='mod')&&plan.mod&&plan.mod[m]!=null){
         /* v734 : 주간보고 「목표수정액」 기준 */
         var goal=+plan.mod[m]||0, baseSum=0;
@@ -33465,10 +33600,9 @@ if(typeof window.fcBaseAgg==='function'&&!window.fcBaseAgg.__v729){
           var pe=pyProd[m].get(NK)||{amt:0,qty:0}; pe.amt+=a; pyProd[m].set(NK,pe); });
         pyTot[m]=goal;
       }else{
-        pyTot[m]=+plan.tot[m]||0;
-        plan.cust[m].forEach(function(v,k){pyCust[m].set(k,v);});
-        plan.prod[m].forEach(function(v,k){pyProd[m].set(k,{amt:+v.amt||0,qty:+v.qty||0});});
-        plan.cp[m].forEach(function(pm,c){var d=new Map();pm.forEach(function(v,k){d.set(k,{amt:+v.amt||0,qty:+v.qty||0});});pyCP[m].set(c,d);});
+        /* 이후월은 선택한 2026 목표안 화면의 노란 «월 목표» 막대 금액을 그대로 사용합니다. */
+        var targetGoal=(plan.chartTgt&&plan.chartTgt[m]!=null)?plan.chartTgt[m]:plan.tot[m];
+        copyScaledMonth(m,targetGoal,plan.cust[m],plan.prod[m],plan.cp[m],'(기준연도 월 목표)');
       }
     }
     var _meta=raw.prodMeta; try{ if(_meta&&!_meta.has('(신규업체 목표)\u2502'))_meta.set('(신규업체 목표)\u2502',{code:'(신규업체 목표)',name:'신규업체 목표(기준연도 목표수정액)',spec:''}); }catch(_x){}
@@ -33820,11 +33954,11 @@ if(!install()){ var n=0,t=setInterval(function(){ if(install()||++n>40)clearInte
 })();
 </script>
 <script id="v741-base-future-mode">
-/* v741 : 다음 연도 목표의 «미도래월» 기준 선택
-   · mod  = 주간보고 「목표수정액」 (기본) — 신규업체·신규라인 목표가 확정 이후 월에 몰려 배분된 금액 포함
-   · plan = 기준연도 그 달의 월 목표 그대로 */
+/* v741/v861 : 다음 연도 목표의 «미도래월» 기준 선택
+   · plan = 기준연도 그 달의 월 목표 그대로 (기본)
+   · mod  = 주간보고 「목표수정액」 — 사용자가 직접 선택한 경우에만 사용 */
 (function(){
-  window.fcBaseFutureModeV741=function(){ var v=''; try{ v=String((state&&state.fc&&state.fc.baseFutureMode)||''); }catch(_e){} return v==='plan'?'plan':'mod'; };
+  window.fcBaseFutureModeV741=function(){ var v=''; try{ v=String((state&&state.fc&&state.fc.baseFutureMode)||''); }catch(_e){} return v==='mod'?'mod':'plan'; };
   window.fcBaseFutureLabelV741=function(){ return fcBaseFutureModeV741()==='plan'?'월 목표':'목표수정액'; };
 })();
 </script>
@@ -33895,6 +34029,8 @@ var OPEN=false;   /* v759 : 점검 패널을 펼쳐 둔 상태를 기억합니�
 var EDIT={kind:'',m:0};   /* v775 : 열어 둔 «월% 편집창»을 기억합니다 */
 function build(){
   var el=document.getElementById('fcDiffPanelV757'); if(!el)return;
+  /* v859 : toggle 이벤트보다 재렌더가 먼저 와도 펼침 상태를 잃지 않습니다. */
+  try{ if(state&&state.fc&&state.fc.diffOpenV859!=null)OPEN=!!state.fc.diffOpenV859; }catch(_o){}
   var C=window.FC_CHART_V677; if(!C||!C.py)return;   /* v758 : 값이 없으면 직전 표를 그대로 둡니다 */
   if(el.getAttribute('data-at')===String(C.at))return;
   el.setAttribute('data-at',String(C.at));
@@ -33944,7 +34080,11 @@ function build(){
     '<div style="margin-top:6px;font-size:11px;color:#64748b">기준액 = 화면 상단에서 고른 «기준 연도 목표안»의 월별 금액(확정월까지 실적 + 이후월 목표수정액/월 목표). 목표액 = 그 기준액에 아래 설정을 적용한 결과입니다.</div>'+
     '</div></details>';
   var det=document.getElementById('fcDiffDetV757');
-  if(det)det.addEventListener('toggle',function(){ OPEN=!!det.open; });
+  if(det){
+    var sum=det.querySelector('summary');
+    if(sum)sum.addEventListener('click',function(){ OPEN=!det.open; try{state.fc.diffOpenV859=OPEN;}catch(_e){} });
+    det.addEventListener('toggle',function(){ OPEN=!!det.open; try{state.fc.diffOpenV859=OPEN;}catch(_e){} });
+  }
   var btn=document.getElementById('fcDiffResetV757');
   if(btn)btn.addEventListener('click',function(){
     var msg=document.getElementById('fcDiffMsgV757');
@@ -35083,7 +35223,7 @@ window.sgMemoCacheResetV844=function(){ _catCacheV844=null; _catSigV844=''; _mem
 (function(){var native=window.saveSettings;if(typeof native!=='function'||native.__prodMemoV836)return;var wrapped=function(){try{syncProductMemo();}catch(_e){}return native.apply(this,arguments);};wrapped.__prodMemoV836=true;window.saveSettings=wrapped;try{saveSettings=wrapped;}catch(_e){}})();
 (function(){var native=window.forecast;if(typeof native!=='function'||native.__prodMemoV836)return;var wrapped=function(){try{syncProductMemo();}catch(_e){}return native.apply(this,arguments);};wrapped.__prodMemoV836=true;window.forecast=wrapped;try{forecast=wrapped;}catch(_e){}})();
 (function(){
-  function decorate(){var list=document.querySelectorAll('#result .fcpmemo');for(var i=0;i<list.length;i++){var el=list[i];if(el.dataset.prodMemoV836)continue;el.dataset.prodMemoV836='1';el.title='② 영업전략 추진현황에 등록한 <거래처 / 비고·아이템>이 '+MARK+' 뒤에 자동으로 표시됩니다.\n'+MARK+' 앞부분은 직접 쓴 메모로 유지되며, 전략을 지우면 뒷부분만 사라집니다.';if(!el.placeholder)el.placeholder='이슈 메모 ('+MARK+' 자동연동)';}}
+  function decorate(){var list=document.querySelectorAll('#result .fcpmemo');for(var i=0;i<list.length;i++){var el=list[i];if(el.dataset.prodMemoV836)continue;el.dataset.prodMemoV836='1';el.title='② 영업전략 추진현황에 등록한 <거래처 / 비고·아이템>이 '+MARK+' 뒤에 자동으로 표시됩니다.\n'+MARK+' 앞부분은 직접 쓴 메모로 유지되며, 전략을 지우면 뒷부분만 사라집니다.';if(!el.placeholder||el.placeholder==='이슈 메모')el.placeholder='이슈 메모 ('+MARK+' 자동연동)';}}
   var t=null,obs=new MutationObserver(function(){clearTimeout(t);t=setTimeout(decorate,120);});function start(){var r=document.getElementById('result');if(!r){setTimeout(start,600);return;}obs.observe(r,{childList:true,subtree:true});try{syncProductMemo();}catch(_e){}decorate();}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
 })();
@@ -35520,6 +35660,10 @@ function hasValue(plan,key){
 /* 연도 보관함(+현재 편집값)에 값이 있는 칸은 초기화 기록에서 해제합니다 */
 window.fcLedgerReleaseFromDataV838=function(){
   try{
+    /* v859 : 서버값만 보고 삭제기록을 자동 해제하면 초기화 전의 오래된 값도 «새 입력»으로
+       오인되어 되살아납니다. 실제 재입력은 v841 input 처리기가 해당 칸만 정확히 해제하므로
+       원격 자료에 의한 일괄 해제는 중단합니다. */
+    return 0;
     var a=readLedger(), years=Object.keys(a), freed=0;
     if(!years.length)return 0;
     var liveY=''; try{ liveY=String((state.fc&&state.fc._ctxYear)||((typeof fcTargetYear==='function')?fcTargetYear():'')); }catch(_y){}
@@ -35720,7 +35864,7 @@ window.fcSyncSizeWarnV839=function(){
 'use strict';
 var KEYS=['pct','pctAt','override','overrideAt','addPct','addPctAt','prodOverride','prodAddPct',
           'custProdOverride','custMonthPct','prodMonthPct','newCusts','newProds','newLines',
-          'newCustReplacements','actualCutoffMonth'];
+          'newCustReplacements','actualCutoffMonth','matchBaseExact'];
 var RE=/^fcY(\d{4})p([12])_([A-Za-z]+)$/, REA=/^fcY(\d{4})_activePlan$/;
 
 function yp(){ try{ var f=state.fc; if(!f)return null;
@@ -35835,8 +35979,9 @@ try{ setTimeout(function(){ try{ window.fcSyncCheckV841(); }catch(_e){} },6000);
 (function(){
 'use strict';
 var LS='fcResetLedgerV841';
-var F8=['custMonthPct','prodMonthPct','override','addPct','prodOverride','prodAddPct','pct','custProdOverride',
-        'newCusts','newProds','newLines','newCustReplacements'];
+/* v859 : % 되돌리기는 % 스냅샷에 든 여덟 항목의 삭제기록만 해제합니다.
+   신규업체·신규제품 삭제기록까지 함께 풀던 범위 오류를 제거했습니다. */
+var F8=['custMonthPct','prodMonthPct','override','addPct','prodOverride','prodAddPct','pct','custProdOverride'];
 
 function readL(){ var a={}; try{ a=JSON.parse(localStorage.getItem(LS)||'{}')||{}; }catch(_e){}
   try{ var b=(state.fc&&state.fc.resetLedgerV841)||{};
@@ -35872,18 +36017,27 @@ try{
       /* ① 그 연도의 초기화 기록을 먼저 해제 — 안 그러면 되돌리자마자 다시 지워집니다 */
       var freed=0;
       try{ freed=window.fcLedgerClearYearV842((it&&it.y)||((typeof fcTargetYear==='function')?fcTargetYear():'')); }catch(_e3){}
-      var r=await orig.call(this,idx);
-      /* ③ 되돌린 값을 그 연도 보관함에 확정 저장 */
+      /* v859 : 기존 함수는 저장·forecast를 이미 실행한 뒤 아래에서 다시 한 번 실행했습니다.
+         스냅샷을 여기서 직접 복원하여 저장·동기화·화면 갱신을 각각 한 번만 합니다. */
+      if(!it||!it.d)return false;
+      FC_SNAP_FIELDS_V803.forEach(function(f){
+        if(Object.prototype.hasOwnProperty.call(it.d,f[0]))state.fc[f[0]]=JSON.parse(JSON.stringify(it.d[f[0]]||{}));
+      });
+      try{ if(typeof logEdit==='function')logEdit('매출 목표','% 값 되돌리기 · '+new Date(it.t).toLocaleString('ko-KR')+' 시점('+it.n+'건)'); }catch(_e4){}
+      /* ③ 되돌린 값을 그 연도 보관함과 서버에 확정 저장 */
       try{
         var y2=(typeof fcTargetYear==='function')?fcTargetYear():'';
         if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
         if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(y2);
         if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();
         if(typeof saveSettings==='function')await saveSettings();
+        if(typeof gsSave==='function'&&state.gsync&&state.gsync.url&&state.gsync.key){
+          await gsSave(true); if(state.gsync.lastOp==='load')await gsSave(true);
+        }
         if(typeof forecast==='function')forecast();
-      }catch(_e4){}
+      }catch(_e5){}
       try{ console.info('[v842] 되돌리기 — 초기화 기록 '+freed+'건 해제 후 복원'); }catch(_c){}
-      return r;
+      return true;
     };
     w.__v842=true; window.fcSnapRestoreV803=w; try{ fcSnapRestoreV803=w; }catch(_e5){}
   }
@@ -35996,7 +36150,28 @@ function pk(code,spec){ return S(code)+'│'+S(spec); }
 /* ── 내보내기 ── */
 function expo(which){
   var E=state._fcExport||{}; if(!E.custArr){ try{ uiConfirm('표가 아직 준비되지 않았습니다. 잠시 후 다시 눌러 주세요.'); }catch(_e){} return; }
-  var f=state.fc, yr=(typeof fcTargetYear==='function')?fcTargetYear():'';
+  var f=state.fc, F=state._fc||{}, yr=(typeof fcTargetYear==='function')?fcTargetYear():'';
+  /* v858 : 월별보기를 켠 상태에서는 화면과 같은 1~12월 금액(또는 수량)을 저장합니다.
+     뒤쪽에는 월별 조정%·메모도 함께 넣어 기존 불러오기/편집 자료로 계속 활용할 수 있습니다. */
+  if(which==='cust'&&f._custMonView&&F.cyMonCust&&F.fcCustMon){
+    var mh=['순위','거래처'].concat(MON).concat(['합계','거래처 제외','목표합산 제외']).concat(MON.map(function(m){return m+' 조정%';})).concat(['메모']);
+    var ma=[mh];
+    (E.custArr||[]).forEach(function(o,i){
+      var vals=MON.map(function(_,k){var m=k+1,map=m<=E.lastAct?F.cyMonCust[m]:F.fcCustMon[m];return Math.round((map&&map.get(o.c))||0);});
+      var mp=(f.custMonthPct||{})[o.c]||{};
+      ma.push([i+1,o.c].concat(vals).concat([vals.reduce(function(a,b){return a+b;},0),o.excl?'Y':'',o.targetOnly?'Y':'']).concat(MON.map(function(_,k){var v=mp[k+1];return(v==null||v==='')?'':+v;})).concat([(f.custMemo||{})[o.c]||'']));
+    });
+    dlXLSX('forecast_customer_monthly_'+yr+'.xlsx','거래처월별목표',ma);return;
+  }
+  if(which==='prod'&&f._prodMonView&&F.cyMonProd&&F.fcProdMon){
+    var qty=!!f._prodQtyView, ph=['순위','품번','품명','규격'].concat(MON).concat(['합계']).concat(MON.map(function(m){return m+' 조정%';})).concat(['메모']),pa=[ph];
+    (E.prodArr||[]).forEach(function(o,i){
+      var vals=MON.map(function(_,k){var m=k+1,map=m<=E.lastAct?F.cyMonProd[m]:F.fcProdMon[m],e=map&&map.get(o.pk);return Math.round(e?(qty?(e.qty||0):(e.amt||0)):0);});
+      var mp=(f.prodMonthPct||{})[o.pk]||{};
+      pa.push([i+1,o.code,o.name,o.spec].concat(vals).concat([vals.reduce(function(a,b){return a+b;},0)]).concat(MON.map(function(_,k){var v=mp[k+1];return(v==null||v==='')?'':+v;})).concat([(f.prodMemo||{})[o.pk]||'']));
+    });
+    dlXLSX('forecast_product_monthly_'+(qty?'qty_':'')+yr+'.xlsx',qty?'제품월별목표수량':'제품월별목표금액',pa);return;
+  }
   if(which==='cust'){
     var head=['거래처','실적(1~'+E.lastAct+'월)','전년('+E.PY+')','올해목표('+E.CY+')','거래처 제외','목표합산 제외','증감액','증감%','조정%','추가%','메모'].concat(MON.map(function(m){return m+'%';}));
     var aoa=[head];
@@ -36113,6 +36288,154 @@ try{ new MutationObserver(bind).observe(document.body,{childList:true,subtree:tr
 setInterval(bind,900);
 if(document.readyState==='complete')setTimeout(bind,500);
 else window.addEventListener('load',function(){setTimeout(bind,500);},{once:true});
+})();
+</script>
+
+<script id="v855-forecast-sync-consistency">
+/* v855 · 서버에서 받은 연도별 목표·제외·PD 보관함을 로컬 예전값이 다시 덮어쓰는 문제를 막습니다. */
+(function(){
+'use strict';
+function cp(v){if(v===undefined)return undefined;try{return JSON.parse(JSON.stringify(v));}catch(_e){return v;}}
+function year(){try{return String((typeof fcTargetYear==='function')?fcTargetYear():((state.fc||{})._ctxYear||''));}catch(_e){return '';}}
+function adoptAll(){
+  try{if(typeof fcReapplyYearV721==='function')fcReapplyYearV721();}catch(_e){}
+  try{
+    var y=year(),m=(state.fcYearMisc||{})[y],f=state.fc||{};
+    if(m){
+      ['notesHtml','notesTeam','notesSales','notesTech'].forEach(function(k){if(m[k]!=null)f[k]=String(m[k]||'');});
+      if(m.notesMeta&&typeof m.notesMeta==='object')f.notesMeta=cp(m.notesMeta);
+    }
+    if(typeof fcNotesSyncYearV789==='function')fcNotesSyncYearV789();
+  }catch(_e2){}
+  try{if(typeof syncExcludedCustMaps==='function')syncExcludedCustMaps();}catch(_e3){}
+  try{if(typeof syncTargetExcludedCustMap==='function')syncTargetExcludedCustMap();}catch(_e4){}
+  /* v856 : 호환 정리된 PD/목표합산 제외값을 현재 연도 보관함에도 즉시 반영합니다.
+     그래야 화면은 같아도 보관함 hash만 다른 상태가 남지 않습니다. */
+  try{
+    var yy=year();
+    if(yy){
+      if(typeof pdEnsure==='function')pdEnsure();
+      state.pdYears=state.pdYears&&typeof state.pdYears==='object'?state.pdYears:{};
+      state.pdYears[yy]=cp(state.pd||{});
+      state.fcYearMisc=state.fcYearMisc&&typeof state.fcYearMisc==='object'?state.fcYearMisc:{};
+      var mm=state.fcYearMisc[yy]||(state.fcYearMisc[yy]={}),tx=cp((state.fc||{}).targetExclCust||{});
+      mm.targetExclCust=tx;mm.targetOnlyExcl=cp(tx);
+    }
+  }catch(_e6){}
+  try{_fcBaseAggCache=null;_fcBase27Cache=null;window.__nyAggV737=null;}catch(_e5){}
+}
+window.fcAdoptAllSyncV855=adoptAll;
+
+/* restoreFull 마지막에서 로컬값을 복원하더라도, 방금 서버가 반영한 세 보관함은 그대로 유지합니다. */
+try{
+  var oldRestore=window.fcRestoreYearLiveV723;
+  if(typeof oldRestore==='function'&&!oldRestore.__v855){
+    var newRestore=function(o){
+      var yp,misc,pdy;
+      try{yp=cp(state.fc&&state.fc.yearPlans);misc=cp(state.fcYearMisc);pdy=cp(state.pdYears);}catch(_e){}
+      var r=oldRestore.apply(this,arguments);
+      try{
+        if(yp&&typeof yp==='object')state.fc.yearPlans=yp;
+        if(misc&&typeof misc==='object')state.fcYearMisc=misc;
+        if(pdy&&typeof pdy==='object')state.pdYears=pdy;
+        adoptAll();
+      }catch(_e2){}
+      return r;
+    };
+    newRestore.__v855=true;window.fcRestoreYearLiveV723=newRestore;
+  }
+}catch(_e){}
+
+/* 후속 패치가 있어도 요청한 전체 항목이 gsFields에서 빠지지 않게 합니다. */
+try{
+  var oldFields=window.gsFields;
+  if(typeof oldFields==='function'&&!oldFields.__v855){
+    var newFields=function(){
+      var rows=oldFields.apply(this,arguments),req=[
+        ['headcount',state,'headcount'],['headMonthly',state,'headMonthly'],['headYearDefault',state,'headYearDefault'],
+        ['workdays',state,'workdays'],['bep',state,'bep'],['bepYears',state,'bepYears'],
+        ['fcYearMisc',state,'fcYearMisc'],['pdYears',state,'pdYears'],
+        ['fcCustMemo',state.fc,'custMemo'],['fcProdMemo',state.fc,'prodMemo']
+      ];
+      req.forEach(function(x){if(!rows.some(function(r){return r[0]===x[0];}))rows.push(x);});
+      return rows;
+    };
+    newFields.__v855=true;window.gsFields=newFields;try{gsFields=newFields;}catch(_e2){}
+  }
+}catch(_e){}
+
+function syncView(){
+  try{
+    if(typeof v801Typing==='function'&&v801Typing())return;
+    if(typeof window.__selOpenV845==='function'&&window.__selOpenV845())return;
+    if(state.act==='forecast'){
+      state._syncDeferred=false;
+      if(typeof forecast==='function')forecast();else if(typeof runAct==='function')runAct();
+    }else if(state.act==='trend'||state.act==='strategy'){
+      state._syncDeferred=false;if(typeof runAct==='function')runAct();
+    }
+  }catch(_e){}
+}
+function signature(){
+  try{return JSON.stringify({y:year(),h:state.headcount,hm:state.headMonthly,hy:state.headYearDefault,w:state.workdays,b:state.bep,by:state.bepYears,yp:state.fc&&state.fc.yearPlans,m:state.fcYearMisc,p:state.pdYears});}catch(_e){return '';}
+}
+
+/* 불러오기·저장 후 정말 값이 바뀌었을 때만 목표 화면을 재계산합니다. */
+['gsLoad','gsSave'].forEach(function(name){
+  try{
+    var fn=window[name];if(typeof fn!=='function'||fn.__v855)return;
+    var w=async function(){var before=signature(),r=await fn.apply(this,arguments);adoptAll();var after=signature();if(before!==after)setTimeout(syncView,50);return r;};
+    w.__v855=true;window[name]=w;try{eval(name+'=w');}catch(_e2){}
+  }catch(_e){}
+});
+
+/* 두 PC의 진단값(hash)과 항목수를 비교할 수 있게 합니다. */
+window.fcSyncAuditV855=function(){
+  var s=signature(),h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
+  var y=year(),ys=((state.fc||{}).yearPlans||{})[y]||{},p=(ys.targetPlans||{})[ys.activePlan==='2'?'2':'1']||{},m=(state.fcYearMisc||{})[y]||{},pd=(state.pdYears||{})[y]||{};
+  var out={version:'v864',year:y,plan:ys.activePlan==='2'?'2':'1',hash:('00000000'+(h>>>0).toString(16)).slice(-8),
+    monthlyPct:Object.keys(p.pct||{}).length,custAdjust:Object.keys(p.override||{}).length,custMonthly:Object.keys(p.custMonthPct||{}).length,
+    prodAdjust:Object.keys(p.prodOverride||{}).length,prodMonthly:Object.keys(p.prodMonthPct||{}).length,targetExcluded:Object.keys(m.targetExclCust||{}).filter(function(k){return m.targetExclCust[k];}).length,
+    workdays:Object.keys(state.workdays||{}).length,bepYears:Object.keys(state.bepYears||{}).length,headMonths:Object.keys(state.headMonthly||{}).length,
+    noteChars:String(m.notesHtml||'').length+String(m.notesTeam||'').length+String(m.notesSales||'').length+String(m.notesTech||'').length,
+    pdMonths:Object.keys(pd.labor||{}).length+Object.keys(pd.process||{}).length+Object.keys(pd.indirect||{}).length};
+  try{console.table(out);}catch(_e){}return out;
+};
+})();
+</script>
+
+<script id="v860-initial-forecast-consistency">
+/* v860/v862 · 첫 화면에서 오래된 로컬 목표가 잠깐 보였다가 서버값으로 바뀌는 현상 방지
+   서버 응답이 늦거나 끊겨도 화면 자체는 6초 안에 반드시 엽니다. 동기화는 백그라운드에서 계속됩니다. */
+(function(){
+'use strict';
+var released=false,timer=null,started=Date.now(),MAX_WAIT=6000;
+function configured(){try{return !!(state&&state.gsync&&String(state.gsync.url||'').trim()&&String(state.gsync.key||'').trim());}catch(_e){return false;}}
+function release(){
+  if(released)return; released=true; window.__FC_BOOT_BLOCK_V860=false;
+  if(timer){clearInterval(timer);timer=null;}
+  try{
+    if(state.act==='forecast'&&typeof CUR!=='undefined'&&CUR.length&&typeof forecast==='function')forecast();
+    else if(window.__FC_BOOT_WANTS_RENDER_V860&&state.act==='forecast'&&typeof runAct==='function')runAct();
+  }catch(_e){}
+}
+function check(){
+  if(released)return;
+  var localReady=!!(window.__FC_SETTINGS_LOADED_V860&&window.__V718_RESTORED);
+  /* 일반 설정 또는 연도 설정 복원이 예외로 끝난 경우도 무한 대기하지 않습니다. */
+  if(!localReady&&Date.now()-started<MAX_WAIT)return;
+  /* 정상 연결이면 서버 결과를 우선 기다리되, 네트워크 지연은 화면을 막지 않습니다. */
+  if(configured()&&!window.__FC_GS_SETTLED_V860&&Date.now()-started<MAX_WAIT)return;
+  if(!window.__FC_GS_SETTLED_V860&&configured())try{console.warn('[v862] 동기화는 백그라운드에서 계속하고 매출목표 화면을 먼저 엽니다.');}catch(_e){}
+  release();
+}
+timer=setInterval(check,50);
+if(document.readyState==='complete')setTimeout(check,0);
+else window.addEventListener('load',check,{once:true});
+/* 서버 설정이 없는 로컬 사용도 연도별 복원이 끝나면 즉시 표시됩니다. */
+setTimeout(check,250);
+/* requestJson의 장시간 재시도와 관계없이 화면 차단을 해제하는 최종 안전장치 */
+setTimeout(check,MAX_WAIT+50);
 })();
 </script>
 
