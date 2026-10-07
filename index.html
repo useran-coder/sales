@@ -732,6 +732,18 @@
   .fc-cutoff-ctl{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#1e3a5f;background:#eef2f8;border:1px solid #d4ddea;border-radius:8px;padding:4px 9px}
   .fc-cutoff-ctl select{font-family:inherit;font-size:12px;font-weight:700;padding:2px 4px;border:1px solid #c3cede;border-radius:6px;background:#fff;color:#1e3a5f;cursor:pointer}
   #fcCutoffSel{width:66px;min-width:66px}
+  /* v848 : Windows/Chromium이 네이티브 select 목록을 OS 다크 테마로 따로 그리면
+     option CSS가 무시되어 검은 박스가 되는 문제가 있습니다. 실적확정만 HTML 목록으로 표시합니다. */
+  #fcCutoffSel.fc-cutoff-native{display:none!important}
+  .fc-cutoff-ctl.fc-cutoff-custom{position:relative;overflow:visible}
+  .fc-cutoff-btn{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;width:66px;min-width:66px;height:27px;box-sizing:border-box;padding:2px 7px;border:1px solid #c3cede;border-radius:6px;background:#fff!important;color:#1e3a5f!important;font:700 12px/1.2 inherit;cursor:pointer;box-shadow:none!important;transform:none!important;filter:none!important}
+  .fc-cutoff-btn:hover,.fc-cutoff-btn:focus,.fc-cutoff-btn[aria-expanded="true"]{border-color:#60a5fa;background:#eff6ff!important;outline:none;box-shadow:0 0 0 2px rgba(96,165,250,.18)!important}
+  .fc-cutoff-caret{font-size:10px;color:#64748b;line-height:1}
+  .fc-cutoff-menu{position:absolute;z-index:10020;top:calc(100% + 4px);right:26px;width:74px;max-height:318px;overflow-y:auto;box-sizing:border-box;padding:4px;border:1px solid #cbd5e1;border-radius:8px;background:#fff!important;color:#1e3a5f!important;box-shadow:0 10px 28px rgba(15,23,42,.20);color-scheme:light}
+  .fc-cutoff-menu[hidden]{display:none!important}
+  .fc-cutoff-opt{display:block;width:100%;min-height:28px;margin:0;padding:5px 8px;border:0;border-radius:5px;background:#fff!important;color:#1e3a5f!important;font:700 12px/1.2 inherit;text-align:left;cursor:pointer;box-shadow:none!important;transform:none!important;filter:none!important}
+  .fc-cutoff-opt:hover,.fc-cutoff-opt:focus{background:#eff6ff!important;color:#1d4ed8!important;outline:none}
+  .fc-cutoff-opt[aria-selected="true"]{background:#dbeafe!important;color:#1e3a8a!important}
   /* v843 : 윈도우 크롬·엣지에서 펼침 목록이 «검은 상자»로 나오던 문제.
      목록(option)은 select 의 배경을 물려받는데 값이 비면 검정으로 칠해집니다.
      밝은 테마로 고정하고 항목 색을 직접 지정합니다. */
@@ -11317,20 +11329,25 @@ function setExcludedCust(c,checked){
 // 거래처 표시 제외와 2026 목표합산 제외를 별도 관리한다.
 // 목표합산 제외만 선택하면 거래처·실적은 정상 표시되고 목표액만 0원 처리된다.
 function syncTargetExcludedCustMap(){
-  state.fc=state.fc||{}; state.fc.targetExclCust=state.fc.targetExclCust||{};
+  state.fc=state.fc||{}; state.fc.targetExclCust=state.fc.targetExclCust||{}; state.fc.targetOnlyExcl=state.fc.targetOnlyExcl||{};
+  /* v856 : 예전 PC가 targetOnlyExcl에만 저장한 목표합산 제외값을 1회 호환합니다.
+     현재 맵에 값이 있으면 그것을 우선하고, 정리 뒤에는 두 이름을 같은 내용으로 맞춰
+     PC별 버전 차이로 체크가 되살아나거나 사라지지 않게 합니다. */
+  const modernHas=Object.values(state.fc.targetExclCust).some(Boolean);
+  if(!modernHas)Object.entries(state.fc.targetOnlyExcl).forEach(([c,v])=>{ if(v)state.fc.targetExclCust[c]=true; });
   const universe=fcCustomerUniverse(), canonical=new Map();
   universe.forEach(c=>{ const k=fcCustKey(c), prev=canonical.get(k); if(!prev || (/\(폐업\)\s*$/.test(prev) && !/\(폐업\)\s*$/.test(c))) canonical.set(k,c); });
   const sourceName=new Map(), keys=new Set();
   Object.entries(state.fc.targetExclCust||{}).forEach(([c,v])=>{ if(!v)return; const k=fcCustKey(c); keys.add(k); if(!sourceName.has(k))sourceName.set(k,String(c||'').trim()); });
   const merged={}; keys.forEach(k=>{ const name=canonical.get(k)||sourceName.get(k); if(name)merged[name]=true; });
-  state.fc.targetExclCust=merged; return merged;
+  state.fc.targetExclCust=merged; state.fc.targetOnlyExcl={...merged}; return merged;
 }
 function setTargetExcludedCust(c,checked){
   if(!c)return;
-  state.fc=state.fc||{}; state.fc.targetExclCust=state.fc.targetExclCust||{};
+  state.fc=state.fc||{}; state.fc.targetExclCust=state.fc.targetExclCust||{}; state.fc.targetOnlyExcl=state.fc.targetOnlyExcl||{};
   const k=fcCustKey(c);
-  Object.keys(state.fc.targetExclCust).forEach(n=>{ if(fcCustKey(n)===k)delete state.fc.targetExclCust[n]; });
-  if(checked)state.fc.targetExclCust[c]=true;
+  [state.fc.targetExclCust,state.fc.targetOnlyExcl].forEach(obj=>Object.keys(obj).forEach(n=>{ if(fcCustKey(n)===k)delete obj[n]; }));
+  if(checked){ state.fc.targetExclCust[c]=true; state.fc.targetOnlyExcl[c]=true; }
 }
 function fcTargetOnlyKeySet(){
   const keys=new Set();
@@ -11380,7 +11397,7 @@ function fcFutLabel(){ var c=fcCutoffMonth(); return c>=12?'12월 이후 없음'
 /* v717 : 목표 연도·기준 목표안 묶음 (목표안보다 «앞»에 놓기 위해 분리) */
 function fcYearSelectorHTML(){ try{ fcCutoffSelectorHTML(); }catch(_e){} return window.__FC_YEAR_HTML||''; }
 function fcYearNoteHTML(){ return window.__FC_YEAR_NOTE||''; }
-function fcCutoffSelectorHTML(){ var c=fcCutoffMonth(); var o='<option value="0"'+(c===0?' selected':'')+'>없음</option>'; for(var i=1;i<=12;i++){o+='<option value="'+i+'"'+(i===c?' selected':'')+'>'+i+'월</option>';} /* v712 : 목표 연도 선택 — 기준연도(진행 중) / 다음 연도(신규 목표) */
+function fcCutoffSelectorHTML(){ var c=fcCutoffMonth(); var o='<option value="0"'+(c===0?' selected':'')+'>없음</option>', mo='<button type="button" class="fc-cutoff-opt" role="option" data-v="0" aria-selected="'+(c===0?'true':'false')+'">없음</button>'; for(var i=1;i<=12;i++){o+='<option value="'+i+'"'+(i===c?' selected':'')+'>'+i+'월</option>';mo+='<button type="button" class="fc-cutoff-opt" role="option" data-v="'+i+'" aria-selected="'+(i===c?'true':'false')+'">'+i+'월</button>';} /* v712 : 목표 연도 선택 — 기준연도(진행 중) / 다음 연도(신규 목표) */
   var dm=fcDataYearMax(), ty=fcTargetYear(), nx=dm+1;
   var yb='<label class="fc-cutoff-ctl fc-year-ctl" title="다음 연도 목표는 «기준연도 실적(확정월까지) + 기준연도 목표(미도래월)»를 기준으로 계산합니다. 연도별로 목표안이 따로 저장되어 기존 연도 목표는 그대로 남습니다."><span>목표 연도</span> '+
     '<span class="seg" id="fcYearSeg" style="margin-left:4px">'+
@@ -11412,7 +11429,8 @@ function fcCutoffSelectorHTML(){ var c=fcCutoffMonth(); var o='<option value="0"
   }
   var note=fcIsNextYearMode()?('<span class="fc-year-note" style="display:inline-flex;align-items:center;gap:5px;margin-left:6px;padding:3px 10px;border-radius:999px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;font-size:11.5px;font-weight:800">🆕 '+nx+'년 목표 작성 중 · 기준 '+dm+'년 '+((fcBaseYearPlan()||'1')==='2'?'수정 2안':'수정 1안')+(function(){ var _c=fcBasePlanV712().cut; var _fl=(typeof fcBaseFutureLabelV741==='function')?fcBaseFutureLabelV741():'목표수정액'; return _c>=12?'(1~12월 실적)':(_c<=0?'(1~12월 '+_fl+')':('(1~'+_c+'월 실적 + '+(_c+1)+'~12월 '+_fl+')')); })()+'</span>'):'';
   window.__FC_YEAR_HTML=yb+bpick; window.__FC_YEAR_NOTE=note;
-  return '<label class="fc-cutoff-ctl" title="현재 선택한 목표안에만 실적확정 월을 저장합니다. 선택한 달까지를 확정실적으로 고정하고 이후 월은 목표로 계산합니다."><span>실적확정('+fcTargetPlanLabel()+')</span> <select id="fcCutoffSel">'+o+'</select> <span class="fc-cutoff-ub">까지</span></label>'; }
+  var cv=c===0?'없음':c+'월';
+  return '<span class="fc-cutoff-ctl fc-cutoff-custom" title="현재 선택한 목표안에만 실적확정 월을 저장합니다. 선택한 달까지를 확정실적으로 고정하고 이후 월은 목표로 계산합니다."><span>실적확정('+fcTargetPlanLabel()+')</span> <select id="fcCutoffSel" class="fc-cutoff-native" tabindex="-1" aria-hidden="true">'+o+'</select><button type="button" id="fcCutoffBtn" class="fc-cutoff-btn" aria-haspopup="listbox" aria-expanded="false"><span>'+cv+'</span><span class="fc-cutoff-caret">▾</span></button> <span class="fc-cutoff-ub">까지</span><span id="fcCutoffMenu" class="fc-cutoff-menu" role="listbox" hidden>'+mo+'</span></span>'; }
 function bindFcCutoffSelector(rerun){ bindFcTargetPlanSelector('fcTargetPlanSel',rerun);
   /* v712 : 목표 연도 전환 */
   var _ys=document.getElementById('fcYearSeg');
@@ -11450,7 +11468,19 @@ function bindFcCutoffSelector(rerun){ bindFcTargetPlanSelector('fcTargetPlanSel'
     if(typeof logEdit==='function')logEdit('매출 목표','기준연도 이후월 기준 '+(state.fc.baseFutureMode==='plan'?'월 목표':'목표수정액')+' 선택');
     if(typeof rerun==='function')rerun(); else if(typeof forecast==='function')forecast();
   }); }
-  var sel=document.getElementById('fcCutoffSel'); if(!sel)return; sel.addEventListener('change',function(){
+  var sel=document.getElementById('fcCutoffSel'); if(!sel)return;
+  /* v848 : 네이티브 펼침 목록을 열지 않고, 항상 밝은 HTML 목록을 사용합니다.
+     선택결과는 기존 select에 change를 보내므로 저장·계산 로직은 그대로입니다. */
+  var _cb=document.getElementById('fcCutoffBtn'), _cm=document.getElementById('fcCutoffMenu');
+  if(_cb&&_cm){
+    var _closeCut=function(){ _cm.hidden=true; _cb.setAttribute('aria-expanded','false'); };
+    var _openCut=function(){ _cm.hidden=false; _cb.setAttribute('aria-expanded','true'); var cur=_cm.querySelector('[aria-selected="true"]'); if(cur)try{cur.focus({preventScroll:true});}catch(_f){cur.focus();} };
+    _cb.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); if(_cm.hidden){_openCut(); setTimeout(function(){document.addEventListener('click',_closeCut,{once:true});},0);}else _closeCut(); });
+    _cb.addEventListener('keydown',function(e){ if(e.key==='ArrowDown'||e.key==='Enter'||e.key===' '){e.preventDefault();_openCut();} });
+    _cm.addEventListener('click',function(e){ var b=e.target.closest('.fc-cutoff-opt'); if(!b)return; e.preventDefault();e.stopPropagation();sel.value=b.dataset.v;_closeCut();sel.dispatchEvent(new Event('change',{bubbles:true})); });
+    _cm.addEventListener('keydown',function(e){ var a=Array.from(_cm.querySelectorAll('.fc-cutoff-opt')),n=a.indexOf(document.activeElement); if(e.key==='Escape'){e.preventDefault();_closeCut();_cb.focus();}else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();n=(n+(e.key==='ArrowDown'?1:-1)+a.length)%a.length;a[n].focus();}else if(e.key==='Enter'||e.key===' '){e.preventDefault();document.activeElement.click();} });
+  }
+  sel.addEventListener('change',function(){
     var m=fcNormalizeCutoff(sel.value); state.fc.actualCutoffMonth=m;
     /* v843 : 고르는 즉시 목록이 닫히도록 포커스를 풀고, 로그·동기화 밀어내기 같은 «화면과 무관한 뒷일»만
        그린 뒤로 미룹니다. 값 반영·저장 순서는 예전 그대로라 선택이 되돌아가지 않습니다. */
@@ -11574,6 +11604,10 @@ fcAnnualTargetSummary=function(plan){
    읽기 직전에 항상 형태를 맞춰 줍니다. */
 function pdEnsure(){ const pd=(state.pd&&typeof state.pd==='object')?state.pd:(state.pd={});
   ['labor','process','indirect','actual'].forEach(function(k){ if(!pd[k]||typeof pd[k]!=='object'||Array.isArray(pd[k]))pd[k]={}; });
+  /* v856 : 구버전/부분 동기화 자료에는 사용 체크값이 없을 수 있습니다.
+     명시적인 false는 그대로 존중하고, 필드 자체가 없을 때만 기존 기본값(true)을 복원합니다. */
+  ['useLabor','useProcess','useIndirect'].forEach(function(k){ if(!Object.prototype.hasOwnProperty.call(pd,k))pd[k]=true; });
+  if(!Object.prototype.hasOwnProperty.call(pd,'estimate'))pd.estimate=false;
   return pd; }
 function pdAvg(cat){ pdEnsure(); let s=0,n=0; for(let mm=1;mm<=fcCutoffMonth();mm++){ const v=+state.pd[cat][mm]||0; if(v){s+=v;n++;} } return n?Math.round(s/n):0; }
 /* v850 : 다음 목표연도 자동계획은 직전연도 1~12월 전체 평균(빈 달은 0원 포함)을 사용합니다. */
@@ -32936,7 +32970,11 @@ window.sgSyncCustMemoV617=syncMemo;
       var K=String((f&&f._ctxYear)||fcTargetYear());   /* v732 : 현재 화면의 연도 기준 */
       try{ fcSaveYearPlan(K); }catch(_e){}
       state.fcYearMisc=state.fcYearMisc||{};
-      state.fcYearMisc[K]={exclCust:cp(f.exclCust),cmgrExcl:cp(state.cmgrExcl),sgTomb:cp(state.strategyActionTombstones),sgRestoreAt:(+state.strategyActionRestoreAt||0),targetExclCust:cp(f.targetExclCust),targetOnlyExcl:cp(f.targetOnlyExcl),strategyPlan:cp(state.strategyPlan)};
+      /* v855 : 연도 보관함을 새 객체로 교체하면 주요사항(팀별 메모)이 사라집니다.
+         기존 연도 필드를 보존하고, 현재 편집 중인 메모도 같은 연도에 명시적으로 저장합니다. */
+      state.fcYearMisc[K]=Object.assign({},state.fcYearMisc[K]||{},
+        {exclCust:cp(f.exclCust),cmgrExcl:cp(state.cmgrExcl),sgTomb:cp(state.strategyActionTombstones),sgRestoreAt:(+state.strategyActionRestoreAt||0),targetExclCust:cp(f.targetExclCust),targetOnlyExcl:cp(f.targetOnlyExcl),strategyPlan:cp(state.strategyPlan),
+         notesHtml:String(f.notesHtml||''),notesTeam:String(f.notesTeam||''),notesSales:String(f.notesSales||''),notesTech:String(f.notesTech||''),notesMeta:cp(f.notesMeta||{})});
       state.pdYears=state.pdYears||{};
       state.pdYears[K]=cp(state.pd)||{};
     }catch(_e){}
@@ -35719,7 +35757,7 @@ window.fcSyncSizeWarnV839=function(){
 'use strict';
 var KEYS=['pct','pctAt','override','overrideAt','addPct','addPctAt','prodOverride','prodAddPct',
           'custProdOverride','custMonthPct','prodMonthPct','newCusts','newProds','newLines',
-          'newCustReplacements','actualCutoffMonth'];
+          'newCustReplacements','actualCutoffMonth','matchBaseExact'];
 var RE=/^fcY(\d{4})p([12])_([A-Za-z]+)$/, REA=/^fcY(\d{4})_activePlan$/;
 
 function yp(){ try{ var f=state.fc; if(!f)return null;
@@ -36112,6 +36150,119 @@ try{ new MutationObserver(bind).observe(document.body,{childList:true,subtree:tr
 setInterval(bind,900);
 if(document.readyState==='complete')setTimeout(bind,500);
 else window.addEventListener('load',function(){setTimeout(bind,500);},{once:true});
+})();
+</script>
+
+<script id="v855-forecast-sync-consistency">
+/* v855 · 서버에서 받은 연도별 목표·제외·PD 보관함을 로컬 예전값이 다시 덮어쓰는 문제를 막습니다. */
+(function(){
+'use strict';
+function cp(v){if(v===undefined)return undefined;try{return JSON.parse(JSON.stringify(v));}catch(_e){return v;}}
+function year(){try{return String((typeof fcTargetYear==='function')?fcTargetYear():((state.fc||{})._ctxYear||''));}catch(_e){return '';}}
+function adoptAll(){
+  try{if(typeof fcReapplyYearV721==='function')fcReapplyYearV721();}catch(_e){}
+  try{
+    var y=year(),m=(state.fcYearMisc||{})[y],f=state.fc||{};
+    if(m){
+      ['notesHtml','notesTeam','notesSales','notesTech'].forEach(function(k){if(m[k]!=null)f[k]=String(m[k]||'');});
+      if(m.notesMeta&&typeof m.notesMeta==='object')f.notesMeta=cp(m.notesMeta);
+    }
+    if(typeof fcNotesSyncYearV789==='function')fcNotesSyncYearV789();
+  }catch(_e2){}
+  try{if(typeof syncExcludedCustMaps==='function')syncExcludedCustMaps();}catch(_e3){}
+  try{if(typeof syncTargetExcludedCustMap==='function')syncTargetExcludedCustMap();}catch(_e4){}
+  /* v856 : 호환 정리된 PD/목표합산 제외값을 현재 연도 보관함에도 즉시 반영합니다.
+     그래야 화면은 같아도 보관함 hash만 다른 상태가 남지 않습니다. */
+  try{
+    var yy=year();
+    if(yy){
+      if(typeof pdEnsure==='function')pdEnsure();
+      state.pdYears=state.pdYears&&typeof state.pdYears==='object'?state.pdYears:{};
+      state.pdYears[yy]=cp(state.pd||{});
+      state.fcYearMisc=state.fcYearMisc&&typeof state.fcYearMisc==='object'?state.fcYearMisc:{};
+      var mm=state.fcYearMisc[yy]||(state.fcYearMisc[yy]={}),tx=cp((state.fc||{}).targetExclCust||{});
+      mm.targetExclCust=tx;mm.targetOnlyExcl=cp(tx);
+    }
+  }catch(_e6){}
+  try{_fcBaseAggCache=null;_fcBase27Cache=null;window.__nyAggV737=null;}catch(_e5){}
+}
+window.fcAdoptAllSyncV855=adoptAll;
+
+/* restoreFull 마지막에서 로컬값을 복원하더라도, 방금 서버가 반영한 세 보관함은 그대로 유지합니다. */
+try{
+  var oldRestore=window.fcRestoreYearLiveV723;
+  if(typeof oldRestore==='function'&&!oldRestore.__v855){
+    var newRestore=function(o){
+      var yp,misc,pdy;
+      try{yp=cp(state.fc&&state.fc.yearPlans);misc=cp(state.fcYearMisc);pdy=cp(state.pdYears);}catch(_e){}
+      var r=oldRestore.apply(this,arguments);
+      try{
+        if(yp&&typeof yp==='object')state.fc.yearPlans=yp;
+        if(misc&&typeof misc==='object')state.fcYearMisc=misc;
+        if(pdy&&typeof pdy==='object')state.pdYears=pdy;
+        adoptAll();
+      }catch(_e2){}
+      return r;
+    };
+    newRestore.__v855=true;window.fcRestoreYearLiveV723=newRestore;
+  }
+}catch(_e){}
+
+/* 후속 패치가 있어도 요청한 전체 항목이 gsFields에서 빠지지 않게 합니다. */
+try{
+  var oldFields=window.gsFields;
+  if(typeof oldFields==='function'&&!oldFields.__v855){
+    var newFields=function(){
+      var rows=oldFields.apply(this,arguments),req=[
+        ['headcount',state,'headcount'],['headMonthly',state,'headMonthly'],['headYearDefault',state,'headYearDefault'],
+        ['workdays',state,'workdays'],['bep',state,'bep'],['bepYears',state,'bepYears'],
+        ['fcYearMisc',state,'fcYearMisc'],['pdYears',state,'pdYears'],
+        ['fcCustMemo',state.fc,'custMemo'],['fcProdMemo',state.fc,'prodMemo']
+      ];
+      req.forEach(function(x){if(!rows.some(function(r){return r[0]===x[0];}))rows.push(x);});
+      return rows;
+    };
+    newFields.__v855=true;window.gsFields=newFields;try{gsFields=newFields;}catch(_e2){}
+  }
+}catch(_e){}
+
+function syncView(){
+  try{
+    if(typeof v801Typing==='function'&&v801Typing())return;
+    if(typeof window.__selOpenV845==='function'&&window.__selOpenV845())return;
+    if(state.act==='forecast'){
+      state._syncDeferred=false;
+      if(typeof forecast==='function')forecast();else if(typeof runAct==='function')runAct();
+    }else if(state.act==='trend'||state.act==='strategy'){
+      state._syncDeferred=false;if(typeof runAct==='function')runAct();
+    }
+  }catch(_e){}
+}
+function signature(){
+  try{return JSON.stringify({y:year(),h:state.headcount,hm:state.headMonthly,hy:state.headYearDefault,w:state.workdays,b:state.bep,by:state.bepYears,yp:state.fc&&state.fc.yearPlans,m:state.fcYearMisc,p:state.pdYears});}catch(_e){return '';}
+}
+
+/* 불러오기·저장 후 정말 값이 바뀌었을 때만 목표 화면을 재계산합니다. */
+['gsLoad','gsSave'].forEach(function(name){
+  try{
+    var fn=window[name];if(typeof fn!=='function'||fn.__v855)return;
+    var w=async function(){var before=signature(),r=await fn.apply(this,arguments);adoptAll();var after=signature();if(before!==after)setTimeout(syncView,50);return r;};
+    w.__v855=true;window[name]=w;try{eval(name+'=w');}catch(_e2){}
+  }catch(_e){}
+});
+
+/* 두 PC의 진단값(hash)과 항목수를 비교할 수 있게 합니다. */
+window.fcSyncAuditV855=function(){
+  var s=signature(),h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
+  var y=year(),ys=((state.fc||{}).yearPlans||{})[y]||{},p=(ys.targetPlans||{})[ys.activePlan==='2'?'2':'1']||{},m=(state.fcYearMisc||{})[y]||{},pd=(state.pdYears||{})[y]||{};
+  var out={version:'v856',year:y,plan:ys.activePlan==='2'?'2':'1',hash:('00000000'+(h>>>0).toString(16)).slice(-8),
+    monthlyPct:Object.keys(p.pct||{}).length,custAdjust:Object.keys(p.override||{}).length,custMonthly:Object.keys(p.custMonthPct||{}).length,
+    prodAdjust:Object.keys(p.prodOverride||{}).length,prodMonthly:Object.keys(p.prodMonthPct||{}).length,targetExcluded:Object.keys(m.targetExclCust||{}).filter(function(k){return m.targetExclCust[k];}).length,
+    workdays:Object.keys(state.workdays||{}).length,bepYears:Object.keys(state.bepYears||{}).length,headMonths:Object.keys(state.headMonthly||{}).length,
+    noteChars:String(m.notesHtml||'').length+String(m.notesTeam||'').length+String(m.notesSales||'').length+String(m.notesTech||'').length,
+    pdMonths:Object.keys(pd.labor||{}).length+Object.keys(pd.process||{}).length+Object.keys(pd.indirect||{}).length};
+  try{console.table(out);}catch(_e){}return out;
+};
 })();
 </script>
 
