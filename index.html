@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v846</title>
-<script>window.APP_BUILD='v846';</script>
+<title>동방파스텍 매출 분석 도구 v847</title>
+<script>window.APP_BUILD='v847';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1938,7 +1938,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v846</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v847</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -35976,6 +35976,142 @@ function boot(){ ['runAct','forecast','renderCustom'].forEach(guard); }
 if(document.readyState==='complete')setTimeout(boot,400);
 else window.addEventListener('load',function(){setTimeout(boot,400);},{once:true});
 setTimeout(boot,1500);
+})();
+</script>
+
+<script id="v847-forecast-excel-menu">
+/* ══════════ v847 · 매출 목표표의 「엑셀」 버튼 → 내보내기 / 불러오기 메뉴 ══════════
+   · 엑셀 버튼을 누르면 «📥 엑셀 내보내기 / 📤 엑셀 불러오기» 메뉴가 열립니다.
+   · 내보내기 : 기존 항목 + 조정% · 추가% · 메모 + 1~12월 월% 까지 담아 다시 불러올 수 있게 합니다.
+   · 불러오기 : 그 파일을 읽어 거래처(또는 품번·규격)로 맞춰 조정%·추가%·메모·월%를 되돌립니다.
+                (v841 초기화 기록도 함께 풀어, 불러온 값이 다시 지워지지 않게 합니다) */
+(function(){
+'use strict';
+var MON=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+function num(v){ if(v==null||v==='')return ''; var n=parseFloat(String(v).replace(/[,%\s]/g,'')); return isFinite(n)?n:''; }
+function S(v){ return String(v==null?'':v).trim(); }
+function pk(code,spec){ return S(code)+'│'+S(spec); }
+
+/* ── 내보내기 ── */
+function expo(which){
+  var E=state._fcExport||{}; if(!E.custArr){ try{ uiConfirm('표가 아직 준비되지 않았습니다. 잠시 후 다시 눌러 주세요.'); }catch(_e){} return; }
+  var f=state.fc, yr=(typeof fcTargetYear==='function')?fcTargetYear():'';
+  if(which==='cust'){
+    var head=['거래처','실적(1~'+E.lastAct+'월)','전년('+E.PY+')','올해목표('+E.CY+')','거래처 제외','목표합산 제외','증감액','증감%','조정%','추가%','메모'].concat(MON.map(function(m){return m+'%';}));
+    var aoa=[head];
+    (E.custArr||[]).forEach(function(o){
+      var mp=(f.custMonthPct||{})[o.c]||{};
+      aoa.push([o.c,Math.round(o.ytd||0),Math.round(o.prev),Math.round(o.proj),o.excl?'Y':'',o.targetOnly?'Y':'',
+        Math.round(o.diff),o.pct==null?'신규':+o.pct.toFixed(1),
+        (o.ov===''||o.ov==null)?'':+o.ov,
+        ((f.addPct||{})[o.c]==null||(f.addPct||{})[o.c]==='')?'':+f.addPct[o.c],
+        (f.custMemo||{})[o.c]||''
+      ].concat(MON.map(function(_,i){ var v=mp[i+1]; return (v==null||v==='')?'':+v; })));
+    });
+    dlXLSX('forecast_customer_'+yr+'.xlsx','거래처목표',aoa);
+  }else{
+    var head2=['품번','품명','규격','전년','올해목표','증감액','증감%','전년수량','목표수량','조정%','추가%','메모'].concat(MON.map(function(m){return m+'%';}));
+    var aoa2=[head2];
+    (E.prodArr||[]).forEach(function(o){
+      var k=o.pk||pk(o.code,o.spec), mp=(f.prodMonthPct||{})[k]||{};
+      aoa2.push([o.code,o.name,o.spec,Math.round(o.prev),Math.round(o.proj),Math.round(o.diff),
+        o.pct==null?'신규':+o.pct.toFixed(1),Math.round(o.pq||0),Math.round(o.cq||0),
+        ((f.prodOverride||{})[k]==null||(f.prodOverride||{})[k]==='')?'':+f.prodOverride[k],
+        ((f.prodAddPct||{})[k]==null||(f.prodAddPct||{})[k]==='')?'':+f.prodAddPct[k],
+        (f.prodMemo||{})[k]||''
+      ].concat(MON.map(function(_,i){ var v=mp[i+1]; return (v==null||v==='')?'':+v; })));
+    });
+    dlXLSX('forecast_product_'+yr+'.xlsx','제품목표',aoa2);
+  }
+}
+
+/* ── 불러오기 ── */
+function impo(which){
+  importXLSX(async function(rows){
+    try{
+      if(!rows||rows.length<2){ await uiConfirm('읽을 내용이 없습니다. 내보내기로 만든 엑셀 파일을 골라 주세요.'); return; }
+      var head=rows[0].map(S), idx={}; head.forEach(function(h,i){ idx[h]=i; });
+      var monIdx=MON.map(function(m){ var i=idx[m+'%']; return (i==null)?-1:i; });
+      var f=state.fc, n={adj:0,add:0,memo:0,mon:0,miss:0}, names=[];
+      var needCust=(which==='cust');
+      if(needCust&&idx['거래처']==null){ await uiConfirm('거래처 목표 엑셀이 아닙니다. (첫 줄에 «거래처» 칸이 있어야 합니다)'); return; }
+      if(!needCust&&idx['품번']==null){ await uiConfirm('제품 목표 엑셀이 아닙니다. (첫 줄에 «품번» 칸이 있어야 합니다)'); return; }
+      /* 기존 표에 있는 대상만 반영합니다(오타·삭제된 항목 보호) */
+      var E=state._fcExport||{}, have={};
+      if(needCust)(E.custArr||[]).forEach(function(o){ have[S(o.c)]=1; });
+      else (E.prodArr||[]).forEach(function(o){ have[o.pk||pk(o.code,o.spec)]=1; });
+
+      for(var r=1;r<rows.length;r++){
+        var row=rows[r]||[]; if(!row.length)continue;
+        var key=needCust?S(row[idx['거래처']]):pk(row[idx['품번']],row[idx['규격']]);
+        if(!key||key==='│')continue;
+        if(!have[key]){ n.miss++; if(names.length<6)names.push(needCust?key:String(key).replace('│',' ')); continue; }
+        var ov=num(row[idx['조정%']]), ad=num(row[idx['추가%']]), mm=idx['메모']!=null?S(row[idx['메모']]):'';
+        if(needCust){
+          f.override=f.override||{}; f.addPct=f.addPct||{}; f.custMemo=f.custMemo||{}; f.custMonthPct=f.custMonthPct||{};
+          if(ov===''){ if(f.override[key]!=null)delete f.override[key]; } else { f.override[key]=ov; n.adj++; }
+          if(ad===''){ if(f.addPct[key]!=null)delete f.addPct[key]; } else { f.addPct[key]=ad; n.add++; }
+          if(idx['메모']!=null){ if(mm){ f.custMemo[key]=mm; n.memo++; } else delete f.custMemo[key]; }
+          monIdx.forEach(function(ci,i){ if(ci<0)return; var v=num(row[ci]); var o=f.custMonthPct[key]=f.custMonthPct[key]||{};
+            if(v===''){ delete o[i+1]; } else { o[i+1]=v; n.mon++; } if(!Object.keys(o).length)delete f.custMonthPct[key]; });
+        }else{
+          f.prodOverride=f.prodOverride||{}; f.prodAddPct=f.prodAddPct||{}; f.prodMemo=f.prodMemo||{}; f.prodMonthPct=f.prodMonthPct||{};
+          if(ov===''){ if(f.prodOverride[key]!=null)delete f.prodOverride[key]; } else { f.prodOverride[key]=ov; n.adj++; }
+          if(ad===''){ if(f.prodAddPct[key]!=null)delete f.prodAddPct[key]; } else { f.prodAddPct[key]=ad; n.add++; }
+          if(idx['메모']!=null){ if(mm){ f.prodMemo[key]=mm; n.memo++; } else delete f.prodMemo[key]; }
+          monIdx.forEach(function(ci,i){ if(ci<0)return; var v=num(row[ci]); var o=f.prodMonthPct[key]=f.prodMonthPct[key]||{};
+            if(v===''){ delete o[i+1]; } else { o[i+1]=v; n.mon++; } if(!Object.keys(o).length)delete f.prodMonthPct[key]; });
+        }
+      }
+      /* 불러온 값이 «초기화 기록» 때문에 다시 지워지지 않게 풀어 줍니다 */
+      try{ var y=(typeof fcTargetYear==='function')?fcTargetYear():''; if(typeof window.fcLedgerClearYearV842==='function')window.fcLedgerClearYearV842(y); }catch(_l){}
+      try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
+            if(typeof fcSaveYearPlan==='function')fcSaveYearPlan((typeof fcTargetYear==='function')?fcTargetYear():'');
+            if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_s){}
+      try{ if(typeof logEdit==='function')logEdit('매출 목표','엑셀 불러오기 · 조정% '+n.adj+' · 추가% '+n.add+' · 월% '+n.mon+' · 메모 '+n.memo); }catch(_g){}
+      try{ await saveSettings(); }catch(_v){}
+      try{ forecast(); }catch(_f){}
+      await uiConfirm('엑셀을 불러왔습니다.<br><b>조정% '+n.adj+'건 · 추가% '+n.add+'건 · 월% '+n.mon+'칸 · 메모 '+n.memo+'건</b>'
+        +(n.miss?('<br><span style="color:#b45309">표에 없는 항목 '+n.miss+'건은 건너뜀'+(names.length?(' ('+names.join(', ')+' 등)'):'')+'</span>'):''));
+    }catch(e){ try{ await uiConfirm('불러오기 중 오류: '+(e&&e.message||e)); }catch(_u){} }
+  });
+}
+
+/* ── 버튼 → 메뉴 ── */
+function menu(btn,which){
+  var old=document.getElementById('fcXlsMenuV847'); if(old)old.remove();
+  var m=document.createElement('div');
+  m.id='fcXlsMenuV847';
+  m.style.cssText='position:absolute;z-index:99999;min-width:168px;background:#fff;border:1px solid #cbd5e1;border-radius:9px;box-shadow:0 8px 24px rgba(15,23,42,.16);padding:5px;font-family:inherit';
+  var mk=function(label,tip,fn){
+    var b=document.createElement('button'); b.type='button'; b.title=tip;
+    b.style.cssText='display:block;width:100%;text-align:left;border:0;background:#fff;color:#1e3a5f;font-family:inherit;font-size:12.5px;font-weight:800;padding:8px 10px;border-radius:7px;cursor:pointer;white-space:nowrap';
+    b.textContent=label;
+    b.onmouseover=function(){ b.style.background='#eff6ff'; }; b.onmouseout=function(){ b.style.background='#fff'; };
+    b.onclick=function(e){ e.preventDefault(); e.stopPropagation(); m.remove(); fn(); };
+    return b; };
+  m.appendChild(mk('📥 엑셀 내보내기','지금 표 내용을 엑셀 파일로 저장합니다(조정%·추가%·메모·월% 포함).',function(){ expo(which); }));
+  m.appendChild(mk('📤 엑셀 불러오기','내보낸 엑셀 파일을 골라 조정%·추가%·메모·월%를 되돌립니다.',function(){ impo(which); }));
+  document.body.appendChild(m);
+  var r=btn.getBoundingClientRect();
+  m.style.left=Math.max(6,Math.min(window.innerWidth-m.offsetWidth-6,r.left+window.scrollX))+'px';
+  m.style.top=(r.bottom+window.scrollY+5)+'px';
+  var close=function(ev){ if(m.contains(ev.target))return; m.remove(); document.removeEventListener('mousedown',close,true); };
+  setTimeout(function(){ document.addEventListener('mousedown',close,true); },0);
+}
+
+function bind(){
+  [['fcCustCsv','cust'],['fcProdCsv','prod']].forEach(function(p){
+    var b=document.getElementById(p[0]); if(!b||b.__v847)return;
+    b.__v847=1;
+    b.textContent='엑셀 ▾'; b.title='내보내기 · 불러오기';
+    b.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); menu(b,p[1]); },true);
+  });
+}
+try{ new MutationObserver(bind).observe(document.body,{childList:true,subtree:true}); }catch(_e){}
+setInterval(bind,900);
+if(document.readyState==='complete')setTimeout(bind,500);
+else window.addEventListener('load',function(){setTimeout(bind,500);},{once:true});
 })();
 </script>
 
