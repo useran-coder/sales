@@ -33099,6 +33099,7 @@ window.sgSyncCustMemoV617=syncMemo;
         baseYearPlan:(state.fc&&state.fc.baseYearPlan)||'',
         baseYearCut:(state.fc&&state.fc.baseYearCut!=null)?state.fc.baseYearCut:'auto',
         baseFutureMode:(state.fc&&state.fc.baseFutureMode==='plan')?'plan':'mod',
+        baseFutureV861:(state.fc&&state.fc._baseFutureV861)||'',
         miscSplit:(state.fc&&state.fc._miscSplitV718)||'',
         exclSplit:(state.fc&&state.fc._exclSplitV720)||'',
         sgSplit:(state.fc&&state.fc._sgSplitV721)||'',
@@ -33128,6 +33129,7 @@ window.sgSyncCustMemoV617=syncMemo;
   var _restored=false;
   async function _v718Restore(){
     if(_restored)return; _restored=true;
+    var _migratedV861=false;
     try{
       var s=await idbGet(KEY);
       if(s&&typeof s==='object'){
@@ -33137,7 +33139,16 @@ window.sgSyncCustMemoV617=syncMemo;
         if(s.targetOnlyExcl&&typeof s.targetOnlyExcl==='object')state.fc.targetOnlyExcl=s.targetOnlyExcl;
         if(s.baseYearPlan)state.fc.baseYearPlan=s.baseYearPlan;
         if(s.baseYearCut!=null)state.fc.baseYearCut=s.baseYearCut;
-        if(s.baseFutureMode)state.fc.baseFutureMode=(s.baseFutureMode==='plan')?'plan':'mod';
+        /* v861 : 다음 연도 기본 기준은 기준연도 그래프의 «월 목표»입니다.
+           기존 저장값(mod)은 한 번만 plan으로 옮기고, 이후 사용자가 직접 바꾼 선택은 보존합니다. */
+        if(s.baseFutureV861){
+          state.fc._baseFutureV861=s.baseFutureV861;
+          if(s.baseFutureMode)state.fc.baseFutureMode=(s.baseFutureMode==='plan')?'plan':'mod';
+        }else{
+          state.fc.baseFutureMode='plan';
+          state.fc._baseFutureV861='monthly-target';
+          _migratedV861=true;
+        }
         if(s.miscSplit)state.fc._miscSplitV718=s.miscSplit;
         if(s.exclSplit)state.fc._exclSplitV720=s.exclSplit;
         if(s.sgSplit)state.fc._sgSplitV721=s.sgSplit;
@@ -33162,6 +33173,7 @@ window.sgSyncCustMemoV617=syncMemo;
       }
     }catch(_e){}
     window.__V718_RESTORED=true;
+    if(_migratedV861)try{ await window.fcSaveYearSettingsV718(); }catch(_e){}
   }
   function _v718Sched(){
     /* v860 : 임의로 1.2초 기다리지 않고 일반 설정 복원이 끝난 즉시 연도별 설정을 잇달아 복원합니다. */
@@ -33465,10 +33477,20 @@ function build2026Plan2(){
        (예전에는 2027 화면을 그릴 때마다 2026 화면 전체를 한 번 더 그려 큰 자료에서 «응답 없음»이 났습니다) */
     var _real=document.getElementById('result'), _tmp=null;
     window.__FC_BUILDING_V737=true;
+    var _exactChart=null;
     try{
       if(_real){ _real.id='result__v737hold'; _tmp=document.createElement('div'); _tmp.id='result'; _tmp.style.cssText='display:none!important'; _tmp.setAttribute('aria-hidden','true'); document.body.appendChild(_tmp); }
       var _sil=(typeof _fcSilentV678!=='undefined'); if(_sil)_fcSilentV678=true;
-      try{ forecast(); } finally { if(_sil)_fcSilentV678=false; }
+      try{
+        forecast();
+        var _hc=window.FC_CHART_V677;
+        if(_hc&&+_hc.CY===+dm){
+          _exactChart={
+            tgt:Array.isArray(_hc.tgt)?_hc.tgt.slice():null,
+            act:Array.isArray(_hc.act)?_hc.act.slice():null
+          };
+        }
+      } finally { if(_sil)_fcSilentV678=false; }
     } finally {
       if(_tmp&&_tmp.parentNode)_tmp.parentNode.removeChild(_tmp);
       if(_real)_real.id='result';
@@ -33486,6 +33508,7 @@ function build2026Plan2(){
       if(tot>0)newAlloc={map:nc,tot:tot};
     }catch(_x){}
     var data={cut:_cutB,planCut:fcNormalizeCutoff(p.actualCutoffMonth),tot:(x.fcMonTot||Array(13).fill(0)).slice(),mod:mod,newAlloc:newAlloc,
+      chartTgt:_exactChart&&_exactChart.tgt?_exactChart.tgt:null,chartAct:_exactChart&&_exactChart.act?_exactChart.act:null,
       cust:cloneMonthMaps(x.fcCustMon),prod:cloneMonthProdMaps(x.fcProdMon),cp:cloneMonthCustProd(x.fcCustProdMon)};
     _plan2Cache={sig:sig,cur:CUR,data:data};return data;
   }catch(_e){return null;}
@@ -33513,12 +33536,28 @@ if(typeof window.fcBaseAgg==='function'&&!window.fcBaseAgg.__v729){
     if(window.__nyAggV737&&window.__nyAggV737.plan===plan&&window.__nyAggV737.raw===raw&&window.__nyAggV737.cur===CUR&&window.__nyAggV737.n===CUR.length&&window.__nyAggV737.fmode===_fmode)return window.__nyAggV737.out;
     var M=function(){return Array.from({length:13},function(){return new Map();});};
     var pyTot=Array(13).fill(0),pyCust=M(),pyProd=M(),pyCP=M();
+    /* v861 : 기준연도 화면의 막대 금액과 세부 집계 합계를 원 단위로 맞춥니다.
+       화면 목표에는 PD·제외·신규 목표 같은 후처리가 포함되므로 fcMonTot만 넘기면 금액이 달라졌습니다. */
+    function copyScaledMonth(m,goal,srcCust,srcProd,srcCP,label){
+      goal=Math.max(0,+goal||0); var base=0;
+      if(srcCust&&srcCust.forEach)srcCust.forEach(function(v){base+=(+v||0);});
+      if(base>0){
+        var sc=goal/base;
+        srcCust.forEach(function(v,k){pyCust[m].set(k,(+v||0)*sc);});
+        if(srcProd&&srcProd.forEach)srcProd.forEach(function(v,k){pyProd[m].set(k,{amt:(+v.amt||0)*sc,qty:(+v.qty||0)*sc});});
+        if(srcCP&&srcCP.forEach)srcCP.forEach(function(pm,c){var d=new Map();pm.forEach(function(v,k){d.set(k,{amt:(+v.amt||0)*sc,qty:(+v.qty||0)*sc});});pyCP[m].set(c,d);});
+      }else if(goal>0){
+        var c=label||'(기준연도 금액)', k=c+'\u2502';
+        pyCust[m].set(c,goal);pyProd[m].set(k,{amt:goal,qty:0});
+        var d=new Map();d.set(k,{amt:goal,qty:0});pyCP[m].set(c,d);
+      }
+      pyTot[m]=goal;
+    }
     for(var m=1;m<=12;m++){
       if(m<=plan.cut){
-        pyTot[m]=+raw.cyMonTot[m]||0;
-        raw.cyMonCust[m].forEach(function(v,k){pyCust[m].set(k,v);});
-        raw.cyMonProd[m].forEach(function(v,k){pyProd[m].set(k,{amt:+v.amt||0,qty:+v.qty||0});});
-        raw.cyMonCustProd[m].forEach(function(pm,c){var d=new Map();pm.forEach(function(v,k){d.set(k,{amt:+v.amt||0,qty:+v.qty||0});});pyCP[m].set(c,d);});
+        /* 확정월은 2026 화면의 남색 «실적» 막대 금액을 그대로 사용합니다. */
+        var actualGoal=(plan.chartAct&&plan.chartAct[m]!=null)?plan.chartAct[m]:raw.cyMonTot[m];
+        copyScaledMonth(m,actualGoal,raw.cyMonCust[m],raw.cyMonProd[m],raw.cyMonCustProd[m],'(기준연도 확정실적)');
       }else if((typeof fcBaseFutureModeV741!=='function'||fcBaseFutureModeV741()==='mod')&&plan.mod&&plan.mod[m]!=null){
         /* v734 : 주간보고 「목표수정액」 기준 */
         var goal=+plan.mod[m]||0, baseSum=0;
@@ -33539,10 +33578,9 @@ if(typeof window.fcBaseAgg==='function'&&!window.fcBaseAgg.__v729){
           var pe=pyProd[m].get(NK)||{amt:0,qty:0}; pe.amt+=a; pyProd[m].set(NK,pe); });
         pyTot[m]=goal;
       }else{
-        pyTot[m]=+plan.tot[m]||0;
-        plan.cust[m].forEach(function(v,k){pyCust[m].set(k,v);});
-        plan.prod[m].forEach(function(v,k){pyProd[m].set(k,{amt:+v.amt||0,qty:+v.qty||0});});
-        plan.cp[m].forEach(function(pm,c){var d=new Map();pm.forEach(function(v,k){d.set(k,{amt:+v.amt||0,qty:+v.qty||0});});pyCP[m].set(c,d);});
+        /* 이후월은 선택한 2026 목표안 화면의 노란 «월 목표» 막대 금액을 그대로 사용합니다. */
+        var targetGoal=(plan.chartTgt&&plan.chartTgt[m]!=null)?plan.chartTgt[m]:plan.tot[m];
+        copyScaledMonth(m,targetGoal,plan.cust[m],plan.prod[m],plan.cp[m],'(기준연도 월 목표)');
       }
     }
     var _meta=raw.prodMeta; try{ if(_meta&&!_meta.has('(신규업체 목표)\u2502'))_meta.set('(신규업체 목표)\u2502',{code:'(신규업체 목표)',name:'신규업체 목표(기준연도 목표수정액)',spec:''}); }catch(_x){}
@@ -33894,11 +33932,11 @@ if(!install()){ var n=0,t=setInterval(function(){ if(install()||++n>40)clearInte
 })();
 </script>
 <script id="v741-base-future-mode">
-/* v741 : 다음 연도 목표의 «미도래월» 기준 선택
-   · mod  = 주간보고 「목표수정액」 (기본) — 신규업체·신규라인 목표가 확정 이후 월에 몰려 배분된 금액 포함
-   · plan = 기준연도 그 달의 월 목표 그대로 */
+/* v741/v861 : 다음 연도 목표의 «미도래월» 기준 선택
+   · plan = 기준연도 그 달의 월 목표 그대로 (기본)
+   · mod  = 주간보고 「목표수정액」 — 사용자가 직접 선택한 경우에만 사용 */
 (function(){
-  window.fcBaseFutureModeV741=function(){ var v=''; try{ v=String((state&&state.fc&&state.fc.baseFutureMode)||''); }catch(_e){} return v==='plan'?'plan':'mod'; };
+  window.fcBaseFutureModeV741=function(){ var v=''; try{ v=String((state&&state.fc&&state.fc.baseFutureMode)||''); }catch(_e){} return v==='mod'?'mod':'plan'; };
   window.fcBaseFutureLabelV741=function(){ return fcBaseFutureModeV741()==='plan'?'월 목표':'목표수정액'; };
 })();
 </script>
@@ -36333,7 +36371,7 @@ function signature(){
 window.fcSyncAuditV855=function(){
   var s=signature(),h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
   var y=year(),ys=((state.fc||{}).yearPlans||{})[y]||{},p=(ys.targetPlans||{})[ys.activePlan==='2'?'2':'1']||{},m=(state.fcYearMisc||{})[y]||{},pd=(state.pdYears||{})[y]||{};
-  var out={version:'v860',year:y,plan:ys.activePlan==='2'?'2':'1',hash:('00000000'+(h>>>0).toString(16)).slice(-8),
+  var out={version:'v861',year:y,plan:ys.activePlan==='2'?'2':'1',hash:('00000000'+(h>>>0).toString(16)).slice(-8),
     monthlyPct:Object.keys(p.pct||{}).length,custAdjust:Object.keys(p.override||{}).length,custMonthly:Object.keys(p.custMonthPct||{}).length,
     prodAdjust:Object.keys(p.prodOverride||{}).length,prodMonthly:Object.keys(p.prodMonthPct||{}).length,targetExcluded:Object.keys(m.targetExclCust||{}).filter(function(k){return m.targetExclCust[k];}).length,
     workdays:Object.keys(state.workdays||{}).length,bepYears:Object.keys(state.bepYears||{}).length,headMonths:Object.keys(state.headMonthly||{}).length,
