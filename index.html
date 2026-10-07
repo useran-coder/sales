@@ -2021,7 +2021,7 @@ body.fpopen #fpSum{display:block}
           <span class="sub2 gs-config-status" id="gsStatus" style="font-weight:600"></span>
         </div>
         <div id="gsHistory" style="width:100%;margin-top:8px;font-size:11px;color:#475569;max-height:150px;overflow:auto;border-top:1px dashed var(--line);padding-top:7px"></div>
-        <details style="width:100%;margin-top:8px;border-top:1px dashed var(--line);padding-top:7px"><summary style="cursor:pointer;font-weight:700;font-size:12px;color:#4338ca">🔄 동기화 기준 (언제 동기화되나요?) — 펼치기/접기</summary><div style="font-size:11.5px;color:#475569;line-height:1.65;margin-top:5px"><b>• 파일을 처음 열 때</b> (○ 자동) — 시작 시 구글시트 URL·자동 옵션이 설정돼 있으면 서버 데이터를 자동으로 불러와 기준점으로 잡습니다.<br><b>• 필드 수정 시</b> (○ 자동, 약 5초 후) — 담당자·신용등급·메모·목표% 등을 수정하면 5초 뒤에 <b>바뀐 항목만(델타)</b> 업로드됩니다. 🔄 버튼에 "업로드 5→1초" 카운트가 보입니다.<br><b>• 수동 동기화</b> — 저장 직전 서버 최신 자료를 확인하고, 내 변경분을 다시 적용한 후 병합 저장합니다.<br><b>• 백그라운드</b> (○ 60초) — 60초마다 다른 사용자의 변경을 받아옵니다(편집 중이거나 화면이 꺼져 있으면 건너뜀).<br><b>• 동시 수정</b> — 서로 다른 항목은 합쳐지며, 같은 항목을 동시에 수정하면 마지막으로 저장된 값이 적용됩니다.</div></details>
+        <details style="width:100%;margin-top:8px;border-top:1px dashed var(--line);padding-top:7px"><summary style="cursor:pointer;font-weight:700;font-size:12px;color:#4338ca">🔄 동기화 기준 (언제 동기화되나요?) — 펼치기/접기</summary><div style="font-size:11.5px;color:#475569;line-height:1.65;margin-top:5px"><b>• 파일을 처음 열 때</b> (○ 자동) — 시작 시 구글시트 URL·자동 옵션이 설정돼 있으면 서버 데이터를 한 번 불러와 기준점으로 잡습니다.<br><b>• 필드 수정 시</b> (○ 자동, 약 5초 후) — 담당자·신용등급·메모·목표% 등을 수정하면 5초 뒤에 <b>바뀐 항목만(델타)</b> 업로드됩니다. 🔄 버튼에 "업로드 5→1초" 카운트가 보입니다.<br><b>• 수동 동기화</b> — 저장 직전 서버 최신 자료를 확인하고, 내 변경분을 다시 적용한 후 병합 저장합니다.<br><b>• 반복 확인</b> — 파일을 연 뒤에는 주기 확인이나 창 복귀 확인을 반복하지 않습니다. 필요할 때 수동 동기화할 수 있습니다.<br><b>• 동시 수정</b> — 서로 다른 항목은 합쳐지며, 같은 항목을 동시에 수정하면 마지막으로 저장된 값이 적용됩니다.</div></details>
         <div class="sub2" style="margin-top:6px">URL·비밀키 입력 시 자동 저장됩니다. <b>불러오기</b>=시트의 전체 설정 가져오기, <b>저장</b>=현재 전체 설정을 시트에 병합. 비밀키를 아는 사람만 접근됩니다.</div>
         </div></details>
       </div>
@@ -11387,7 +11387,9 @@ function syncTargetExcludedCustMap(){
   try{
     if(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode()&&yi.year){
       const pm=(state.fcYearMisc||{})[String(yi.year-1)]||{};
-      [pm.targetExclCust,pm.targetOnlyExcl].forEach(obj=>Object.entries(obj||{}).forEach(([c,v])=>{if(v)prevYearKeys.add(fcTargetExclYearKey(c));}));
+      /* v868 : 직전 연도의 일반 거래처 제외도 함께 봅니다. 일반 제외였던 폐업·거래중지 업체가
+         다음 목표연도의 «목표합산 제외»로 다시 살아나는 문제를 막습니다. */
+      [pm.exclCust,pm.cmgrExcl,pm.targetExclCust,pm.targetOnlyExcl].forEach(obj=>Object.entries(obj||{}).forEach(([c,v])=>{if(v)prevYearKeys.add(fcTargetExclYearKey(c));}));
     }
   }catch(_e){}
   Object.entries(state.fc.targetExclCust||{}).forEach(([c,v])=>{
@@ -12074,11 +12076,11 @@ function fcBindSearchSuggest(input,getItems,onSelect){
   popup.addEventListener('mousedown',e=>e.preventDefault());
   popup.addEventListener('click',e=>{const b=e.target.closest('.fc-prod-cust-option');if(b)choose(+b.dataset.index);});
   input.setAttribute('aria-autocomplete','list');input.setAttribute('aria-expanded','false');
-  input.addEventListener('compositionstart',()=>{composing=true;});
-  input.addEventListener('compositionend',()=>{composing=false;renderSoon();});
-  let _sugT=null;
-  const renderSoon=()=>{ clearTimeout(_sugT); _sugT=setTimeout(()=>{ if(!composing)render(); },130); };
-  input.addEventListener('input',()=>{if(!composing)renderSoon();});
+  /* v869 : 한글 조합 중의 짧은 검색어로 만든 이전 후보를 즉시 닫고,
+     조합이 끝난 현재 입력 전체를 기준으로 곧바로 다시 찾습니다. */
+  input.addEventListener('compositionstart',()=>{composing=true;close();});
+  input.addEventListener('compositionend',()=>{composing=false;render();});
+  input.addEventListener('input',e=>{if(composing||e.isComposing){close();return;}render();});
   input.addEventListener('focus',()=>{if(input.value.trim())render();});
   input.addEventListener('blur',()=>setTimeout(close,120));
   input.addEventListener('keydown',e=>{
@@ -12234,6 +12236,9 @@ window.v796Editing=v796Editing; window.v796SaveSoon=v796SaveSoon;
 var _v801TypeAt=0;
 try{ document.addEventListener('input',function(e){ try{ if(e.target&&e.target.matches&&e.target.matches(V796_EDIT_SEL))_v801TypeAt=Date.now(); }catch(_e){} },true); }catch(_e){}
 function v801Typing(){ return v796Editing()&&(Date.now()-_v801TypeAt<450); }
+/* v867 : 서버 병합이 검색창을 다시 그려 입력 중인 한글·영문·숫자를 지우지 않도록 보호합니다. */
+function v867TextEditing(){ try{ var a=document.activeElement; return !!(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'||a.isContentEditable)); }catch(_e){return false;} }
+window.v867TextEditing=v867TextEditing;
 /* v802 : % 칸을 만지면 «행 순서 고정»을 켜고, 정렬·필터·보기 전환·다른 메뉴로 가면 풉니다. */
 function fcOrderLockV802(){ try{ state.fc._orderLock=state.fc._orderLock||{on:false,map:null};
   if(!state.fc._orderLock.map)return;            /* 아직 한 번도 그려지지 않았으면 다음 렌더에서 저장 */
@@ -13152,7 +13157,30 @@ function forecast(){
     const csb=$('#fcCustSearch'),csBtn=$('#fcCustSearchBtn'); if(csb){ const normSearch=v=>{try{return String(v||'').normalize('NFKC').toLocaleLowerCase('ko-KR');}catch(_e){return String(v||'').toLowerCase();}}; const filterCustRows=qv=>{ const toks=normSearch(qv).trim().split(/\s+/).filter(Boolean); const rows=$('#result').querySelectorAll('.fcrow,.fcnewrow,.fc-cust-month-row');
       /* v767 : 검색어가 없으면 각 행의 글자를 읽지 않고 바로 모두 표시합니다(첫 진입 지연 제거) */
       if(!toks.length){ rows.forEach(tr=>{ if(tr.style.display==='none')tr.style.display=''; }); return; }
-      rows.forEach(tr=>{ const s=normSearch((tr.dataset.c||'')+' '+tr.textContent); tr.style.display=toks.every(t=>s.includes(t))?'':'none'; }); }; const submitCustSearch=()=>{state.fc._csearch=csb.value||'';filterCustRows(state.fc._csearch);if(typeof saveSettings==='function')saveSettings();}; csb.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();submitCustSearch();}}); csBtn&&csBtn.addEventListener('click',submitCustSearch); fcBindSearchSuggest(csb,()=>{const seen=new Set(),items=[];custArr.forEach(o=>{if(o.c&&!seen.has(o.c)){seen.add(o.c);items.push({value:o.c,label:'🏢 '+o.c,search:o.c});}});Object.keys(state.fc.newCusts||{}).forEach(c=>{if(c&&!seen.has(c)){seen.add(c);items.push({value:c,label:'✨ '+c,search:c});}});(state.fc.newLines||[]).forEach(l=>{const c=l.cust||'';if(c&&!seen.has(c)){seen.add(c);items.push({value:c,label:'✨ '+c,search:c});}});return items;},()=>submitCustSearch()); filterCustRows(state.fc._csearch||''); }
+      rows.forEach(tr=>{ const s=normSearch((tr.dataset.c||'')+' '+tr.textContent); tr.style.display=toks.every(t=>s.includes(t))?'':'none'; }); };
+      /* v867 : 한글 IME 조합 중에도 검색어를 보관하고, 한글·영문·숫자를 입력하는 즉시 필터링합니다. */
+      let custSearchComposing=false;
+      const liveCustSearch=()=>{state.fc._csearch=csb.value||'';filterCustRows(state.fc._csearch);};
+      const submitCustSearch=()=>{liveCustSearch();if(typeof saveSettings==='function')saveSettings();};
+      csb.addEventListener('compositionstart',()=>{custSearchComposing=true;});
+      csb.addEventListener('compositionend',()=>{custSearchComposing=false;liveCustSearch();});
+      csb.addEventListener('input',e=>{state.fc._csearch=csb.value||'';if(!custSearchComposing&&!e.isComposing)filterCustRows(state.fc._csearch);});
+      csb.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&!custSearchComposing){e.preventDefault();submitCustSearch();}});
+      csb.addEventListener('blur',()=>{if(!custSearchComposing&&state.fc._csearch!==(csb.value||''))liveCustSearch();});
+      csBtn&&csBtn.addEventListener('click',submitCustSearch);
+      /* v869 : 자동완성은 현재 표에 보이는 행만이 아니라 전체 거래처·제외 거래처·신규 거래처를 대상으로 합니다. */
+      fcBindSearchSuggest(csb,()=>{
+        const seen=new Set(),items=[];
+        const add=(c,icon='🏢')=>{c=String(c||'').trim();const k=fcCustKey(c);if(!c||!k||seen.has(k))return;seen.add(k);items.push({value:c,label:icon+' '+c,search:c});};
+        (custArrTotalBase||[]).forEach(o=>add(o&&o.c));
+        (fcTradeExclRows||[]).forEach(o=>add(o&&o.c,'🚫'));
+        (fcTargetExclRows||[]).forEach(o=>add(o&&o.c,'🎯'));
+        try{fcCustomerUniverse().forEach(c=>add(c));}catch(_e){}
+        Object.keys(state.fc.newCusts||{}).forEach(c=>add(c,'✨'));
+        (state.fc.newLines||[]).forEach(l=>add(l&&l.cust,'✨'));
+        return items;
+      },()=>submitCustSearch());
+      filterCustRows(state.fc._csearch||''); }
     /* v807 : 월별보기의 «월 조정%»까지 함께 지웁니다. 지금 보고 있는 «목표연도»의 값만 지워지고
        다른 연도(예: 2026)의 값은 그대로 남습니다. */
     const _clearFieldsNowV838=(sel)=>{ try{ $('#result').querySelectorAll(sel).forEach(el=>{ el.value=''; el.classList.remove('edited','editedm','fc-cust-month-pct-neg','fc-prod-month-pct-neg'); }); }catch(_e){} };
@@ -14007,15 +14035,20 @@ function exportCSV(){
   if(saved&&saved.length){ datasets=saved.map(d=>({...d,uid:String((d&&d.uid)||'').indexOf('shared-')===0?d.uid:uidSeq++})); afterDataChanged(); }
   bootDone();
   if(typeof gsUpdateBtn==='function')gsUpdateBtn();
-  // 파일 열기/새로고침 시 무조건 자동 동기화 ON + 자동 불러오기(실패 시 1회 재시도)
+  // v867 : 파일 열기/새로고침 시 자동 동기화 ON + 서버 자료 최초 1회 확인
   if(state.gsync&&state.gsync.url){
     state.gsync.auto=true;
     { const _ga=document.getElementById('gsAuto'); if(_ga)_ga.checked=true; }
-    const _sc0=(state.gsync.syncCount||0);
     /* v771 : 시작 직후 같은 «불러오기»가 세 번 겹쳐 서버 대기열이 길어지던 것을 한 번으로 줄입니다 */
     /* v860 : 화면은 준비 완료까지 차단하므로 서버 확인도 지체 없이 시작합니다. */
-    setTimeout(()=>{ if(typeof gsLoad==='function')gsLoad(false); },120);
-    setTimeout(()=>{ if((state.gsync.syncCount||0)===_sc0 && !_gsBusy && typeof gsLoad==='function')gsLoad(true); },12000);
+    setTimeout(()=>{
+      if(typeof gsLoad!=='function')return;
+      /* v868 : 최초 1회 확인은 revision 축약 응답을 쓰지 않고 전체 자료를 받아,
+         미수자료가 비어 있거나 오래된 기기에서도 수금 파일을 확실히 복원합니다. */
+      try{ state.gsync.lastRevision=''; window.__AR_FORCE_PULL_V868=true; }catch(_e){}
+      try{ Promise.resolve(gsLoad(false)).then(function(){window.__AR_FORCE_PULL_V868=false;},function(){window.__AR_FORCE_PULL_V868=false;}); }
+      catch(_e){ window.__AR_FORCE_PULL_V868=false; }
+    },120);
   }
 })();
 </script>
@@ -14061,7 +14094,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
   /* v49: 브라우저를 새로 연 세션은 첫 서버 불러오기가 끝나기 전까지 업로드하지 않습니다.
      새 PC의 기본값이나 태블릿의 오래된 로컬 차이가 서버의 기존 속성으로 오인되어
      다시 저장되는 사고를 막고, 첫 동기화는 항상 서버 원본을 기준점으로 확정합니다. */
-  var sessionServerReady=false, initialLoadQueued=false;
+  var sessionServerReady=false, initialLoadQueued=false, sessionLoadAttempted=false;
   var uiMode='idle', uiLabel='', lastTransient='';
 
   function id(x){return document.getElementById(x)}
@@ -14331,8 +14364,12 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
   };
 
   window.gsLoad=gsLoad=async function(silent){
-    await ensureBase();if(_gsBusy){if(silent){setTimeout(function(){gsLoad(true)},BUSY_RETRY)}else status('다른 동기화 작업이 진행 중입니다. 잠시 후 자동으로 다시 시도합니다.','#b45309');return false}
+    await ensureBase();
+    /* v867 : 자동·백그라운드 요청은 세션당 최초 1회만 허용합니다. 수동 불러오기는 계속 사용할 수 있습니다. */
+    if(silent&&sessionLoadAttempted)return sessionServerReady;
+    if(_gsBusy){if(!silent)status('다른 동기화 작업이 진행 중입니다. 잠시 후 다시 눌러주세요.','#b45309');return false}
     var c;try{c=config(!!silent)}catch(e){window.__FC_GS_SETTLED_V860=true;if(!silent){setFailure(e.message,'load');await persistOnly()}gsUpdateBtn();return false}
+    sessionLoadAttempted=true;
     var firstServerLoad=!sessionServerReady;
     /* v600: 과거 버전에서 공용 항목이 아니었던 목표 구성·월 조정값은 서버에 해당 키가
        아직 없을 때만 현재 PC 값을 1회 보존합니다. 이미 서버 값이 있으면 서버를 우선해
@@ -14340,7 +14377,11 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
     var firstLocalSnapshot=firstServerLoad?currentFull():null,firstMissingFields=[];
     /* 첫 동기화에서는 저장돼 있던 로컬 차이를 미전송 변경으로 재사용하지 않습니다.
        서버 속성을 먼저 기준점으로 잡은 뒤, 이 세션에서 사용자가 수정한 값만 이후 델타로 저장합니다. */
-    var localPatch=firstServerLoad?{}:gsDelta(),hasLocal=patchHas(localPatch),oldBase=clone(_gsBase||currentFull());_gsBusy=true;setMode('working','불러오는 중…');if(!silent)status(firstServerLoad?'서버 원본을 보호 기준으로 처음 적용합니다.':'서버 최신 자료를 불러오고 로컬 변경사항을 보존합니다.');
+    var localPatch=firstServerLoad?{}:gsDelta();
+    /* v868 : «미수자료 받기»에서는 현재 기기의 오래되거나 누락된 arShared 차이를 다시 얹지 않습니다.
+       다른 설정의 미전송 변경은 그대로 보존하고 미수자료만 서버 원본으로 교체합니다. */
+    if(window.__AR_FORCE_PULL_V868&&localPatch&&typeof localPatch==='object')delete localPatch.arShared;
+    var hasLocal=patchHas(localPatch),oldBase=clone(_gsBase||currentFull());_gsBusy=true;setMode('working','불러오는 중…');if(!silent)status(firstServerLoad?'서버 원본을 보호 기준으로 처음 적용합니다.':'서버 최신 자료를 불러오고 로컬 변경사항을 보존합니다.');
     try{
       var rr=await getRemote(c);
       /* v772 : 서버가 «변경 없음»이라고 답하면 병합·저장·화면 갱신을 모두 건너뜁니다 */
@@ -14452,24 +14493,11 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
     finally{_gsBusy=false;gsUpdateBtn()}
   };
 
-  /* v771 : 자동 확인은 «변경이 없을수록 뜸하게». 1분 → 최대 10분까지 간격을 늘립니다.
-     (자료가 큰 환경에서 1분마다 전체를 내려받아 오래 기다리던 현상을 줄입니다) */
+  /* v867 : 서버 자동 확인은 파일을 열 때 한 번만 수행합니다.
+     이후에는 실제 수정사항 자동 업로드와 사용자가 누른 수동 동기화만 실행합니다. */
   window.gsStartPoll=gsStartPoll=function(){
     if(_gsPollT){ try{clearInterval(_gsPollT);}catch(_e){} try{clearTimeout(_gsPollT);}catch(_e){} }
-    var run=function(){
-      var q=+(window.__gsQuietV771||0);
-      var wait=Math.min(600000,60000*Math.max(1,Math.min(10,1+q)));
-      _gsPollT=setTimeout(function(){
-        try{
-          if(state.gsync&&state.gsync.auto&&state.gsync.url&&state.gsync.key&&!_gsBusy&&!_gsPendingPush&&!document.hidden){
-            var a=document.activeElement;
-            if(!(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable)))gsLoad(true);
-          }
-        }catch(_e){}
-        run();
-      },wait);
-    };
-    run();
+    _gsPollT=null;
   };
 
   function removeHistoryDuplicates(){['elogBtn','cmElog','fcElogBtn','ciElog'].forEach(function(x){var e=id(x);if(e)e.remove()})}
@@ -14519,7 +14547,8 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
     _gsReturnT=setTimeout(gsPullNow,400);   /* focus + visibilitychange 중복 호출을 하나로 */
   }
   async function install(){state.gsync=state.gsync||{};renderVersion();removeHistoryDuplicates();bindHistory();gsUpdateBtn();gsStartPoll()}
-  if(!window.__gsFocusPullV427){window.__gsFocusPullV427=true;window.addEventListener('focus',gsPullOnReturn);document.addEventListener('visibilitychange',()=>{if(!document.hidden)gsPullOnReturn();});}
+  /* v867 : 창으로 돌아올 때마다 다시 받던 동기화를 제거합니다. 최초 열기 확인은 기존 초기화 경로에서 한 번만 실행됩니다. */
+  if(!window.__gsFocusPullV427){window.__gsFocusPullV427=true;gsBusyBadge(false);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();setTimeout(install,350);setTimeout(install,1500);
   var target=id('app')||document.body;if(typeof MutationObserver!=='undefined'&&target)new MutationObserver(function(){removeHistoryDuplicates();updateHistoryBtn()}).observe(target,{childList:true,subtree:true});
 })();
@@ -17586,6 +17615,31 @@ function arSyncStampV611(){
 }
 function arWrapSync(name){var native=window[name];if(typeof native!=='function'||native.__arV168)return;var wrapped=async function(){await arSyncInitPromise;arSyncApplying=true;var _st0=arSyncStampV611();try{return await native.apply(this,arguments);}finally{try{await arSaveLocalV168();}catch(_){}arSyncApplying=false;var _changed=arSyncStampV611()!==_st0;if(_changed){arCache=null;if(typeof arRenderFileList==='function')arRenderFileList();if(state.act==='ar'&&typeof arRender==='function')arRender();}}};wrapped.__arV168=true;window[name]=wrapped;if(name==='gsLoad')gsLoad=wrapped;else if(name==='gsSave')gsSave=wrapped;}
 arWrapSync('gsLoad');arWrapSync('gsSave');
+
+/* v868 : 서버의 미수자료를 강제로 전체 수신하고 IndexedDB에 확정 저장합니다.
+   revision의 «변경 없음» 응답과 로컬 미수 델타 재적용을 모두 우회하므로, 받은 파일이 즉시 적용되고 다음 실행에도 남습니다. */
+async function arPullSharedFullV868(){
+  var oldRev=''; try{ oldRev=String((state.gsync&&state.gsync.lastRevision)||''); }catch(_e){}
+  var ok=false; window.__AR_FORCE_PULL_V868=true;
+  try{
+    await arSyncInitPromise;
+    state.gsync=state.gsync||{}; state.gsync.lastRevision='';
+    if(typeof gsLoad!=='function')throw new Error('서버 불러오기 기능을 찾을 수 없습니다.');
+    ok=!!(await gsLoad(false));
+    if(!ok)throw new Error((state.gsync&&state.gsync.lastError)||'서버 자료를 받지 못했습니다.');
+    arCache=null;
+    if(typeof arSaveLocalV168==='function')await arSaveLocalV168();
+    else if(typeof arSave==='function')await arSave();
+    try{ var saved=await idbGet('ar_management_v150'); if(!saved||!Array.isArray(saved.receipts))throw new Error('브라우저 보관 확인 실패'); }catch(e){ throw e; }
+    try{ if(typeof arRenderFileList==='function')arRenderFileList(); }catch(_e){}
+    try{ if(state.act==='ar'&&typeof arRender==='function')arRender(); }catch(_e){}
+    return {ok:true,rows:(state.ar&&state.ar.receipts||[]).length,files:(state.ar&&state.ar.sources||[]).length};
+  }catch(e){
+    if(!ok&&oldRev)try{state.gsync.lastRevision=oldRev;}catch(_e){}
+    return {ok:false,error:String(e&&e.message||e)};
+  }finally{ window.__AR_FORCE_PULL_V868=false; }
+}
+window.arPullSharedFullV868=arPullSharedFullV868;
 
 function arShareConfigured(){return!!(state.gsync&&String(state.gsync.url||'').trim()&&String(state.gsync.key||'').trim());}
 var arHeaderV168=arHeader;arHeader=function(model){var html=arHeaderV168(model),on=arShareConfigured(),badge='<span class="ar-sync-state '+(on?'on':'off')+'">'+(on?'🟢 공유 동기화 설정됨':'⚪ 이 브라우저만 저장')+'</span>';return html.replace('</div></div><div class="ar-actions">',badge+'</div></div><div class="ar-actions">');};
@@ -31835,8 +31889,11 @@ try{ clsSales=sgClsSales; }catch(_e){}
     var pb=document.getElementById('arPullBtn');
     if(pb)pb.addEventListener('click',async function(){
       pb.disabled=true; var t0=pb.textContent; pb.textContent='받는 중…';
-      try{ if(typeof gsLoad==='function')await gsLoad(false); }catch(_e){}
-      pb.disabled=false; pb.textContent=t0;
+      var r={ok:false,error:'받기 기능을 찾을 수 없습니다.'};
+      try{ r=(typeof arPullSharedFullV868==='function')?await arPullSharedFullV868():r; }catch(e){r={ok:false,error:String(e&&e.message||e)};}
+      pb.disabled=false; pb.textContent=r.ok?'✓ 적용·저장 완료':t0;
+      if(r.ok)setTimeout(function(){if(pb)pb.textContent=t0;},2600);
+      else alert('미수자료를 적용하지 못했습니다.\n\n'+(r.error||'서버 연결과 비밀키를 확인해 주세요.'));
       try{ var bx=document.getElementById('arShareDiagBox'); if(bx)bx.remove(); }catch(_e){}
       try{ if(typeof arRenderFileList==='function')arRenderFileList(); }catch(_e){}
     });
@@ -32110,8 +32167,8 @@ try{ clsSales=sgClsSales; }catch(_e){}
   function heal(){state.gsync=state.gsync||{};var built=(typeof AU_URL!=='undefined'?String(AU_URL||'').trim():''),u='';try{u=((typeof AU!=='undefined'&&AU&&AU.urlOverride)||built||(typeof auUrl==='function'?auUrl():'')).trim();}catch(_e){u=built;}if(u&&state.gsync.url!==u)state.gsync.url=u;if(typeof AU_KEY!=='undefined'&&AU_KEY&&state.gsync.key!==AU_KEY)state.gsync.key=AU_KEY;return state.gsync;}
   ['gsLoad','gsSave','gsTest'].forEach(function(name){var native=window[name];if(typeof native!=='function'||native.__v556)return;var wrapped=function(){heal();return native.apply(this,arguments);};wrapped.__v556=true;window[name]=wrapped;try{if(name==='gsLoad')gsLoad=wrapped;else if(name==='gsSave')gsSave=wrapped;else gsTest=wrapped;}catch(_e){}});
   heal();setTimeout(heal,600);setTimeout(heal,2200);
-  window.addEventListener('online',function(){heal();if(state.act==='strategy'&&typeof gsLoad==='function')Promise.resolve(gsLoad(true)).catch(function(){});});
-  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&state.act==='strategy'){heal();if(typeof gsLoad==='function')Promise.resolve(gsLoad(true)).catch(function(){});}});
+  /* v867 : 온라인 복귀·탭 복귀 때 서버 확인을 반복하지 않습니다. */
+  window.addEventListener('online',heal);
 })();
 
 /* 미수관리 업로드 자료: 파일명 정규화 중복은 최신 1개만 유지하고 삭제표시는 변형 이름에도 적용합니다. */
@@ -35671,7 +35728,7 @@ function afterMerge(){
   /* 입력 중이면 건드리지 않고, 매출 목표·전략·담당자 화면만 조용히 다시 그립니다. */
   later(function(){
     try{
-      if(typeof v801Typing==='function'&&v801Typing())return;
+      if((typeof v801Typing==='function'&&v801Typing())||(typeof window.v867TextEditing==='function'&&window.v867TextEditing())){state._syncDeferred=true;return;}
       if(typeof window.__selOpenV845==='function'&&window.__selOpenV845())return;   /* v845 : 선택창 열림 중엔 보류 */
       var a=state.act;
       if(a==='forecast'||a==='strategy'||a==='trend'){ state._syncDeferred=false; if(typeof runAct==='function')runAct(); }
@@ -36455,7 +36512,7 @@ try{
 
 function syncView(){
   try{
-    if(typeof v801Typing==='function'&&v801Typing())return;
+    if((typeof v801Typing==='function'&&v801Typing())||(typeof window.v867TextEditing==='function'&&window.v867TextEditing())){state._syncDeferred=true;return;}
     if(typeof window.__selOpenV845==='function'&&window.__selOpenV845())return;
     if(state.act==='forecast'){
       state._syncDeferred=false;
