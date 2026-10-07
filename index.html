@@ -36371,7 +36371,7 @@ function signature(){
 window.fcSyncAuditV855=function(){
   var s=signature(),h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
   var y=year(),ys=((state.fc||{}).yearPlans||{})[y]||{},p=(ys.targetPlans||{})[ys.activePlan==='2'?'2':'1']||{},m=(state.fcYearMisc||{})[y]||{},pd=(state.pdYears||{})[y]||{};
-  var out={version:'v861',year:y,plan:ys.activePlan==='2'?'2':'1',hash:('00000000'+(h>>>0).toString(16)).slice(-8),
+  var out={version:'v862',year:y,plan:ys.activePlan==='2'?'2':'1',hash:('00000000'+(h>>>0).toString(16)).slice(-8),
     monthlyPct:Object.keys(p.pct||{}).length,custAdjust:Object.keys(p.override||{}).length,custMonthly:Object.keys(p.custMonthPct||{}).length,
     prodAdjust:Object.keys(p.prodOverride||{}).length,prodMonthly:Object.keys(p.prodMonthPct||{}).length,targetExcluded:Object.keys(m.targetExclCust||{}).filter(function(k){return m.targetExclCust[k];}).length,
     workdays:Object.keys(state.workdays||{}).length,bepYears:Object.keys(state.bepYears||{}).length,headMonths:Object.keys(state.headMonthly||{}).length,
@@ -36383,10 +36383,11 @@ window.fcSyncAuditV855=function(){
 </script>
 
 <script id="v860-initial-forecast-consistency">
-/* v860 · 첫 화면에서 오래된 로컬 목표가 잠깐 보였다가 서버값으로 바뀌는 현상 방지 */
+/* v860/v862 · 첫 화면에서 오래된 로컬 목표가 잠깐 보였다가 서버값으로 바뀌는 현상 방지
+   서버 응답이 늦거나 끊겨도 화면 자체는 6초 안에 반드시 엽니다. 동기화는 백그라운드에서 계속됩니다. */
 (function(){
 'use strict';
-var released=false,timer=null;
+var released=false,timer=null,started=Date.now(),MAX_WAIT=6000;
 function configured(){try{return !!(state&&state.gsync&&String(state.gsync.url||'').trim()&&String(state.gsync.key||'').trim());}catch(_e){return false;}}
 function release(){
   if(released)return; released=true; window.__FC_BOOT_BLOCK_V860=false;
@@ -36397,8 +36398,13 @@ function release(){
   }catch(_e){}
 }
 function check(){
-  if(released||!window.__FC_SETTINGS_LOADED_V860||!window.__V718_RESTORED)return;
-  if(configured()&&!window.__FC_GS_SETTLED_V860)return;
+  if(released)return;
+  var localReady=!!(window.__FC_SETTINGS_LOADED_V860&&window.__V718_RESTORED);
+  /* 일반 설정 또는 연도 설정 복원이 예외로 끝난 경우도 무한 대기하지 않습니다. */
+  if(!localReady&&Date.now()-started<MAX_WAIT)return;
+  /* 정상 연결이면 서버 결과를 우선 기다리되, 네트워크 지연은 화면을 막지 않습니다. */
+  if(configured()&&!window.__FC_GS_SETTLED_V860&&Date.now()-started<MAX_WAIT)return;
+  if(!window.__FC_GS_SETTLED_V860&&configured())try{console.warn('[v862] 동기화는 백그라운드에서 계속하고 매출목표 화면을 먼저 엽니다.');}catch(_e){}
   release();
 }
 timer=setInterval(check,50);
@@ -36406,6 +36412,8 @@ if(document.readyState==='complete')setTimeout(check,0);
 else window.addEventListener('load',check,{once:true});
 /* 서버 설정이 없는 로컬 사용도 연도별 복원이 끝나면 즉시 표시됩니다. */
 setTimeout(check,250);
+/* requestJson의 장시간 재시도와 관계없이 화면 차단을 해제하는 최종 안전장치 */
+setTimeout(check,MAX_WAIT+50);
 })();
 </script>
 
