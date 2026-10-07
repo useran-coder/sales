@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v836</title>
-<script>window.APP_BUILD='v836';</script>
+<title>동방파스텍 매출 분석 도구 v837</title>
+<script>window.APP_BUILD='v837';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1927,7 +1927,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v836</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v837</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -35312,6 +35312,94 @@ window.cmgrOpenCustPageV835=function(cust){
     try{ var r=document.getElementById('result'); if(r)r.scrollIntoView({block:'start'}); window.scrollTo(0,0); }catch(_s){}
   }catch(e){ try{ console.error('[v835]',e); }catch(_x){} }
 };
+})();
+</script>
+
+<script id="v837-year-plan-sync-fix">
+/* ══════════ v837 · 연도별 목표안이 PC마다 다르게 보이던 문제 ══════════
+   증상 : 같은 구글시트를 쓰는데도 PC마다 「목표 연도 2027」의 목표안(수정1안/2안)과
+          월별 금액·2026 기준값이 서로 다르게 나오고, 한쪽에서 고치면 다른 쪽이 되돌려 놓음.
+   원인 ① gsFields() 안에서 fcSyncYearStoresV718() 가 돌아, 동기화 자료를 «받아 넣기 직전»에
+          그 PC의 편집값을 연도 보관함(fcYearPlans)에 덮어썼습니다.
+          → 받은 자료는 덮어쓴 값 위에 부분 병합되어, 두 PC가 영영 섞인 상태가 됩니다.
+   원인 ② 받아 넣은 뒤에도 보관함(fcYearPlans[연도]) 을 화면 편집값(targetPlans·activePlan)으로
+          다시 읽어 오지 않아, 받은 내용이 화면에 반영되지 않았습니다.
+   수정 ① 동기화 병합 중에는 보관함에 로컬 값을 쓰지 않습니다.
+        ② 병합이 끝나면 «그 연도의 보관함»을 화면 편집값으로 다시 읽어 옵니다(목표안 선택 포함). */
+(function(){
+'use strict';
+function later(fn){ try{ setTimeout(fn,0); }catch(_e){} }
+
+/* ① 병합 중 보관함 덮어쓰기 차단 */
+if(typeof window.fcSyncYearStoresV718==='function'&&!window.fcSyncYearStoresV718.__v837){
+  var _realSync=window.fcSyncYearStoresV718;
+  window.fcSyncYearStoresV718=function(){
+    if(window.__GS_MERGING_V837)return;          /* 받아 넣는 중에는 쓰지 않습니다 */
+    return _realSync.apply(this,arguments);
+  };
+  window.fcSyncYearStoresV718.__v837=true;
+}
+
+/* ② 보관함 → 화면 편집값 반영 */
+window.fcAdoptYearPlanV837=function(){
+  try{
+    var f=(typeof state!=='undefined')&&state.fc; if(!f)return false;
+    var K=String((typeof fcTargetYear==='function')?fcTargetYear():0);
+    var st=(f.yearPlans||{})[K];
+    if(!st||!st.targetPlans)return false;
+    var sig=function(){ try{ return JSON.stringify(f.targetPlans||{})+'\u0000'+String(f.activePlan||''); }catch(_s){ return Math.random()+''; } };
+    var before=sig();
+    f.targetPlans=fcPlanClone(st.targetPlans);
+    f.activePlan=(st.activePlan==='2')?'2':'1';
+    f._targetPlanLoaded=null;
+    try{ fcEnsureTargetPlans(); }catch(_e){}
+    try{ _fcBaseAggCache=null; _fcBase27Cache=null; window.FC_CHART_V677=null; window.__nyAggV737=null; }catch(_c){}
+    return before!==sig();
+  }catch(_e){ return false; }
+};
+
+/* 병합이 끝난 뒤 보관함을 반영하고, 달라졌으면 보고 있는 화면만 다시 그립니다. */
+function afterMerge(){
+  var changed=false;
+  try{ changed=window.fcAdoptYearPlanV837(); }catch(_e){}
+  if(!changed)return;
+  try{ if(typeof saveSettings==='function')saveSettings(); }catch(_e){}
+  try{ console.info('[v837] 연도 보관함을 화면에 반영했습니다 — 목표안 '+(state.fc.activePlan)+'안'); }catch(_c){}
+  /* 입력 중이면 건드리지 않고, 매출 목표·전략·담당자 화면만 조용히 다시 그립니다. */
+  later(function(){
+    try{
+      if(typeof v801Typing==='function'&&v801Typing())return;
+      var a=state.act;
+      if(a==='forecast'||a==='strategy'||a==='trend'){ state._syncDeferred=false; if(typeof runAct==='function')runAct(); }
+    }catch(_e){}
+  });
+}
+
+function wrap(name){
+  var fn=window[name]; if(typeof fn!=='function'||fn.__v837)return;
+  var w=function(d){
+    var top=!window.__GS_MERGING_V837;
+    if(top)window.__GS_MERGING_V837=true;
+    try{ return fn.apply(this,arguments); }
+    finally{ if(top){
+      window.__GS_MERGING_V837=false;
+      /* 받은 자료의 «연도 보관함»을 확실히 반영합니다
+         (본 병합 루프가 연도 보관함을 건너뛰는 경로가 있어, 여기서 한 번 더 확실히 넣습니다) */
+      try{ if(d&&typeof d==='object'){
+        if(d.fcYearPlans)gsApplyField('fcYearPlans',state.fc,'yearPlans',d.fcYearPlans);
+        if(d.fcYearMisc)gsApplyField('fcYearMisc',state,'fcYearMisc',d.fcYearMisc);
+        if(d.pdYears)gsApplyField('pdYears',state,'pdYears',d.pdYears);
+      } }catch(_a){}
+      afterMerge();
+    } }
+  };
+  w.__v837=true; window[name]=w;
+  try{ eval(name+'=w'); }catch(_e){}
+}
+function boot(){ wrap('gsMerge'); wrap('gsApplyDelta'); }
+if(document.readyState==='complete')setTimeout(boot,300);
+else window.addEventListener('load',function(){setTimeout(boot,300);},{once:true});
+setTimeout(boot,1200);
 })();
 </script>
 
