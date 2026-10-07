@@ -11323,7 +11323,18 @@ function syncExcludedCustMaps(){
     if(!prev || (/\(폐업\)\s*$/.test(prev) && !/\(폐업\)\s*$/.test(c))) canonical.set(k,c);
   });
   const sourceName=new Map(), keys=new Set(FORCED_TARGET_ZERO_CUST_KEYS);
-  const collect=obj=>Object.entries(obj||{}).forEach(([c,v])=>{ if(!v)return; const k=fcCustKey(c); keys.add(k); if(!sourceName.has(k))sourceName.set(k,String(c||'').trim()); });
+  /* v866 : 다음 목표연도에는 직전 연도에서 이미 거래처 제외한 업체를 이월하지 않습니다.
+     예: 2026년에 폐업/거래중지로 제외한 업체는 2027년 목록에서 빠지고,
+     2027년에 새로 체크한 업체만 2027년 보관함에 남습니다. */
+  const prevYearKeys=new Set();
+  try{
+    const ty=+(typeof fcTargetYear==='function'?fcTargetYear():0)||0;
+    if(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode()&&ty){
+      const pm=(state.fcYearMisc||{})[String(ty-1)]||{};
+      [pm.exclCust,pm.cmgrExcl].forEach(obj=>Object.entries(obj||{}).forEach(([c,v])=>{if(v)prevYearKeys.add(fcCustKey(c));}));
+    }
+  }catch(_e){}
+  const collect=obj=>Object.entries(obj||{}).forEach(([c,v])=>{ if(!v)return; const k=fcCustKey(c); if(prevYearKeys.has(k)&&!FORCED_TARGET_ZERO_CUST_KEYS.has(k))return; keys.add(k); if(!sourceName.has(k))sourceName.set(k,String(c||'').trim()); });
   collect(state.fc.exclCust); collect(state.cmgrExcl);
   const merged={};
   keys.forEach(k=>{
@@ -11370,9 +11381,18 @@ function syncTargetExcludedCustMap(){
      PC별 버전 차이로 체크가 되살아나거나 사라지지 않게 합니다. */
   const modernHas=Object.values(state.fc.targetExclCust).some(Boolean);
   if(!modernHas)Object.entries(state.fc.targetOnlyExcl).forEach(([c,v])=>{ if(v)state.fc.targetExclCust[c]=true; });
-  const yi=fcTargetExclYearInfo(), sourceName=new Map(), keys=new Set();
+  const yi=fcTargetExclYearInfo(), sourceName=new Map(), keys=new Set(), prevYearKeys=new Set();
+  /* v866 : 목표합산 제외도 목표연도별 신규 선택만 유지합니다.
+     직전 연도 보관함과 겹치는 업체는 구버전 live 값이 다음 연도로 복원된 것으로 보고 제거합니다. */
+  try{
+    if(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode()&&yi.year){
+      const pm=(state.fcYearMisc||{})[String(yi.year-1)]||{};
+      [pm.targetExclCust,pm.targetOnlyExcl].forEach(obj=>Object.entries(obj||{}).forEach(([c,v])=>{if(v)prevYearKeys.add(fcTargetExclYearKey(c));}));
+    }
+  }catch(_e){}
   Object.entries(state.fc.targetExclCust||{}).forEach(([c,v])=>{
     if(!v)return; const k=fcTargetExclYearKey(c), prevAmt=+yi.prev.get(k)||0, curAmt=+yi.cur.get(k)||0;
+    if(prevYearKeys.has(k))return;
     /* 전년도 매출이 없거나 목표연도에도 정상 매출이 있으면 목표합산 제외 대상이 아닙니다. */
     if(!(prevAmt>0&&(curAmt<=0||yi.closed.has(k))))return;
     keys.add(k);if(!sourceName.has(k))sourceName.set(k,String(c||'').trim());
@@ -11654,7 +11674,46 @@ function pdEnsure(){ const pd=(state.pd&&typeof state.pd==='object')?state.pd:(s
      명시적인 false는 그대로 존중하고, 필드 자체가 없을 때만 기존 기본값(true)을 복원합니다. */
   ['useLabor','useProcess','useIndirect'].forEach(function(k){ if(!Object.prototype.hasOwnProperty.call(pd,k))pd[k]=true; });
   if(!Object.prototype.hasOwnProperty.call(pd,'estimate'))pd.estimate=false;
+  try{ pdEnforceResetV866(pd); }catch(_e){}
   return pd; }
+/* v866 : PD 임가공비의 삭제/초기화를 값과 함께 동기화합니다.
+   빈 객체만 보내면 구글 동기화의 오래된 월 값이 다시 병합될 수 있으므로,
+   연도별 resetAt과 월별 수정시각을 같이 보관하고 resetAt보다 오래된 칸은 항상 지웁니다. */
+function pdMetaV866(pd){
+  pd=(pd&&typeof pd==='object')?pd:(state.pd=state.pd||{});
+  if(!pd._syncV866||typeof pd._syncV866!=='object'||Array.isArray(pd._syncV866))pd._syncV866={};
+  const m=pd._syncV866;
+  if(!m.cells||typeof m.cells!=='object'||Array.isArray(m.cells))m.cells={};
+  if(!m.flags||typeof m.flags!=='object'||Array.isArray(m.flags))m.flags={};
+  m.resetAt=+m.resetAt||0; m.updatedAt=+m.updatedAt||0;
+  return m;
+}
+function pdEnforceResetV866(pd){
+  if(!pd||typeof pd!=='object')return false;
+  const meta=pdMetaV866(pd), reset=+meta.resetAt||0; if(!reset)return false;
+  let changed=false;
+  ['labor','process','indirect','actual'].forEach(function(cat){
+    const map=pd[cat]; if(!map||typeof map!=='object')return;
+    Object.keys(map).forEach(function(mm){
+      if((+meta.cells[cat+':'+mm]||0)<=reset){ delete map[mm]; changed=true; }
+    });
+  });
+  if((+meta.flags.estimate||0)<=reset)pd.estimate=false;
+  return changed;
+}
+function pdTouchV866(cat,m){
+  const pd=(state.pd&&typeof state.pd==='object')?state.pd:(state.pd={}), meta=pdMetaV866(pd), now=Math.max(Date.now(),(+meta.resetAt||0)+1,(+meta.updatedAt||0)+1);
+  meta.cells[String(cat)+':'+String(m)]=now; meta.updatedAt=now;
+  try{ const y=String((typeof fcTargetYear==='function')?fcTargetYear():((state.fc||{})._ctxYear||'')); if(y){state.pdYears=state.pdYears||{};state.pdYears[y]=JSON.parse(JSON.stringify(pd));} }catch(_e){}
+}
+function pdTouchFlagV866(k){ const pd=pdEnsure(),meta=pdMetaV866(pd),now=Math.max(Date.now(),(+meta.resetAt||0)+1,(+meta.updatedAt||0)+1);meta.flags[k]=now;meta.updatedAt=now; }
+function pdResetYearV866(y){
+  const pd=pdEnsure(), now=Date.now();
+  pd.labor={};pd.process={};pd.indirect={};pd.actual={};pd.estimate=false;
+  pd._syncV866={resetAt:now,updatedAt:now,cells:{},flags:{estimate:now}};
+  try{ const Y=String(y||((typeof fcTargetYear==='function')?fcTargetYear():'')); if(Y){state.pdYears=state.pdYears||{};state.pdYears[Y]=JSON.parse(JSON.stringify(pd));} }catch(_e){}
+  return pd;
+}
 function pdAvg(cat){ pdEnsure(); let s=0,n=0; for(let mm=1;mm<=fcCutoffMonth();mm++){ const v=+state.pd[cat][mm]||0; if(v){s+=v;n++;} } return n?Math.round(s/n):0; }
 /* v850 : 다음 목표연도 자동계획은 직전연도 1~12월 전체 평균(빈 달은 0원 포함)을 사용합니다. */
 function pdPrevYearAvgV850(cat){
@@ -11662,8 +11721,8 @@ function pdPrevYearAvgV850(cat){
 }
 function pdFillPrevYearAvgV850(){
   const pd=pdEnsure(); if(!(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode()))return false;
-  ['labor','process','indirect'].forEach(function(cat){ const av=pdPrevYearAvgV850(cat); pd[cat]={}; for(let m=1;m<=12;m++)pd[cat][m]=av; });
-  pd.actual={}; pd.estimate=true; return true;
+  ['labor','process','indirect'].forEach(function(cat){ const av=pdPrevYearAvgV850(cat); pd[cat]={}; for(let m=1;m<=12;m++){pd[cat][m]=av;pdTouchV866(cat,m);} });
+  pd.actual={}; pd.estimate=true; pdTouchFlagV866('estimate'); return true;
 }
 function pdCatVal(cat,m){ pdEnsure(); const v=+state.pd[cat][m]||0; if(v)return v; if(state.pd.estimate&&!(state.pd.actual&&state.pd.actual[m])){ if(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode())return pdPrevYearAvgV850(cat); if(m>fcCutoffMonth()&&m<=12)return pdAvg(cat); } return 0; }
 function pdMonth(m){ const pd=pdEnsure(); if(!pd)return 0; const L=pd.useLabor?pdCatVal('labor',m):0; const P=pd.useProcess?pdCatVal('process',m):0; const I=pd.useIndirect?pdCatVal('indirect',m):0; return L+P+I; }
@@ -11851,11 +11910,11 @@ function monthlyTrend(){
     const st2=$('#scrapToggle'); st2&&st2.addEventListener('click',()=>{ state.trend=state.trend||{}; const open=!state.trend.scrapOpen; state.trend.scrapOpen=open; if(open)state.trend.pdOpen=false; monthlyTrend(); });
     if(typeof populateScrapDatalist==='function')populateScrapDatalist();
     const scrapRateInput=$('#scrapRateInput'); if(scrapRateInput){ scrapRateInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur();}}); scrapRateInput.addEventListener('change',async e=>{ let v=parseFloat(e.target.value); if(!Number.isFinite(v))v=80; v=Math.max(0,Math.min(100,v)); state.scrapRate=v; e.target.value=v; if(typeof logEdit==='function')logEdit('고철업체','자동 반영률 '+v+'%'); await saveSettings(); monthlyTrend(); }); }
-    $('#result').querySelectorAll('.pdin').forEach(inp=>{ inp.addEventListener('input',e=>{ const allowNegative=e.target.dataset.cat==='indirect'; const txt=(e.target.value||'').replace(/,/g,'').trim(); const negative=allowNegative&&txt.startsWith('-'); const digits=txt.replace(/[^\d]/g,''); e.target.value=digits?((negative?'-':'')+(+digits).toLocaleString()):(negative?'-':''); const isNeg=negative&&!!digits; e.target.classList.toggle('pd-neg',isNeg); e.target.style.color=isNeg?'#dc2626':''; e.target.style.fontWeight=isNeg?'700':''; }); inp.addEventListener('change',e=>{ const cat=e.target.dataset.cat,m=+e.target.dataset.m; const v=parseFloat((e.target.value||'').replace(/,/g,''))||0; if(v)state.pd[cat][m]=v; else delete state.pd[cat][m]; if(typeof logEdit==='function')logEdit('PD',cat+' '+m+' 매출 변경'); saveSettings(); monthlyTrend(); }); });
-    const pe=$('#pdEst'); pe&&pe.addEventListener('change',e=>{ state.pd.estimate=e.target.checked; if(e.target.checked)try{pdFillPrevYearAvgV850();}catch(_x){} if(typeof logEdit==='function')logEdit('PD','추정 '+(e.target.checked?'설정':'해제')); saveSettings(); monthlyTrend(); });
-    const pr=$('#pdResetV850'); pr&&pr.addEventListener('click',async()=>{ const y=(typeof fcTargetYear==='function')?fcTargetYear():new Date().getFullYear(); if(!await uiConfirm(y+'년 PD 사업부 임가공비 입력값을 모두 초기화할까요?'))return; const pd=pdEnsure(); pd.labor={};pd.process={};pd.indirect={};pd.actual={};pd.estimate=false; if(typeof logEdit==='function')logEdit('PD',y+'년 PD 임가공비 전체 초기화'); await saveSettings(); monthlyTrend(); });
-    $('#result').querySelectorAll('.pdact').forEach(c=>c.addEventListener('change',e=>{ const m=+e.target.dataset.m; if(!state.pd.actual)state.pd.actual={}; if(e.target.checked)state.pd.actual[m]=true; else delete state.pd.actual[m]; if(typeof logEdit==='function')logEdit('PD',m+' 실적확정 '+(e.target.checked?'설정':'해제')); saveSettings(); monthlyTrend(); }));
-    $('#result').querySelectorAll('.pdck').forEach(c=>c.addEventListener('change',e=>{ state.pd[e.target.dataset.k]=e.target.checked; saveSettings(); monthlyTrend(); }));
+    $('#result').querySelectorAll('.pdin').forEach(inp=>{ inp.addEventListener('input',e=>{ const allowNegative=e.target.dataset.cat==='indirect'; const txt=(e.target.value||'').replace(/,/g,'').trim(); const negative=allowNegative&&txt.startsWith('-'); const digits=txt.replace(/[^\d]/g,''); e.target.value=digits?((negative?'-':'')+(+digits).toLocaleString()):(negative?'-':''); const isNeg=negative&&!!digits; e.target.classList.toggle('pd-neg',isNeg); e.target.style.color=isNeg?'#dc2626':''; e.target.style.fontWeight=isNeg?'700':''; }); inp.addEventListener('change',e=>{ const cat=e.target.dataset.cat,m=+e.target.dataset.m; const v=parseFloat((e.target.value||'').replace(/,/g,''))||0; if(v)state.pd[cat][m]=v; else delete state.pd[cat][m]; pdTouchV866(cat,m); if(typeof logEdit==='function')logEdit('PD',cat+' '+m+' 매출 변경'); saveSettings(); monthlyTrend(); }); });
+    const pe=$('#pdEst'); pe&&pe.addEventListener('change',e=>{ state.pd.estimate=e.target.checked; pdTouchFlagV866('estimate'); if(e.target.checked)try{pdFillPrevYearAvgV850();}catch(_x){} if(typeof logEdit==='function')logEdit('PD','추정 '+(e.target.checked?'설정':'해제')); saveSettings(); monthlyTrend(); });
+    const pr=$('#pdResetV850'); pr&&pr.addEventListener('click',async()=>{ const y=(typeof fcTargetYear==='function')?fcTargetYear():new Date().getFullYear(); if(!await uiConfirm(y+'년 PD 사업부 임가공비 입력값을 모두 초기화할까요?'))return; pdResetYearV866(y); if(typeof logEdit==='function')logEdit('PD',y+'년 PD 임가공비 전체 초기화'); await saveSettings(); try{if(typeof gsSave==='function'&&state.gsync&&state.gsync.url)await gsSave(true);}catch(_x){} monthlyTrend(); });
+    $('#result').querySelectorAll('.pdact').forEach(c=>c.addEventListener('change',e=>{ const m=+e.target.dataset.m; if(!state.pd.actual)state.pd.actual={}; if(e.target.checked)state.pd.actual[m]=true; else delete state.pd.actual[m]; pdTouchV866('actual',m); if(typeof logEdit==='function')logEdit('PD',m+' 실적확정 '+(e.target.checked?'설정':'해제')); saveSettings(); monthlyTrend(); }));
+    $('#result').querySelectorAll('.pdck').forEach(c=>c.addEventListener('change',e=>{ state.pd[e.target.dataset.k]=e.target.checked; pdTouchFlagV866(e.target.dataset.k); saveSettings(); monthlyTrend(); }));
     const cb=$('#trShowPY'); cb&&cb.addEventListener('change',e=>{ state.trend.showPY=e.target.checked; monthlyTrend(); });
     const trc=$('#trCsv'); trc&&trc.addEventListener('click',()=>{ const rows=[]; for(let m=1;m<=12;m++){ if(py[m]<=0&&cy[m]<=0)continue; const ha=m<=actualLastMonth; const yo=ha?(py[m]?((cy[m]-py[m])/py[m]*100):''):''; const ac=(ha&&tgt[m]>0)?((cy[m]-tgt[m])/tgt[m]*100):''; rows.push([m+'월', Math.round(py[m]), Math.round(tgt[m]), ha?Math.round(cy[m]):'', ha?Math.round(cy[m]-py[m]):'', yo===''?'':yo.toFixed(1), ac===''?'':ac.toFixed(1)]); } dlCSV('monthly_trend.csv',['월','전년('+PY+')','목표','실적('+CY+')','증감액','전년비%','목표달성%'],rows); });
   });
@@ -12770,7 +12829,7 @@ function forecast(){
   /* v804 : 값이 0 이면 칸을 비워 둡니다(= 회색 자동값만 보이게). 0 은 «조정 없음»과 같습니다. */
   const fcPctInputValue=v=>{ if(v==null||v==='')return ''; const n=+v; if(isFinite(n))return n===0?'':n.toFixed(1); return v; };
   const fcLinkedTargetEditor=o=>{ const e=fcNewTargetEntry(o.c); if(!e)return ''; return `<span class="fc-linked-target-editor" onclick="event.stopPropagation()"><span>신규목표</span><input type="text" inputmode="numeric" class="fcnewt numfmt" data-c="${esc(e.key)}" value="${(+e.value||0).toLocaleString('en-US')}" title="실제 매출처에 연결된 신규업체 목표액" ${o.targetExcl?'disabled':''}>원</span>`; };
-  let custRows=custArr.map((o,i)=>`<tr class="fcrow${o.excl?' fcexcluded':o.targetOnly?' fctargetexcluded':''}" data-c="${esc(o.c)}"><td class="rank">${i+1}</td><td class="l" style="white-space:nowrap">${esc(o.c)} ${fcNewTargetBadge(o.c)} ${catChip(o.c)} ${o.targetOnly&&!o.excl?'<span class="targetexclbadge">목표합산 제외</span>':''} <label class="exclbox" onclick="event.stopPropagation()" title="거래처 담당자 표에서 숨기고 목표액도 0원 처리"><input type="checkbox" class="fcexcl" data-c="${esc(o.c)}" ${o.excl?'checked':''}>거래처 제외</label><label class="targetexclbox" onclick="event.stopPropagation()" title="거래처와 실적은 표시하고 2026년 목표액만 합계에서 제외"><input type="checkbox" class="fctargetexcl" data-c="${esc(o.c)}" ${o.targetOnly?'checked':''}>목표합산 제외</label></td><td class="mgr">${mgrBadge(mgrS(o.c))}</td><td class="mgr">${mgrBadge(mgrT(o.c))}</td><td>${disp(o.ytd)}${(o.ytdAfter>0)?`<div class="fc-act-after-v805 over" title="실적확정월 이후에도 실제 매출이 있습니다. 목표 기준 표라 합계에는 들어가지 않습니다.">+확정후 ${disp(o.ytdAfter)}</div>`:''}</td><td>${disp(o.prev)}</td><td>${state.fc.issC?`<span class="sub2" style="color:#64748b;font-size:10px;display:block">전년 ${disp(o.prev)}</span>`:''}${disp(o.proj)}${fcLinkedTargetEditor(o)}</td><td>${diffSpan(o.diff)}</td><td>${fcAdjSpan(o.adj)}</td><td>${pctSpan(o.pct)}</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcov" data-c="${esc(o.c)}" value="${fcPctInputValue(o.ov)}" placeholder="${o.targetExcl?'목표제외':fcAutoPctText(o)}" title="자동 적용값 ${fcAutoPctText(o)}% · 직접 입력하면 거래처 조정%로 고정" step="0.1" style="width:56px" ${o.targetExcl?'disabled title="목표합산 제외 업체는 목표액 0원 적용"':''}> %${(state.showElog&&((state.fc.overrideAt&&state.fc.overrideAt[o.c])||(o.ov!==''&&o.ov!=null)))?`<div class="sub2" style="color:#7c3aed;font-size:9px;font-weight:700">✎ 조정 ${o.ov}%${(state.fc.overrideAt&&state.fc.overrideAt[o.c])?' · '+editStamp(state.fc.overrideAt[o.c]):''}</div>`:''}</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcadd" data-c="${esc(o.c)}" value="${fcPctInputValue(o.ad)}" placeholder="${o.targetExcl?'목표제외':'0.0'}" title="신규업체 목표가 연결된 경우에도 전체 업체 목표에 적용됩니다." step="0.1" style="width:56px" ${o.targetExcl?'disabled title="목표합산 제외 업체는 목표액 0원 적용"':''}> %${(state.showElog&&((state.fc.addPctAt&&state.fc.addPctAt[o.c])||(o.ad!==''&&o.ad!=null&&+o.ad!==0)))?`<div class="sub2" style="color:#7c3aed;font-size:9px;font-weight:700">✎ 추가 +${o.ad}%${(state.fc.addPctAt&&state.fc.addPctAt[o.c])?' · '+editStamp(state.fc.addPctAt[o.c]):''}</div>`:''}</td><td onclick="event.stopPropagation()"><input type="text" class="fcmemo" data-c="${esc(o.c)}" value="${esc(state.fc.custMemo[o.c]||'')}" placeholder="이슈 메모" style="width:180px;font-size:11px"></td></tr>`).join('');
+  let custRows=custArr.map((o,i)=>`<tr class="fcrow${o.excl?' fcexcluded':o.targetOnly?' fctargetexcluded':''}" data-c="${esc(o.c)}"><td class="rank">${i+1}</td><td class="l" style="white-space:nowrap">${esc(o.c)} ${fcNewTargetBadge(o.c)} ${catChip(o.c)} ${o.targetOnly&&!o.excl?'<span class="targetexclbadge">목표합산 제외</span>':''} <label class="exclbox" onclick="event.stopPropagation()" title="거래처 담당자 표에서 숨기고 목표액도 0원 처리"><input type="checkbox" class="fcexcl" data-c="${esc(o.c)}" ${o.excl?'checked':''}>거래처 제외</label><label class="targetexclbox" onclick="event.stopPropagation()" title="거래처와 실적은 표시하고 ${CY}년 목표액만 합계에서 제외"><input type="checkbox" class="fctargetexcl" data-c="${esc(o.c)}" ${o.targetOnly?'checked':''}>목표합산 제외</label></td><td class="mgr">${mgrBadge(mgrS(o.c))}</td><td class="mgr">${mgrBadge(mgrT(o.c))}</td><td>${disp(o.ytd)}${(o.ytdAfter>0)?`<div class="fc-act-after-v805 over" title="실적확정월 이후에도 실제 매출이 있습니다. 목표 기준 표라 합계에는 들어가지 않습니다.">+확정후 ${disp(o.ytdAfter)}</div>`:''}</td><td>${disp(o.prev)}</td><td>${state.fc.issC?`<span class="sub2" style="color:#64748b;font-size:10px;display:block">전년 ${disp(o.prev)}</span>`:''}${disp(o.proj)}${fcLinkedTargetEditor(o)}</td><td>${diffSpan(o.diff)}</td><td>${fcAdjSpan(o.adj)}</td><td>${pctSpan(o.pct)}</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcov" data-c="${esc(o.c)}" value="${fcPctInputValue(o.ov)}" placeholder="${o.targetExcl?'목표제외':fcAutoPctText(o)}" title="자동 적용값 ${fcAutoPctText(o)}% · 직접 입력하면 거래처 조정%로 고정" step="0.1" style="width:56px" ${o.targetExcl?'disabled title="목표합산 제외 업체는 목표액 0원 적용"':''}> %${(state.showElog&&((state.fc.overrideAt&&state.fc.overrideAt[o.c])||(o.ov!==''&&o.ov!=null)))?`<div class="sub2" style="color:#7c3aed;font-size:9px;font-weight:700">✎ 조정 ${o.ov}%${(state.fc.overrideAt&&state.fc.overrideAt[o.c])?' · '+editStamp(state.fc.overrideAt[o.c]):''}</div>`:''}</td><td onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="fcadd" data-c="${esc(o.c)}" value="${fcPctInputValue(o.ad)}" placeholder="${o.targetExcl?'목표제외':'0.0'}" title="신규업체 목표가 연결된 경우에도 전체 업체 목표에 적용됩니다." step="0.1" style="width:56px" ${o.targetExcl?'disabled title="목표합산 제외 업체는 목표액 0원 적용"':''}> %${(state.showElog&&((state.fc.addPctAt&&state.fc.addPctAt[o.c])||(o.ad!==''&&o.ad!=null&&+o.ad!==0)))?`<div class="sub2" style="color:#7c3aed;font-size:9px;font-weight:700">✎ 추가 +${o.ad}%${(state.fc.addPctAt&&state.fc.addPctAt[o.c])?' · '+editStamp(state.fc.addPctAt[o.c]):''}</div>`:''}</td><td onclick="event.stopPropagation()"><input type="text" class="fcmemo" data-c="${esc(o.c)}" value="${esc(state.fc.custMemo[o.c]||'')}" placeholder="이슈 메모" style="width:180px;font-size:11px"></td></tr>`).join('');
   let newProjSum=0, newProjSumExcl=0;
   const fcRealCustList=fcRealCustomerList(),fcRealCustKeys=new Set(fcRealCustList.map(fcCustKey)),fcRealCustDL=fcRealCustList.map(c=>`<option value="${esc(c)}"></option>`).join('');
   const integratedNewCustKeys=new Set(custArrTotalBase.map(o=>fcCustKey(o.c)));
