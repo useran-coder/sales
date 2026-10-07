@@ -2264,6 +2264,20 @@ let datasets=[];     // [{uid, fileName, sheetName, sheetNames:[], recs:[{d,cust
 let RAWMEM={};       // uid -> {sheetName:{headers,rows}}  (session only)
 let CUR=[];          // flattened records w/ Date + period keys
 let uidSeq=1;
+/* v860 : 로컬 일반설정 → 연도별 설정 → 서버설정이 차례로 들어오는 동안
+   매출목표의 중간값을 화면에 노출하지 않습니다. */
+window.__FC_BOOT_BLOCK_V860=true;
+window.__FC_BOOT_WANTS_RENDER_V860=false;
+window.fcBootWaitV860=function(){
+  try{
+    var r=document.getElementById('result'); if(!r)return;
+    if(r.querySelector&&r.querySelector('#fcBootWaitV860'))return;
+    r.innerHTML='<div id="fcBootWaitV860" style="margin:16px 0;padding:34px 24px;border:1px solid #bfdbfe;border-radius:14px;background:#f8fbff;text-align:center;color:#1e3a5f">'
+      +'<div style="display:inline-block;width:18px;height:18px;border:3px solid #93c5fd;border-top-color:#1d4ed8;border-radius:50%;animation:gsSpin .8s linear infinite;vertical-align:-4px;margin-right:9px"></div>'
+      +'<b style="font-size:15px">최신 매출목표를 확인하고 있습니다</b>'
+      +'<div style="margin-top:8px;font-size:12px;color:#64748b">연도별 목표와 동기화 자료를 모두 확인한 뒤 정확한 결과만 표시합니다.</div></div>';
+  }catch(_e){}
+};
 let state={ basis:'공급가', unit:1, period:'year', periodKey:null, periodYear:null, workdays:{}, bep:0, clsOverride:{}, gradeOverride:{}, gbunOverride:{}, specKindOverride:{}, mixCustomCats:[], salesQtyAnalysis:{view:'product',threshold:10,basis:'total',mergeCode:true,show:'low',mix:'전체',group:'전체',search:'',sort:{key:'basisQty',dir:'asc'},selectedKey:'',exLaser:false}, region:{level:'do'}, credit:{cat:null,by:'status'}, retain:{issue:false,showExcl:false,visitOnly:false,exclOnly:false}, retainMemo:{}, retainMemoAt:{}, retainExcl:{}, retainVisit:{}, cmgrExcl:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true}, elogSeenTs:0, cross:{base:'',baseSpec:'',targets:[''],filter:'all'}, ir:{target:'all',view:'spec',sm:10}, trend2:{win:12,dim:'cust',grp:'none',catSel:null,mixSel:'전체'}, clsCat:null, clsCustSearch:'', rankMonthly:false, rankMonYear:null, rankGroupDrillMetric:'amt', prodRankMonthly:false, prodRankYear:null, prodDrillMonthly:false, prodDrillYear:null, mixSalesView:'category', mixSalesMonthly:false, mixSalesYear:null, homeSpecBasis:'amt', monthIssue:{}, price:{mode:'cust',histMode:'all',mixBasis:'qty',rangeStart:'',rangeEnd:''}, weekly:{page:1,year:null,month:null,week:null,periodMode:'week',rangeStart:'',rangeEnd:'',topN:20,topPct:80,rankMode:'count',notes:{},issues:{},newCustomerNotes:{},commonPlans:{},issueScope:'current',issueSearch:'',issueDraft:null,issueEditId:null,issueAuthor:''}, priceSets:[], setDraft:{title:'',items:[{name:'',spec:'',code:'',qty:1,price:'',cost:'',profit:''}]}, rangeStart:null, rangeEnd:null, headcount:53, headMonthly:{}, headYearDefault:{}, mgrOverride:{}, cmgrPrimary:{}, cmgrKey:{}, scrapVendors:[], scrapVendorOff:{}, kvcExclProd:{}, doorFrame:{map:{},view:'cust',listFilter:'전체',search:'',limit:120,sortMode:'sales'}, salesMonthlySync:{}, laserMonthlySync:{}, purchaseMonthlySync:{}, gsync:{url:'',key:'',auto:true,lastSync:'',user:'',syncCount:0},syncLog:{}, act:null, sortKey:null, sortDir:-1, _search:'', chipVal:null, lastData:null,
   inv:{lt:14,z:'95',dfilter:'전체',actual:{},exclude:{},stab:'rec'}, cmgr:{fs:'전체',fe:'전체',ft:'전체',search:'',mode:'none',year:'cy',sortKey:'a',sortDir:-1,editKey:null,cardsOpen:false,infoMode:false,addrMode:false,addrSort:'amt',exclMode:false,showPrev:false,showLaser:false}, custInfo:{}, custAddr:{}, pd:{labor:{1:18912008,2:11016122,3:10729149,4:6283887,5:3589118},process:{1:33311650,2:23295890,3:19221300,4:13994850,5:12362080},indirect:{1:2016627,2:338637,3:1667136,4:625176,5:2298824},useLabor:true,useProcess:true,useIndirect:true,actual:{},estimate:false}, pareto:{dim:'cust',mode:'pct',topN:20,threshold:80,showRest:false,period:'all',m1:1,m2:12,year:'all'}, cmp:{period:'1분기',dim:'cust',m1:1,m2:12,year:null,filter:null}, trend:{showPY:false,editorOpen:false,pdOpen:false,scrapOpen:false}, fc:{actualCutoffMonth:5,activePlan:'1',targetPlans:null,pct:{},override:{},addPct:{},newCusts:{},newCustReplacements:{},prodOverride:{},prodAddPct:{},custProdOverride:{},custMonthPct:{},prodMonthPct:{},newProds:{},newLines:[],custMemo:{},prodMemo:{},notesHtml:'',notesTeam:'',notesSales:'',notesTech:'',notesTab:'main',notesMeta:{main:{},team:{},sales:{},tech:{}},issC:false,issP:false,hideActTgt:false,exclCust:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true},targetExclCust:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true},exclProd:{},showExcl:false,showExclRows:false,annualHist:{2019:7531847061,2020:7404376660,2021:8806423871,2022:10484011261,2023:12035275080,2024:11218223843},annualOpen:false,period:'all',m1:6,m2:12,dim:'cust',showPY:false,sortKey:null,sortDir:-1} };
 
@@ -2323,7 +2337,7 @@ function fcSaveYearPlan(y){ const f=state.fc; fcSyncActivePlan();
   store[K]={targetPlans:fcPlanClone(f.targetPlans),activePlan:(f.activePlan==='2'?'2':'1')}; }
 function fcSwitchYear(y){
   const f=state.fc, cur=fcTargetYear(), next=+y;
-  if(next===cur)return;
+  if(next===cur)return false;
   fcSaveYearPlan(cur);
   f.targetYear=next;
   const st=fcYearStore()[String(next)];
@@ -2403,7 +2417,9 @@ function fcSwitchYear(y){
   fcEnsureTargetPlans();
   try{ _fcBaseAggCache=null; }catch(_e){}
   try{ window.FC_CHART_V677=null; }catch(_e){}
-  try{ saveSettings(); }catch(_e){}
+  /* v859 : 연도 버튼을 누른 순간 무거운 전체 저장을 시작하지 않고 화면을 먼저 바꿉니다. */
+  try{ if(typeof v796SaveSoon==='function')v796SaveSoon(); else setTimeout(function(){try{saveSettings();}catch(_x){}},0); }catch(_e){}
+  return true;
 }
 /* ══════════ v718 · 예전 버전에서 «다음 연도 목표»로 넘어온 설정 1회 이관 ══════════
    v712~v713 시점에 연도를 넘긴 파일은 「목표합산 제외 업체 · 매출 목표전략 · PD 임가공비 ·
@@ -11436,7 +11452,7 @@ function bindFcCutoffSelector(rerun){ bindFcTargetPlanSelector('fcTargetPlanSel'
   var _ys=document.getElementById('fcYearSeg');
   if(_ys)_ys.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(e){
     e.preventDefault(); e.stopPropagation();
-    fcSwitchYear(+b.dataset.y);
+    if(fcSwitchYear(+b.dataset.y)===false)return;
     if(typeof logEdit==='function')logEdit('매출 목표','목표 연도 '+b.dataset.y+'년으로 전환');
     if(typeof rerun==='function')rerun(); else if(typeof forecast==='function')forecast();
   }); });
@@ -12295,7 +12311,9 @@ var _fcBase27Cache=null;
     return data;
   };
 })();
-function forecast(){ state._inDrill=false;
+function forecast(){
+  if(window.__FC_BOOT_BLOCK_V860){ window.__FC_BOOT_WANTS_RENDER_V860=true; try{window.fcBootWaitV860();}catch(_e){} return; }
+  state._inDrill=false;
   /* v846: 목표 화면에서는 담당자·업체분류·신용상태 필터를 사용하지 않습니다. 이전 선택도 해제합니다. */
   try{ mgrFilter.s='전체';mgrFilter.t='전체';clsFilter='전체';statusFilter='전체';state.fc.fOpen=null; }catch(_e){}
   syncExcludedCustMaps();
@@ -13030,6 +13048,8 @@ function forecast(){ state._inDrill=false;
     const _resetYearScopedV807=async (what)=>{
       const yr=state.fc._ctxYear||((typeof fcTargetYear==='function')?fcTargetYear():'');
       if(!await uiConfirm('<b>'+yr+'년 목표</b>의 모든 거래처 <b>'+what+'</b>(연간 + 월별보기)를 초기화할까요?<br><span class="sub2">다른 목표연도 값은 그대로 둡니다.</span>'))return false;
+      /* v859 : 지우기 전 상태를 먼저 보관해야 「% 되돌리기」로 초기화를 취소할 수 있습니다. */
+      try{ if(typeof fcSnapSaveV803==='function')await fcSnapSaveV803(); }catch(_e){}
       try{if(typeof fcResetRememberV841==='function')fcResetRememberV841(yr,what==='조정%'?['override','custMonthPct']:['addPct']);}catch(_e){}
       if(what==='조정%'){ state.fc.override={}; state.fc.overrideAt={}; state.fc.custMonthPct={}; _clearFieldsNowV838('.fcov,.fc-cust-month-pct'); }
       else { state.fc.addPct={}; state.fc.addPctAt={}; _clearFieldsNowV838('.fcadd'); }
@@ -13039,7 +13059,12 @@ function forecast(){ state._inDrill=false;
       try{ if(typeof logEdit==='function')logEdit('매출 목표',yr+'년 '+what+' 초기화(연간+월별)'); }catch(_e){}
       try{ if(typeof fcSnapSaveV803==='function')await fcSnapSaveV803(); }catch(_e){}
       try{ fcOrderUnlockV802(); }catch(_e){}
-      await saveSettings(); forecast(); return true;
+      await saveSettings();
+      /* 초기화는 즉시 서버까지 확정해 다른 PC가 옛값을 다시 올리지 않게 합니다. */
+      try{ if(typeof gsSave==='function'&&state.gsync&&state.gsync.url&&state.gsync.key){
+        await gsSave(true); if(state.gsync.lastOp==='load')await gsSave(true);
+      } }catch(_e){}
+      forecast(); return true;
     };
     const ovR=$('#fcOvReset'); ovR&&ovR.addEventListener('click',async()=>{ const n=Object.keys(state.fc.override||{}).length+Object.keys(state.fc.custMonthPct||{}).length; if(!n){ await uiConfirm('초기화할 조정%가 없습니다.'); return; } await _resetYearScopedV807('조정%'); });
     const adR=$('#fcAddReset'); adR&&adR.addEventListener('click',async()=>{ if(!Object.keys(state.fc.addPct||{}).length){ await uiConfirm('초기화할 추가%가 없습니다.'); return; } await _resetYearScopedV807('추가%'); });
@@ -13865,6 +13890,7 @@ function exportCSV(){
   if(typeof renderScrapList==='function')renderScrapList();
   if(typeof refreshElogBtns==='function')setTimeout(refreshElogBtns,100);
   { const gu=document.getElementById('gsUrl'); if(gu)gu.value=(state.gsync&&state.gsync.url)||''; const gk=document.getElementById('gsKey'); if(gk)gk.value=(state.gsync&&state.gsync.key)||''; const gus=document.getElementById('gsUser'); if(gus)gus.value=(state.gsync&&state.gsync.user)||''; }
+  window.__FC_SETTINGS_LOADED_V860=true;
   try{ if(typeof migrateCustKeys==='function'&&migrateCustKeys()&&typeof saveSettings==='function')saveSettings(); }catch(_){}
   const saved=await idbGet('datasets');
   if(saved&&saved.length){ datasets=saved.map(d=>({...d,uid:String((d&&d.uid)||'').indexOf('shared-')===0?d.uid:uidSeq++})); afterDataChanged(); }
@@ -13876,7 +13902,8 @@ function exportCSV(){
     { const _ga=document.getElementById('gsAuto'); if(_ga)_ga.checked=true; }
     const _sc0=(state.gsync.syncCount||0);
     /* v771 : 시작 직후 같은 «불러오기»가 세 번 겹쳐 서버 대기열이 길어지던 것을 한 번으로 줄입니다 */
-    setTimeout(()=>{ if(typeof gsLoad==='function')gsLoad(false); },1400);
+    /* v860 : 화면은 준비 완료까지 차단하므로 서버 확인도 지체 없이 시작합니다. */
+    setTimeout(()=>{ if(typeof gsLoad==='function')gsLoad(false); },120);
     setTimeout(()=>{ if((state.gsync.syncCount||0)===_sc0 && !_gsBusy && typeof gsLoad==='function')gsLoad(true); },12000);
   }
 })();
@@ -14194,7 +14221,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
 
   window.gsLoad=gsLoad=async function(silent){
     await ensureBase();if(_gsBusy){if(silent){setTimeout(function(){gsLoad(true)},BUSY_RETRY)}else status('다른 동기화 작업이 진행 중입니다. 잠시 후 자동으로 다시 시도합니다.','#b45309');return false}
-    var c;try{c=config(!!silent)}catch(e){if(!silent){setFailure(e.message,'load');await persistOnly()}gsUpdateBtn();return false}
+    var c;try{c=config(!!silent)}catch(e){window.__FC_GS_SETTLED_V860=true;if(!silent){setFailure(e.message,'load');await persistOnly()}gsUpdateBtn();return false}
     var firstServerLoad=!sessionServerReady;
     /* v600: 과거 버전에서 공용 항목이 아니었던 목표 구성·월 조정값은 서버에 해당 키가
        아직 없을 때만 현재 PC 값을 1회 보존합니다. 이미 서버 값이 있으면 서버를 우선해
@@ -14230,7 +14257,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
       status('✓ 동기화완료 · 서버 자료 불러오기'+(firstServerLoad?' · 서버 원본 보호 기준 확정':(hasLocal?' · 미전송 변경 보존':''))+' · '+fmtFull(state.gsync.lastSync),'#0f766e');setMode('idle','');
       if(hasLocal)scheduleAuto(900);else{_gsPendingPush=false;_gsPushAt=0;autoRetry=0;gsUpdateBtn()}return true;
     }catch(e){e=classifyError(e);if(silent&&e.retryable){setTransient(e.message);console.warn('background sync retryable:',e.message);setMode('idle','')}else{setFailure(e.message,'load');await persistOnly();if(!silent)status('동기화 실패: '+e.message,'#dc2626');setMode('idle','')}return false}
-    finally{_gsBusy=false;gsUpdateBtn()}
+    finally{window.__FC_GS_SETTLED_V860=true;_gsBusy=false;gsUpdateBtn()}
   };
 
   window.gsSave=gsSave=async function(silent){
@@ -31747,7 +31774,7 @@ try{ clsSales=sgClsSales; }catch(_e){}
        · 그 외(get/save) → 💰 미수관리·설정 동기화 막대
      로 나눠서, 각 메뉴의 올리기·받기가 서로 상관없이 표시됩니다.
      ══════════════════════════════════════════════════════ */
-  function mkState(){ return {on:false,kind:'down',pct:0,label:'',sub:'',t:0,at:0}; }
+  function mkState(){ return {on:false,kind:'down',pct:0,label:'',sub:'',t:0,at:0,started:0}; }
   var CH={ds:mkState(),gs:mkState()};
   var CHNAME={ds:'매출자료 공유',gs:'설정·미수 동기화'};
   function S(ch){ return CH[ch==='ds'?'ds':'gs']; }
@@ -31799,18 +31826,19 @@ try{ clsSales=sgClsSales; }catch(_e){}
     else document.addEventListener('DOMContentLoaded',function(){_mo.observe(document.body,{childList:true,subtree:true});},{once:true});
   }catch(_e){}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paint,{once:true}); else setTimeout(paint,300);
-  /* 응답이 오지 않아 막대가 걸린 채로 남지 않도록, 45초간 변화가 없으면 대기로 돌립니다. */
+  /* v859 : 대기 문구 자체가 매초 at을 갱신하므로 at 기준 감시는 영원히 끝나지 않았습니다.
+     요청 시작 시각을 따로 두어 2분 이상 남은 오래된 표시를 안전하게 닫습니다. */
   setInterval(function(){ ['ds','gs'].forEach(function(c){ var ST=S(c);
-    if(ST.on&&ST.at&&Date.now()-ST.at>30000){ ST.on=false;ST.pct=0;ST.at=0; } }); paint(); },5000);
+    if(ST.on&&ST.started&&Date.now()-ST.started>120000){ ST.on=false;ST.pct=0;ST.at=0;ST.started=0; } }); paint(); },5000);
   var SG={
     kb:kb,
-    show:function(kind,label,sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true;ST.kind=kind;ST.label=label||'';ST.sub=sub||'';ST.pct=3;paint(); },
-    set:function(pct,sub,ch){ var ST=S(ch); if(!ST.on)return; ST.at=Date.now(); if(pct!=null)ST.pct=Math.max(ST.pct,Math.min(99,pct)); if(sub!=null)ST.sub=sub; paint(); },
-    step:function(pct,label,sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true; if(label)ST.label=label; if(pct!=null)ST.pct=Math.min(99,pct); if(sub!=null)ST.sub=sub; paint(); },
+    show:function(kind,label,sub,ch){ var ST=S(ch); ST.at=Date.now();ST.started=ST.at;ST.on=true;ST.kind=kind;ST.label=label||'';ST.sub=sub||'';ST.pct=3;paint(); },
+    set:function(pct,sub,ch){ var ST=S(ch); if(!ST.on||(ST.pct>=100&&(ST.kind==='ok'||ST.kind==='err')))return; ST.at=Date.now(); if(pct!=null)ST.pct=Math.max(ST.pct,Math.min(99,pct)); if(sub!=null)ST.sub=sub; paint(); },
+    step:function(pct,label,sub,ch){ var ST=S(ch); if(ST.on&&ST.pct>=100&&(ST.kind==='ok'||ST.kind==='err'))return; ST.at=Date.now();if(!ST.started)ST.started=ST.at;ST.on=true; if(label)ST.label=label; if(pct!=null)ST.pct=Math.min(99,pct); if(sub!=null)ST.sub=sub; paint(); },
     done:function(sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true;ST.kind='ok';ST.pct=100;ST.label='완료';if(sub!=null)ST.sub=sub;paint();
-      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;ST.at=0;paint(); },2600); },
+      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;ST.at=0;ST.started=0;paint(); },2600); },
     fail:function(sub,ch){ var ST=S(ch); ST.at=Date.now(); ST.on=true;ST.kind='err';ST.pct=100;ST.label='실패';if(sub!=null)ST.sub=sub;paint();
-      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;ST.at=0;paint(); },4200); }
+      clearTimeout(ST.t); ST.t=setTimeout(function(){ ST.on=false;ST.pct=0;ST.at=0;ST.started=0;paint(); },4200); }
   };
   window.SG652=SG;
 
@@ -33135,7 +33163,11 @@ window.sgSyncCustMemoV617=syncMemo;
     }catch(_e){}
     window.__V718_RESTORED=true;
   }
-  function _v718Sched(){ setTimeout(_v718Restore,1200);
+  function _v718Sched(){
+    /* v860 : 임의로 1.2초 기다리지 않고 일반 설정 복원이 끝난 즉시 연도별 설정을 잇달아 복원합니다. */
+    var _n=0,_t=setInterval(function(){
+      _n++; if(window.__FC_SETTINGS_LOADED_V860||_n>100){ clearInterval(_t); _v718Restore(); }
+    },40);
     /* v724 : 늦게 끝나는 다른 복원이 연도값을 덮어쓰는 경우가 있어 한 번 더 맞춰 줍니다 */
     setTimeout(function(){ try{ if(window.__V718_RESTORED&&typeof fcReapplyStrategyV724==='function'){ fcReapplyStrategyV724(); if(state.act==='strategy'&&typeof strategyPage==='function')strategyPage(); } }catch(_e){} },3600); }
   if(document.readyState==='complete')_v718Sched();
@@ -33937,6 +33969,8 @@ var OPEN=false;   /* v759 : 점검 패널을 펼쳐 둔 상태를 기억합니�
 var EDIT={kind:'',m:0};   /* v775 : 열어 둔 «월% 편집창»을 기억합니다 */
 function build(){
   var el=document.getElementById('fcDiffPanelV757'); if(!el)return;
+  /* v859 : toggle 이벤트보다 재렌더가 먼저 와도 펼침 상태를 잃지 않습니다. */
+  try{ if(state&&state.fc&&state.fc.diffOpenV859!=null)OPEN=!!state.fc.diffOpenV859; }catch(_o){}
   var C=window.FC_CHART_V677; if(!C||!C.py)return;   /* v758 : 값이 없으면 직전 표를 그대로 둡니다 */
   if(el.getAttribute('data-at')===String(C.at))return;
   el.setAttribute('data-at',String(C.at));
@@ -33986,7 +34020,11 @@ function build(){
     '<div style="margin-top:6px;font-size:11px;color:#64748b">기준액 = 화면 상단에서 고른 «기준 연도 목표안»의 월별 금액(확정월까지 실적 + 이후월 목표수정액/월 목표). 목표액 = 그 기준액에 아래 설정을 적용한 결과입니다.</div>'+
     '</div></details>';
   var det=document.getElementById('fcDiffDetV757');
-  if(det)det.addEventListener('toggle',function(){ OPEN=!!det.open; });
+  if(det){
+    var sum=det.querySelector('summary');
+    if(sum)sum.addEventListener('click',function(){ OPEN=!det.open; try{state.fc.diffOpenV859=OPEN;}catch(_e){} });
+    det.addEventListener('toggle',function(){ OPEN=!!det.open; try{state.fc.diffOpenV859=OPEN;}catch(_e){} });
+  }
   var btn=document.getElementById('fcDiffResetV757');
   if(btn)btn.addEventListener('click',function(){
     var msg=document.getElementById('fcDiffMsgV757');
@@ -35562,6 +35600,10 @@ function hasValue(plan,key){
 /* 연도 보관함(+현재 편집값)에 값이 있는 칸은 초기화 기록에서 해제합니다 */
 window.fcLedgerReleaseFromDataV838=function(){
   try{
+    /* v859 : 서버값만 보고 삭제기록을 자동 해제하면 초기화 전의 오래된 값도 «새 입력»으로
+       오인되어 되살아납니다. 실제 재입력은 v841 input 처리기가 해당 칸만 정확히 해제하므로
+       원격 자료에 의한 일괄 해제는 중단합니다. */
+    return 0;
     var a=readLedger(), years=Object.keys(a), freed=0;
     if(!years.length)return 0;
     var liveY=''; try{ liveY=String((state.fc&&state.fc._ctxYear)||((typeof fcTargetYear==='function')?fcTargetYear():'')); }catch(_y){}
@@ -35877,8 +35919,9 @@ try{ setTimeout(function(){ try{ window.fcSyncCheckV841(); }catch(_e){} },6000);
 (function(){
 'use strict';
 var LS='fcResetLedgerV841';
-var F8=['custMonthPct','prodMonthPct','override','addPct','prodOverride','prodAddPct','pct','custProdOverride',
-        'newCusts','newProds','newLines','newCustReplacements'];
+/* v859 : % 되돌리기는 % 스냅샷에 든 여덟 항목의 삭제기록만 해제합니다.
+   신규업체·신규제품 삭제기록까지 함께 풀던 범위 오류를 제거했습니다. */
+var F8=['custMonthPct','prodMonthPct','override','addPct','prodOverride','prodAddPct','pct','custProdOverride'];
 
 function readL(){ var a={}; try{ a=JSON.parse(localStorage.getItem(LS)||'{}')||{}; }catch(_e){}
   try{ var b=(state.fc&&state.fc.resetLedgerV841)||{};
@@ -35914,18 +35957,27 @@ try{
       /* ① 그 연도의 초기화 기록을 먼저 해제 — 안 그러면 되돌리자마자 다시 지워집니다 */
       var freed=0;
       try{ freed=window.fcLedgerClearYearV842((it&&it.y)||((typeof fcTargetYear==='function')?fcTargetYear():'')); }catch(_e3){}
-      var r=await orig.call(this,idx);
-      /* ③ 되돌린 값을 그 연도 보관함에 확정 저장 */
+      /* v859 : 기존 함수는 저장·forecast를 이미 실행한 뒤 아래에서 다시 한 번 실행했습니다.
+         스냅샷을 여기서 직접 복원하여 저장·동기화·화면 갱신을 각각 한 번만 합니다. */
+      if(!it||!it.d)return false;
+      FC_SNAP_FIELDS_V803.forEach(function(f){
+        if(Object.prototype.hasOwnProperty.call(it.d,f[0]))state.fc[f[0]]=JSON.parse(JSON.stringify(it.d[f[0]]||{}));
+      });
+      try{ if(typeof logEdit==='function')logEdit('매출 목표','% 값 되돌리기 · '+new Date(it.t).toLocaleString('ko-KR')+' 시점('+it.n+'건)'); }catch(_e4){}
+      /* ③ 되돌린 값을 그 연도 보관함과 서버에 확정 저장 */
       try{
         var y2=(typeof fcTargetYear==='function')?fcTargetYear():'';
         if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
         if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(y2);
         if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();
         if(typeof saveSettings==='function')await saveSettings();
+        if(typeof gsSave==='function'&&state.gsync&&state.gsync.url&&state.gsync.key){
+          await gsSave(true); if(state.gsync.lastOp==='load')await gsSave(true);
+        }
         if(typeof forecast==='function')forecast();
-      }catch(_e4){}
+      }catch(_e5){}
       try{ console.info('[v842] 되돌리기 — 초기화 기록 '+freed+'건 해제 후 복원'); }catch(_c){}
-      return r;
+      return true;
     };
     w.__v842=true; window.fcSnapRestoreV803=w; try{ fcSnapRestoreV803=w; }catch(_e5){}
   }
@@ -36281,7 +36333,7 @@ function signature(){
 window.fcSyncAuditV855=function(){
   var s=signature(),h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
   var y=year(),ys=((state.fc||{}).yearPlans||{})[y]||{},p=(ys.targetPlans||{})[ys.activePlan==='2'?'2':'1']||{},m=(state.fcYearMisc||{})[y]||{},pd=(state.pdYears||{})[y]||{};
-  var out={version:'v856',year:y,plan:ys.activePlan==='2'?'2':'1',hash:('00000000'+(h>>>0).toString(16)).slice(-8),
+  var out={version:'v860',year:y,plan:ys.activePlan==='2'?'2':'1',hash:('00000000'+(h>>>0).toString(16)).slice(-8),
     monthlyPct:Object.keys(p.pct||{}).length,custAdjust:Object.keys(p.override||{}).length,custMonthly:Object.keys(p.custMonthPct||{}).length,
     prodAdjust:Object.keys(p.prodOverride||{}).length,prodMonthly:Object.keys(p.prodMonthPct||{}).length,targetExcluded:Object.keys(m.targetExclCust||{}).filter(function(k){return m.targetExclCust[k];}).length,
     workdays:Object.keys(state.workdays||{}).length,bepYears:Object.keys(state.bepYears||{}).length,headMonths:Object.keys(state.headMonthly||{}).length,
@@ -36289,6 +36341,33 @@ window.fcSyncAuditV855=function(){
     pdMonths:Object.keys(pd.labor||{}).length+Object.keys(pd.process||{}).length+Object.keys(pd.indirect||{}).length};
   try{console.table(out);}catch(_e){}return out;
 };
+})();
+</script>
+
+<script id="v860-initial-forecast-consistency">
+/* v860 · 첫 화면에서 오래된 로컬 목표가 잠깐 보였다가 서버값으로 바뀌는 현상 방지 */
+(function(){
+'use strict';
+var released=false,timer=null;
+function configured(){try{return !!(state&&state.gsync&&String(state.gsync.url||'').trim()&&String(state.gsync.key||'').trim());}catch(_e){return false;}}
+function release(){
+  if(released)return; released=true; window.__FC_BOOT_BLOCK_V860=false;
+  if(timer){clearInterval(timer);timer=null;}
+  try{
+    if(state.act==='forecast'&&typeof CUR!=='undefined'&&CUR.length&&typeof forecast==='function')forecast();
+    else if(window.__FC_BOOT_WANTS_RENDER_V860&&state.act==='forecast'&&typeof runAct==='function')runAct();
+  }catch(_e){}
+}
+function check(){
+  if(released||!window.__FC_SETTINGS_LOADED_V860||!window.__V718_RESTORED)return;
+  if(configured()&&!window.__FC_GS_SETTLED_V860)return;
+  release();
+}
+timer=setInterval(check,50);
+if(document.readyState==='complete')setTimeout(check,0);
+else window.addEventListener('load',check,{once:true});
+/* 서버 설정이 없는 로컬 사용도 연도별 복원이 끝나면 즉시 표시됩니다. */
+setTimeout(check,250);
 })();
 </script>
 
