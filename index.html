@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v837</title>
-<script>window.APP_BUILD='v837';</script>
+<title>동방파스텍 매출 분석 도구 v838</title>
+<script>window.APP_BUILD='v838';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1927,7 +1927,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v837</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v838</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -35400,6 +35400,101 @@ function boot(){ wrap('gsMerge'); wrap('gsApplyDelta'); }
 if(document.readyState==='complete')setTimeout(boot,300);
 else window.addEventListener('load',function(){setTimeout(boot,300);},{once:true});
 setTimeout(boot,1200);
+})();
+</script>
+
+<script id="v838-reset-ledger-crosspc">
+/* ══════════ v838 · 「초기화 기록」이 다른 PC의 새 값을 계속 지우던 문제 ══════════
+   v841 초기화 기록(fcResetLedgerV841)은 «그 칸을 비웠다»는 사실을 연도별로 적어 두고,
+   화면을 그릴 때마다·저장할 때마다·동기화 뒤에 그 칸을 다시 비웁니다.
+   그런데 이 기록은 ① PC마다 localStorage 에 따로 쌓이고 ② 합칠 때 «더하기»만 해서
+   한 PC에서 지운 기록이 다른 PC에 영원히 남습니다.
+   → A PC 에서 10월 목표%를 다시 넣어도, B PC 는 자기 기록대로 10월을 계속 지워
+     «PC마다 다른 금액»이 됩니다. (10월 800 ↔ 679 가 바로 이 증상입니다)
+   수정 : 동기화로 «값이 들어 있는» 칸이 도착하면, 그 칸의 초기화 기록을 지웁니다.
+          = 나중에 «실제로 입력한 값»이 옛날 «지움 기록»을 이깁니다. */
+(function(){
+'use strict';
+var LS='fcResetLedgerV841', SEP='\u0001';
+
+function readLedger(){
+  var a={}; try{ a=JSON.parse(localStorage.getItem(LS)||'{}')||{}; }catch(_e){}
+  try{ var b=(state.fc&&state.fc.resetLedgerV841)||{};
+    Object.keys(b).forEach(function(y){ a[y]=a[y]||{at:0,keys:{}};
+      Object.assign(a[y].keys,(b[y]&&b[y].keys)||{}); a[y].at=Math.max(+a[y].at||0,+((b[y]||{}).at)||0); });
+  }catch(_e2){}
+  return a;
+}
+function writeLedger(a){ try{ state.fc.resetLedgerV841=a; localStorage.setItem(LS,JSON.stringify(a)); }catch(_e){} }
+
+/* 목표안 한 벌에서 그 칸에 «실제 값»이 들어 있는지 */
+function hasValue(plan,key){
+  if(!plan||typeof plan!=='object')return false;
+  var p=String(key).split(SEP), k=p[0];
+  if(k==='newLines')return Array.isArray(plan.newLines)&&plan.newLines.length>0;
+  var map=plan[k]; if(!map||typeof map!=='object')return false;
+  var v;
+  if(k==='custMonthPct'||k==='prodMonthPct'){ var row=map[p[1]]; if(!row||typeof row!=='object')return false; v=row[p[2]]; }
+  else v=map[p[1]];
+  if(v==null||v==='')return false;
+  if(typeof v==='object')return Object.keys(v).length>0;     /* 신규업체 등록 등 */
+  var n=parseFloat(v);
+  return isFinite(n)?(n!==0):(String(v).trim()!=='');
+}
+
+/* 연도 보관함(+현재 편집값)에 값이 있는 칸은 초기화 기록에서 해제합니다 */
+window.fcLedgerReleaseFromDataV838=function(){
+  try{
+    var a=readLedger(), years=Object.keys(a), freed=0;
+    if(!years.length)return 0;
+    var liveY=''; try{ liveY=String((state.fc&&state.fc._ctxYear)||((typeof fcTargetYear==='function')?fcTargetYear():'')); }catch(_y){}
+    years.forEach(function(y){
+      var e=a[y]; if(!e||!e.keys)return;
+      var plans=[];
+      try{ var ys=(state.fc.yearPlans||{})[y];
+        if(ys&&ys.targetPlans)['1','2'].forEach(function(p){ if(ys.targetPlans[p])plans.push(ys.targetPlans[p]); }); }catch(_e){}
+      if(String(y)===liveY){
+        try{ ['1','2'].forEach(function(p){ if(state.fc.targetPlans&&state.fc.targetPlans[p])plans.push(state.fc.targetPlans[p]); }); }catch(_e2){}
+      }
+      if(!plans.length)return;
+      Object.keys(e.keys).forEach(function(k){
+        for(var i=0;i<plans.length;i++){ if(hasValue(plans[i],k)){ delete e.keys[k]; freed++; return; } }
+      });
+    });
+    if(freed){ writeLedger(a); try{ console.info('[v838] 다른 PC에서 다시 입력된 칸 '+freed+'개를 초기화 기록에서 해제했습니다'); }catch(_c){} }
+    return freed;
+  }catch(_e){ return 0; }
+};
+
+/* 동기화로 받은 직후 : 기록 해제 → 보관함 반영 순서로 */
+function hookAfterSync(){
+  try{
+    var g=window.gsLoad;
+    if(typeof g==='function'&&!g.__v838){
+      var wg=async function(){
+        var r=await g.apply(this,arguments);
+        try{ window.fcLedgerReleaseFromDataV838(); }catch(_e){}
+        try{ if(typeof window.fcAdoptYearPlanV837==='function')window.fcAdoptYearPlanV837(); }catch(_e2){}
+        try{ if(state.act==='forecast'&&typeof forecast==='function')setTimeout(function(){ try{forecast();}catch(_x){} },30); }catch(_e3){}
+        return r;
+      };
+      wg.__v838=true; window.gsLoad=wg; try{ gsLoad=wg; }catch(_e4){}
+    }
+  }catch(_e){}
+}
+/* v837 의 병합 뒤처리에서도 먼저 불러 줍니다 */
+try{
+  var _adopt=window.fcAdoptYearPlanV837;
+  if(typeof _adopt==='function'&&!_adopt.__v838){
+    var wrapped=function(){ try{ window.fcLedgerReleaseFromDataV838(); }catch(_e){} return _adopt.apply(this,arguments); };
+    wrapped.__v838=true; window.fcAdoptYearPlanV837=wrapped;
+  }
+}catch(_e){}
+
+function boot(){ hookAfterSync(); try{ window.fcLedgerReleaseFromDataV838(); }catch(_e){} }
+if(document.readyState==='complete')setTimeout(boot,900);
+else window.addEventListener('load',function(){setTimeout(boot,900);},{once:true});
+setTimeout(boot,2600);
 })();
 </script>
 
