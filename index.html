@@ -37423,5 +37423,122 @@ window.pdApplyResetV880=enforceAll;window.fcAlignBasePlanV880=alignBasePlan;
 })();
 </script>
 
+<script id="v881-manual-target-save-and-pd-restore">
+/* ══════════ v881 · 목표 % 수동 확정 저장 + 2026 PD 복원 ══════════
+   - % 편집 중에는 로컬/서버 자동 저장·자동 받기를 멈춥니다.
+   - «저장하기»를 누른 때만 연도×목표안 확정본을 만들고 로컬과 공유 서버에 저장합니다.
+   - 확정본은 세부 필드보다 우선하므로 오래된 PC 값이 나중에 도착해도 되돌아가지 않습니다.
+   - v880 초기화 과정에서 비워진 2026 PD 기존 입력값은 한 번 복원합니다. */
+(function(){
+'use strict';
+var FIELD='fcManualPlansV881', IDB=FIELD, PD_TAG='pd-2026-restored-v881';
+var PKEYS=['pct','pctAt','override','overrideAt','addPct','addPctAt','prodOverride','prodAddPct','custProdOverride','custMonthPct','prodMonthPct'];
+var SEL='.fcov,.fcadd,.fcpov,.fcpadd,.fc-cust-month-pct,.fc-prod-month-pct,.fc-inline-pct,.fcm,.fccpov,.fc-month-adjust';
+var RESET_IDS=['fcOvReset','fcAddReset','fcProdOvReset','fcProdAddReset'];
+var dirty=false,saving=false,loading=false,booted=false,lastDirtyAt=0;
+function plain(v){return!!v&&typeof v==='object'&&!Array.isArray(v);}
+function cp(v){try{return JSON.parse(JSON.stringify(v||{}));}catch(_e){return{};}}
+function year(){try{return String((state.fc&&state.fc._ctxYear)||((typeof fcTargetYear==='function')?fcTargetYear():''));}catch(_e){return'';}}
+function plan(){try{return state.fc&&state.fc.activePlan==='2'?'2':'1';}catch(_e){return'1';}}
+function root(){if(!plain(state[FIELD]))state[FIELD]={years:{}};if(!plain(state[FIELD].years))state[FIELD].years={};return state[FIELD];}
+function slot(r,y,p,make){var yy=r.years[y];if(!plain(yy)){if(!make)return null;yy=r.years[y]={};}var s=yy[p];if(!plain(s)&&make)s=yy[p]={at:0,data:{}};return plain(s)?s:null;}
+function snapData(src){var d={};PKEYS.forEach(function(k){d[k]=cp(src&&src[k]);});return d;}
+function targetPlan(y,p,make){try{var ys=state.fc.yearPlans&&state.fc.yearPlans[y];if(!ys&&make){state.fc.yearPlans=state.fc.yearPlans||{};ys=state.fc.yearPlans[y]={targetPlans:{},activePlan:p};}if(!ys)return null;ys.targetPlans=ys.targetPlans||{};if(!ys.targetPlans[p]&&make)ys.targetPlans[p]={};return ys.targetPlans[p]||null;}catch(_e){return null;}}
+function applyData(dst,d){if(!dst||!d)return;PKEYS.forEach(function(k){dst[k]=cp(d[k]);});}
+function applySlot(y,p){var s=slot(root(),String(y),String(p),false);if(!s||!plain(s.data))return false;var tp=targetPlan(String(y),String(p),true);applyData(tp,s.data);if(year()===String(y)&&plan()===String(p)){applyData(state.fc,s.data);if(state.fc.targetPlans&&state.fc.targetPlans[p])applyData(state.fc.targetPlans[p],s.data);}return true;}
+function applyAll(){var r=root();Object.keys(r.years).forEach(function(y){Object.keys(r.years[y]||{}).forEach(function(p){applySlot(y,p);});});}
+function mergeRoot(v){var L=root(),R=plain(v)?v:{},changed=false;Object.keys(R.years||{}).forEach(function(y){Object.keys(R.years[y]||{}).forEach(function(p){var a=slot(L,y,p,true),b=R.years[y][p]||{};if((+b.at||0)>(+a.at||0)){L.years[y][p]=cp(b);changed=true;}});});applyAll();persist();return changed;}
+function persist(){try{if(typeof idbSet==='function')idbSet(IDB,cp(root()));}catch(_e){}}
+function statusText(){return dirty?'저장하지 않은 수정값 있음':'저장된 값';}
+function paint(){var b=document.getElementById('fcManualSaveV881'),s=document.getElementById('fcManualStateV881');if(b){b.disabled=saving;b.style.background=dirty?'#16a34a':'#fff';b.style.color=dirty?'#fff':'#166534';b.style.borderColor='#86efac';b.textContent=saving?'저장 중…':'💾 조정% 저장하기';}if(s){s.textContent=statusText();s.style.color=dirty?'#dc2626':'#15803d';}}
+function mount(){
+  var box=document.querySelector('.fc-reset-group-v804');if(!box)return;
+  if(!document.getElementById('fcManualSaveV881')){
+    var b=document.createElement('button');b.type='button';b.id='fcManualSaveV881';b.className='btn ghost';b.style.cssText='font-weight:800;border-color:#86efac;color:#166534';b.textContent='💾 조정% 저장하기';
+    var s=document.createElement('span');s.id='fcManualStateV881';s.style.cssText='font-size:11px;font-weight:800;margin:0 4px;color:#15803d';
+    box.insertBefore(b,box.firstChild);box.insertBefore(s,b.nextSibling);b.addEventListener('click',commit);
+  }
+  paint();
+}
+function markDirty(){if(saving||loading)return;dirty=true;lastDirtyAt=Date.now();mount();}
+
+/* 자동 저장/자동 받기는 편집 중에만 보류합니다. 다른 화면의 평상시 저장은 그대로 둡니다. */
+var baseSave=window.saveSettings;
+try{if(typeof baseSave==='function'&&!baseSave.__manualV881){var save=async function(){if(dirty&&!saving)return false;return baseSave.apply(this,arguments);};save.__manualV881=true;window.saveSettings=save;try{saveSettings=save;}catch(_e){}}}catch(_e){}
+var baseAuto=window.gsAutoPush;
+try{if(typeof baseAuto==='function'&&!baseAuto.__manualV881){var auto=function(){if(dirty&&!saving)return false;return baseAuto.apply(this,arguments);};auto.__manualV881=true;window.gsAutoPush=auto;try{gsAutoPush=auto;}catch(_e){}}}catch(_e){}
+var baseGsSave=window.gsSave;
+try{if(typeof baseGsSave==='function'&&!baseGsSave.__manualV881){var gsave=async function(){if(dirty&&!saving)return false;return baseGsSave.apply(this,arguments);};gsave.__manualV881=true;window.gsSave=gsave;try{gsSave=gsave;}catch(_e){}}}catch(_e){}
+var baseGsLoad=window.gsLoad;
+try{if(typeof baseGsLoad==='function'&&!baseGsLoad.__manualV881){var gload=async function(){if(dirty&&!saving)return false;loading=true;try{return await baseGsLoad.apply(this,arguments);}finally{loading=false;applyAll();}};gload.__manualV881=true;window.gsLoad=gload;try{gsLoad=gload;}catch(_e){}}}catch(_e){}
+
+/* 공유 데이터에 수동 확정본을 싣고, 받은 확정본을 권위 있는 전체 교체본으로 적용합니다. */
+try{
+  var oldFields=window.gsFields;
+  if(typeof oldFields==='function'&&!oldFields.__manualV881){var fields=function(){var a=oldFields.apply(this,arguments)||[];if(!a.some(function(x){return x&&x[0]===FIELD;}))a.push([FIELD,state,FIELD]);return a;};fields.__manualV881=true;window.gsFields=fields;try{gsFields=fields;}catch(_e){}}
+  var oldApply=window.gsApplyField;
+  if(typeof oldApply==='function'&&!oldApply.__manualV881){var apply=function(n,p,k,v){if(n===FIELD){mergeRoot(v);return;}var z=oldApply.apply(this,arguments);if(/^fcY\d{4}p[12]_/.test(String(n||''))||n==='fcYearPlans'||n==='fcTargetPlans'||n==='fcOverride'||n==='fcAddPct'||n==='fcCustMonthPct'||n==='fcProdMonthPct')applyAll();return z;};apply.__manualV881=true;window.gsApplyField=apply;try{gsApplyField=apply;}catch(_e2){}}
+}catch(_e){}
+
+async function commit(){
+  if(saving)return;saving=true;paint();
+  try{
+    var y=year(),p=plan();
+    try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();}catch(_e){}
+    var at=Date.now(),s=slot(root(),y,p,true);s.at=Math.max(+s.at||0,at);s.data=snapData(state.fc);
+    applySlot(y,p);persist();
+    try{if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(+y);}catch(_e2){}
+    try{if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();}catch(_e3){}
+    saving=true;dirty=false;
+    if(typeof baseSave==='function')await baseSave();
+    if(typeof baseGsSave==='function'&&state.gsync&&state.gsync.url)await baseGsSave(true);
+    try{if(typeof logEdit==='function')logEdit('매출 목표',y+'년 수정 '+p+'안 조정% 수동 저장');}catch(_e4){}
+  }catch(err){dirty=true;try{alert('조정% 저장 오류: '+String(err&&err.message||err));}catch(_a){}}
+  finally{saving=false;paint();}
+}
+
+document.addEventListener('input',function(e){var t=e.target;if(t&&t.matches&&t.matches(SEL))markDirty();},true);
+document.addEventListener('change',function(e){var t=e.target;if(t&&t.matches&&t.matches(SEL))markDirty();},true);
+document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('button'):null;if(t&&RESET_IDS.indexOf(t.id)>=0)markDirty();},true);
+try{var oldRestore=window.fcSnapRestoreV803;if(typeof oldRestore==='function'&&!oldRestore.__manualV881){var restore=async function(){markDirty();var z=await oldRestore.apply(this,arguments);mount();return z;};restore.__manualV881=true;window.fcSnapRestoreV803=restore;try{fcSnapRestoreV803=restore;}catch(_e){}}}catch(_e){}
+
+/* 2026 PD 기존 입력값 복원. 2027 슬롯은 전혀 건드리지 않습니다. */
+function restorePd2026(){
+  try{
+    if(state._pd2026RestoreV881===PD_TAG)return false;
+    var y='2026',cur=(state.pdYears||{})[y],has=['labor','process','indirect'].some(function(k){return Object.keys(cur&&cur[k]||{}).some(function(m){return +cur[k][m]!==0;});});
+    if(!has){
+      var now=Date.now()+2000,p={
+        labor:{1:18912008,2:11016122,3:10729149,4:6283887,5:3589118,6:8859699,7:55163099,8:6195755},
+        process:{1:31467450,2:21896740,3:18620350,4:13838900,5:12017780,6:17000172,7:10795410,8:7450300},
+        indirect:{1:2016627,2:338637,3:1667136,4:625176,5:2298824,6:-520980,7:-2292312,8:-1680161},
+        actual:{6:true,7:true},useLabor:true,useProcess:true,useIndirect:true,estimate:false,
+        _syncV866:{year:y,resetAt:0,updatedAt:now,cells:{},flags:{estimate:now}}
+      };
+      ['labor','process','indirect'].forEach(function(k){Object.keys(p[k]).forEach(function(m){p._syncV866.cells[k+':'+m]=now;});});Object.keys(p.actual).forEach(function(m){p._syncV866.cells['actual:'+m]=now;});
+      state.pdYears=state.pdYears||{};state.pdYears[y]=cp(p);if(state.pdResetYearsV880)delete state.pdResetYearsV880[y];if(year()===y)state.pd=cp(p);
+      /* v880 전용 저장소에도 남아 있는 2026 초기화 tombstone을 같이 제거합니다. */
+      try{if(typeof idbSet==='function')idbSet('pdResetYearsV880',cp(state.pdResetYearsV880||{}));}catch(_idb){}
+    }
+    state._pd2026RestoreV881=PD_TAG;
+    try{if(typeof idbSet==='function')idbSet('pd2026RestoreV881',PD_TAG);}catch(_tag){}
+    return !has;
+  }catch(_e){return false;}
+}
+
+async function boot(){if(booted)return;booted=true;loading=true;
+  try{var r=(typeof idbGet==='function')?await idbGet(IDB):null;if(plain(r))mergeRoot(r);}catch(_e){}
+  try{if(typeof idbGet==='function'&&(await idbGet('pd2026RestoreV881'))===PD_TAG)state._pd2026RestoreV881=PD_TAG;}catch(_tag){}
+  var restored=restorePd2026();applyAll();loading=false;mount();
+  if(restored){saving=true;try{if(typeof baseSave==='function')await baseSave();if(typeof baseGsSave==='function'&&state.gsync&&state.gsync.url)await baseGsSave(true);}catch(_e2){}finally{saving=false;}}
+  try{if(state.act==='forecast'&&typeof forecast==='function')forecast();else if(state.act==='trend'&&typeof monthlyTrend==='function')monthlyTrend();}catch(_e3){}
+}
+var mo=new MutationObserver(function(){mount();});
+function start(){var r=document.getElementById('result');if(r)mo.observe(r,{childList:true,subtree:false});var n=0,t=setInterval(function(){n++;if((window.__V718_RESTORED&&typeof CUR!=='undefined'&&CUR.length)||n>100){clearInterval(t);boot();}},50);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+window.fcManualCommitV881=commit;window.fcManualApplyV881=applyAll;
+})();
+</script>
+
 </body>
 </html>
