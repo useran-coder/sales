@@ -37540,5 +37540,97 @@ window.fcManualCommitV881=commit;window.fcManualApplyV881=applyAll;
 })();
 </script>
 
+<script id="v882-restore-2026-pd-and-customer-month-pct">
+/* ══════════ v882 · 2026 PD + 엑셀 업체 월 조정% 복구 ══════════
+   source: forecast_customer_monthly_2027.xlsx (거래처 19개, 월 조정값 41개)
+   현재 기능/다른 연도/수정 2안은 건드리지 않고 2026 수정 1안만 복원합니다. */
+(function(){
+'use strict';
+var TAG='v882-xlsx-2026-p1', SNAP='fcPctSnapsV803', MAN='fcManualPlansV881';
+function plain(v){return!!v&&typeof v==='object'&&!Array.isArray(v);}
+function cp(v){try{return JSON.parse(JSON.stringify(v||{}));}catch(_e){return{};}}
+function ctxYear(){try{return String((state.fc&&state.fc._ctxYear)||((typeof fcTargetYear==='function')?fcTargetYear():''));}catch(_e){return'';}}
+function plan(){try{return state.fc&&state.fc.activePlan==='2'?'2':'1';}catch(_e){return'1';}}
+var MONTH_PCT={
+  '(주)경동원':{9:-10,10:-25,11:-40,12:-20},
+  '성호전자(주)':{10:50,11:1},
+  '동방노보펌(주) 화성지점':{10:50,12:30},
+  '(주)제일방화문':{10:40},
+  '(주)신원에이스도어':{10:30},
+  '(주)동원창호':{9:200,10:400,11:250,12:600},
+  '(주)벽두도어':{10:300,11:60,12:150},
+  '경석자원(제원철강)':{11:100,12:-50},
+  '국일도어테크(주) 청라':{9:100,10:200,11:200,12:200},
+  '대동방화문(주)(포천)':{11:-30},
+  '주식회사 창진금속':{10:300},
+  '(주)우창':{10:100},
+  '(주)일조':{10:50},
+  '다우도어앤스틸':{10:-50,11:-50,12:-50},
+  '(주)이지스 FSD':{10:30,11:50,12:50},
+  '(주)더굿도어':{10:100},
+  '(주)동성산업':{10:100,12:-20},
+  '주식회사 동우이엠씨':{12:-40},
+  '국일도어테크(주)':{9:-100,10:-100,11:-100,12:-100}
+};
+function pd2026(){var now=Date.now()+5000,p={
+  labor:{1:18912008,2:11016122,3:10729149,4:6283887,5:3589118,6:8859699,7:55163099,8:6195755},
+  process:{1:31467450,2:21896740,3:18620350,4:13838900,5:12017780,6:17000172,7:10795410,8:7450300},
+  indirect:{1:2016627,2:338637,3:1667136,4:625176,5:2298824,6:-520980,7:-2292312,8:-1680161},
+  actual:{6:true,7:true},useLabor:true,useProcess:true,useIndirect:true,estimate:false,
+  _syncV866:{year:'2026',resetAt:0,updatedAt:now,cells:{},flags:{estimate:now,useLabor:now,useProcess:now,useIndirect:now}}
+};['labor','process','indirect'].forEach(function(k){Object.keys(p[k]).forEach(function(m){p._syncV866.cells[k+':'+m]=now;});});Object.keys(p.actual).forEach(function(m){p._syncV866.cells['actual:'+m]=now;});return p;}
+function ensurePlan(){
+  var f=state.fc||(state.fc={});f.yearPlans=plain(f.yearPlans)?f.yearPlans:{};
+  var ys=f.yearPlans['2026']||(f.yearPlans['2026']={targetPlans:{},activePlan:'1'});ys.targetPlans=plain(ys.targetPlans)?ys.targetPlans:{};
+  var p=ys.targetPlans['1']||(ys.targetPlans['1']={});return p;
+}
+function snapOf(p){var keys=['custMonthPct','prodMonthPct','override','addPct','prodOverride','prodAddPct','pct','custProdOverride'],d={};keys.forEach(function(k){d[k]=cp(p[k]);});return d;}
+function count(d){var n=0;Object.keys(d).forEach(function(k){Object.keys(d[k]||{}).forEach(function(a){var v=d[k][a];n+=(plain(v)?Object.keys(v).length:((v!==''&&v!=null)?1:0));});});return n;}
+async function addHistory(before,after){
+  try{
+    var list=(typeof idbGet==='function'?(await idbGet(SNAP)):[])||[],now=Date.now();
+    function add(d,label,t){var sig=JSON.stringify(d),id='v882-'+label+'-'+t;if(list.some(function(x){return x&&x.id===id||x&&x.sig===sig&&+x.y===2026&&x.p==='1';}))return;list.push({id:id,t:t,y:2026,p:'1',sig:sig,n:count(d),d:cp(d),label:label});}
+    add(before,'복원직전',now-1);add(after,'엑셀복원',now);
+    list.sort(function(a,b){return(+a.t||0)-(+b.t||0);});while(list.length>20)list.shift();
+    if(typeof idbSet==='function')await idbSet(SNAP,list);
+    state.fc.pctSnapshotsV875=state.fc.pctSnapshotsV875||{};list.forEach(function(it){state.fc.pctSnapshotsV875[it.id]=it;});state.fc.pctSnapManifestV875=list.map(function(it){return it.id;});
+  }catch(_e){}
+}
+function manualSnapshot(p){
+  var r=state[MAN];if(!plain(r))r=state[MAN]={years:{}};r.years=plain(r.years)?r.years:{};r.years['2026']=plain(r.years['2026'])?r.years['2026']:{};
+  var data={},keys=['pct','pctAt','override','overrideAt','addPct','addPctAt','prodOverride','prodAddPct','custProdOverride','custMonthPct','prodMonthPct'];keys.forEach(function(k){data[k]=cp(p[k]);});
+  r.years['2026']['1']={at:Date.now()+10,data:data};try{if(typeof idbSet==='function')idbSet(MAN,cp(r));}catch(_e){}
+}
+function ensureUndoButton(){
+  var box=document.querySelector('.fc-reset-group-v804');if(!box||box.querySelector('.fcSnapBtnV803'))return;
+  var b=document.createElement('button');b.type='button';b.className='btn ghost fcSnapBtnV803';b.style.cssText='color:#1d4ed8;border-color:#bfdbfe';b.title='복원 전·후와 최근 목표 % 기록 중에서 골라 되돌립니다';b.textContent='🕘 % 되돌리기';box.appendChild(b);
+}
+async function run(){
+  try{
+    if(typeof idbGet==='function'&&(await idbGet(TAG))===TAG){ensureUndoButton();return false;}
+    var p=ensurePlan(),before=snapOf(p);p.custMonthPct=cp(MONTH_PCT);var after=snapOf(p);
+    if(ctxYear()==='2026'&&plan()==='1'){state.fc.custMonthPct=cp(MONTH_PCT);if(state.fc.targetPlans&&state.fc.targetPlans['1'])state.fc.targetPlans['1'].custMonthPct=cp(MONTH_PCT);}
+    manualSnapshot(p);await addHistory(before,after);
+    /* 2026 PD는 v880의 초기화 표식을 제거한 뒤 정확한 월별 기존값으로 복원합니다. */
+    state.pdYears=plain(state.pdYears)?state.pdYears:{};state.pdYears['2026']=pd2026();
+    state.pdResetYearsV880=plain(state.pdResetYearsV880)?state.pdResetYearsV880:{};delete state.pdResetYearsV880['2026'];
+    if(ctxYear()==='2026')state.pd=cp(state.pdYears['2026']);
+    if(typeof idbSet==='function'){await idbSet('pdResetYearsV880',cp(state.pdResetYearsV880));await idbSet('pd2026RestoreV881','pd-2026-restored-v881');await idbSet(TAG,TAG);}
+    try{if(typeof fcResetClockV878!=='undefined'){} }catch(_x){}
+    try{if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();}catch(_s){}
+    try{if(typeof saveSettings==='function')await saveSettings();}catch(_sv){}
+    try{if(typeof gsSave==='function'&&state.gsync&&state.gsync.url)await gsSave(true);}catch(_gs){}
+    try{if(typeof logEdit==='function')logEdit('매출 목표','2026 수정 1안 업체 월 조정% 엑셀 복원 19개사·41칸 / PD 임가공비 복원');}catch(_l){}
+    ensureUndoButton();
+    try{if(ctxYear()==='2026'&&state.act==='forecast'&&typeof forecast==='function')forecast();else if(ctxYear()==='2026'&&state.act==='trend'&&typeof monthlyTrend==='function')monthlyTrend();}catch(_r){}
+    return true;
+  }catch(_e){try{console.error('[v882] 복원 오류',_e);}catch(_x){}return false;}
+}
+function start(){var n=0,t=setInterval(function(){n++;if((window.__V718_RESTORED&&typeof CUR!=='undefined'&&CUR.length)||n>120){clearInterval(t);setTimeout(run,2300);}},50);var r=document.getElementById('result');if(r)new MutationObserver(ensureUndoButton).observe(r,{childList:true,subtree:false});}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+window.fcRestore2026V882=run;
+})();
+</script>
+
 </body>
 </html>
