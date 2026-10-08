@@ -37304,5 +37304,42 @@ syncAfter();
 })();
 </script>
 
+<script id="v879-purchase-monthly-receive-only">
+/* ══════════ v879 · 월별 매입합계는 매입분석도구가 단일 원본 ══════════
+   매출 도구가 로컬에 남은 purchaseMonthlySync를 일반 설정처럼 다시 올리면
+   매입 도구가 보낸 최신 월이 이전 자료로 되돌아갈 수 있었습니다.
+   이 필드는 매출 도구에서는 수신 전용으로 취급하고, 서버값은 통째로 교체합니다. */
+(function(){
+'use strict';
+function clone(v){try{return JSON.parse(JSON.stringify(v||{}));}catch(_e){return{};}}
+function normalized(v){
+  var out={},src=(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
+  Object.keys(src).forEach(function(k){if(/^20\d{2}-(0[1-9]|1[0-2])$/.test(k)){var n=Number(src[k]);out[k]=Number.isFinite(n)?n:0;}});
+  if(src._meta&&typeof src._meta==='object')out._meta=clone(src._meta);
+  return out;
+}
+/* 매출 도구의 모든 저장 델타에서 월별 매입합계를 제외합니다. */
+try{
+  var oldDelta=window.gsDelta;
+  if(typeof oldDelta==='function'&&!oldDelta.__purchaseROV879){
+    var gd=function(){var d=oldDelta.apply(this,arguments);if(d&&typeof d==='object')delete d.purchaseMonthlySync;return d;};
+    gd.__purchaseROV879=true;window.gsDelta=gd;try{gsDelta=gd;}catch(_e){}
+  }
+}catch(_e){}
+/* 서버값은 부분 병합하지 않고 매입 도구가 만든 한 벌로 교체합니다. */
+try{
+  var oldApply=window.gsApplyField;
+  if(typeof oldApply==='function'&&!oldApply.__purchaseROV879){
+    var af=function(n,p,k,v){if(n==='purchaseMonthlySync'){p[k]=normalized(v);return;}return oldApply.apply(this,arguments);};
+    af.__purchaseROV879=true;window.gsApplyField=af;try{gsApplyField=af;}catch(_e2){}
+  }
+}catch(_e){}
+window.purchaseMonthlySyncCheckV879=function(){
+  var m=state.purchaseMonthlySync||{},ys={};Object.keys(m).forEach(function(k){var q=/^(20\d{2})-(\d{2})$/.exec(k);if(q&&+m[k]>0)(ys[q[1]]||(ys[q[1]]=[])).push(+q[2]);});
+  Object.keys(ys).forEach(function(y){ys[y].sort(function(a,b){return a-b;});});return{years:ys,meta:m._meta||null};
+};
+})();
+</script>
+
 </body>
 </html>
