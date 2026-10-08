@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>동방파스텍 매출 분석 도구 v847</title>
-<script>window.APP_BUILD='v847';</script>
+<script>window.APP_BUILD='v873';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -14044,11 +14044,11 @@ function exportCSV(){
     /* v860 : 화면은 준비 완료까지 차단하므로 서버 확인도 지체 없이 시작합니다. */
     setTimeout(()=>{
       if(typeof gsLoad!=='function')return;
-      /* v868 : 최초 1회 확인은 revision 축약 응답을 쓰지 않고 전체 자료를 받아,
-         미수자료가 비어 있거나 오래된 기기에서도 수금 파일을 확실히 복원합니다. */
-      try{ state.gsync.lastRevision=''; window.__AR_FORCE_PULL_V868=true; }catch(_e){}
-      try{ Promise.resolve(gsLoad(false)).then(function(){window.__AR_FORCE_PULL_V868=false;},function(){window.__AR_FORCE_PULL_V868=false;}); }
-      catch(_e){ window.__AR_FORCE_PULL_V868=false; }
+      /* v871 : 저장된 서버 revision으로 먼저 변경 여부만 확인합니다.
+         서버가 그대로면 축약 응답만 받고, 바뀐 경우에만 전체 설정·미수자료를 내려받습니다. */
+      try{ window.__AR_FORCE_PULL_V868=false; window.__GS_FAST_CHECK_V871=true; }catch(_e){}
+      try{ Promise.resolve(gsLoad(true)).then(function(){window.__GS_FAST_CHECK_V871=false;},function(){window.__GS_FAST_CHECK_V871=false;}); }
+      catch(_e){ window.__GS_FAST_CHECK_V871=false; }
     },120);
   }
 })();
@@ -14087,7 +14087,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
 <script id="sales-sync-v03-final-patch">
 (function(){
   'use strict';
-  var APP_VERSION='v601';
+var APP_VERSION='v873';
   var BASE_KEY='sales_gsync_base_stable_v1';
   var OLD_BASE_KEYS=['sales_gsync_base_v02','sales_gsync_base_v01'];
   var AUTO_DELAY=15000, BUSY_RETRY=1500, MAX_AUTO_RETRY=6;
@@ -14306,7 +14306,7 @@ header .header-sync-btn.sync-retry .sync-time{color:#b45309!important}
     }
     return out||{};
   }
-  async function getRemote(c){var d=await requestJson(getUrl(c),{method:'GET'},35000,4);return {data:responseData(d),meta:d}}
+  async function getRemote(c){var fast=!!window.__GS_FAST_CHECK_V871,d=await requestJson(getUrl(c),{method:'GET'},fast?12000:35000,fast?1:4);return {data:responseData(d),meta:d}}
   async function postPatch(c,payload,tag){
     var bodyPayload=clone(payload)||{};
     /* Preserve the full shared root before writing the material-only change. */
@@ -17426,7 +17426,7 @@ function arApplyShared(v){
  remoteReceipts.forEach(function(r){if(r&&r.cust)rm.set(arReceiptSyncKey(r),arSyncClone(r));});remoteSources.forEach(function(s){if(s&&s.name)sm.set(s.name,arSyncClone(s));});a.receipts=Array.from(rm.values()).sort(function(x,y){return String(x.date||'').localeCompare(String(y.date||''))||String(x.no||'').localeCompare(String(y.no||''));});a.sources=Array.from(sm.values());
  ['opening','balances','yearEndBills','openingBills','actualYears','balanceSources','plans','collectionPlans','excludedCustomers','billStatus','focusCustomers'].forEach(function(k){if(v[k]&&typeof v[k]==='object')a[k]=arSyncClone(v[k]);});
  /* v477 : 삭제표시 적용 — 지운 뒤 다시 올린 파일(at 가 더 최신)은 살립니다 */
- var _del=Object.assign({},a.delSources||{});
+ var _del=window.__AR_FORCE_PULL_V868?{}:Object.assign({},a.delSources||{});
  if(v.delSources&&typeof v.delSources==='object')Object.keys(v.delSources).forEach(function(nm){
    var t=+v.delSources[nm]||0; if(t>(+_del[nm]||0))_del[nm]=t; });
  /* v681 : 사용자가 지운 파일은 내장자료든 아니든 지워진 채로 둡니다.
@@ -17441,7 +17441,7 @@ function arApplyShared(v){
  /* v609 : 내 PC에서 올린 수금파일은 동기화(받기)로 사라지지 않게 항상 유지합니다.
     예전에는 '올린 지 10분 이내'만 살려서, 그 뒤 동기화가 돌면 업로드 자료가 통째로 사라졌습니다.
     삭제표시(delSources)가 더 최신인 파일만 제거하고, 나머지 로컬 파일은 그대로 둡니다. */
- try{
+ if(!window.__AR_FORCE_PULL_V868)try{
    var _remoteNames={}; (a.sources||[]).forEach(function(s2){ if(s2&&s2.name)_remoteNames[s2.name]=1; });   /* 삭제표시 적용 뒤 남은 목록 기준 */
    var _keptLocal=0;
    (_prevSources||[]).forEach(function(s2){
@@ -27760,6 +27760,13 @@ html.edge-browser #result .sg-month-plan-svg text.sg-month-axis-text{
 #result .sg-mekko-v814 .sg-matrix-cell-rect{transition:fill .18s ease,filter .18s ease,stroke .18s ease,stroke-width .18s ease}
 #result .sg-mekko-v814 .sg-wf-selectable:hover .sg-matrix-cell-rect{fill:#fef3c7!important;filter:drop-shadow(0 3px 5px rgba(30,64,175,.22))}
 #result .sg-mekko-v814 .sg-wf-selectable.is-selected .sg-matrix-cell-rect{stroke:#1d4ed8!important;stroke-width:3px!important;filter:drop-shadow(0 3px 5px rgba(30,64,175,.28))}
+/* v873 : 공통 svg text 10px 고정을 이 매트릭스의 굵은 글자에만 1px 크게 덮어씁니다.
+   상단 매트릭스 제목은 인라인 12px !important를 그대로 유지합니다. */
+#result .sg-mekko-v814 text[font-weight="700"],
+#result .sg-mekko-v814 text[font-weight="800"],
+#result .sg-mekko-v814 text[font-weight="900"]{font-size:11px!important}
+#result .sg-mekko-v814 text[style*="font-size:12px"]{font-size:12px!important}
+#result .sg-mekko-v814 .sgMxTextEditV826{pointer-events:auto!important;position:relative;z-index:3}
 #result .sg-fold-state{transition:transform .2s ease,background .2s ease,box-shadow .2s ease,color .2s ease}
 #result .sgHead:hover .sg-fold-state{transform:translateX(-3px) scale(1.06);background:#dbeafe!important;color:#1d4ed8!important;box-shadow:0 2px 6px rgba(37,99,235,.18)}
 #result .sgHead:active .sg-fold-state{transform:translateX(-1px) scale(.97)}
@@ -28757,7 +28764,8 @@ function sgMatrixLabelV826(labels,key,fallback){
   return labels&&labels[key]!=null?String(labels[key]):String(fallback||'');
 }
 function sgMatrixEditInputV826(x,y,w,h,key,value,align,weight){
-  return '<foreignObject x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'"><input xmlns="http://www.w3.org/1999/xhtml" class="sgMxTextEditV826" data-label-key="'+sgEsc(key)+'" value="'+sgEsc(value)+'" style="width:100%;height:100%;box-sizing:border-box;border:1px solid #60a5fa;border-radius:4px;background:#fff;color:#0f172a;text-align:'+(align||'center')+';font: '+(weight||'500')+' 11px sans-serif;padding:2px 4px;outline:none" /></foreignObject>';
+  var fs=(+weight||500)>=700?12:11;
+  return '<foreignObject x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'"><input xmlns="http://www.w3.org/1999/xhtml" class="sgMxTextEditV826" data-label-key="'+sgEsc(key)+'" value="'+sgEsc(value)+'" style="width:100%;height:100%;box-sizing:border-box;border:1px solid #60a5fa;border-radius:4px;background:#fff;color:#0f172a;text-align:'+(align||'center')+';font: '+(weight||'500')+' '+fs+'px sans-serif;padding:2px 4px;outline:none" /></foreignObject>';
 }
 function sgMatrixCellRowsV825(year,plan,id,create){
   var pl=sgPlan(),Y=String(year||''),P=plan==='2'?'2':'1';
@@ -28814,7 +28822,7 @@ function sgMatrixCellEditorV825(A,cellId,year,plan,alloc){
 }
 function sgMekkoV814(o){
   var goal=Math.max(0,+o.goal||0),end=Math.max(0,+o.end||0),year=+o.year||0,plan=o.plan==='2'?'2':'1',selCell=o.selectedCell||'';
-  var W=1400,H=500,mx=160,my=65,cw=225,ch=105,bx=1070,bw=230,cells=sgMatrixDefsV825(),valsById=sgMatrixTargetValsV825(o),vals=cells.map(function(c){return valsById[c.id]||0;}),total=vals.reduce(function(a,v){return a+v;},0),pl=sgPlan(),edit=!!pl.matrixTextEdit,labels=sgMatrixLabelsV826(year,plan);
+  var W=1400,H=450,mx=160,my=65,cw=225,ch=105,bx=1070,bw=230,cells=sgMatrixDefsV825(),valsById=sgMatrixTargetValsV825(o),vals=cells.map(function(c){return valsById[c.id]||0;}),total=vals.reduce(function(a,v){return a+v;},0),pl=sgPlan(),edit=!!pl.matrixTextEdit,labels=sgMatrixLabelsV826(year,plan);
   if(total<=0)return '<svg class="sg-waterfall-svg sg-mekko-v814" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="3×3 방화문부자재 계획 매트릭스"><rect x="'+mx+'" y="'+my+'" width="'+(cw*3)+'" height="'+(ch*3)+'" fill="#f8fafc" stroke="#cbd5e1"/><text x="'+(mx+cw*1.5)+'" y="'+(my+ch*1.5)+'" text-anchor="middle" font-size="12" fill="#94a3b8">A 워터폴에 표시할 계획 금액이 없습니다.</text></svg>';
   var rows=[{t:'수입·대체 하드웨어',s:'직수입·대리점·대체전환'},{t:'주문·협업 개발품',s:'주문생산·협업개발·품질대응'},{t:'전용·공용품 주력 부자재',s:'규격·비규격·레이저·철판'}];
   var cols=[{t:'기존 거래처',s:'방화문 제조사 반복거래'},{t:'신규 및 복수거래처',s:'신규 진입·제품구색 확대'},{t:'경쟁사 거래처',s:'타사 부자재 사용처 윈백'}];
@@ -28823,20 +28831,20 @@ function sgMekkoV814(o){
   var pct=function(i){return(total>0?vals[i]/total*100:0).toFixed(1)+'%';},gap=goal-end,rate=goal?end/goal*100:0;
   var s='<svg class="sg-waterfall-svg sg-mekko-v814" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="'+year+'년 A 워터폴 연동 3×3 방화문부자재 계획 매트릭스"><title>'+year+'년 A 워터폴 연동 3×3 방화문부자재 계획 매트릭스</title>'
     +'<text x="'+(mx+cw*1.5)+'" y="22" text-anchor="middle" font-size="12" style="font-size:12px!important" font-weight="800" fill="#0f172a">[ '+year+'년 A 워터폴 연동 3×3 방화문부자재 계획 매트릭스 ]</text>';
-  s+='<text x="'+(mx-8)+'" y="'+(my-10)+'" text-anchor="end" font-size="11" font-weight="800" fill="#dc2626">▲ 제품 구분</text>';
-  rows.forEach(function(r,i){var y=my+ch*i+ch/2;if(edit){s+=sgMatrixEditInputV826(4,y-25,mx-20,22,'row'+i+'t',r.t,'right','800')+sgMatrixEditInputV826(4,y+1,mx-20,20,'row'+i+'s',r.s,'right','500');}else{s+='<text x="'+(mx-12)+'" y="'+(y-4)+'" text-anchor="end" font-size="11" font-weight="800" fill="#1e293b">'+sgEsc(r.t)+'</text><text x="'+(mx-12)+'" y="'+(y+12)+'" text-anchor="end" font-size="9.2" fill="#64748b">('+sgEsc(r.s)+')</text>';}});
+  s+='<text x="'+(mx-8)+'" y="'+(my-10)+'" text-anchor="end" font-size="12" font-weight="800" fill="#dc2626">▲ 제품 구분</text>';
+  rows.forEach(function(r,i){var y=my+ch*i+ch/2;if(edit){s+=sgMatrixEditInputV826(4,y-25,mx-20,22,'row'+i+'t',r.t,'right','800')+sgMatrixEditInputV826(4,y+1,mx-20,20,'row'+i+'s',r.s,'right','500');}else{s+='<text x="'+(mx-12)+'" y="'+(y-4)+'" text-anchor="end" font-size="12" font-weight="800" fill="#1e293b">'+sgEsc(r.t)+'</text><text x="'+(mx-12)+'" y="'+(y+12)+'" text-anchor="end" font-size="9.2" fill="#64748b">('+sgEsc(r.s)+')</text>';}});
   cells.forEach(function(c,i){var col=i%3,row=Math.floor(i/3),x=mx+col*cw,y=my+row*ch,cx=x+cw/2,cy=y+ch/2,isSel=selCell===c.id,linkedRows=sgMatrixCellRowsV825(year,plan,c.id,false),linked=linkedRows.reduce(function(a,o){return a+(+o.amount||0);},0),hasLinked=linkedRows.length>0;
     s+='<g class="sg-wf-selectable'+(isSel?' is-selected':'')+'" data-wf-key="'+c.k+'" data-matrix-cell="'+c.id+'" tabindex="0" role="button" aria-label="'+sgEsc(cols[col].t+' × '+rows[row].t)+' 목표 연결" style="cursor:pointer">'
       +'<rect class="sg-matrix-cell-rect" x="'+x+'" y="'+y+'" width="'+cw+'" height="'+ch+'" fill="'+c.fill+'" stroke="'+(isSel?'#1d4ed8':'#ffffff')+'" stroke-width="'+(isSel?3:2)+'"><title>'+sgEsc(cols[col].t+' × '+rows[row].t)+' : A 워터폴 배분 '+sgWon(vals[i])+'원 · 연결 '+sgWon(linked)+'원</title></rect>'
-      +(edit?(sgMatrixEditInputV826(x+12,cy+(hasLinked?-41:-35),cw-24,22,'cell_'+c.id+'_a',sgMatrixLabelV826(labels,'cell_'+c.id+'_a',c.a),'center','800')+sgMatrixEditInputV826(x+12,cy+(hasLinked?-17:-11),cw-24,21,'cell_'+c.id+'_b',sgMatrixLabelV826(labels,'cell_'+c.id+'_b',c.b),'center','500')):('<text x="'+cx+'" y="'+(cy+(hasLinked?-25:-19))+'" text-anchor="middle" font-size="10.2" font-weight="800" fill="'+c.txt+'">'+sgEsc(sgMatrixLabelV826(labels,'cell_'+c.id+'_a',c.a))+'</text><text x="'+cx+'" y="'+(cy+(hasLinked?-8:0))+'" text-anchor="middle" font-size="9.5" fill="'+c.txt+'">'+sgEsc(sgMatrixLabelV826(labels,'cell_'+c.id+'_b',c.b))+'</text>'))
-      +'<text x="'+cx+'" y="'+(cy+(hasLinked?12:21))+'" text-anchor="middle" font-size="11.2" font-weight="700" fill="#dc2626">계획 '+sgShort(vals[i])+' ('+pct(i)+')</text>'
+      +(edit?(sgMatrixEditInputV826(x+12,cy+(hasLinked?-41:-35),cw-24,22,'cell_'+c.id+'_a',sgMatrixLabelV826(labels,'cell_'+c.id+'_a',c.a),'center','800')+sgMatrixEditInputV826(x+12,cy+(hasLinked?-17:-11),cw-24,21,'cell_'+c.id+'_b',sgMatrixLabelV826(labels,'cell_'+c.id+'_b',c.b),'center','500')):('<text x="'+cx+'" y="'+(cy+(hasLinked?-25:-19))+'" text-anchor="middle" font-size="11.2" font-weight="800" fill="'+c.txt+'">'+sgEsc(sgMatrixLabelV826(labels,'cell_'+c.id+'_a',c.a))+'</text><text x="'+cx+'" y="'+(cy+(hasLinked?-8:0))+'" text-anchor="middle" font-size="9.5" fill="'+c.txt+'">'+sgEsc(sgMatrixLabelV826(labels,'cell_'+c.id+'_b',c.b))+'</text>'))
+      +'<text x="'+cx+'" y="'+(cy+(hasLinked?12:21))+'" text-anchor="middle" font-size="12.2" font-weight="700" fill="#dc2626">계획 '+sgShort(vals[i])+' ('+pct(i)+')</text>'
       +(hasLinked?'<text x="'+cx+'" y="'+(cy+29)+'" text-anchor="middle" font-size="9.5" fill="'+c.txt+'">연결 '+linkedRows.length+'건 · '+sgShort(linked)+'</text>':'')+'</g>';});
   var matrixBottom=my+ch*3,matrixRight=mx+cw*3;
   s+='<rect x="'+mx+'" y="'+my+'" width="'+(cw*3)+'" height="'+(ch*3)+'" fill="none" stroke="#64748b" stroke-width="1"/>'
     +'<line x1="'+mx+'" y1="'+(my-24)+'" x2="'+mx+'" y2="'+matrixBottom+'" stroke="#1e3a5f" stroke-width="2"/>'
     +'<line x1="'+mx+'" y1="'+matrixBottom+'" x2="'+(matrixRight+20)+'" y2="'+matrixBottom+'" stroke="#1e3a5f" stroke-width="2"/>';
-  cols.forEach(function(c,i){var x=mx+cw*i+cw/2;if(edit){s+=sgMatrixEditInputV826(x-cw/2+12,matrixBottom+9,cw-24,21,'col'+i+'t',c.t,'center','800')+sgMatrixEditInputV826(x-cw/2+12,matrixBottom+32,cw-24,20,'col'+i+'s',c.s,'center','500');}else{s+='<text x="'+x+'" y="'+(matrixBottom+24)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#1e293b">'+sgEsc(c.t)+'</text><text x="'+x+'" y="'+(matrixBottom+40)+'" text-anchor="middle" font-size="9.5" fill="#64748b">('+sgEsc(c.s)+')</text>';}});
-  s+='<text x="'+(matrixRight+25)+'" y="'+(matrixBottom+4)+'" text-anchor="start" font-size="11" font-weight="800" fill="#dc2626">매출처 구분 ▶</text>';
+  cols.forEach(function(c,i){var x=mx+cw*i+cw/2;if(edit){s+=sgMatrixEditInputV826(x-cw/2+12,matrixBottom+9,cw-24,21,'col'+i+'t',c.t,'center','800')+sgMatrixEditInputV826(x-cw/2+12,matrixBottom+32,cw-24,20,'col'+i+'s',c.s,'center','500');}else{s+='<text x="'+x+'" y="'+(matrixBottom+24)+'" text-anchor="middle" font-size="12" font-weight="800" fill="#1e293b">'+sgEsc(c.t)+'</text><text x="'+x+'" y="'+(matrixBottom+40)+'" text-anchor="middle" font-size="9.5" fill="#64748b">('+sgEsc(c.s)+')</text>';}});
+  s+='<text x="'+(matrixRight+25)+'" y="'+(matrixBottom+4)+'" text-anchor="start" font-size="12" font-weight="800" fill="#dc2626">매출처 구분 ▶</text>';
   var groups=[
     {a:'기존처 × 주력부자재',b:'반복·증량',v:vals[6],p:vals[6]/total*100,c:'#1d4ed8'},
     {a:'기존처 × 신제품/대체품',b:'점유 확대',v:vals[3]+vals[0],p:(vals[3]+vals[0])/total*100,c:'#3b82f6'},
@@ -28844,12 +28852,10 @@ function sgMekkoV814(o){
     {a:'경쟁사 거래처 × 전제품',b:'윈백',v:vals[2]+vals[5]+vals[8],p:(vals[2]+vals[5]+vals[8])/total*100,c:'#93c5fd'}
   ],barTop=108,barGap=82;
   var maxGroup=groups.reduce(function(m,g){return Math.max(m,g.p);},0),maxP=Math.min(100,Math.max(40,Math.ceil(maxGroup/10)*10)),tickStep=maxP<=40?10:(maxP<=60?20:25),ticks=[];for(var tt=0;tt<=maxP;tt+=tickStep)ticks.push(tt);
-  s+='<text x="'+(bx+bw/2)+'" y="51" text-anchor="middle" font-size="10.5" fill="#475569">총 계획: '+sgGoalShort(total)+'</text>';
   ticks.forEach(function(t){var x=bx+bw*t/maxP;s+='<line x1="'+x+'" y1="'+my+'" x2="'+x+'" y2="'+matrixBottom+'" stroke="#cbd5e1" stroke-dasharray="3 3"/><text x="'+x+'" y="'+(matrixBottom+17)+'" text-anchor="middle" font-size="9" fill="#64748b">'+t+'%</text>';});
-  groups.forEach(function(g,i){var y=barTop+i*barGap,w=bw*g.p/maxP;s+='<text x="'+(bx-12)+'" y="'+(y-6)+'" text-anchor="end" font-size="10" font-weight="800" fill="#1e293b">'+g.a+'</text><text x="'+(bx-12)+'" y="'+(y+9)+'" text-anchor="end" font-size="9" fill="#64748b">('+g.b+')</text><rect x="'+bx+'" y="'+(y-20)+'" width="'+w.toFixed(1)+'" height="40" fill="'+g.c+'"/><text x="'+(bx+w+7).toFixed(1)+'" y="'+(y+3)+'" font-size="9.8" fill="#334155">'+sgShort(g.v)+' ('+g.p.toFixed(1)+'%)</text>';});
+  groups.forEach(function(g,i){var y=barTop+i*barGap,w=bw*g.p/maxP;s+='<text x="'+(bx-12)+'" y="'+(y-6)+'" text-anchor="end" font-size="11" font-weight="800" fill="#1e293b">'+g.a+'</text><text x="'+(bx-12)+'" y="'+(y+9)+'" text-anchor="end" font-size="9" fill="#64748b">('+g.b+')</text><rect x="'+bx+'" y="'+(y-20)+'" width="'+w.toFixed(1)+'" height="40" fill="'+g.c+'"/><text x="'+(bx+w+7).toFixed(1)+'" y="'+(y+3)+'" font-size="9.8" fill="#334155">'+sgShort(g.v)+' ('+g.p.toFixed(1)+'%)</text>';});
   s+='<line x1="'+bx+'" y1="'+my+'" x2="'+bx+'" y2="'+matrixBottom+'" stroke="#475569" stroke-width="1.5"/><line x1="'+bx+'" y1="'+matrixBottom+'" x2="'+(bx+bw)+'" y2="'+matrixBottom+'" stroke="#475569" stroke-width="1.5"/>'
-    +'<text x="'+(bx+bw/2)+'" y="459" text-anchor="middle" font-size="10.5" fill="'+(gap>0?'#dc2626':'#15803d')+'">목표 '+sgGoalShort(goal)+' · 계획 '+sgShort(end)+' ('+rate.toFixed(1)+'%) · '+(gap>0?'부족 '+sgShort(gap):'초과 '+sgShort(-gap))+'</text>'
-    +'<text x="'+(bx+bw/2)+'" y="478" text-anchor="middle" font-size="10" fill="#334155">A 워터폴 계획 매출 비중 (%)</text><text x="'+(mx+cw*1.5)+'" y="474" text-anchor="middle" font-size="9.5" fill="#64748b">셀 선택 → 워터폴 배분 확인·기존데이터 연결·신규 목표 등록</text></svg>';
+    +'<text x="'+(bx+bw/2)+'" y="430" text-anchor="middle" font-size="10.5" fill="'+(gap>0?'#dc2626':'#15803d')+'">목표 '+sgGoalShort(goal)+' · 계획 '+sgShort(end)+' ('+rate.toFixed(1)+'%) · '+(gap>0?'부족 '+sgShort(gap):'초과 '+sgShort(-gap))+'</text></svg>';
   return s;
 }
 function sgWaterfall(A){
@@ -31249,7 +31255,12 @@ function sgBind(A){
   /* v826 : 매트릭스 문구는 수정 모드에서만 입력선이 보이며 계획 금액·비율은 편집 대상에서 제외합니다. */
   var mxTextToggle=document.getElementById('sgMxTextToggleV826');
   if(mxTextToggle)mxTextToggle.addEventListener('click',function(e){
-    e.preventDefault();e.stopPropagation();pl.matrixTextEdit=!pl.matrixTextEdit;sgSave();sgRe(true);
+    e.preventDefault();e.stopPropagation();
+    pl.matrixTextEdit=!pl.matrixTextEdit;
+    try{sgSave();}catch(_e){}
+    /* v873 : 지연 재렌더 대기열에 막히지 않고 입력 필드를 즉시 다시 만듭니다. */
+    try{window.__sgFastRender=true;sgRender();}
+    catch(_e2){sgRe(true);}
   });
   $$('.sgMxTextEditV826').forEach(function(inp){
     var stop=function(e){e.stopPropagation();};
@@ -36713,6 +36724,110 @@ async function restore(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(restore,900);},{once:true});else setTimeout(restore,900);
 window.fcUserExclMarkV870=mark;window.pdMergeYearsV870=mergePdYears;
+})();
+</script>
+
+<script id="v871-ar-change-only-sync">
+/* v871 · 미수자료는 자체 내용 버전이 바뀐 때만 적용하고, 수동 받기는 서버 원본으로 확정합니다. */
+(function(){
+'use strict';
+var pullPromise=null, applying=false;
+function cp(v){try{return JSON.parse(JSON.stringify(v));}catch(_e){return v;}}
+function plain(v){return !!v&&typeof v==='object'&&!Array.isArray(v);}
+function meta(){
+  var a=state.ar||(state.ar=typeof arBase==='function'?arBase():{});
+  var m=plain(a._syncV871)?a._syncV871:(a._syncV871={});
+  if(!m.deviceId)m.deviceId='ar_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
+  return m;
+}
+function strip(v){var o=cp(v)||{};try{delete o._syncV871;}catch(_e){}return o;}
+function hash(v){
+  var s='';try{s=JSON.stringify(strip(v));}catch(_e){s=String(v||'');}
+  var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
+  return ('00000000'+(h>>>0).toString(16)).slice(-8)+'-'+s.length;
+}
+function nextRev(){var m=meta();return Date.now().toString(36)+'-'+String(m.deviceId).slice(-6)+'-'+Math.random().toString(36).slice(2,6);}
+
+/* 공유 본문에 독립 미수 버전을 싣습니다. 화면 탭 이동처럼 공유 내용이 안 바뀐 저장은 버전을 올리지 않습니다. */
+try{
+  var nativeBuild=window.arBuildShared||arBuildShared;
+  if(typeof nativeBuild==='function'&&!nativeBuild.__v871){
+    var build=function(){var out=nativeBuild.apply(this,arguments)||{},m=meta();out._syncV871={revision:String(m.revision||''),updatedAt:+m.updatedAt||0,deviceId:String(m.deviceId||'')};return out;};
+    build.__v871=true;window.arBuildShared=build;try{arBuildShared=build;}catch(_e){}
+
+    var nativeApply=window.arApplyShared||arApplyShared;
+    if(typeof nativeApply==='function'&&!nativeApply.__v871){
+      var apply=function(v){
+        if(!plain(v))return nativeApply.apply(this,arguments);
+        var m=meta(),rv=plain(v._syncV871)?String(v._syncV871.revision||''):'',rh=hash(v),force=!!window.__AR_FORCE_PULL_V868;
+        if(!force&&!m.dirty&&((rv&&rv===String(m.remoteRevision||''))||(!rv&&rh===String(m.remoteHash||''))))return false;
+        applying=true;window.__AR_REMOTE_APPLY_V871=true;
+        try{
+          var out=nativeApply.apply(this,arguments),actual=nativeBuild();var ah=hash(actual),same=ah===rh;
+          m=meta();m.remoteRevision=rv;m.remoteHash=rh;m.contentHash=ah;m.lastAppliedAt=Date.now();
+          if(force||same){m.revision=rv||rh;m.updatedAt=plain(v._syncV871)?(+v._syncV871.updatedAt||Date.now()):Date.now();m.dirty=false;}
+          else{m.revision=m.revision||nextRev();m.updatedAt=+m.updatedAt||Date.now();m.dirty=true;}
+          return out;
+        }finally{applying=false;window.__AR_REMOTE_APPLY_V871=false;}
+      };
+      apply.__v871=true;window.arApplyShared=apply;try{arApplyShared=apply;}catch(_e){}
+    }
+
+    var nativeSave=window.arSave||arSave;
+    if(typeof nativeSave==='function'&&!nativeSave.__v871){
+      var save=async function(){
+        if(!applying&&!window.__AR_REMOTE_APPLY_V871){
+          try{var sh=nativeBuild(),h=hash(sh),m=meta();if(m.contentHash&&m.contentHash!==h){m.revision=nextRev();m.updatedAt=Date.now();m.dirty=true;}m.contentHash=h;}catch(_e){}
+        }
+        return await nativeSave.apply(this,arguments);
+      };
+      save.__v871=true;window.arSave=save;try{arSave=save;}catch(_e){}
+    }
+  }
+}catch(_e){try{console.error('[v871] 미수 버전 설치 실패',_e);}catch(_x){}}
+
+/* 서버에서 미수 항목만 한 번 받습니다. 중복 클릭은 같은 요청을 공유하고 45초 뒤에는 반드시 종료합니다. */
+async function pull(){
+  if(pullPromise)return pullPromise;
+  pullPromise=(async function(){
+    var ctl=typeof AbortController!=='undefined'?new AbortController():null,timer=ctl?setTimeout(function(){ctl.abort();},45000):null;
+    window.__AR_FORCE_PULL_V868=true;
+    try{
+      if(typeof arSyncInitPromise!=='undefined')await arSyncInitPromise;
+      var u=String(state.gsync&&state.gsync.url||'').trim(),k=String(state.gsync&&state.gsync.key||'').trim();
+      if(!u||!k)throw new Error('동기화 URL 또는 비밀키가 없습니다.');
+      var url=u+(u.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(k)+'&_t='+Date.now();
+      var opt={method:'GET',cache:'no-store'};if(ctl)opt.signal=ctl.signal;
+      var res=await fetch(url,opt),tx=await res.text(),d;
+      if(!res.ok)throw new Error('서버 응답 '+res.status);
+      try{d=JSON.parse(tx);}catch(_e){throw new Error('서버 응답 형식을 읽을 수 없습니다.');}
+      if(!d||d.ok!==true)throw new Error((d&&d.error)||'서버에서 미수자료를 받지 못했습니다.');
+      var root=plain(d.data)?d.data:d,shared=root&&root.arShared;
+      if(!plain(shared))throw new Error('서버에 공유된 미수자료가 없습니다. 자료가 있는 PC에서 «전체 다시 보내기»를 먼저 눌러주세요.');
+      if(typeof arApplyShared!=='function')throw new Error('미수자료 적용 기능을 찾을 수 없습니다.');
+      arApplyShared(shared);arCache=null;
+      var m=meta();m.remoteRevision=plain(shared._syncV871)?String(shared._syncV871.revision||''):'';m.remoteHash=hash(shared);m.contentHash=hash((typeof arBuildShared==='function'?arBuildShared():shared));m.dirty=false;m.lastAppliedAt=Date.now();
+      if(typeof arSaveLocalV168==='function')await arSaveLocalV168();else if(typeof arSave==='function')await arSave();
+      try{
+        var base=plain(_gsBase)?cp(_gsBase):{};base.arShared=cp(shared);_gsBase=base;
+        if(typeof idbSet==='function')await idbSet(AR_SYNC_BASE_KEY||'sales_gsync_base_stable_v1',base);
+      }catch(_e){}
+      state.gsync=state.gsync||{};state.gsync.lastSync=new Date().toISOString();state.gsync.lastArSync=state.gsync.lastSync;
+      try{if(typeof saveSettings==='function')await saveSettings();}catch(_e){}
+      try{if(typeof arRenderFileList==='function')arRenderFileList();if(state.act==='ar'&&typeof arRender==='function')arRender();}catch(_e){}
+      return {ok:true,changed:true,rows:(state.ar.receipts||[]).length,files:(state.ar.sources||[]).length};
+    }catch(e){return {ok:false,error:(e&&e.name==='AbortError')?'서버 응답이 45초 안에 없어 받기를 중단했습니다. 잠시 후 다시 시도해 주세요.':String(e&&e.message||e)};}
+    finally{if(timer)clearTimeout(timer);window.__AR_FORCE_PULL_V868=false;}
+  })();
+  try{return await pullPromise;}finally{pullPromise=null;}
+}
+window.arPullSharedFullV871=pull;window.arPullSharedFullV868=pull;try{arPullSharedFullV868=pull;}catch(_e){}
+
+/* 기존 자료에는 동기화 메타가 없으므로 현재 내용을 한 번 기준으로 기록만 하고 전송은 예약하지 않습니다. */
+Promise.resolve(typeof arReady!=='undefined'?arReady:null).then(function(){
+  try{var m=meta();if(!m.contentHash&&typeof arBuildShared==='function'){m.contentHash=hash(arBuildShared());m.remoteHash=m.remoteHash||m.contentHash;m.revision=m.revision||m.contentHash;m.dirty=false;if(typeof arSaveLocalV168==='function')arSaveLocalV168();}}
+  catch(_e){}
+});
 })();
 </script>
 
