@@ -37435,7 +37435,7 @@ var FIELD='fcManualPlansV881', IDB=FIELD, PD_TAG='pd-2026-restored-v881';
 var PKEYS=['pct','pctAt','override','overrideAt','addPct','addPctAt','prodOverride','prodAddPct','custProdOverride','custMonthPct','prodMonthPct'];
 var SEL='.fcov,.fcadd,.fcpov,.fcpadd,.fc-cust-month-pct,.fc-prod-month-pct,.fc-inline-pct,.fcm,.fccpov,.fc-month-adjust';
 var RESET_IDS=['fcOvReset','fcAddReset','fcProdOvReset','fcProdAddReset'];
-var dirty=false,saving=false,loading=false,booted=false,lastDirtyAt=0;
+var dirty=false,saving=false,loading=false,booted=false,lastDirtyAt=0,savedStatus='저장된 값';
 function plain(v){return!!v&&typeof v==='object'&&!Array.isArray(v);}
 function cp(v){try{return JSON.parse(JSON.stringify(v||{}));}catch(_e){return{};}}
 function year(){try{return String((state.fc&&state.fc._ctxYear)||((typeof fcTargetYear==='function')?fcTargetYear():''));}catch(_e){return'';}}
@@ -37449,18 +37449,18 @@ function applySlot(y,p){var s=slot(root(),String(y),String(p),false);if(!s||!pla
 function applyAll(){var r=root();Object.keys(r.years).forEach(function(y){Object.keys(r.years[y]||{}).forEach(function(p){applySlot(y,p);});});}
 function mergeRoot(v){var L=root(),R=plain(v)?v:{},changed=false;Object.keys(R.years||{}).forEach(function(y){Object.keys(R.years[y]||{}).forEach(function(p){var a=slot(L,y,p,true),b=R.years[y][p]||{};if((+b.at||0)>(+a.at||0)){L.years[y][p]=cp(b);changed=true;}});});applyAll();persist();return changed;}
 function persist(){try{if(typeof idbSet==='function')idbSet(IDB,cp(root()));}catch(_e){}}
-function statusText(){return dirty?'저장하지 않은 수정값 있음':'저장된 값';}
+function statusText(){return dirty?'저장하지 않은 수정값 있음':savedStatus;}
 function paint(){var b=document.getElementById('fcManualSaveV881'),s=document.getElementById('fcManualStateV881');if(b){b.disabled=saving;b.style.background=dirty?'#16a34a':'#fff';b.style.color=dirty?'#fff':'#166534';b.style.borderColor='#86efac';b.textContent=saving?'저장 중…':'💾 조정% 저장하기';}if(s){s.textContent=statusText();s.style.color=dirty?'#dc2626':'#15803d';}}
 function mount(){
   var box=document.querySelector('.fc-reset-group-v804');if(!box)return;
   if(!document.getElementById('fcManualSaveV881')){
-    var b=document.createElement('button');b.type='button';b.id='fcManualSaveV881';b.className='btn ghost';b.style.cssText='font-weight:800;border-color:#86efac;color:#166534';b.textContent='💾 조정% 저장하기';
+    var b=document.createElement('button');b.type='button';b.id='fcManualSaveV881';b.className='btn ghost';b.style.cssText='font-weight:800;border-color:#86efac;color:#166534';b.textContent='💾 조정% 저장하기';b.title='현재 연도·수정안을 확정 저장하고 % 되돌리기 기록과 공유 서버에도 보냅니다';
     var s=document.createElement('span');s.id='fcManualStateV881';s.style.cssText='font-size:11px;font-weight:800;margin:0 4px;color:#15803d';
     box.insertBefore(b,box.firstChild);box.insertBefore(s,b.nextSibling);b.addEventListener('click',commit);
   }
   paint();
 }
-function markDirty(){if(saving||loading)return;dirty=true;lastDirtyAt=Date.now();mount();}
+function markDirty(){if(saving||loading)return;dirty=true;savedStatus='저장 전';lastDirtyAt=Date.now();mount();}
 
 /* 자동 저장/자동 받기는 편집 중에만 보류합니다. 다른 화면의 평상시 저장은 그대로 둡니다. */
 var baseSave=window.saveSettings;
@@ -37489,9 +37489,12 @@ async function commit(){
     applySlot(y,p);persist();
     try{if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(+y);}catch(_e2){}
     try{if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();}catch(_e3){}
-    saving=true;dirty=false;
+    saving=true;dirty=false;savedStatus='이 PC 저장 완료';
+    /* 저장 버튼을 누른 바로 이 상태를 「% 되돌리기」의 확정 시점으로도 남깁니다.
+       v875가 연도·수정안 정보를 붙여 보관하므로 다른 PC에서도 같은 기록을 선택할 수 있습니다. */
+    try{if(typeof fcSnapSaveV803==='function')await fcSnapSaveV803();}catch(_snap){}
     if(typeof baseSave==='function')await baseSave();
-    if(typeof baseGsSave==='function'&&state.gsync&&state.gsync.url)await baseGsSave(true);
+    if(typeof baseGsSave==='function'&&state.gsync&&state.gsync.url){var syncOk=await baseGsSave(true);savedStatus=(syncOk===false)?'이 PC 저장 완료 · 동기화 재시도 필요':'저장·PC간 동기화 완료';}
     try{if(typeof logEdit==='function')logEdit('매출 목표',y+'년 수정 '+p+'안 조정% 수동 저장');}catch(_e4){}
   }catch(err){dirty=true;try{alert('조정% 저장 오류: '+String(err&&err.message||err));}catch(_a){}}
   finally{saving=false;paint();}
@@ -37629,6 +37632,76 @@ async function run(){
 function start(){var n=0,t=setInterval(function(){n++;if((window.__V718_RESTORED&&typeof CUR!=='undefined'&&CUR.length)||n>120){clearInterval(t);setTimeout(run,2300);}},50);var r=document.getElementById('result');if(r)new MutationObserver(ensureUndoButton).observe(r,{childList:true,subtree:false});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 window.fcRestore2026V882=run;
+})();
+</script>
+
+<style id="v883-forecast-field-no-jump-style">
+html.fc-field-edit-v883,html.fc-field-edit-v883 body{scroll-behavior:auto!important}
+#result.fc-field-edit-v883,#result.fc-field-edit-v883 *{overflow-anchor:none!important}
+</style>
+<script id="v883-manual-save-history-and-field-no-jump">
+/* ══════════ v883 · 입력 중 화면 위치 완전 고정 ══════════
+   forecast()가 표를 통째로 다시 만든 뒤 발생시키는 프로그램 스크롤을 사용자 스크롤로
+   오인하지 않고, 입력 시작 당시의 페이지·표·커서 위치를 끝까지 복원합니다. */
+(function(){
+'use strict';
+var SEL='#result .fcov,#result .fcadd,#result .fcpov,#result .fcpadd,#result .fc-cust-month-pct,#result .fc-prod-month-pct,#result .fccpov,#result .fc-month-adjust,#result .fc-inline-pct,#result .fcm,#result .annin,#result .fcnewt,#bepInput,#bepInputM';
+var hold=null,seq=0,releaseTimer=null,restoring=false,observer=null;
+function isField(t){return!!(t&&t.matches&&t.matches(SEL));}
+function esc(v){try{return CSS.escape(String(v));}catch(_e){return String(v).replace(/["\\]/g,'\\$&');}}
+function identity(el){
+  if(!el)return null;var cls=['fcov','fcadd','fcpov','fcpadd','fc-cust-month-pct','fc-prod-month-pct','fccpov','fc-month-adjust','fc-inline-pct','fcm','annin','fcnewt'].find(function(c){return el.classList&&el.classList.contains(c);});
+  var attrs={};['data-c','data-pk','data-m','data-month','data-y'].forEach(function(a){var v=el.getAttribute&&el.getAttribute(a);if(v!=null)attrs[a]=v;});
+  var pos=null,end=null;try{pos=el.selectionStart;end=el.selectionEnd;}catch(_e){}
+  return{id:el.id||'',cls:cls||'',attrs:attrs,pos:pos,end:end};
+}
+function identityKey(o){return o?(o.id+'|'+o.cls+'|'+JSON.stringify(o.attrs||{})):'';}
+function findField(o){
+  if(!o)return null;if(o.id){var by=document.getElementById(o.id);if(by)return by;}
+  if(!o.cls)return null;var q='#result .'+o.cls;Object.keys(o.attrs||{}).forEach(function(a){q+='['+a+'="'+esc(o.attrs[a])+'"]';});
+  try{return document.querySelector(q);}catch(_e){return null;}
+}
+function wrapMark(w,i){var table=w.querySelector('table'),tc='';if(table&&table.classList&&table.classList.length)tc=Array.from(table.classList).join('.');return{id:w.id||'',tc:tc,i:i,top:w.scrollTop,left:w.scrollLeft};}
+function findWrap(s,all){
+  if(s.id){var by=document.getElementById(s.id);if(by)return by;}
+  if(s.tc){try{var t=document.querySelector('#result table.'+s.tc);if(t){var w=t.closest('.tablewrap');if(w)return w;}}catch(_e){}}
+  return all[s.i]||null;
+}
+function take(el){
+  var result=document.getElementById('result'),row=el&&el.closest?el.closest('tr[data-c],tr[data-pk]'):null,ri=identity(el),oldMin=result?result.style.minHeight:'';
+  var wraps=[];try{document.querySelectorAll('#result .tablewrap').forEach(function(w,i){wraps.push(wrapMark(w,i));});}catch(_e){}
+  hold={token:++seq,x:window.scrollX||0,y:window.scrollY||document.documentElement.scrollTop||0,field:ri,fieldKey:identityKey(ri),wraps:wraps,rowC:row&&row.getAttribute('data-c'),rowP:row&&row.getAttribute('data-pk'),rowTop:row?row.getBoundingClientRect().top:null,result:result,oldMin:oldMin};
+  if(result&&result.offsetHeight>0){result.classList.add('fc-field-edit-v883');result.style.minHeight=result.offsetHeight+'px';}
+  document.documentElement.classList.add('fc-field-edit-v883');clearTimeout(releaseTimer);
+}
+function restore(){
+  if(!hold)return;var h=hold;restoring=true;
+  try{
+    var all=document.querySelectorAll('#result .tablewrap');h.wraps.forEach(function(s){var w=findWrap(s,all);if(w){w.scrollTop=s.top;w.scrollLeft=s.left;}});
+    window.scrollTo({left:h.x,top:h.y,behavior:'auto'});
+    var f=findField(h.field);if(f&&document.activeElement!==f){try{f.focus({preventScroll:true});}catch(_f){f.focus();}}
+    if(f&&h.field&&h.field.pos!=null){try{f.setSelectionRange(h.field.pos,h.field.end!=null?h.field.end:h.field.pos);}catch(_p){}}
+    /* 행 높이가 달라졌더라도 입력하던 행은 화면의 같은 세로 위치에 둡니다. */
+    if(h.rowTop!=null){var q=h.rowC!=null?'#result tr[data-c="'+esc(h.rowC)+'"]':(h.rowP!=null?'#result tr[data-pk="'+esc(h.rowP)+'"]':'');var r=q&&document.querySelector(q);if(r){var d=r.getBoundingClientRect().top-h.rowTop;if(Math.abs(d)>1){window.scrollBy(0,d);h.y+=d;}}}
+  }catch(_e){}finally{restoring=false;}
+}
+function burst(){
+  if(!hold)return;var tok=hold.token;restore();
+  try{requestAnimationFrame(function(){if(hold&&hold.token===tok){restore();requestAnimationFrame(function(){if(hold&&hold.token===tok)restore();});}});}catch(_e){}
+  [0,25,60,120,220,420,700,1050,1500,2200,3000,3800].forEach(function(ms){setTimeout(function(){if(hold&&hold.token===tok)restore();},ms);});
+}
+function releaseLater(ms){var tok=hold&&hold.token;clearTimeout(releaseTimer);releaseTimer=setTimeout(function(){if(!hold||hold.token!==tok)return;restore();var r=hold.result;if(r){r.style.minHeight=hold.oldMin||'';r.classList.remove('fc-field-edit-v883');}document.documentElement.classList.remove('fc-field-edit-v883');hold=null;},ms||4100);}
+document.addEventListener('pointerdown',function(e){if(isField(e.target))take(e.target);else if(hold)releaseLater(0);},true);
+document.addEventListener('focusin',function(e){if(!isField(e.target))return;var k=identityKey(identity(e.target));if(!hold||hold.fieldKey!==k)take(e.target);burst();},true);
+document.addEventListener('beforeinput',function(e){if(isField(e.target)){if(!hold)take(e.target);burst();}},true);
+document.addEventListener('input',function(e){if(isField(e.target)){if(!hold)take(e.target);burst();releaseLater(4300);}},true);
+document.addEventListener('change',function(e){if(isField(e.target)){if(!hold)take(e.target);burst();releaseLater(4300);}},true);
+document.addEventListener('focusout',function(e){if(isField(e.target)&&hold){burst();releaseLater(4300);}},true);
+/* 사용자가 직접 휠·터치로 이동할 때만 고정을 풀어 정상 스크롤을 허용합니다. */
+['wheel','touchmove'].forEach(function(n){document.addEventListener(n,function(){if(hold&&!restoring)releaseLater(0);},{capture:true,passive:true});});
+function start(){var r=document.getElementById('result');if(!r)return;observer=new MutationObserver(function(){if(hold)burst();});observer.observe(r,{childList:true,subtree:false});}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+window.fcFieldNoJumpV883={capture:take,restore:restore};
 })();
 </script>
 
