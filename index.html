@@ -37341,5 +37341,87 @@ window.purchaseMonthlySyncCheckV879=function(){
 })();
 </script>
 
+<script id="v880-pd-reset-and-next-year-month-match">
+/* ══════════ v880 · PD 초기화 영구 보존 + 다음연도 미래월 기준 일치 ══════════
+   1) PD 초기화 시 연도별 삭제시각을 값과 별도 보관/공유합니다. 오래된 PC의 금액이 다시
+      들어와도 삭제시각 이전 칸은 즉시 제거하고, 초기화 뒤 새로 입력한 칸만 남깁니다.
+   2) 다음연도 수정 1안/2안은 각각 직전연도 수정 1안/2안을 기준으로 씁니다.
+      확정월까지는 직전연도 실적, 이후월은 직전연도 화면의 월 목표를 그대로 사용합니다. */
+(function(){
+'use strict';
+var KEY='pdResetYearsV880';
+function plain(v){return!!v&&typeof v==='object'&&!Array.isArray(v);}
+function clone(v){try{return JSON.parse(JSON.stringify(v||{}));}catch(_e){return{};}}
+function targetYear(){try{return String((typeof fcTargetYear==='function')?fcTargetYear():((state.fc||{})._ctxYear||''));}catch(_e){return'';}}
+function nextYear(){try{return typeof fcIsNextYearMode==='function'&&fcIsNextYearMode();}catch(_e){return false;}}
+function ledger(){if(!plain(state.pdResetYearsV880))state.pdResetYearsV880={};return state.pdResetYearsV880;}
+function stampOf(p){var m=plain(p&&p._syncV866)?p._syncV866:{},n=Math.max(+m.resetAt||0,+m.updatedAt||0);Object.keys(m.cells||{}).forEach(function(k){n=Math.max(n,+m.cells[k]||0);});return n;}
+function resetStamp(y){return +(ledger()[String(y)]||0);}
+function applyReset(y,p){
+  y=String(y||'');if(!y||!plain(p))return p;var cut=resetStamp(y);if(!cut)return p;
+  var m=plain(p._syncV866)?p._syncV866:(p._syncV866={}),cells=plain(m.cells)?m.cells:(m.cells={});
+  ['labor','process','indirect','actual'].forEach(function(cat){var row=plain(p[cat])?p[cat]:(p[cat]={});Object.keys(row).forEach(function(mm){if((+cells[cat+':'+mm]||0)<=cut)delete row[mm];});});
+  if(!plain(m.flags))m.flags={};if((+m.flags.estimate||0)<=cut)p.estimate=false;
+  m.year=y;m.resetAt=Math.max(+m.resetAt||0,cut);m.updatedAt=Math.max(+m.updatedAt||0,cut);return p;
+}
+function enforceAll(){var r=ledger();state.pdYears=plain(state.pdYears)?state.pdYears:{};Object.keys(r).forEach(function(y){if(plain(state.pdYears[y]))applyReset(y,state.pdYears[y]);});var y=targetYear();if(y&&plain(state.pd))applyReset(y,state.pd);}
+function writeLedger(){try{if(typeof idbSet==='function')idbSet(KEY,clone(ledger()));}catch(_e){} }
+
+/* 초기화 자체를 강한 연도별 tombstone으로 기록합니다. */
+try{
+  var oldReset=window.pdResetYearV866||pdResetYearV866;
+  var reset=function(y){
+    y=String(y||targetYear());var at=Math.max(Date.now()+1000,resetStamp(y)+1,stampOf(state.pd),stampOf((state.pdYears||{})[y]))+1;
+    ledger()[y]=at;
+    var src=plain(state.pd)?state.pd:{},p={labor:{},process:{},indirect:{},actual:{},estimate:false,
+      useLabor:src.useLabor!==false,useProcess:src.useProcess!==false,useIndirect:src.useIndirect!==false,
+      _syncV866:{year:y,resetAt:at,updatedAt:at,cells:{},flags:{estimate:at}}};
+    state.pd=p;state.pdYears=plain(state.pdYears)?state.pdYears:{};state.pdYears[y]=clone(p);writeLedger();return p;
+  };
+  reset.__v880=true;window.pdResetYearV866=reset;try{pdResetYearV866=reset;}catch(_e){}
+}catch(_e){}
+
+/* 공유 필드에 삭제시각을 포함하고, 수신 순서와 관계없이 PD 값에 즉시 적용합니다. */
+try{
+  var oldFields=window.gsFields;
+  if(typeof oldFields==='function'&&!oldFields.__pdResetV880){var fields=function(){var a=oldFields.apply(this,arguments)||[];if(!a.some(function(x){return x&&x[0]==='pdResetYearsV880';}))a.push(['pdResetYearsV880',state,'pdResetYearsV880']);return a;};fields.__pdResetV880=true;window.gsFields=fields;try{gsFields=fields;}catch(_e){}}
+  var oldApply=window.gsApplyField;
+  if(typeof oldApply==='function'&&!oldApply.__pdResetV880){var apply=function(n,p,k,v){
+    if(n==='pdResetYearsV880'){var L=ledger(),R=plain(v)?v:{};Object.keys(R).forEach(function(y){L[y]=Math.max(+L[y]||0,+R[y]||0);});enforceAll();writeLedger();return;}
+    var z=oldApply.apply(this,arguments);if(n==='pdYears'||n==='pd'){enforceAll();}return z;
+  };apply.__pdResetV880=true;window.gsApplyField=apply;try{gsApplyField=apply;}catch(_e2){}}
+}catch(_e){}
+
+/* 저장/연도 전환 때도 삭제표시를 먼저 적용합니다. */
+try{
+  var oldSave=window.saveSettings;
+  if(typeof oldSave==='function'&&!oldSave.__pdResetV880){var save=async function(){enforceAll();writeLedger();return oldSave.apply(this,arguments);};save.__pdResetV880=true;window.saveSettings=save;try{saveSettings=save;}catch(_e){}}
+  var oldBind=window.pdBindYearV877;
+  if(typeof oldBind==='function'&&!oldBind.__pdResetV880){var bind=function(y){var p=oldBind.apply(this,arguments);applyReset(String(y||targetYear()),p);if(y&&state.pdYears)state.pdYears[String(y)]=clone(p);return p;};bind.__pdResetV880=true;window.pdBindYearV877=bind;}
+}catch(_e){}
+
+/* 다음연도 목표안 번호와 기준연도 목표안 번호를 1:1로 맞춥니다.
+   이로써 2027 수정1안의 10~12월은 2026 수정1안, 수정2안은 수정2안과 정확히 같습니다. */
+function alignBasePlan(){
+  try{if(!nextYear()||!state.fc)return false;var p=state.fc.activePlan==='2'?'2':'1',changed=state.fc.baseYearPlan!==p||state.fc.baseFutureMode!=='plan';state.fc.baseYearPlan=p;state.fc.baseFutureMode='plan';if(changed){_fcBaseAggCache=null;_fcBase27Cache=null;window.__nyAggV737=null;window.FC_CHART_V677=null;}return changed;}catch(_e){return false;}
+}
+try{
+  var oldForecast=window.forecast||forecast;
+  if(typeof oldForecast==='function'&&!oldForecast.__monthMatchV880){var forecast880=function(){alignBasePlan();enforceAll();return oldForecast.apply(this,arguments);};forecast880.__monthMatchV880=true;window.forecast=forecast880;try{forecast=forecast880;}catch(_e){}}
+  var oldTrend=window.monthlyTrend||monthlyTrend;
+  if(typeof oldTrend==='function'&&!oldTrend.__monthMatchV880){var trend880=function(){alignBasePlan();enforceAll();return oldTrend.apply(this,arguments);};trend880.__monthMatchV880=true;window.monthlyTrend=trend880;try{monthlyTrend=trend880;}catch(_e){}}
+}catch(_e){}
+
+async function boot(){
+  try{var d=(typeof idbGet==='function')?await idbGet(KEY):null;if(plain(d)){var L=ledger();Object.keys(d).forEach(function(y){L[y]=Math.max(+L[y]||0,+d[y]||0);});}}catch(_e){}
+  enforceAll();alignBasePlan();
+  try{if(typeof saveSettings==='function')saveSettings();}catch(_e2){}
+  try{if(state.act==='forecast'&&typeof forecast==='function')forecast();else if(state.act==='trend'&&typeof monthlyTrend==='function')monthlyTrend();}catch(_e3){}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,1500);},{once:true});else setTimeout(boot,1500);
+window.pdApplyResetV880=enforceAll;window.fcAlignBasePlanV880=alignBasePlan;
+})();
+</script>
+
 </body>
 </html>
