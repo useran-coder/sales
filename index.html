@@ -37656,6 +37656,11 @@ function identity(el){
   return{id:el.id||'',cls:cls||'',attrs:attrs,pos:pos,end:end};
 }
 function identityKey(o){return o?(o.id+'|'+o.cls+'|'+JSON.stringify(o.attrs||{})):'';}
+function updateCaret(el){
+  if(!hold||!isField(el))return;var o=identity(el);if(identityKey(o)!==hold.fieldKey)return;
+  /* 숫자가 입력된 뒤의 최신 커서 위치를 저장해야 10이 01로 뒤집히지 않습니다. */
+  hold.field.pos=o.pos;hold.field.end=o.end;
+}
 function findField(o){
   if(!o)return null;if(o.id){var by=document.getElementById(o.id);if(by)return by;}
   if(!o.cls)return null;var q='#result .'+o.cls;Object.keys(o.attrs||{}).forEach(function(a){q+='['+a+'="'+esc(o.attrs[a])+'"]';});
@@ -37681,8 +37686,8 @@ function restore(){
     window.scrollTo({left:h.x,top:h.y,behavior:'auto'});
     var f=findField(h.field);if(f&&document.activeElement!==f){try{f.focus({preventScroll:true});}catch(_f){f.focus();}}
     if(f&&h.field&&h.field.pos!=null){try{f.setSelectionRange(h.field.pos,h.field.end!=null?h.field.end:h.field.pos);}catch(_p){}}
-    /* 행 높이가 달라졌더라도 입력하던 행은 화면의 같은 세로 위치에 둡니다. */
-    if(h.rowTop!=null){var q=h.rowC!=null?'#result tr[data-c="'+esc(h.rowC)+'"]':(h.rowP!=null?'#result tr[data-pk="'+esc(h.rowP)+'"]':'');var r=q&&document.querySelector(q);if(r){var d=r.getBoundingClientRect().top-h.rowTop;if(Math.abs(d)>1){window.scrollBy(0,d);h.y+=d;}}}
+    /* 페이지 좌표는 최초 값으로만 고정합니다. 행 위치 차이를 누적 보정하면
+       폰트·합계 재계산 때의 1px 차이가 계속 더해져 가만히 있어도 화면이 움직입니다. */
   }catch(_e){}finally{restoring=false;}
 }
 function burst(){
@@ -37690,18 +37695,54 @@ function burst(){
   try{requestAnimationFrame(function(){if(hold&&hold.token===tok){restore();requestAnimationFrame(function(){if(hold&&hold.token===tok)restore();});}});}catch(_e){}
   [0,25,60,120,220,420,700,1050,1500,2200,3000,3800].forEach(function(ms){setTimeout(function(){if(hold&&hold.token===tok)restore();},ms);});
 }
-function releaseLater(ms){var tok=hold&&hold.token;clearTimeout(releaseTimer);releaseTimer=setTimeout(function(){if(!hold||hold.token!==tok)return;restore();var r=hold.result;if(r){r.style.minHeight=hold.oldMin||'';r.classList.remove('fc-field-edit-v883');}document.documentElement.classList.remove('fc-field-edit-v883');hold=null;},ms||4100);}
+function releaseLater(ms){var tok=hold&&hold.token;clearTimeout(releaseTimer);releaseTimer=setTimeout(function(){if(!hold||hold.token!==tok)return;var r=hold.result;if(r){r.style.minHeight=hold.oldMin||'';r.classList.remove('fc-field-edit-v883');}document.documentElement.classList.remove('fc-field-edit-v883');hold=null;},ms==null?4100:ms);}
 document.addEventListener('pointerdown',function(e){if(isField(e.target))take(e.target);else if(hold)releaseLater(0);},true);
 document.addEventListener('focusin',function(e){if(!isField(e.target))return;var k=identityKey(identity(e.target));if(!hold||hold.fieldKey!==k)take(e.target);burst();},true);
 document.addEventListener('beforeinput',function(e){if(isField(e.target)){if(!hold)take(e.target);burst();}},true);
-document.addEventListener('input',function(e){if(isField(e.target)){if(!hold)take(e.target);burst();releaseLater(4300);}},true);
-document.addEventListener('change',function(e){if(isField(e.target)){if(!hold)take(e.target);burst();releaseLater(4300);}},true);
+document.addEventListener('input',function(e){if(isField(e.target)){if(!hold)take(e.target);updateCaret(e.target);burst();releaseLater(4300);}},true);
+document.addEventListener('change',function(e){if(isField(e.target)){if(!hold)take(e.target);updateCaret(e.target);burst();releaseLater(4300);}},true);
+document.addEventListener('keyup',function(e){if(isField(e.target))updateCaret(e.target);},true);
+document.addEventListener('click',function(e){if(isField(e.target))setTimeout(function(){updateCaret(e.target);},0);},true);
 document.addEventListener('focusout',function(e){if(isField(e.target)&&hold){burst();releaseLater(4300);}},true);
 /* 사용자가 직접 휠·터치로 이동할 때만 고정을 풀어 정상 스크롤을 허용합니다. */
 ['wheel','touchmove'].forEach(function(n){document.addEventListener(n,function(){if(hold&&!restoring)releaseLater(0);},{capture:true,passive:true});});
 function start(){var r=document.getElementById('result');if(!r)return;observer=new MutationObserver(function(){if(hold)burst();});observer.observe(r,{childList:true,subtree:false});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 window.fcFieldNoJumpV883={capture:take,restore:restore};
+})();
+</script>
+
+<script id="v884-forecast-background-render-scroll-stable">
+/* ══════════ v884 · 백그라운드 동기화 재표시 때 스크롤 유지 ══════════
+   매출목표 화면이 이미 열린 상태에서 forecast()가 자동으로 다시 실행되어도
+   페이지와 표 스크롤을 호출 직전 위치에 그대로 둡니다. 사용자가 직접 스크롤하면 즉시 해제합니다. */
+(function(){
+'use strict';
+var token=0;
+function isForecastView(){try{return state&&state.act==='forecast'&&!!document.querySelector('#result #fcMgrFilterBar,#result .fc-cust-month-table,#result h4.fch');}catch(_e){return false;}}
+function mark(w,i){var t=w.querySelector('table'),tc=t&&t.classList&&t.classList.length?Array.from(t.classList).join('.'):'';return{id:w.id||'',tc:tc,i:i,top:w.scrollTop,left:w.scrollLeft};}
+function find(s,all){if(s.id){var x=document.getElementById(s.id);if(x)return x;}if(s.tc)try{var t=document.querySelector('#result table.'+s.tc);if(t)return t.closest('.tablewrap');}catch(_e){}return all[s.i]||null;}
+function install(){
+  var native=window.forecast||((typeof forecast==='function')?forecast:null);if(typeof native!=='function'||native.__v884)return false;
+  var wrapped=function(){
+    if(!isForecastView())return native.apply(this,arguments);
+    var me=++token,x=window.scrollX||0,y=window.scrollY||document.documentElement.scrollTop||0,boxes=[];
+    try{document.querySelectorAll('#result .tablewrap').forEach(function(w,i){boxes.push(mark(w,i));});}catch(_e){}
+    var cancelled=false;
+    function cancel(){cancelled=true;cleanup();}
+    function key(e){if(['PageUp','PageDown','Home','End',' ','ArrowUp','ArrowDown'].indexOf(e.key)>=0&&!/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||''))cancel();}
+    function cleanup(){window.removeEventListener('wheel',cancel,true);window.removeEventListener('touchmove',cancel,true);document.removeEventListener('pointerdown',cancel,true);document.removeEventListener('keydown',key,true);}
+    window.addEventListener('wheel',cancel,{capture:true,passive:true});window.addEventListener('touchmove',cancel,{capture:true,passive:true});document.addEventListener('pointerdown',cancel,true);document.addEventListener('keydown',key,true);
+    var out=native.apply(this,arguments);
+    function restore(){if(cancelled||me!==token)return;try{var all=document.querySelectorAll('#result .tablewrap');boxes.forEach(function(s){var w=find(s,all);if(w){w.scrollTop=s.top;w.scrollLeft=s.left;}});window.scrollTo({left:x,top:y,behavior:'auto'});}catch(_e){}}
+    restore();try{requestAnimationFrame(function(){restore();requestAnimationFrame(restore);});}catch(_e){}
+    [40,120,300,650].forEach(function(ms){setTimeout(restore,ms);});setTimeout(cleanup,800);
+    return out;
+  };
+  wrapped.__v884=true;wrapped.__nativeV884=native;window.forecast=wrapped;try{forecast=wrapped;}catch(_e){}return true;
+}
+if(!install()){var n=0,t=setInterval(function(){if(install()||++n>50)clearInterval(t);},100);}
+window.addEventListener('load',function(){setTimeout(install,200);setTimeout(install,1600);},{once:true});
 })();
 </script>
 
