@@ -2633,8 +2633,8 @@ function fcBaseCutV733(){
   if(v===undefined||v===null||v===''||v==='auto')return fcBaseAutoCutV733();
   return fcNormalizeCutoff(v);
 }
-function fcTargetPlanLabel(){ fcEnsureTargetPlans(); return state.fc.activePlan==='2'?'수정 2안':'수정 1안'; }
-function fcTargetPlanSelectorHTML(id){ id=id||'fcTargetPlanSel'; fcEnsureTargetPlans(); const a=state.fc.activePlan==='2'?'2':'1'; return `<label class="fc-plan-ctl" title="목표수정액을 안별로 분리해 표시합니다."><span>목표안</span> <select id="${id}"><option value="1" ${a==='1'?'selected':''}>수정 1안</option><option value="2" ${a==='2'?'selected':''}>수정 2안</option></select></label>`; }
+function fcTargetPlanLabel(){ fcEnsureTargetPlans(); return state.fc.activePlan==='2'?'2안':'1안'; }
+function fcTargetPlanSelectorHTML(id){ id=id||'fcTargetPlanSel'; fcEnsureTargetPlans(); const a=state.fc.activePlan==='2'?'2':'1'; return `<label class="fc-plan-ctl" title="목표수정액을 안별로 분리해 표시합니다."><span>목표안</span> <select id="${id}"><option value="1" ${a==='1'?'selected':''}>1안</option><option value="2" ${a==='2'?'selected':''}>2안</option></select></label>`; }
 function bindFcTargetPlanSelector(id,rerun){ const sel=document.getElementById(id||'fcTargetPlanSel'); if(!sel)return; sel.addEventListener('change',function(){ const next=sel.value==='2'?'2':'1'; fcSyncActivePlan(); state.fc.activePlan=next; fcApplyTargetPlan(state.fc.targetPlans[next]); state.fc._targetPlanLoaded=next; if(typeof logEdit==='function')logEdit('목표안',fcTargetPlanLabel()+' 선택'); saveSettings(); if(typeof rerun==='function')rerun(); }); }
 function fcInjectReportControls(root){ const ctl=root&&root.querySelector('.wr-controls'); if(!ctl||document.getElementById('wrTargetPlanSel'))return; const box=document.createElement('span'); box.className='fc-report-plan-box'; box.style.cssText='display:inline-flex;align-items:center;gap:8px;padding-left:8px;margin-left:auto;flex-shrink:0'; box.innerHTML=fcTargetPlanSelectorHTML('wrTargetPlanSel')+fcCutoffSelectorHTML(); ctl.appendChild(box); }
 function headFor(ym){ const v=state.headMonthly[ym]; if(v!=null&&v!=='')return +v; const yd=state.headYearDefault[ym.slice(0,4)]; if(yd!=null&&yd!=='')return +yd; return state.headcount; }
@@ -11484,8 +11484,8 @@ function fcCutoffSelectorHTML(){ var c=fcCutoffMonth(); var o='<option value="0"
     var _st=fcYearStore()[String(dm)], _ap=(_st&&_st.activePlan==='2')?'2':'1', _cur=fcBaseYearPlan()||_ap;
     bpick='<label class="fc-cutoff-ctl fc-baseplan-ctl" title="'+dm+'년 목표안(수정 1안·2안) 중 어느 것을 '+nx+'년 목표의 기준으로 쓸지 고릅니다."><span>기준 '+dm+'년 목표안</span> '+
       '<span class="seg" id="fcBasePlanSeg" style="margin-left:4px">'+
-        '<button type="button" data-p="1" class="'+(_cur==='1'?'on':'')+'" style="font-size:12px;padding:4px 10px'+(_cur==='1'?';background:#0f766e;color:#fff;border-color:#0f766e':'')+'">수정 1안</button>'+
-        '<button type="button" data-p="2" class="'+(_cur==='2'?'on':'')+'" style="font-size:12px;padding:4px 10px'+(_cur==='2'?';background:#0f766e;color:#fff;border-color:#0f766e':'')+'">수정 2안</button>'+
+        '<button type="button" data-p="1" class="'+(_cur==='1'?'on':'')+'" style="font-size:12px;padding:4px 10px'+(_cur==='1'?';background:#0f766e;color:#fff;border-color:#0f766e':'')+'">1안</button>'+ 
+        '<button type="button" data-p="2" class="'+(_cur==='2'?'on':'')+'" style="font-size:12px;padding:4px 10px'+(_cur==='2'?';background:#0f766e;color:#fff;border-color:#0f766e':'')+'">2안</button>'+ 
       '</span>'+
       (function(){ /* v733 : 기준연도 실적 반영월 */
         var bc=(state.fc||{}).baseYearCut, auto=fcBaseAutoCutV733(), isAuto=(bc===undefined||bc===null||bc===''||bc==='auto');
@@ -11502,7 +11502,7 @@ function fcCutoffSelectorHTML(){ var c=fcCutoffMonth(); var o='<option value="0"
       })()+
       '</label>';
   }
-  var note=fcIsNextYearMode()?('<span class="fc-year-note" style="display:inline-flex;align-items:center;gap:5px;margin-left:6px;padding:3px 10px;border-radius:999px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;font-size:11.5px;font-weight:800">🆕 '+nx+'년 목표 작성 중 · 기준 '+dm+'년 '+((fcBaseYearPlan()||'1')==='2'?'수정 2안':'수정 1안')+(function(){ var _c=fcBasePlanV712().cut; var _fl=(typeof fcBaseFutureLabelV741==='function')?fcBaseFutureLabelV741():'목표수정액'; return _c>=12?'(1~12월 실적)':(_c<=0?'(1~12월 '+_fl+')':('(1~'+_c+'월 실적 + '+(_c+1)+'~12월 '+_fl+')')); })()+'</span>'):'';
+  var note=fcIsNextYearMode()?('<span class="fc-year-note" style="display:inline-flex;align-items:center;gap:5px;margin-left:6px;padding:3px 10px;border-radius:999px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;font-size:11.5px;font-weight:800">🆕 '+nx+'년 목표 작성 중 · 기준 '+dm+'년 '+((fcBaseYearPlan()||'1')==='2'?'2안':'1안')+(function(){ var _c=fcBasePlanV712().cut; var _fl=(typeof fcBaseFutureLabelV741==='function')?fcBaseFutureLabelV741():'목표수정액'; return _c>=12?'(1~12월 실적)':(_c<=0?'(1~12월 '+_fl+')':('(1~'+_c+'월 실적 + '+(_c+1)+'~12월 '+_fl+')')); })()+'</span>'):'';
   window.__FC_YEAR_HTML=yb+bpick; window.__FC_YEAR_NOTE=note;
   var cv=c===0?'없음':c+'월';
   return '<span class="fc-cutoff-ctl fc-cutoff-custom" title="현재 선택한 목표안에만 실적확정 월을 저장합니다. 선택한 달까지를 확정실적으로 고정하고 이후 월은 목표로 계산합니다."><span>실적확정('+fcTargetPlanLabel()+')</span> <select id="fcCutoffSel" class="fc-cutoff-native" tabindex="-1" aria-hidden="true">'+o+'</select><button type="button" id="fcCutoffBtn" class="fc-cutoff-btn" aria-haspopup="listbox" aria-expanded="false"><span>'+cv+'</span><span class="fc-cutoff-caret">▾</span></button> <span class="fc-cutoff-ub">까지</span><span id="fcCutoffMenu" class="fc-cutoff-menu" role="listbox" hidden>'+mo+'</span></span>'; }
@@ -11896,10 +11896,10 @@ function monthlyTrend(){
   const html=`<div class="rhead fc-trend-head-sticky-v889"><span class="title">${CY}년 목표 및 실적</span><span class="meta">${fcTargetPlanLabel()} · 연매출 목표 ${won(annualMix)} (실적 ${fcCutLabel()} + 목표 ${fcFutLabel()}) · 월별 목표합계 ${won(tgtTAll)} · 실적(1~${actualLastMonth}월) ${won(cyActT)} · 단위: 원</span></div>
   <div class="fc-ctlbar fc-trend-ctl-sticky-v889">${fcYearSelectorHTML()}${fcTargetPlanSelectorHTML('fcTargetPlanSel')}${fcCutoffSelectorHTML()}<button class="btn ghost" id="trCsv">엑셀 내보내기</button></div>
     <div class="fckpi fc-trend-kpi-sticky-v889" style="margin:8px 0 4px">
-      <div class="kpi" style="border-left:4px solid #94a3b8"><div class="lab">전년 연매출(${PY})</div><div class="val" style="color:#475569">${won(pyT)}<small> 원</small></div><div class="sub2" style="margin-top:2px">${PY}년 전체 실적</div></div>
-      <div class="kpi" style="border-left:4px solid var(--navy)"><div class="lab">올해 연매출 목표(${CY})</div><div class="val" style="color:var(--navy)">${won(annualMix)}<small> 원</small></div><div class="sub2" style="margin-top:2px">실적(${fcCutLabel()}) <b>${won(targetActual)}</b> + 목표(${fcFutLabel()}) <b>${won(remTgt)}</b>${excludedActual>0?` <span style="color:#dc2626">· 목표합산 제외업체의 ${fcCutLabel()} 실적 ${won(excludedActual)}은 연매출 목표에서 제외</span>`:''}</div></div>
+      <div class="kpi"><div class="lab">전년 연매출(${PY})</div><div class="val" style="color:#475569">${won(pyT)}<small> 원</small></div><div class="sub2" style="margin-top:2px">${PY}년 전체 실적</div></div>
+      <div class="kpi"><div class="lab">올해 연매출 목표(${CY})</div><div class="val" style="color:var(--navy)">${won(annualMix)}<small> 원</small></div><div class="sub2" style="margin-top:2px">실적(${fcCutLabel()}) <b>${won(targetActual)}</b> + 목표(${fcFutLabel()}) <b>${won(remTgt)}</b>${excludedActual>0?` <span style="color:#dc2626">· 목표합산 제외업체의 ${fcCutLabel()} 실적 ${won(excludedActual)}은 연매출 목표에서 제외</span>`:''}</div></div>
       <div class="kpi"><div class="lab">올해 목표 합계(1~12월)</div><div class="val" style="color:#d97706">${won(tgtTAll)}<small> 원</small></div><div class="sub2" style="margin-top:2px">전년 ${won(pyT)} 대비 ${avgPct>=0?'+':''}${avgPct.toFixed(1)}%</div></div>
-      ${_bepY>0?`<div class="kpi" style="border-left:4px solid #7c3aed"><div class="lab">BEP(손익분기점) 대비</div><div class="val" style="color:#7c3aed">${won(_bepY)}<small> 원</small></div><div class="sub2" style="margin-top:2px">예상 대비 ${bepGap>=0?`<b style="color:var(--green)">+${won(bepGap)} 초과달성</b>`:`<b style="color:var(--red)">${won(bepGap)} 부족</b> · 남은 ${remainMon}개월 매월 +${won(bepNeed)}`}</div></div>`:''}
+      ${_bepY>0?`<div class="kpi"><div class="lab">BEP(손익분기점) 대비</div><div class="val" style="color:#7c3aed">${won(_bepY)}<small> 원</small></div><div class="sub2" style="margin-top:2px">예상 대비 ${bepGap>=0?`<b style="color:var(--green)">+${won(bepGap)} 초과달성</b>`:`<b style="color:var(--red)">${won(bepGap)} 부족</b> · 남은 ${remainMon}개월 매월 +${won(bepNeed)}`}</div></div>`:''}
     </div>
     ${legendPY(PY,CY,'trShowPY',state.trend.showPY)}
     <div class="chartbox">${chart}</div>
@@ -12840,9 +12840,13 @@ function forecast(){
   /* v807 : 「🎯 신규목표」 — 목표표에 업체추가로 등록한 신규목표 거래처만 보기 */
   if(state.fc._newOnly) custArr=custArr.filter(o=>!!fcNewTargetEntry(o.c));
   applyFcSort(custArr);
-  /* v890 : 신규목표 업체가 기간에 따라 일반 매출행으로 합쳐지더라도 항상 표 상단에 둡니다.
-     이전에는 상반기에는 보라색 신규행으로 보이던 업체가 전체(연간)에서는 일반 매출순으로
-     내려가 사용자가 «사라진 것»처럼 느꼈습니다. 정렬 기준 안에서는 기존 순서를 유지합니다. */
+  /* v893 : 순위가 숫자가 아닌 「신규」인 업체(선택기간 매출 없음)는 정렬 방식과 관계없이 맨 위에 둡니다.
+     실제 매출이 있는 신규목표 업체는 일반 업체처럼 숫자 순위를 유지합니다. */
+  custArr.sort((a,b)=>{
+    const an=!!fcNewTargetEntry(a.c)&&((+a.ytd||0)+(+a.ytdAfter||0)<=0);
+    const bn=!!fcNewTargetEntry(b.c)&&((+b.ytd||0)+(+b.ytdAfter||0)<=0);
+    return (bn?1:0)-(an?1:0);
+  });
   const cTotPrev=custArr.reduce((a,o)=>a+o.prev,0), cTotProj=custArr.reduce((a,o)=>a+o.proj,0);
   const cTotPrevBase=custArrTotalBase.reduce((a,o)=>a+o.prev,0), cTotProjBase=custArrTotalBase.reduce((a,o)=>a+o.proj,0), cTotYtdBase=custArrTotalBase.reduce((a,o)=>a+(o.ytd||0),0);
   const fcAutoPctText=o=>{ const v=o&&o.pct; return v==null?'0':(v>=0?'+':'')+v.toFixed(1); };
@@ -33791,7 +33795,7 @@ if(typeof window.bindFcCutoffSelector==='function'&&!window.bindFcCutoffSelector
       var two=document.querySelector('#fcBasePlanSeg button[data-p="2"]');
       var _dmT=fcDataYearMax(), _pk=fcBaseYearPlan();
       [one,two].forEach(function(bn,ix){ if(!bn)return; var k=String(ix+1); bn.disabled=false; bn.style.opacity='';
-        bn.textContent='수정 '+k+'안'+(_pk===k?' (기준)':'');
+        bn.textContent=k+'안'+(_pk===k?' (기준)':'');
         bn.title=_dmT+' 수정 '+k+'안: 선택한 실적 반영월까지 실적 + 이후월 '+((typeof fcBaseFutureLabelV741==='function')?fcBaseFutureLabelV741():'목표수정액')+'을 '+(_dmT+1)+'년 기준으로 사용'; });
     }}catch(_e){}
     return r;
@@ -34583,14 +34587,18 @@ function openSpecial(kind,m,force){
     Object.keys(f.newProds||{}).forEach(function(k){var o=f.newProds[k]||{};if(+o.amt)items.push({key:'p:'+k,label:'신규제품 · '+(o.name||o.code||k)+(o.spec?' / '+o.spec:''),amt:+o.amt||0});});
     (f.newLines||[]).forEach(function(o,i){var a=(+o.qty||0)*(+o.price||0);if(a)items.push({key:'l:'+i,label:'신규라인 · '+(o.cust||'')+' / '+(o.name||o.code||''),amt:a});});
   }else{
-    var seen={}; Object.keys(f.targetExclCust||{}).forEach(function(k){if(f.targetExclCust[k]&&!seen[k]){seen[k]=1;items.push({key:k,label:k,amt:0});}});
-    Object.keys(f.targetOnlyExcl||{}).forEach(function(k){if(f.targetOnlyExcl[k]&&!seen[k]){seen[k]=1;items.push({key:k,label:k,amt:0});}});
+    var seen={};
+    Object.keys(f.exclCust||{}).forEach(function(k){if(f.exclCust[k]&&!seen['trade:'+k]){seen['trade:'+k]=1;items.push({key:'trade:'+k,label:'거래처 제외 · '+k,amt:0});}});
+    Object.keys((state.cmgrExcl)||{}).forEach(function(k){if(state.cmgrExcl[k]&&!seen['trade:'+k]){seen['trade:'+k]=1;items.push({key:'trade:'+k,label:'거래처 제외 · '+k,amt:0});}});
+    Object.keys(f.targetExclCust||{}).forEach(function(k){if(f.targetExclCust[k]&&!seen['target:'+k]){seen['target:'+k]=1;items.push({key:'target:'+k,label:'목표합산 제외 · '+k,amt:0});}});
+    Object.keys(f.targetOnlyExcl||{}).forEach(function(k){if(f.targetOnlyExcl[k]&&!seen['target:'+k]){seen['target:'+k]=1;items.push({key:'target:'+k,label:'목표합산 제외 · '+k,amt:0});}});
   }
   var col=kind==='new'?'#7c3aed':'#64748b', lab=kind==='new'?'신규 배분':'목표제외';
-  var rows=items.map(function(o,i){return '<tr><td style="border:1px solid #e2e8f0;padding:4px 8px;text-align:center">'+(i+1)+'</td><td style="border:1px solid #e2e8f0;padding:4px 8px">'+esc2(o.label)+'</td><td style="border:1px solid #e2e8f0;padding:4px 8px;text-align:right">'+(kind==='new'?W(o.amt)+'원':'합산 제외')+'</td><td style="border:1px solid #e2e8f0;padding:4px 8px;text-align:center"><button type="button" class="fcdx-special-del" data-key="'+esc2(o.key)+'" style="font-size:11px;padding:2px 8px;border:1px solid #fca5a5;border-radius:6px;background:#fee2e2;color:#b91c1c;font-weight:700;cursor:pointer">삭제</button></td></tr>';}).join('');
-  box.innerHTML='<div style="margin:9px 0 2px;border:1px solid '+col+'55;border-radius:9px;background:#fff;padding:9px 11px;max-width:900px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b style="font-size:12px;color:'+col+'">'+m+'월 · '+lab+' 상세</b><span style="font-size:11px;color:#64748b">삭제하면 해당 등록값이 목표 계산에서 제거됩니다.</span><button type="button" id="fcdxClose" class="btn ghost" style="margin-left:auto;font-size:11px;padding:4px 10px">닫기</button></div><div style="overflow:auto;max-height:340px"><table style="border-collapse:collapse;width:100%;min-width:480px"><thead><tr><th style="background:'+col+';color:#fff;padding:4px 8px;width:44px">NO</th><th style="background:'+col+';color:#fff;padding:4px 8px;text-align:left">항목</th><th style="background:'+col+';color:#fff;padding:4px 8px;width:130px">금액/상태</th><th style="background:'+col+';color:#fff;padding:4px 8px;width:70px">삭제</th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" style="padding:10px;text-align:center;color:#94a3b8">등록 내역이 없습니다.</td></tr>')+'</tbody></table></div></div>';
+  var TD='border:1px solid #e2e8f0;padding:3px 8px;font-size:11.5px',TH='border:1px solid #cbd5e1;padding:4px 8px;background:'+col+';color:#fff;font-size:11px;text-align:left';
+  var rows=items.map(function(o,i){return '<tr><td style="'+TD+';text-align:center">'+(i+1)+'</td><td style="'+TD+';text-align:left">'+esc2(o.label)+'</td><td style="'+TD+';text-align:right">'+(kind==='new'?W(o.amt)+'원':'합산 제외')+'</td><td style="'+TD+';text-align:center"><button type="button" class="fcdx-special-del" data-key="'+esc2(o.key)+'" style="font-size:11px;padding:2px 8px;border:1px solid #fca5a5;border-radius:6px;background:#fee2e2;color:#b91c1c;font-weight:700;cursor:pointer">삭제</button></td></tr>';}).join('');
+  box.innerHTML='<div style="margin:9px 0 2px;border:1px solid '+col+'55;border-radius:9px;background:#fff;padding:9px 11px;max-width:860px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px"><b style="font-size:12px;color:'+col+'">'+m+'월 · '+lab+' 상세</b><span style="font-size:11px;color:#64748b">삭제하면 해당 등록값이 목표 계산에서 제거됩니다.</span><button type="button" id="fcdxClose" class="btn ghost" style="margin-left:auto;font-size:11px;padding:4px 10px">닫기</button></div><div style="overflow:auto;max-height:340px"><table style="border-collapse:collapse;width:100%;min-width:420px;table-layout:fixed"><thead><tr><th style="'+TH+';width:44px;text-align:center">NO</th><th style="'+TH+'">항목</th><th style="'+TH+';width:130px;text-align:right">금액/상태</th><th style="'+TH+';width:70px;text-align:center">삭제</th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" style="'+TD+';text-align:center;color:#94a3b8">등록 내역이 없습니다.</td></tr>')+'</tbody></table></div></div>';
   var close=box.querySelector('#fcdxClose'); if(close)close.onclick=function(){box.innerHTML='';box.removeAttribute('data-k');EDIT={kind:'',m:0};};
-  box.querySelectorAll('.fcdx-special-del').forEach(function(b){b.onclick=function(){var k=b.getAttribute('data-key');if(kind==='new'){if(k.indexOf('c:')===0)delete f.newCusts[k.slice(2)];else if(k.indexOf('p:')===0)delete f.newProds[k.slice(2)];else if(k.indexOf('l:')===0)f.newLines.splice(+k.slice(2),1);}else{delete f.targetExclCust[k];if(f.targetOnlyExcl)delete f.targetOnlyExcl[k];}try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();}catch(_e){} afterWrite(document.getElementById('fcDiffMsgV757'),lab+' 항목을 삭제했습니다.');};});
+  box.querySelectorAll('.fcdx-special-del').forEach(function(b){b.onclick=function(){var k=b.getAttribute('data-key');if(kind==='new'){if(k.indexOf('c:')===0)delete f.newCusts[k.slice(2)];else if(k.indexOf('p:')===0)delete f.newProds[k.slice(2)];else if(k.indexOf('l:')===0)f.newLines.splice(+k.slice(2),1);}else if(k.indexOf('trade:')===0){var n=k.slice(6);delete f.exclCust[n];if(state.cmgrExcl)delete state.cmgrExcl[n];}else{var n2=k.indexOf('target:')===0?k.slice(7):k;delete f.targetExclCust[n2];if(f.targetOnlyExcl)delete f.targetOnlyExcl[n2];}try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();}catch(_e){} afterWrite(document.getElementById('fcDiffMsgV757'),lab+' 항목을 삭제했습니다.');};});
 }
 function openEdit(kind,m,force){
   if(kind==='new'||kind==='exclude'){openSpecial(kind,m,force);return;}
@@ -37634,10 +37642,9 @@ try{
   if(typeof oldBind==='function'&&!oldBind.__pdResetV880){var bind=function(y){var p=oldBind.apply(this,arguments);applyReset(String(y||targetYear()),p);if(y&&state.pdYears)state.pdYears[String(y)]=clone(p);return p;};bind.__pdResetV880=true;window.pdBindYearV877=bind;}
 }catch(_e){}
 
-/* 다음연도 목표안 번호와 기준연도 목표안 번호를 1:1로 맞춥니다.
-   이로써 2027 수정1안의 10~12월은 2026 수정1안, 수정2안은 수정2안과 정확히 같습니다. */
+/* v893 : 기준연도 목표안과 이후월 기준은 사용자가 직접 고른 값을 유지합니다. */
 function alignBasePlan(){
-  try{if(!nextYear()||!state.fc)return false;var p=state.fc.activePlan==='2'?'2':'1',changed=state.fc.baseYearPlan!==p||state.fc.baseFutureMode!=='plan';state.fc.baseYearPlan=p;state.fc.baseFutureMode='plan';if(changed){_fcBaseAggCache=null;_fcBase27Cache=null;window.__nyAggV737=null;window.FC_CHART_V677=null;}return changed;}catch(_e){return false;}
+  return false;
 }
 try{
   var oldForecast=window.forecast||forecast;
