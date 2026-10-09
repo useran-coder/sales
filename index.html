@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v863</title>
-<script>window.APP_BUILD='v874';</script>
+<title>동방파스텍 매출 분석 도구 v866</title>
+<script>window.APP_BUILD='v866';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -785,6 +785,18 @@
   .t2donut,#tbl th.t2donut{width:22%;text-align:center;vertical-align:middle;padding:0 4px}
   #tbl td.t2info{padding:10px 12px}
   .tablewrap{overflow:auto;max-height:1120px;border-radius:12px;border:1px solid var(--line);background:var(--card)}
+/* v865 : h4.fch 안의 float:right 버튼줄이 밖으로 새어나가 뒤따르는 .tablewrap(BFC) 폭이 줄어드는 문제 */
+#result h4.fch{display:flow-root}
+/* v866 : 홈 상단에서 매출기준·매출구분·표시단위는 감추고 기간단위만 파일정보 줄 오른쪽에 둡니다 */
+.field.hide-v866{display:none!important}
+.sumtop.hidden ~ .periodfield-v866{display:none}
+#homeTopRowV866{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+#homeTopRowV866>.sumtop{flex:0 1 auto;margin:0}
+#homeTopRowV866>.periodfield-v866{flex:0 0 auto}
+#setPanel:not(:has(.ctrl-row>.field:not(.hide-v866):not([style*="none"]))){display:none}
+#result .tablewrap{clear:both}
+/* v865 : 선택된 칩 안의 배지 글자도 흰색으로 */
+.sgFilt.is-on span{color:#fff!important;opacity:.9!important}
   .kv-filter-line{display:flex;flex-wrap:nowrap;align-items:center;gap:5px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:thin}
   .kv-filter-line>*{flex:0 0 auto}
   #tbl th.kv-month-col,#tbl td.kv-month-col{white-space:nowrap!important;min-width:145px!important;width:145px!important}
@@ -1950,7 +1962,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력">🕘 수정이력</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v847</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v866</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -2106,21 +2118,24 @@ body.fpopen #fpSum{display:block}
       
     </div>
 
-    <div class="sumtop hidden" id="sumTop"></div>
+    <div id="homeTopRowV866">
+      <div class="sumtop hidden" id="sumTop"></div>
+      <div class="field periodfield-v866" style="margin:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap"><div class="seg" id="periodSeg"><button data-v="all">전체</button><button data-v="year" class="on">연도</button><button data-v="half">반기</button><button data-v="quarter">분기</button><button data-v="month">월</button><button data-v="week">주</button><button data-v="range">기간설정</button></div><select id="yearSel" style="display:none;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;flex:0 0 auto"></select></div>
+      </div>
+    </div>
     <div class="summary" id="summary"></div>
 
     <div class="panel" id="setPanel">
       <div class="ctrl-row">
-        <div class="field"><label>매출 기준</label>
+        <div class="field hide-v866"><label>매출 기준</label>
           <div class="seg" id="basisSeg"><button data-v="공급가" class="on">공급가</button><button data-v="합계액">합계액(부가세포함)</button></div></div>
-        <div class="field"><label>매출 구분 <span class="sub2">(PD커버사업부)</span></label>
+        <div class="field hide-v866"><label>매출 구분 <span class="sub2">(PD커버사업부)</span></label>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">
             <div class="seg" id="pdIncSeg"><button data-v="0" class="on">PD제외</button><button data-v="1">PD포함</button></div>
             <span class="sub2" id="pdIncNote"></span></div></div>
-        <div class="field"><label>표시 단위</label>
+        <div class="field hide-v866"><label>표시 단위</label>
           <div class="seg" id="unitSeg"><button data-v="1" class="on">원</button><button data-v="1000">천원</button><button data-v="1000000">백만원</button></div></div>
-        <div class="field"><label>기간 단위 <span class="sub2">(매출순위에만 적용)</span></label>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap"><div class="seg" id="periodSeg"><button data-v="all">전체</button><button data-v="year" class="on">연도</button><button data-v="half">반기</button><button data-v="quarter">분기</button><button data-v="month">월</button><button data-v="week">주</button><button data-v="range">기간설정</button></div><select id="yearSel" style="display:none;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;flex:0 0 auto"></select></div></div>
         <div class="field" id="periodPickWrap" style="display:none"><label>세부 기간</label><select id="periodSel"></select></div>
         <div class="field" id="rangeWrap" style="display:none"><label>기간 설정 (일자)</label>
           <div style="display:flex;gap:6px;align-items:center"><input type="date" id="rangeStart"><span class="sub2">~</span><input type="date" id="rangeEnd"></div></div>
@@ -3303,7 +3318,7 @@ document.querySelectorAll('.tm-top').forEach(t=>t.addEventListener('click',e=>{ 
 document.addEventListener('click',()=>{ document.querySelectorAll('.tm-top.open').forEach(x=>{x.classList.remove('open');x.nextElementSibling.classList.remove('open');}); });
 function fpSyncSummary(){ try{ var a=document.getElementById('sumTop'), b=document.getElementById('fpSum');
   if(a&&b)b.innerHTML=a.innerHTML||''; }catch(_e){} }
-function closeFilePanel(){ document.body.classList.remove('fpopen'); const p=$('#dataPanel'); if(p&&p.classList.contains('open')){ p.classList.remove('open'); const ft=$('#fileToggle'); if(ft){ ft.classList.remove('open'); ft.textContent='📁 파일·관리 ▾'; } } const r=$('#result'),s=$('#summary'); if(r)r.style.display=''; if(s)s.style.display=''; const st2=$('#sumTop'),sp2=$('#setPanel'); if(st2)st2.style.display=''; if(sp2)sp2.style.display=''; }
+function closeFilePanel(){ document.body.classList.remove('fpopen'); const p=$('#dataPanel'); if(p&&p.classList.contains('open')){ p.classList.remove('open'); const ft=$('#fileToggle'); if(ft){ ft.classList.remove('open'); ft.textContent='📁 파일·관리 ▾'; } } const r=$('#result'),s=$('#summary'); if(r)r.style.display=''; if(s)s.style.display=''; const st2=$('#homeTopRowV866')||$('#sumTop'),sp2=$('#setPanel'); if(st2)st2.style.display=''; if(sp2)sp2.style.display=''; }
 /* v789 : 왼쪽 위 로고·제목을 누르면 홈으로 갑니다 */
 { ['ciHomeV789','ciHomeTitleV789'].forEach(function(id){ var e=document.getElementById(id); if(e)e.addEventListener('click',function(){ var hb=document.getElementById('homeBtn'); if(hb)hb.click(); }); }); }
 { const hb=$('#homeBtn'); hb&&hb.addEventListener('click',()=>{ setCmgrMode(false); closeFilePanel(); document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.tm-top.open').forEach(t=>{t.classList.remove('open');t.nextElementSibling.classList.remove('open');}); state.sortKey=null; if(CUR.length){ state.act='home'; try{foldFilters();}catch(_){} state._lastAct='home'; homeDashboard(); } else { state.act=null; const r=$('#result'); if(r)r.innerHTML=''; } window.scrollTo({top:0,behavior:'smooth'}); }); }
@@ -3393,7 +3408,7 @@ $('#fileToggle').addEventListener('click',()=>{ setCmgrMode(false); const p=$('#
     try{ if(typeof arRenderFileList==='function')arRenderFileList(); }catch(_e){}
     try{ if(typeof fpSyncSummary==='function')fpSyncSummary(); }catch(_e){}
   }catch(_e){} },700);
-  if(open)fpSyncSummary(); $('#fileToggle').classList.toggle('open',open); $('#fileToggle').textContent=open?'📁 파일·관리 ▴':'📁 파일·관리 ▾'; const r=$('#result'),s=$('#summary'); if(r)r.style.display=open?'none':''; if(s)s.style.display=open?'none':''; /* v399: 파일·관리 화면에서는 상단 요약카드·표시설정도 감춘다 */ { const st2=$('#sumTop'),sp2=$('#setPanel'); if(st2)st2.style.display=open?'none':''; if(sp2)sp2.style.display=open?'none':''; } if(open){ document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); window.scrollTo({top:0,behavior:'smooth'}); /* v441: 매입분석도구처럼 파일·관리 진입 즉시 서버 목록과 공용 속성을 갱신한다. */ setTimeout(()=>{ try{if(typeof dsCheck==='function')Promise.resolve(dsCheck(true)).catch(()=>{});}catch(_e){} try{if(state.gsync&&state.gsync.url&&state.gsync.key&&typeof window.gsLoad==='function')window.gsLoad(true);}catch(_e2){} },80); } });
+  if(open)fpSyncSummary(); $('#fileToggle').classList.toggle('open',open); $('#fileToggle').textContent=open?'📁 파일·관리 ▴':'📁 파일·관리 ▾'; const r=$('#result'),s=$('#summary'); if(r)r.style.display=open?'none':''; if(s)s.style.display=open?'none':''; /* v399: 파일·관리 화면에서는 상단 요약카드·표시설정도 감춘다 */ { const st2=$('#homeTopRowV866')||$('#sumTop'),sp2=$('#setPanel'); if(st2)st2.style.display=open?'none':''; if(sp2)sp2.style.display=open?'none':''; } if(open){ document.querySelectorAll('.tile,.tm-item').forEach(x=>x.classList.remove('active')); window.scrollTo({top:0,behavior:'smooth'}); /* v441: 매입분석도구처럼 파일·관리 진입 즉시 서버 목록과 공용 속성을 갱신한다. */ setTimeout(()=>{ try{if(typeof dsCheck==='function')Promise.resolve(dsCheck(true)).catch(()=>{});}catch(_e){} try{if(state.gsync&&state.gsync.url&&state.gsync.key&&typeof window.gsLoad==='function')window.gsLoad(true);}catch(_e2){} },80); } });
 { const dc=$('#dataPanelCollapse'); dc&&dc.addEventListener('click',()=>{ if(typeof closeFilePanel==='function'){closeFilePanel();return;} $('#dataPanel').classList.remove('open'); const ft=$('#fileToggle'); ft.classList.remove('open'); ft.textContent='📁 파일 추가·관리 ▾'; }); }
 { const bepI=$('#bepInput'), bepM=$('#bepInputM');
   const _bv=()=>(typeof bepGetV791==='function')?bepGetV791():(+state.bep||0);
@@ -12970,7 +12985,7 @@ function forecast(){
         ?`<button class="btn ghost" id="fcOvReset" type="button">조정% 초기화</button><button class="btn ghost" id="fcAddReset" type="button" style="color:var(--red);border-color:#f3c0c0">추가% 초기화</button><button class="btn ghost" id="fcMemoReset" type="button" style="color:#92400e;border-color:#f3d6a5" title="직접 입력한 거래처 메모를 초기화합니다">메모 초기화</button>`
         :`<button class="btn ghost" id="fcProdOvReset" type="button">조정% 초기화</button><button class="btn ghost" id="fcProdAddReset" type="button" style="color:var(--red);border-color:#f3c0c0">추가% 초기화</button><button class="btn ghost" id="fcProdMemoReset" type="button" style="color:#92400e;border-color:#f3d6a5" title="직접 입력한 제품(규격) 메모를 초기화합니다">메모 초기화</button>`}<button class="btn ghost fcSnapBtnV803" type="button" style="color:#1d4ed8;border-color:#bfdbfe" title="최근 20개 시점의 목표 % 값 중에서 골라 되돌립니다">🕘 % 되돌리기</button></span></div>
     ${state.fc.dim==='cust'?`
-    <h4 class="fch">📋 업체별 매출 목표 · ${custRLab} <span class="fc-target-search fc-cust-unified-search"><input type="search" id="fcCustSearch" autocomplete="off" spellcheck="false" placeholder="거래처명 포함 검색" value="${esc(state.fc._csearch||'')}"><span class="fc-target-search-label">🏢 거래처</span><button type="button" id="fcCustSearchBtn" class="fc-target-search-btn" aria-label="거래처 검색" title="검색"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="M12.5 12.5L17 17"></path></svg></button></span> <span style="float:right"><button class="btn" id="fcAddCust" style="font-size:13px;padding:3px 10px">＋ 업체추가</button> <button class="btn ghost" id="fcUndoTarget" style="font-size:13px;padding:3px 9px;${state.fc.targetDeleteUndo?'color:#1d4ed8;border-color:#93c5fd':'color:#94a3b8'}" ${state.fc.targetDeleteUndo?'':'disabled'} title="마지막으로 삭제한 신규업체·신규제품 복구">↶ 삭제 복구</button> <button class="btn ghost" id="fcNewOnlyV807" style="font-size:13px;padding:3px 10px;${state.fc._newOnly?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe'}" title="목표표에 「업체추가」로 등록한 신규목표 업체만 봅니다">🎯 신규목표(${Object.keys(state.fc.newCusts||{}).length})${state.fc._newOnly?' ✓':''}</button> <button class="btn ghost" id="fcIssueCust" style="font-size:13px;padding:3px 10px;${state.fc.issC?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.fc.issC?' (해제)':''}</button> <button class="btn ghost" id="fcExclRows" style="font-size:13px;padding:3px 8px;${state.fc.showExclRows?'background:#dc2626;color:#fff;border-color:#dc2626':''}">📋 ${state.fc.showExclRows?'일반 업체 보기':'제외 업체만 보기'}(${fcTradeExclRows.length})${state.fc.showExclRows?' ✓':''}</button> <button class="btn ghost fcexcltoggle" style="font-size:13px;padding:3px 8px;${state.fc.showExcl?'background:#0d9488;color:#fff;border-color:#0d9488':''}">🚫 제외옵션(거래처 ${fcTradeExclRows.length} · 목표 ${fcTargetExclRows.length})${state.fc.showExcl?' ✓':''}</button> <button class="btn ghost" id="fcCustCsv" style="font-size:13px;padding:3px 8px">엑셀</button></span></h4>
+    <h4 class="fch">📋 업체별 매출 목표 · ${custRLab} <span class="fc-target-search fc-cust-unified-search"><input type="search" id="fcCustSearch" autocomplete="off" spellcheck="false" placeholder="거래처명 포함 검색" value="${esc(state.fc._csearch||'')}"><span class="fc-target-search-label">🏢 거래처</span><button type="button" id="fcCustSearchBtn" class="fc-target-search-btn" aria-label="거래처 검색" title="검색"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="M12.5 12.5L17 17"></path></svg></button></span> <span style="float:right"><button class="btn" id="fcAddCust" style="font-size:13px;padding:3px 10px">＋ 업체추가</button> <button class="btn ghost" id="fcUndoTarget" style="font-size:13px;padding:3px 9px;${state.fc.targetDeleteUndo?'color:#1d4ed8;border-color:#93c5fd':'color:#94a3b8'}" ${state.fc.targetDeleteUndo?'':'disabled'} title="마지막으로 삭제한 신규업체·신규제품 복구">↶ 삭제 복구</button> <button class="btn ghost" id="fcNewOnlyV807" style="font-size:13px;padding:3px 10px;${state.fc._newOnly?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#ddd6fe'}" title="목표표에 「업체추가」로 등록한 신규목표 업체만 봅니다">🎯 신규목표(${Object.keys(state.fc.newCusts||{}).length})${state.fc._newOnly?' ✓':''}</button> <button class="btn ghost" id="fcIssueCust" style="font-size:13px;padding:3px 10px;${state.fc.issC?'background:#0d9488;color:#fff;border-color:#0d9488':''}">📌 이슈내용보기${state.fc.issC?' (해제)':''}</button> <button class="btn ghost" id="fcExclRows" style="font-size:13px;padding:3px 8px;${state.fc.showExclRows?'background:#dc2626;color:#fff;border-color:#dc2626':''}">📋 ${state.fc.showExclRows?'일반 업체 보기':'제외업체보기'}(${fcTradeExclRows.length})${state.fc.showExclRows?' ✓':''}</button> <button class="btn ghost fcexcltoggle" style="font-size:13px;padding:3px 8px;${state.fc.showExcl?'background:#0d9488;color:#fff;border-color:#0d9488':''}">🚫 제외옵션(거래처 ${fcTradeExclRows.length} · 목표 ${fcTargetExclRows.length})${state.fc.showExcl?' ✓':''}</button> <button class="btn ghost" id="fcCustCsv" style="font-size:13px;padding:3px 8px">엑셀</button></span></h4>
     <div id="fcNewForm" style="display:none;margin:0 0 8px;padding:10px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px">
       <b style="font-size:12px">신규 거래처 목표 추가 — 제품·수량·단가 → 연목표</b>
       <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
@@ -13176,7 +13191,7 @@ function forecast(){
     $('#result').querySelectorAll('.fcexcl').forEach(c=>c.addEventListener('change',e=>{ const k=e.target.dataset.c; setExcludedCust(k,e.target.checked); if(typeof logEdit==='function')logEdit('목표제외',k+' 거래처 '+(e.target.checked?'제외':'복원')+' (매출목표/담당자 동시)'); saveSettings(); forecast(); }));
     $('#result').querySelectorAll('.fctargetexcl').forEach(c=>c.addEventListener('change',e=>{ const k=e.target.dataset.c; setTargetExcludedCust(k,e.target.checked); if(typeof logEdit==='function')logEdit('목표합산',k+' 2026 목표합산 '+(e.target.checked?'제외':'복원')); saveSettings(); forecast(); }));
     $('#result').querySelectorAll('.fcpexcl').forEach(c=>c.addEventListener('change',e=>{ const k=e.target.dataset.pk; if(e.target.checked)state.fc.exclProd[k]=true; else delete state.fc.exclProd[k]; if(typeof logEdit==='function')logEdit('목표제외',k+' 제품 '+(e.target.checked?'제외':'복원')); saveSettings(); forecast(); }));
-    const exRowsBtn=$('#fcExclRows'); exRowsBtn&&exRowsBtn.addEventListener('click',()=>{ state.fc.showExclRows=!state.fc.showExclRows; exRowsBtn.textContent='📋 '+(state.fc.showExclRows?'일반 업체 보기':'제외 업체만 보기')+'('+fcTradeExclRows.length+')'+(state.fc.showExclRows?' ✓':''); exRowsBtn.style.background=state.fc.showExclRows?'#dc2626':'';exRowsBtn.style.color=state.fc.showExclRows?'#fff':'';exRowsBtn.style.borderColor=state.fc.showExclRows?'#dc2626':''; if(typeof v796SaveSoon==='function')v796SaveSoon();else saveSettings(); fcFastForecast(); });
+    const exRowsBtn=$('#fcExclRows'); exRowsBtn&&exRowsBtn.addEventListener('click',()=>{ state.fc.showExclRows=!state.fc.showExclRows; exRowsBtn.textContent='📋 '+(state.fc.showExclRows?'일반 업체 보기':'제외업체보기')+'('+fcTradeExclRows.length+')'+(state.fc.showExclRows?' ✓':''); exRowsBtn.style.background=state.fc.showExclRows?'#dc2626':'';exRowsBtn.style.color=state.fc.showExclRows?'#fff':'';exRowsBtn.style.borderColor=state.fc.showExclRows?'#dc2626':''; if(typeof v796SaveSoon==='function')v796SaveSoon();else saveSettings(); fcFastForecast(); });
     $('#result').querySelectorAll('.fcexcltoggle').forEach(b=>b.addEventListener('click',()=>{ state.fc.showExcl=!state.fc.showExcl; b.textContent='🚫 제외옵션(거래처 '+fcTradeExclRows.length+' · 목표 '+fcTargetExclRows.length+')'+(state.fc.showExcl?' ✓':'');b.style.background=state.fc.showExcl?'#0d9488':'';b.style.color=state.fc.showExcl?'#fff':'';b.style.borderColor=state.fc.showExcl?'#0d9488':''; if(typeof v796SaveSoon==='function')v796SaveSoon();else saveSettings(); fcFastForecast(); }));
     const annT=$('#annToggle'); annT&&annT.addEventListener('click',()=>{ state.fc.annualOpen=!state.fc.annualOpen;const w=$('#annWrap');if(w)w.style.display=state.fc.annualOpen?'block':'none';const chip=annT.querySelector('span');if(chip)chip.textContent='📈 연간 누계 (전년 比) '+(state.fc.annualOpen?'▾':'▸');if(typeof saveSettings==='function')saveSettings(); });
     $('#result').querySelectorAll('.annin').forEach(inp=>{ inp.addEventListener('input',e=>{ const raw=e.target.value.replace(/[^\d]/g,''); e.target.value=raw?(+raw).toLocaleString():''; }); inp.addEventListener('change',e=>{ const y=e.target.dataset.y; const v=parseFloat((e.target.value||'').replace(/,/g,''))||0; if(v)state.fc.annualHist[y]=v; else delete state.fc.annualHist[y]; if(typeof logEdit==='function')logEdit('목표연혁',y+' 연매출 변경'); v796SaveSoon(); v797Defer(forecast); }); });
@@ -18303,6 +18318,14 @@ window.arShareConfigured=(typeof arShareConfigured==='function')?arShareConfigur
 window.arSave=arSave; window.arRender=arRender;
 if(typeof window.esc!=='function'&&typeof esc==='function')window.esc=esc;
 window.arCodeNormV607=arCodeNormV607; window.arBackfillCodesV607=arBackfillCodesV607;
+/* v866 : arBuildShared·arApplyShared 는 이 즉시실행함수 안에만 있어 바깥 스크립트(v556/v595/v871/v874)의
+   래퍼가 조용히 설치되지 않았습니다. 바깥에서 읽고 바꿀 수 있도록 live 바인딩을 걸어 둡니다. */
+try{
+  Object.defineProperty(window,'arBuildShared',{configurable:true,enumerable:false,
+    get:function(){return arBuildShared;},set:function(f){if(typeof f==='function')arBuildShared=f;}});
+  Object.defineProperty(window,'arApplyShared',{configurable:true,enumerable:false,
+    get:function(){return arApplyShared;},set:function(f){if(typeof f==='function')arApplyShared=f;}});
+}catch(_eV866){}
 })();
 </script>
 <style id="receivables-v494-alias-style">
@@ -29609,7 +29632,7 @@ function sgPipeline(A){
 var SGI='font-family:inherit;font-size:12px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;';
 function sgFld(lab,inner){ return '<div style="display:flex;flex-direction:column;gap:3px"><b style="font-size:11px;color:#64748b">'+lab+'</b>'+inner+'</div>'; }
 function sgChip(v,lab,on,col){
-  return '<button class="sgFilt" data-v="'+v+'" style="flex:0 0 auto;border:1px solid '+(on?col:'#cbd5e1')+';background:'+(on?col:'#fff')+';color:'+(on?'#fff':'#475569')+';border-radius:8px;padding:4px 7px;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer">'+lab+'</button>';
+  return '<button class="sgFilt'+(on?' is-on':'')+'" data-v="'+v+'" style="flex:0 0 auto;border:1px solid '+(on?col:'#cbd5e1')+';background:'+(on?col:'#fff')+';color:'+(on?'#fff':'#475569')+';border-radius:8px;padding:4px 7px;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer">'+lab+'</button>';
 }
 
 /* 영업 진행단계별 현황 */
