@@ -10021,6 +10021,8 @@ function customerDelta(){
     exclBtn&&exclBtn.addEventListener('click',e=>{e.stopPropagation();if(exclMenuEl)exclMenuEl.style.display=exclMenuEl.style.display==='block'?'none':'block';});
     $('#result').querySelectorAll('.cdexclopt').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const mode=b.dataset.mode;if(mode==='edit'){cd.visitOnly=false;cd.exclEdit=true;cd.exclOnly=false;if(cd.view==='monthly')cd.view='sales';}else if(mode==='only'){cd.visitOnly=false;cd.exclOnly=true;cd.exclEdit=false;}else{cd.exclEdit=false;cd.exclOnly=false;}customerDelta();}));
     const vb=$('#cdVisitBtn'); vb&&vb.addEventListener('click',()=>{ cd.visitOnly=!cd.visitOnly; if(cd.visitOnly){cd.exclEdit=false;cd.exclOnly=false;cd.issueAll=false;} customerDelta(); });
+    /* v886 : 선택한 거래처의 월별 추이·상세표를 목록 위에 계속 표시합니다. */
+    if(cd.detailCust) setTimeout(()=>{ try{ custDeltaOpenDetail(cd.detailCust,cd.detailYear||(+String(baseYm).slice(0,4)),false); }catch(_e){} },0);
   };
   const afterDraw=()=>{
     $('#result').querySelectorAll('.cdmemo').forEach(inp=>{ inp.addEventListener('mousedown',e=>e.stopPropagation()); inp.addEventListener('click',e=>e.stopPropagation()); inp.addEventListener('change',e=>{ const c=e.target.dataset.c,v=e.target.value.trim(); state.retainMemo=state.retainMemo||{}; state.retainMemoAt=state.retainMemoAt||{}; if(v){state.retainMemo[c]=v;state.retainMemoAt[c]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};}else{delete state.retainMemo[c];delete state.retainMemoAt[c];} e.target.classList.toggle('editedm',!!v); e.target.style.background=v?'#fff1f2':'#fff'; e.target.style.borderColor=v?'#fca5a5':'#cbd5e1'; e.target.style.color=v?'#7f1d1d':'#1f2937'; saveSettings(); }); });
@@ -10032,8 +10034,8 @@ function customerDelta(){
   const monthRangeCaption=showMonthly?` · 월매출 ${ymText(monthlyKeys[0])}~${ymText(monthlyKeys[11])}`:'';
   const modeCaption=monthRangeCaption+(cd.exclOnly?' · 제외 거래처만 표시':(cd.issueAll?' · 작성된 이슈 전체 표시':''));
   render('📉 거래처 증감분석',`${baseCaption}${modeCaption} · 표시 ${arr.length.toLocaleString()}개사 / 실적 전체 ${allRows.length.toLocaleString()}개사 · 목표합산 제외 ${excludedRows.length.toLocaleString()}개사 · 점검대상 ${counts.risk.toLocaleString()}개사`,arr,cols,'risk',
-    `<b>메뉴 위치:</b> 영업분석에 배치했습니다. 이 화면은 월별 매출의 <b>1·2·3개월 무매출 및 증감</b>을 찾고, ‘거래·최근 &gt; 거래유지 점검’은 실제 마지막 출고일과 거래주기를 판단하는 용도로 구분됩니다.<br><b>판정:</b> 현재월은 선택 목록에서 참조할 수 있지만 무매출·증감 판정에는 포함하지 않습니다. 완료월부터 연속 무매출 1개월=주의, 2개월=이탈위험, 3개월 이상=이탈의심이며, 최근 3개월 매출이 직전 3개월보다 50% 이상 감소하면 매출급감으로 표시합니다.<br><b>제외/숨기기:</b> 체크한 거래처의 실제 매출은 모든 실적에 그대로 포함되며, 매출목표의 목표액·목표합산에서만 제외됩니다. 거래처 증감분석 기본 화면에서는 숨기고 <b>제외만 보기</b>에서 별도로 확인할 수 있습니다. <b>행 클릭</b> 시 해당 거래처의 ${showMonthly?'최근 12개월':'최근 6개월'} 품목·규격별 매출을 확인할 수 있습니다.`,
-    {controlsHtml:controls,onMount:bind,afterDraw,drill:{custom:o=>custProdDrill(o.key+' · '+drillLabel,MF().filter(r=>r.cust===o.key&&r.ym>=drillStart&&r.ym<=drillEnd),()=>{state.act='cust-delta';customerDelta();})}});
+    `<b>메뉴 위치:</b> 영업분석에 배치했습니다. 이 화면은 월별 매출의 <b>1·2·3개월 무매출 및 증감</b>을 찾고, ‘거래·최근 &gt; 거래유지 점검’은 실제 마지막 출고일과 거래주기를 판단하는 용도로 구분됩니다.<br><b>판정:</b> 현재월은 선택 목록에서 참조할 수 있지만 무매출·증감 판정에는 포함하지 않습니다. 완료월부터 연속 무매출 1개월=주의, 2개월=이탈위험, 3개월 이상=이탈의심이며, 최근 3개월 매출이 직전 3개월보다 50% 이상 감소하면 매출급감으로 표시합니다.<br><b>제외/숨기기:</b> 체크한 거래처의 실제 매출은 모든 실적에 그대로 포함되며, 매출목표의 목표액·목표합산에서만 제외됩니다. 거래처 증감분석 기본 화면에서는 숨기고 <b>제외만 보기</b>에서 별도로 확인할 수 있습니다. <b>업체 행을 클릭</b>하면 목록 위에 그 업체의 연도별 월 매출 추이·월별 비교·품목 및 최근 거래내역이 펼쳐집니다.`,
+    {controlsHtml:controls,onMount:bind,afterDraw,drill:{custom:o=>custDeltaOpenDetail(o.key,+String(baseYm).slice(0,4),true)}});
 }
 
 function retain(){
@@ -10548,8 +10550,8 @@ function competeView(){
   const ourBase=rows.filter(d=>(d.base||[]).includes(OURCO)).length, ourPivot=rows.filter(d=>d.pivot===OURCO).length, ourH=rows.filter(d=>d.hinge2===OURCO).length, multiN=rows.filter(d=>(d.base||[]).length>=2).length;
   arr.sort((a,b)=>(b._sales||0)-(a._sales||0));
   render('🏢 동종업체분석', `${period.label} · 총 ${rows.length}개 거래처 · 동방 납품(부자재 ${ourBase}·피봇 ${ourPivot}·경첩 ${ourH}) · 복수거래 ${multiN}곳${state.compSel?` · 필터: ${esc(state.compSel)} (${arr.length}곳)`:''}`, arr, cols, 'sales',
-    `거래처별 <b>부자재·피봇힌지·2단경첩</b>을 어느 동종업체가 납품하는지 분석합니다(<b>${OURCO}</b>=자사). 위 <b>동종업체 칩</b>으로 필터, <b>＋거래처 추가</b>로 미거래 거래처도 등록, <b>편집</b>으로 수정. 데이터는 자동 저장·동기화됩니다.`,
-    {headExtra:period.control, drill:{custom:row=>compCustDrill(row.cust)}, controlsHtml:chips+shareRow+tools, onMount:()=>{
+    `거래처별 <b>부자재·피봇힌지·2단경첩</b>을 어느 동종업체가 납품하는지 분석합니다(<b>${OURCO}</b>=자사). 위 <b>동종업체 칩</b>으로 필터, <b>＋거래처 추가</b>로 미거래 거래처도 등록, <b>편집</b>으로 수정합니다. <b>업체명을 선택</b>하면 표 위에 월별 매출 추이와 업체 상세표가 표시됩니다. 데이터는 자동 저장·동기화됩니다.`,
+    {headExtra:period.control, drill:{custom:row=>custDeltaOpenDetail(row.cust,state.compDetailYear||(+state.compPeriod.year)||((dataYears().slice(-1)[0])||new Date().getFullYear()),true,'compete')}, controlsHtml:chips+shareRow+tools, onMount:()=>{
       const _tb=$('#tbl'); if(_tb){ _tb.style.tableLayout='fixed'; _tb.style.width='100%'; }
       const periodSet=(key,v)=>{state.compPeriod=state.compPeriod||{};state.compPeriod[key]=v;competeView();};
       const pu=$('#cmpPeriodUnit'); pu&&pu.addEventListener('change',e=>periodSet('unit',e.target.value));
@@ -10562,6 +10564,7 @@ function competeView(){
       const rb=$('#cmpRename'); rb&&rb.addEventListener('click',openCompRename);
       $('#result').querySelectorAll('.cmpedit').forEach(b=>b.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); openCompEdit(+b.dataset.i); }));
       const xb=$('#cmpXlsx'); xb&&xb.addEventListener('click',()=>{ const aoa=[['코드','거래처','부자재1','부자재2','부자재3','부자재4','피봇힌지','2단경첩','복수거래','동방납품']]; rows.forEach(d=>aoa.push([d.code||'',d.cust,(d.base||[])[0]||'',(d.base||[])[1]||'',(d.base||[])[2]||'',(d.base||[])[3]||'',d.pivot||'',d.hinge2||'',(d.base||[]).length>=2?'복수':'',((d.base||[]).includes(OURCO)||d.pivot===OURCO||d.hinge2===OURCO)?'O':'X'])); dlXLSX('동종업체분석.xlsx','동종업체',aoa); });
+      if(state.compDetailCust) setTimeout(()=>{ try{ custDeltaOpenDetail(state.compDetailCust,state.compDetailYear||(+state.compPeriod.year)||((dataYears().slice(-1)[0])||new Date().getFullYear()),false,'compete'); }catch(_e){} },0);
     }});
 }
 
@@ -12931,7 +12934,7 @@ function forecast(){
     ${state.showElog?elogPanel(null):''}
     <div class="ctrlbar"><b style="font-size:12px">목표 리스트</b>
       <div class="seg" id="fcDim"><button data-v="cust" class="${state.fc.dim==='cust'?'on':''}" style="${state.fc.dim==='cust'?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':'color:#1e3a5f'}">거래처</button><button data-v="prod" class="${state.fc.dim==='prod'?'on':''}" style="${state.fc.dim==='prod'?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488'}">제품(규격)</button></div>
-      <b style="font-size:12px">기간(전년 대비)</b> ${perBtns} ${rangeSel} <span class="sub2">그래프·KPI는 연간 기준</span>
+      <b style="font-size:12px">기간(전년 대비)</b> ${perBtns} ${rangeSel}
       <span class="fc-reset-group-v804">${state.fc.dim==='cust'
         ?`<button class="btn ghost" id="fcOvReset" type="button">조정% 초기화</button><button class="btn ghost" id="fcAddReset" type="button" style="color:var(--red);border-color:#f3c0c0">추가% 초기화</button><button class="btn ghost" id="fcMemoReset" type="button" style="color:#92400e;border-color:#f3d6a5" title="직접 입력한 거래처 메모를 초기화합니다">메모 초기화</button>`
         :`<button class="btn ghost" id="fcProdOvReset" type="button">조정% 초기화</button><button class="btn ghost" id="fcProdAddReset" type="button" style="color:var(--red);border-color:#f3c0c0">추가% 초기화</button><button class="btn ghost" id="fcProdMemoReset" type="button" style="color:#92400e;border-color:#f3d6a5" title="직접 입력한 제품(규격) 메모를 초기화합니다">메모 초기화</button>`}<button class="btn ghost fcSnapBtnV803" type="button" style="color:#1d4ed8;border-color:#bfdbfe" title="최근 20개 시점의 목표 % 값 중에서 골라 되돌립니다">🕘 % 되돌리기</button></span></div>
@@ -23404,7 +23407,7 @@ function mvLocTotals(ym){
 }
 
 /* ---------- 탭 바 / 공통 헤더 ---------- */
-var MV_TABS=[['sum','📋','월말 요약'],['trend','📈','월별 추이'],['mat','🧱','원자재 사용추이'],['turn','🔄','제품 재고소진·회전'],
+var MV_TABS=[['trend','📈','월별 추이'],['sum','📋','월말 요약'],['mat','🧱','원자재 사용추이'],['turn','🔄','제품 재고소진·회전'],
              ['excl','🏬','업체 전용품 재고현황'],['dead','💀','악성·장기체류'],['items','🔎','품목 상세'],['loc','🏭','보관장소·구분']];
 function mvEmptyPage(title,icon){
   var html='<div class="rhead" style="margin-bottom:8px"><span class="title">'+(icon||'📦')+' '+mvEsc(title||'재고현황')+'</span>'
@@ -26367,7 +26370,7 @@ function mvInstallMenu(){
     return b;
   };
   /* 월 재고현황 → 하위 7개 화면을 메뉴에 직접 노출 */
-  var b1=mk('mvMenuBtn','minv','📋','월말 요약','sum');
+  var b1=mk('mvMenuBtn','minv','📈','월별 추이','trend');
   var prev=b1;
   drop.insertBefore(b1, drop.firstChild);
   MV_TABS.slice(1).forEach(function(t,i){
@@ -26681,7 +26684,7 @@ function CHIPS(arr){ if(!arr||!arr.length)return '';
   return '<div class="cb-chips" style="margin-top:9px">'+arr.map(function(q){return '<button class="cb-chip" data-q="'+E(q)+'">'+E(q)+'</button>';}).join('')+'</div>'; }
 
 /* ── 화면 색인 : 상단 메뉴에서 자동 수집 + 재고·미수 하위 탭 ── */
-var MVT=[['sum','📋 월말 요약'],['trend','📈 월별 추이'],['mat','🧱 원자재 사용추이'],['turn','🔄 제품 재고소진·회전'],
+var MVT=[['trend','📈 월별 추이'],['sum','📋 월말 요약'],['mat','🧱 원자재 사용추이'],['turn','🔄 제품 재고소진·회전'],
          ['excl','🏬 업체 전용품 재고현황'],['dead','💀 악성·장기체류'],['items','🔎 품목 상세'],['loc','🏭 보관장소·구분']];
 var ART=[['dash','📊 미수 종합현황'],['long','⏳ 장기미수'],['ratio','📈 월매출 대비'],['prevmon','🔁 전월 매출액대비'],['yoy','⚖️ 미수 전년대비'],['bills','🧾 어음관리'],
          ['credit','💳 신용도·회수위험'],['detail','🏢 업체별 상세'],['plan','📅 수금계획'],['focus','⭐ 집중관리업체'],['exclude','🚫 수금관리 제외업체']];
@@ -36370,7 +36373,9 @@ function impo(which){
     try{
       if(!rows||rows.length<2){ await uiConfirm('읽을 내용이 없습니다. 내보내기로 만든 엑셀 파일을 골라 주세요.'); return; }
       var head=rows[0].map(S), idx={}; head.forEach(function(h,i){ idx[h]=i; });
-      var monIdx=MON.map(function(m){ var i=idx[m+'%']; return (i==null)?-1:i; });
+      /* 월별보기에서 내보낸 파일은 「1월 조정%」, 연간보기 파일은 「1월%」 형식입니다.
+         두 형식을 모두 읽어 같은 파일을 저장했다가 다시 불러와도 월 조정값이 빠지지 않게 합니다. */
+      var monIdx=MON.map(function(m){ var i=idx[m+' 조정%']; if(i==null)i=idx[m+'월 조정%']; if(i==null)i=idx[m+'%']; return (i==null)?-1:i; });
       var f=state.fc, n={adj:0,add:0,memo:0,mon:0,miss:0}, names=[];
       var needCust=(which==='cust');
       if(needCust&&idx['거래처']==null){ await uiConfirm('거래처 목표 엑셀이 아닙니다. (첫 줄에 «거래처» 칸이 있어야 합니다)'); return; }
@@ -36385,18 +36390,19 @@ function impo(which){
         var key=needCust?S(row[idx['거래처']]):pk(row[idx['품번']],row[idx['규격']]);
         if(!key||key==='│')continue;
         if(!have[key]){ n.miss++; if(names.length<6)names.push(needCust?key:String(key).replace('│',' ')); continue; }
-        var ov=num(row[idx['조정%']]), ad=num(row[idx['추가%']]), mm=idx['메모']!=null?S(row[idx['메모']]):'';
+        var hasOv=idx['조정%']!=null,hasAd=idx['추가%']!=null;
+        var ov=hasOv?num(row[idx['조정%']]):'', ad=hasAd?num(row[idx['추가%']]):'', mm=idx['메모']!=null?S(row[idx['메모']]):'';
         if(needCust){
           f.override=f.override||{}; f.addPct=f.addPct||{}; f.custMemo=f.custMemo||{}; f.custMonthPct=f.custMonthPct||{};
-          if(ov===''){ if(f.override[key]!=null)delete f.override[key]; } else { f.override[key]=ov; n.adj++; }
-          if(ad===''){ if(f.addPct[key]!=null)delete f.addPct[key]; } else { f.addPct[key]=ad; n.add++; }
+          if(hasOv){ if(ov===''){ if(f.override[key]!=null)delete f.override[key]; } else { f.override[key]=ov; n.adj++; } }
+          if(hasAd){ if(ad===''){ if(f.addPct[key]!=null)delete f.addPct[key]; } else { f.addPct[key]=ad; n.add++; } }
           if(idx['메모']!=null){ if(mm){ f.custMemo[key]=mm; n.memo++; } else delete f.custMemo[key]; }
           monIdx.forEach(function(ci,i){ if(ci<0)return; var v=num(row[ci]); var o=f.custMonthPct[key]=f.custMonthPct[key]||{};
             if(v===''){ delete o[i+1]; } else { o[i+1]=v; n.mon++; } if(!Object.keys(o).length)delete f.custMonthPct[key]; });
         }else{
           f.prodOverride=f.prodOverride||{}; f.prodAddPct=f.prodAddPct||{}; f.prodMemo=f.prodMemo||{}; f.prodMonthPct=f.prodMonthPct||{};
-          if(ov===''){ if(f.prodOverride[key]!=null)delete f.prodOverride[key]; } else { f.prodOverride[key]=ov; n.adj++; }
-          if(ad===''){ if(f.prodAddPct[key]!=null)delete f.prodAddPct[key]; } else { f.prodAddPct[key]=ad; n.add++; }
+          if(hasOv){ if(ov===''){ if(f.prodOverride[key]!=null)delete f.prodOverride[key]; } else { f.prodOverride[key]=ov; n.adj++; } }
+          if(hasAd){ if(ad===''){ if(f.prodAddPct[key]!=null)delete f.prodAddPct[key]; } else { f.prodAddPct[key]=ad; n.add++; } }
           if(idx['메모']!=null){ if(mm){ f.prodMemo[key]=mm; n.memo++; } else delete f.prodMemo[key]; }
           monIdx.forEach(function(ci,i){ if(ci<0)return; var v=num(row[ci]); var o=f.prodMonthPct[key]=f.prodMonthPct[key]||{};
             if(v===''){ delete o[i+1]; } else { o[i+1]=v; n.mon++; } if(!Object.keys(o).length)delete f.prodMonthPct[key]; });
@@ -36408,9 +36414,11 @@ function impo(which){
             if(typeof fcSaveYearPlan==='function')fcSaveYearPlan((typeof fcTargetYear==='function')?fcTargetYear():'');
             if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(_s){}
       try{ if(typeof logEdit==='function')logEdit('매출 목표','엑셀 불러오기 · 조정% '+n.adj+' · 추가% '+n.add+' · 월% '+n.mon+' · 메모 '+n.memo); }catch(_g){}
-      try{ await saveSettings(); }catch(_v){}
+      /* 수동 확정 저장소까지 함께 갱신해야 다음 동기화·재실행 때 불러온 값이 옛 확정본으로 되돌아가지 않습니다. */
+      try{ if(typeof window.fcManualCommitV881==='function')await window.fcManualCommitV881(); else await saveSettings(); }catch(_v){ try{await saveSettings();}catch(_v2){} }
       try{ forecast(); }catch(_f){}
       await uiConfirm('엑셀을 불러왔습니다.<br><b>조정% '+n.adj+'건 · 추가% '+n.add+'건 · 월% '+n.mon+'칸 · 메모 '+n.memo+'건</b>'
+        +(window.__FC_LAST_MANUAL_SAVE_V885?('<br><span style="color:#15803d;font-weight:800">💾 직접 저장 #'+window.__FC_LAST_MANUAL_SAVE_V885.no+'로 적용·동기화했습니다.</span>'):'')
         +(n.miss?('<br><span style="color:#b45309">표에 없는 항목 '+n.miss+'건은 건너뜀'+(names.length?(' ('+names.join(', ')+' 등)'):'')+'</span>'):''));
     }catch(e){ try{ await uiConfirm('불러오기 중 오류: '+(e&&e.message||e)); }catch(_u){} }
   });
@@ -36919,7 +36927,7 @@ function itemId(it){
   return 's'+(+((it&&it.t)||Date.now())).toString(36)+'_'+String((it&&it.y)||0)+'_'+String((it&&it.p)||'x')+'_'+hash((it&&it.sig)||JSON.stringify((it&&it.d)||{}));
 }
 function normalize(items){
-  var map={}; (items||[]).forEach(function(src){ if(!src||!src.d)return; var it=clone(src); it.id=itemId(it); it.t=+it.t||Date.now(); it.y=+it.y||0; it.p=(it.p==='1'||it.p==='2')?it.p:''; it.sig=it.sig||JSON.stringify(it.d||{}); if(!it.n&&typeof fcSnapCountV803==='function')it.n=fcSnapCountV803(it.d||{}); var old=map[it.id]; if(!old||it.t>=old.t)map[it.id]=it; });
+  var map={}; (items||[]).forEach(function(src){ if(!src||!src.d||!(src.manual||src.kind==='manual'))return; var it=clone(src); it.manual=true;it.kind='manual';it.id=itemId(it); it.t=+it.t||Date.now(); it.y=+it.y||0; it.p=(it.p==='1'||it.p==='2')?it.p:''; it.sig=it.sig||JSON.stringify(it.d||{}); if(!it.n&&typeof fcSnapCountV803==='function')it.n=fcSnapCountV803(it.d||{}); var old=map[it.id]; if(!old||it.t>=old.t)map[it.id]=it; });
   var out=Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return a.t-b.t;});
   if(out.length>MAX)out=out.slice(out.length-MAX);
   return out;
@@ -36972,14 +36980,19 @@ function importRemote(d){
 });
 
 /* 새 기록은 연도·목표안까지 포함하여 저장하고 자동 동기화를 예약합니다. */
-fcSnapSaveV803=async function(){
-  if(_fcSnapBusy)return false; _fcSnapBusy=true;
+fcSnapSaveV803=async function(opts){
+  if(_fcSnapBusy){
+    if(!(opts&&opts.manual))return false;
+    for(var wi=0;wi<20&&_fcSnapBusy;wi++)await new Promise(function(resolve){setTimeout(resolve,25);});
+    if(_fcSnapBusy)return false;
+  }
+  _fcSnapBusy=true;
   try{
     if(ready)await ready;
-    var cur=fcSnapNowV803(), sig=JSON.stringify(cur), y=year(), p=plan();
+    var manual=!!(opts&&opts.manual);if(!manual)return false;var cur=fcSnapNowV803(), sig=JSON.stringify(cur), y=year(), p=plan();
     var list=normalize(stateItems()); var last=list.length?list[list.length-1]:null;
-    if(last&&last.sig===sig&&+last.y===y&&last.p===p)return false;
-    var it={t:Date.now(),y:y,p:p,sig:sig,n:fcSnapCountV803(cur),d:cur}; it.id=itemId(it); list.push(it);
+    if(!manual&&last&&last.sig===sig&&+last.y===y&&last.p===p)return false;
+    var it={t:Date.now(),y:y,p:p,sig:sig,n:fcSnapCountV803(cur),d:cur,manual:manual,kind:manual?'manual':'auto',label:manual?'내가 저장':''}; it.id=itemId(it); list.push(it);
     await saveLocal(list);
     try{if(typeof gsAutoPush==='function')gsAutoPush();}catch(_e2){}
     return true;
@@ -37016,7 +37029,7 @@ fcSnapOpenV803=async function(){
   var list=await fcSnapListV803();
   if(!list.length){if(typeof uiConfirm==='function')uiConfirm('보관된 % 값 기록이 아직 없습니다. 지금부터 값을 고치면 자동으로 보관되며 다른 PC와도 동기화됩니다.');return;}
   var cur=fcSnapCountV803(fcSnapNowV803());
-  var rows=list.map(function(it,i){var pl=it.p?('수정 '+it.p+'안'):'기존 기록';return '<tr><td style="text-align:center;color:#94a3b8">'+(list.length-i)+'</td><td>'+new Date(it.t).toLocaleString('ko-KR')+' <span class="sub2">'+(it.y?it.y+'년 · ':'')+pl+'</span></td><td style="text-align:right;font-weight:800">'+(+it.n||0).toLocaleString()+'건</td><td style="text-align:center"><button class="btn ghost fcsnap-go-v803" data-i="'+i+'" style="font-size:11.5px;padding:3px 10px">이 시점으로</button></td></tr>';}).reverse().join('');
+  var rows=list.map(function(it,i){var pl=it.p?('수정 '+it.p+'안'):'기존 기록',badge=(it.manual||it.kind==='manual')?' <b style="display:inline-block;margin-left:5px;padding:1px 6px;border-radius:999px;background:#dcfce7;color:#166534;font-size:10px">내가 저장</b>':'';return '<tr><td style="text-align:center;color:#94a3b8">'+(list.length-i)+'</td><td>'+new Date(it.t).toLocaleString('ko-KR')+badge+' <span class="sub2">'+(it.y?it.y+'년 · ':'')+pl+'</span></td><td style="text-align:right;font-weight:800">'+(+it.n||0).toLocaleString()+'건</td><td style="text-align:center"><button class="btn ghost fcsnap-go-v803" data-i="'+i+'" style="font-size:11.5px;padding:3px 10px">이 시점으로</button></td></tr>';}).reverse().join('');
   var html='<div style="padding:4px 2px"><div class="sub2" style="margin-bottom:8px">최근 '+MAX+'개 기록을 다른 PC와 공유합니다. 복원하면 기록의 <b>연도·수정안</b>으로 자동 이동합니다. 현재 값 '+cur.toLocaleString()+'건.</div><table class="tbl" style="width:100%;font-size:12px"><thead><tr><th>순번</th><th>저장 시각·목표안</th><th>값 개수</th><th>되돌리기</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   if(typeof uiModal==='function')uiModal('🕘 목표 % 값 되돌리기 · PC간 동기화',html);
   else return;
@@ -37024,14 +37037,14 @@ fcSnapOpenV803=async function(){
 };
 window.fcSnapOpenV803=fcSnapOpenV803;
 
-/* 구버전 로컬 기록을 최초 1회 공유 형식으로 올립니다. */
-Promise.resolve(ready).then(function(){try{if(stateItems().length&&typeof gsAutoPush==='function')gsAutoPush();}catch(_e){}});
+/* 자동 기록은 공유하지 않습니다. 직접 저장 시점은 저장 버튼 처리에서 즉시 동기화됩니다. */
+Promise.resolve(ready).then(function(){try{putState(stateItems());}catch(_e){}});
 })();
 </script>
 
 <style id="v876-fc-snapshot-modal-style">
 #fcSnapBoxV876{position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.48);display:flex;align-items:center;justify-content:center;padding:18px}
-#fcSnapBoxV876 .box{width:min(760px,96vw);max-height:82vh;overflow:auto;background:#fff;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 24px 70px rgba(15,23,42,.32);padding:15px 17px}
+#fcSnapBoxV876 .box{width:min(1040px,97vw);max-height:82vh;overflow:auto;background:#fff;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 24px 70px rgba(15,23,42,.32);padding:15px 17px}
 #fcSnapBoxV876 .head{display:flex;align-items:center;gap:10px;margin-bottom:10px;color:#1e3a5f}.fc-snap-close-v876{margin-left:auto}
 #fcSnapBoxV876 table{width:100%;border-collapse:collapse;font-size:12px}#fcSnapBoxV876 th,#fcSnapBoxV876 td{padding:7px 8px;border-bottom:1px solid #e2e8f0}#fcSnapBoxV876 th{background:#f1f5f9;color:#334155}
 #fcSnapBoxV876 .empty{padding:26px 12px;text-align:center;color:#64748b;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:9px}
@@ -37047,11 +37060,11 @@ async function list876(){
   try{
     var slow=new Promise(function(resolve){setTimeout(function(){resolve(null);},3500);});
     var got=await Promise.race([Promise.resolve(fcSnapListV803()),slow]);
-    if(Array.isArray(got))return got;
+    if(Array.isArray(got))return got.filter(function(it){return !!(it&&(it.manual||it.kind==='manual'));});
   }catch(_e){}
   try{
     var box=(state.fc&&state.fc.pctSnapshotsV875)||{},ids=(state.fc&&state.fc.pctSnapManifestV875)||Object.keys(box);
-    return ids.map(function(id){return box[id];}).filter(Boolean).sort(function(a,b){return(+a.t||0)-(+b.t||0);});
+    return ids.map(function(id){return box[id];}).filter(function(it){return !!(it&&(it.manual||it.kind==='manual'));}).sort(function(a,b){return(+a.t||0)-(+b.t||0);});
   }catch(_e2){return[];}
 }
 async function open876(){
@@ -37060,21 +37073,22 @@ async function open876(){
     close876();var list=await list876(),cur=0;
     try{cur=fcSnapCountV803(fcSnapNowV803());}catch(_e){}
     var rows=list.map(function(it,i){
-      var pl=it.p?('수정 '+it.p+'안'):'기존 기록',when='';try{when=new Date(+it.t||0).toLocaleString('ko-KR');}catch(_d){}
-      return '<tr><td style="text-align:center;color:#94a3b8">'+(list.length-i)+'</td><td>'+esc876(when)+' <span class="sub2">'+(it.y?esc876(it.y)+'년 · ':'')+esc876(pl)+'</span></td><td style="text-align:right;font-weight:800">'+(+it.n||0).toLocaleString()+'건</td><td style="text-align:center"><button type="button" class="btn ghost fc-snap-go-v876" data-id="'+esc876(it.id||'')+'" data-i="'+i+'" style="font-size:11.5px;padding:3px 10px">이 시점으로</button></td></tr>';
+      var pl=it.p?('수정 '+it.p+'안'):'목표안 미표시',when='',cut=(it.cutoff!=null?+it.cutoff:(it.d&&it.d.actualCutoffMonth!=null?+it.d.actualCutoffMonth:0)),badge='<b style="display:inline-block;padding:1px 7px;border-radius:999px;background:#dcfce7;color:#166534;font-size:10px;white-space:nowrap">💾 직접 저장'+(it.saveNo?(' #'+esc876(it.saveNo)):'')+'</b>';try{when=new Date(+it.t||0).toLocaleString('ko-KR');}catch(_d){}
+      var cutText=cut>0?('1~'+cut+'월'):'없음',cuts=it.cutoffs||{},c1=+cuts[1]||0,c2=+cuts[2]||0,cutBoth=it.cutoffs?('1안 '+(c1?('1~'+c1+'월'):'없음')+' · 2안 '+(c2?('1~'+c2+'월'):'없음')):(pl+' · '+cutText),bd=it.breakdown||{},parts=['업체 '+(+bd.cust||0),'업체월 '+(+bd.custMon||0),'제품·수량 '+(+bd.prod||0),'제품월 '+(+bd.prodMon||0)];
+      return '<tr><td style="text-align:center;color:#64748b;font-weight:800">'+(it.saveNo?('#'+esc876(it.saveNo)):(list.length-i))+'</td><td>'+esc876(when)+' '+badge+'</td><td style="text-align:center"><b style="color:#1e3a5f">'+(it.y?esc876(it.y)+'년':'-')+'</b></td><td style="text-align:center"><b style="color:#0f766e">'+esc876(pl)+'</b></td><td style="text-align:center"><b style="color:#7c3aed">'+esc876(cutBoth)+'</b></td><td style="text-align:right"><b style="font-weight:900">'+(+it.n||0).toLocaleString()+'건</b><div style="margin-top:2px;color:#64748b;font-size:9.5px;white-space:nowrap">'+esc876(parts.join(' · '))+'</div></td><td style="text-align:center"><button type="button" class="btn ghost fc-snap-go-v876" data-id="'+esc876(it.id||'')+'" data-i="'+i+'" style="font-size:11.5px;padding:3px 10px">이 시점으로</button></td></tr>';
     }).reverse().join('');
-    var body=list.length?'<table><thead><tr><th>순번</th><th>저장 시각·목표안</th><th>값 개수</th><th>되돌리기</th></tr></thead><tbody>'+rows+'</tbody></table>':'<div class="empty"><b>보관된 % 기록이 아직 없습니다.</b><br>조정%·추가%·월별 목표%를 수정하면 자동으로 기록되며 다른 PC와도 동기화됩니다.</div>';
-    var root=document.createElement('div');root.id='fcSnapBoxV876';root.innerHTML='<div class="box" role="dialog" aria-modal="true" aria-label="목표 퍼센트 값 되돌리기"><div class="head"><b style="font-size:15px">🕘 목표 % 값 되돌리기</b><span class="sub2">현재 '+cur.toLocaleString()+'건 · 최근 20개 PC간 동기화</span><button type="button" class="btn ghost fc-snap-close-v876">닫기</button></div>'+body+'</div>';
+    var body=list.length?'<div class="sub2" style="margin:0 0 8px">표시된 기록은 모두 <b>💾 조정% 저장하기</b>를 직접 누른 시점입니다. 업체·제품·월별·수량보기의 조정/추가%가 함께 저장됩니다.</div><table><thead><tr><th>저장번호</th><th>직접 저장 시각</th><th>목표 연도</th><th>목표안</th><th>실적확정(목표안)</th><th>값 개수</th><th>되돌리기</th></tr></thead><tbody>'+rows+'</tbody></table>':'<div class="empty"><b>직접 저장한 기록이 아직 없습니다.</b><br><b>💾 조정% 저장하기</b>를 누른 시점만 이 목록에 저장되고 다른 PC와 동기화됩니다.</div>';
+    var root=document.createElement('div');root.id='fcSnapBoxV876';root.innerHTML='<div class="box" role="dialog" aria-modal="true" aria-label="목표 퍼센트 값 되돌리기"><div class="head"><b style="font-size:15px">🕘 목표 % 값 되돌리기</b><span class="sub2">직접 저장 '+list.length.toLocaleString()+'개 · PC간 동기화</span><button type="button" class="btn ghost fc-snap-close-v876">닫기</button></div>'+body+'</div>';
     document.body.appendChild(root);
     root.addEventListener('click',async function(e){
       if(e.target===root||e.target.closest('.fc-snap-close-v876')){close876();return;}
       var b=e.target.closest('.fc-snap-go-v876');if(!b)return;
       b.disabled=true;var id=b.getAttribute('data-id')||'',old=list[+b.getAttribute('data-i')];
       var label=(old&&old.y?old.y+'년 ':'')+(old&&old.p?'수정 '+old.p+'안 ':'');
-      var ok=true;try{ok=typeof uiConfirm==='function'?await uiConfirm(label+'해당 시점의 % 값으로 되돌릴까요? 현재 값도 먼저 자동 보관합니다.'):confirm('해당 시점으로 되돌릴까요?');}catch(_q){ok=confirm('해당 시점으로 되돌릴까요?');}
+      var ok=true;try{ok=typeof uiConfirm==='function'?await uiConfirm(label+'직접 저장 시점으로 되돌릴까요? 현재의 저장하지 않은 수정값은 교체됩니다.'):confirm('직접 저장 시점으로 되돌릴까요?');}catch(_q){ok=confirm('직접 저장 시점으로 되돌릴까요?');}
       if(!ok){b.disabled=false;return;}
       try{
-        await fcSnapSaveV803();var fresh=await list876(),idx=id?fresh.findIndex(function(it){return it&&it.id===id;}):-1;
+        var fresh=await list876(),idx=id?fresh.findIndex(function(it){return it&&it.id===id;}):-1;
         if(idx<0&&old)idx=fresh.findIndex(function(it){return it&&+it.t===+old.t&&it.sig===old.sig;});
         if(idx<0)throw new Error('선택한 기록을 찾지 못했습니다. 동기화 후 다시 시도해 주세요.');
         var done=await fcSnapRestoreV803(idx);if(done===false)throw new Error('값을 복원하지 못했습니다.');close876();
@@ -37432,22 +37446,22 @@ window.pdApplyResetV880=enforceAll;window.fcAlignBasePlanV880=alignBasePlan;
 (function(){
 'use strict';
 var FIELD='fcManualPlansV881', IDB=FIELD, PD_TAG='pd-2026-restored-v881';
-var PKEYS=['pct','pctAt','override','overrideAt','addPct','addPctAt','prodOverride','prodAddPct','custProdOverride','custMonthPct','prodMonthPct'];
+var PKEYS=['pct','pctAt','override','overrideAt','addPct','addPctAt','prodOverride','prodAddPct','custProdOverride','custMonthPct','prodMonthPct','actualCutoffMonth'];
 var SEL='.fcov,.fcadd,.fcpov,.fcpadd,.fc-cust-month-pct,.fc-prod-month-pct,.fc-inline-pct,.fcm,.fccpov,.fc-month-adjust';
 var RESET_IDS=['fcOvReset','fcAddReset','fcProdOvReset','fcProdAddReset'];
 var dirty=false,saving=false,loading=false,booted=false,lastDirtyAt=0,savedStatus='저장된 값';
 function plain(v){return!!v&&typeof v==='object'&&!Array.isArray(v);}
-function cp(v){try{return JSON.parse(JSON.stringify(v||{}));}catch(_e){return{};}}
+function cp(v){try{return JSON.parse(JSON.stringify(v==null?{}:v));}catch(_e){return{};}}
 function year(){try{return String((state.fc&&state.fc._ctxYear)||((typeof fcTargetYear==='function')?fcTargetYear():''));}catch(_e){return'';}}
 function plan(){try{return state.fc&&state.fc.activePlan==='2'?'2':'1';}catch(_e){return'1';}}
 function root(){if(!plain(state[FIELD]))state[FIELD]={years:{}};if(!plain(state[FIELD].years))state[FIELD].years={};return state[FIELD];}
 function slot(r,y,p,make){var yy=r.years[y];if(!plain(yy)){if(!make)return null;yy=r.years[y]={};}var s=yy[p];if(!plain(s)&&make)s=yy[p]={at:0,data:{}};return plain(s)?s:null;}
 function snapData(src){var d={};PKEYS.forEach(function(k){d[k]=cp(src&&src[k]);});return d;}
 function targetPlan(y,p,make){try{var ys=state.fc.yearPlans&&state.fc.yearPlans[y];if(!ys&&make){state.fc.yearPlans=state.fc.yearPlans||{};ys=state.fc.yearPlans[y]={targetPlans:{},activePlan:p};}if(!ys)return null;ys.targetPlans=ys.targetPlans||{};if(!ys.targetPlans[p]&&make)ys.targetPlans[p]={};return ys.targetPlans[p]||null;}catch(_e){return null;}}
-function applyData(dst,d){if(!dst||!d)return;PKEYS.forEach(function(k){dst[k]=cp(d[k]);});}
+function applyData(dst,d){if(!dst||!d)return;PKEYS.forEach(function(k){if(Object.prototype.hasOwnProperty.call(d,k))dst[k]=cp(d[k]);});}
 function applySlot(y,p){var s=slot(root(),String(y),String(p),false);if(!s||!plain(s.data))return false;var tp=targetPlan(String(y),String(p),true);applyData(tp,s.data);if(year()===String(y)&&plan()===String(p)){applyData(state.fc,s.data);if(state.fc.targetPlans&&state.fc.targetPlans[p])applyData(state.fc.targetPlans[p],s.data);}return true;}
 function applyAll(){var r=root();Object.keys(r.years).forEach(function(y){Object.keys(r.years[y]||{}).forEach(function(p){applySlot(y,p);});});}
-function mergeRoot(v){var L=root(),R=plain(v)?v:{},changed=false;Object.keys(R.years||{}).forEach(function(y){Object.keys(R.years[y]||{}).forEach(function(p){var a=slot(L,y,p,true),b=R.years[y][p]||{};if((+b.at||0)>(+a.at||0)){L.years[y][p]=cp(b);changed=true;}});});applyAll();persist();return changed;}
+function mergeRoot(v){var L=root(),R=plain(v)?v:{},changed=false;L.nextNo=Math.max(+L.nextNo||0,+R.nextNo||0);Object.keys(R.years||{}).forEach(function(y){Object.keys(R.years[y]||{}).forEach(function(p){var a=slot(L,y,p,true),b=R.years[y][p]||{};if((+b.at||0)>(+a.at||0)){L.years[y][p]=cp(b);changed=true;}});});applyAll();persist();return changed;}
 function persist(){try{if(typeof idbSet==='function')idbSet(IDB,cp(root()));}catch(_e){}}
 function statusText(){return dirty?'저장하지 않은 수정값 있음':savedStatus;}
 function paint(){var b=document.getElementById('fcManualSaveV881'),s=document.getElementById('fcManualStateV881');if(b){b.disabled=saving;b.style.background=dirty?'#16a34a':'#fff';b.style.color=dirty?'#fff':'#166534';b.style.borderColor='#86efac';b.textContent=saving?'저장 중…':'💾 조정% 저장하기';}if(s){s.textContent=statusText();s.style.color=dirty?'#dc2626':'#15803d';}}
@@ -37481,23 +37495,44 @@ try{
 }catch(_e){}
 
 async function commit(){
-  if(saving)return;saving=true;paint();
+  if(saving)return;saving=true;window.__FC_LAST_MANUAL_SAVE_V885=null;paint();
   try{
     var y=year(),p=plan();
     try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();}catch(_e){}
-    var at=Date.now(),s=slot(root(),y,p,true);s.at=Math.max(+s.at||0,at);s.data=snapData(state.fc);
+    var rr=root(),at=Date.now(),saveNo=(+rr.nextNo||0)+1;rr.nextNo=saveNo;
+    var s=slot(rr,y,p,true);s.at=Math.max(+s.at||0,at);s.savedAt=at;s.saveNo=saveNo;s.data=snapData(state.fc);
     applySlot(y,p);persist();
     try{if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(+y);}catch(_e2){}
     try{if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();}catch(_e3){}
-    saving=true;dirty=false;savedStatus='이 PC 저장 완료';
+    saving=true;dirty=false;savedStatus='#'+saveNo+' 이 PC 저장 완료';
     /* 저장 버튼을 누른 바로 이 상태를 「% 되돌리기」의 확정 시점으로도 남깁니다.
        v875가 연도·수정안 정보를 붙여 보관하므로 다른 PC에서도 같은 기록을 선택할 수 있습니다. */
-    try{if(typeof fcSnapSaveV803==='function')await fcSnapSaveV803();}catch(_snap){}
+    try{if(typeof window.fcManualSnapshotV885==='function')await window.fcManualSnapshotV885(y,p,saveNo,at);else if(typeof fcSnapSaveV803==='function')await fcSnapSaveV803();}catch(_snap){}
     if(typeof baseSave==='function')await baseSave();
-    if(typeof baseGsSave==='function'&&state.gsync&&state.gsync.url){var syncOk=await baseGsSave(true);savedStatus=(syncOk===false)?'이 PC 저장 완료 · 동기화 재시도 필요':'저장·PC간 동기화 완료';}
-    try{if(typeof logEdit==='function')logEdit('매출 목표',y+'년 수정 '+p+'안 조정% 수동 저장');}catch(_e4){}
+    if(typeof baseGsSave==='function'&&state.gsync&&state.gsync.url){var syncOk=await baseGsSave(true);if(syncOk!==false&&state.gsync&&state.gsync.lastOp==='load')syncOk=await baseGsSave(true);savedStatus=(syncOk===false)?('#'+saveNo+' 이 PC 저장 완료 · 동기화 재시도 필요'):('#'+saveNo+' 저장·PC간 동기화 완료');}
+    window.__FC_LAST_MANUAL_SAVE_V885={no:saveNo,at:at,year:y,plan:p,status:savedStatus};
+    try{if(typeof logEdit==='function')logEdit('매출 목표','#'+saveNo+' · '+y+'년 수정 '+p+'안 조정% 직접 저장');}catch(_e4){}
   }catch(err){dirty=true;try{alert('조정% 저장 오류: '+String(err&&err.message||err));}catch(_a){}}
   finally{saving=false;paint();}
+}
+
+/* v887 : 되돌리기로 선택한 직접 저장본을 현재 연도×목표안의 새 권위값으로 채택합니다.
+   새 되돌리기 기록은 만들지 않으며, 이 값 자체를 로컬·공유 서버에 저장해 다른 PC에서도 동일하게 보이게 합니다. */
+async function adoptRestoreV887(it){
+  if(!it||!plain(it.d))return false;
+  loading=true;saving=true;paint();
+  try{
+    var y=String(it.y||year()),p=(String(it.p)==='2'?'2':'1'),rr=root(),at=Date.now(),s=slot(rr,y,p,true);
+    s.at=Math.max(+s.at||0,at);s.savedAt=+it.t||at;s.saveNo=+it.saveNo||0;s.restoredAt=at;s.restoredFrom=String(it.id||'');s.data=snapData(state.fc);
+    applySlot(y,p);persist();
+    try{if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(+y);}catch(_y){}
+    try{if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();}catch(_s){}
+    dirty=false;savedStatus=(s.saveNo?('#'+s.saveNo+' '):'')+'복원·PC간 동기화 완료';
+    if(typeof baseSave==='function')await baseSave();
+    if(typeof baseGsSave==='function'&&state.gsync&&state.gsync.url)await baseGsSave(true);
+    return true;
+  }catch(_e){dirty=true;return false;}
+  finally{loading=false;saving=false;paint();}
 }
 
 document.addEventListener('input',function(e){var t=e.target;if(t&&t.matches&&t.matches(SEL))markDirty();},true);
@@ -37539,7 +37574,7 @@ async function boot(){if(booted)return;booted=true;loading=true;
 var mo=new MutationObserver(function(){mount();});
 function start(){var r=document.getElementById('result');if(r)mo.observe(r,{childList:true,subtree:false});var n=0,t=setInterval(function(){n++;if((window.__V718_RESTORED&&typeof CUR!=='undefined'&&CUR.length)||n>100){clearInterval(t);boot();}},50);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-window.fcManualCommitV881=commit;window.fcManualApplyV881=applyAll;
+window.fcManualCommitV881=commit;window.fcManualApplyV881=applyAll;window.fcManualAdoptRestoreV887=adoptRestoreV887;
 })();
 </script>
 
@@ -37697,13 +37732,16 @@ function burst(){
 }
 function releaseLater(ms){var tok=hold&&hold.token;clearTimeout(releaseTimer);releaseTimer=setTimeout(function(){if(!hold||hold.token!==tok)return;var r=hold.result;if(r){r.style.minHeight=hold.oldMin||'';r.classList.remove('fc-field-edit-v883');}document.documentElement.classList.remove('fc-field-edit-v883');hold=null;},ms==null?4100:ms);}
 document.addEventListener('pointerdown',function(e){if(isField(e.target))take(e.target);else if(hold)releaseLater(0);},true);
-document.addEventListener('focusin',function(e){if(!isField(e.target))return;var k=identityKey(identity(e.target));if(!hold||hold.fieldKey!==k)take(e.target);burst();},true);
-document.addEventListener('beforeinput',function(e){if(isField(e.target)){if(!hold)take(e.target);burst();}},true);
-document.addEventListener('input',function(e){if(isField(e.target)){if(!hold)take(e.target);updateCaret(e.target);burst();releaseLater(4300);}},true);
+document.addEventListener('focusin',function(e){if(!isField(e.target))return;var k=identityKey(identity(e.target));if(!hold||hold.fieldKey!==k)take(e.target);},true);
+/* 타이핑 중에는 표 전체를 다시 그리지 않으므로 포커스·선택범위를 강제로 복원하지 않습니다.
+   숫자 입력 사이에 복원 타이머가 끼어들면 10→01, 자릿수 누락이 생길 수 있습니다. */
+document.addEventListener('input',function(e){if(isField(e.target)){if(!hold)take(e.target);updateCaret(e.target);releaseLater(4300);}},true);
 document.addEventListener('change',function(e){if(isField(e.target)){if(!hold)take(e.target);updateCaret(e.target);burst();releaseLater(4300);}},true);
 document.addEventListener('keyup',function(e){if(isField(e.target))updateCaret(e.target);},true);
 document.addEventListener('click',function(e){if(isField(e.target))setTimeout(function(){updateCaret(e.target);},0);},true);
-document.addEventListener('focusout',function(e){if(isField(e.target)&&hold){burst();releaseLater(4300);}},true);
+/* 칸을 벗어났는데도 4.3초 동안 이전 입력칸을 다시 focus 하던 동작이 다음 숫자 입력을 가로막았습니다.
+   blur 시에는 즉시 고정을 풀고, 입력 중일 때만 위치 보호를 유지합니다. */
+document.addEventListener('focusout',function(e){if(isField(e.target)&&hold)releaseLater(0);},true);
 /* 사용자가 직접 휠·터치로 이동할 때만 고정을 풀어 정상 스크롤을 허용합니다. */
 ['wheel','touchmove'].forEach(function(n){document.addEventListener(n,function(){if(hold&&!restoring)releaseLater(0);},{capture:true,passive:true});});
 function start(){var r=document.getElementById('result');if(!r)return;observer=new MutationObserver(function(){if(hold)burst();});observer.observe(r,{childList:true,subtree:false});}
@@ -37743,6 +37781,176 @@ function install(){
 }
 if(!install()){var n=0,t=setInterval(function(){if(install()||++n>50)clearInterval(t);},100);}
 window.addEventListener('load',function(){setTimeout(install,200);setTimeout(install,1600);},{once:true});
+})();
+</script>
+
+<script id="v885-numbered-manual-snapshots-and-inventory-order">
+/* ══════════ v885 · 직접 저장 번호/배지/PC간 복원 + 재고 메뉴 순서 ══════════ */
+(function(){
+'use strict';
+function cp(v){try{return JSON.parse(JSON.stringify(v));}catch(_e){return v;}}
+/* 자동 기록과 내용이 같아도 저장 버튼을 누른 시점은 독립된 직접 저장본으로 반드시 남깁니다. */
+window.fcManualSnapshotV885=async function(y,p,no,at){
+  var d=(typeof fcSnapNowV803==='function')?fcSnapNowV803():{},sig=JSON.stringify(d),list=[];
+  try{list=(typeof fcSnapListV803==='function'?(await fcSnapListV803()):(await idbGet('fcPctSnapsV803')))||[];}catch(_e){list=[];}
+  var id='manual_'+String(+at||Date.now())+'_'+String(y)+'_'+String(p)+'_'+String(no);
+  var it={id:id,t:+at||Date.now(),y:+y||0,p:String(p||''),sig:sig,n:(typeof fcSnapCountV803==='function'?fcSnapCountV803(d):0),d:cp(d),manual:true,kind:'manual',label:'직접 저장',saveNo:+no||0};
+  list=list.filter(function(x){return x&&x.id!==id;});list.push(it);list.sort(function(a,b){return(+a.t||0)-(+b.t||0);});while(list.length>20)list.shift();
+  try{await idbSet('fcPctSnapsV803',list);}catch(_e2){}
+  state.fc=state.fc||{};state.fc.pctSnapshotsV875=state.fc.pctSnapshotsV875||{};state.fc.pctSnapshotsV875[it.id]=it;
+  /* 최근 20개와 정확히 맞춰 서버 manifest도 정리합니다. */
+  var keep={};list.forEach(function(x){if(x&&x.id){keep[x.id]=1;state.fc.pctSnapshotsV875[x.id]=x;}});
+  Object.keys(state.fc.pctSnapshotsV875).forEach(function(k){if(!keep[k])delete state.fc.pctSnapshotsV875[k];});
+  state.fc.pctSnapManifestV875=list.map(function(x){return x.id;}).filter(Boolean);
+  return it;
+};
+
+/* 요청 순서: 📈 월별 추이 → 📋 월말 요약. 화면 탭과 재고 팝업 메뉴를 같이 맞춥니다. */
+function orderArray(a){if(!Array.isArray(a))return;var ti=a.findIndex(function(x){return x&&x[0]==='trend';}),si=a.findIndex(function(x){return x&&x[0]==='sum';});if(ti<0||si<0||ti<si)return;var t=a.splice(ti,1)[0];si=a.findIndex(function(x){return x&&x[0]==='sum';});a.splice(si,0,t);}
+function reorder(){
+  try{if(typeof MV_TABS!=='undefined')orderArray(MV_TABS);if(typeof MVT!=='undefined')orderArray(MVT);}catch(_e){}
+  try{var trend=document.querySelector('#result .mvtab[data-t="trend"]'),sum=document.querySelector('#result .mvtab[data-t="sum"]');if(trend&&sum&&trend.nextElementSibling!==sum)sum.parentNode.insertBefore(trend,sum);}catch(_e2){}
+  try{var mt=document.getElementById('mvMenuBtn'),ms=document.getElementById('mvMenuBtn_sum');if(mt&&ms&&mt.nextElementSibling!==ms)ms.parentNode.insertBefore(mt,ms);}catch(_e3){}
+}
+function start(){reorder();try{new MutationObserver(reorder).observe(document.body,{childList:true,subtree:true});}catch(_e){}setTimeout(reorder,700);setTimeout(reorder,1800);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>
+
+<script id="v887-manual-only-target-snapshots">
+/* ══════════ v887 · 직접 저장 시점만 보관/복원 + 연도·목표안·실적확정 동기화 ══════════ */
+(function(){
+'use strict';
+var KEY='fcPctSnapsV803',MAX=20;
+function cp(v){try{return JSON.parse(JSON.stringify(v==null?{}:v));}catch(_e){return{};}}
+function isManual(it){return!!(it&&it.d&&(it.manual||it.kind==='manual'));}
+function Y(){try{return String((state.fc&&state.fc._ctxYear)||fcTargetYear()||'');}catch(_e){return'';}}
+function P(){try{return state.fc&&state.fc.activePlan==='2'?'2':'1';}catch(_e){return'1';}}
+function cutoff(v){v=+v||0;return Math.max(0,Math.min(12,v));}
+function values(o){var n=0;Object.keys(o||{}).forEach(function(k){var v=o[k];if(v&&typeof v==='object'&&!Array.isArray(v))n+=values(v);else if(v!==''&&v!=null)n++;});return n;}
+function breakdown(d){return{cust:values(d.override)+values(d.addPct),custMon:values(d.custMonthPct),prod:values(d.prodOverride)+values(d.prodAddPct),prodMon:values(d.prodMonthPct),month:values(d.pct),custProd:values(d.custProdOverride)};}
+function normalize(a){var m={};(a||[]).forEach(function(src){if(!isManual(src))return;var it=cp(src),id=String(it.id||('manual_'+(+it.t||Date.now())+'_'+(it.y||0)+'_'+(it.p||'1')+'_'+(it.saveNo||0)));it.id=id;it.manual=true;it.kind='manual';it.t=+it.t||Date.now();it.y=+it.y||0;it.p=it.p==='2'?'2':'1';it.cutoff=cutoff(it.cutoff!=null?it.cutoff:(it.d&&it.d.actualCutoffMonth));it.d=cp(it.d);it.d.actualCutoffMonth=it.cutoff;it.breakdown=it.breakdown||breakdown(it.d);var old=m[id];if(!old||it.t>=old.t)m[id]=it;});var out=Object.keys(m).map(function(k){return m[k];}).sort(function(a,b){return a.t-b.t;});return out.length>MAX?out.slice(out.length-MAX):out;}
+async function keep(list){list=normalize(list);state.fc=state.fc||{};var box={};list.forEach(function(it){box[it.id]=it;});state.fc.pctSnapshotsV875=box;state.fc.pctSnapManifestV875=list.map(function(it){return it.id;});try{await idbSet(KEY,list);}catch(_e){}return list;}
+async function list(){var local=[];try{local=(await idbGet(KEY))||[];}catch(_e){}var f=state.fc||{},box=f.pctSnapshotsV875||{},ids=Array.isArray(f.pctSnapManifestV875)?f.pctSnapManifestV875:Object.keys(box);return keep(local.concat(ids.map(function(id){return box[id];}).filter(Boolean)));}
+try{if(typeof FC_SNAP_FIELDS_V803!=='undefined'&&!FC_SNAP_FIELDS_V803.some(function(f){return f[0]==='actualCutoffMonth';}))FC_SNAP_FIELDS_V803.push(['actualCutoffMonth','실적확정']);}catch(_e){}
+
+/* 자동 저장 호출은 기록을 만들지 않습니다. */
+var manualSave=async function(opts){if(!(opts&&opts.manual))return false;var r=state.fcManualPlansV881||{},no=+r.nextNo||0;return window.fcManualSnapshotV885(Y(),P(),no,Date.now());};
+window.fcSnapSaveV803=manualSave;try{fcSnapSaveV803=manualSave;}catch(_e){}
+window.fcSnapListV803=list;try{fcSnapListV803=list;}catch(_e){}
+
+/* 저장 버튼이 누른 현재 목표연도·현재 목표안의 모든 조정/추가%와 실적확정을 한 묶음으로 보관합니다. */
+window.fcManualSnapshotV885=async function(y,p,no,at){
+  try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();}catch(_e){}
+  var d=(typeof fcSnapNowV803==='function')?fcSnapNowV803():{};d.actualCutoffMonth=cutoff(state.fc&&state.fc.actualCutoffMonth);
+  var plans=(state.fc&&state.fc.targetPlans)||{},cuts={1:cutoff(plans['1']&&plans['1'].actualCutoffMonth),2:cutoff(plans['2']&&plans['2'].actualCutoffMonth)};
+  var it={id:'manual_'+String(+at||Date.now())+'_'+String(y)+'_'+String(p)+'_'+String(no||0),t:+at||Date.now(),y:+y||0,p:String(p)==='2'?'2':'1',sig:JSON.stringify(d),n:(typeof fcSnapCountV803==='function'?fcSnapCountV803(d):values(d)),d:cp(d),manual:true,kind:'manual',label:'직접 저장',saveNo:+no||0,cutoff:d.actualCutoffMonth,cutoffs:cuts,breakdown:breakdown(d)};
+  var a=await list();a=a.filter(function(x){return x.id!==it.id;});a.push(it);await keep(a);return it;
+};
+
+/* 복원 시 자동 보관·초기화 원장을 만들지 않고, 선택 저장본을 해당 연도×목표안의 권위값으로 승격합니다. */
+var restore=async function(idx){
+  var a=await list(),it=a[idx];if(!it||!it.d)return false;
+  try{
+    var y=+it.y||+Y(),p=it.p==='2'?'2':'1';
+    if(+Y()!==y&&typeof fcSwitchYear==='function')fcSwitchYear(y);
+    if(typeof fcEnsureTargetPlans==='function')fcEnsureTargetPlans();
+    if(P()!==p){try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();}catch(_s){}state.fc.activePlan=p;if(state.fc.targetPlans&&state.fc.targetPlans[p]&&typeof fcApplyTargetPlan==='function')fcApplyTargetPlan(state.fc.targetPlans[p]);state.fc._targetPlanLoaded=p;}
+    (typeof FC_SNAP_FIELDS_V803!=='undefined'?FC_SNAP_FIELDS_V803:[]).forEach(function(f){var k=f[0];if(Object.prototype.hasOwnProperty.call(it.d,k))state.fc[k]=cp(it.d[k]);});
+    state.fc.actualCutoffMonth=cutoff(it.cutoff!=null?it.cutoff:it.d.actualCutoffMonth);
+    if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
+    if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(y);
+    var ok=true;if(typeof window.fcManualAdoptRestoreV887==='function')ok=await window.fcManualAdoptRestoreV887(it);
+    if(!ok)return false;
+    try{if(typeof logEdit==='function')logEdit('매출 목표',(it.saveNo?('#'+it.saveNo+' · '):'')+y+'년 수정 '+p+'안 직접 저장본 복원 · 실적확정 '+(state.fc.actualCutoffMonth?('1~'+state.fc.actualCutoffMonth+'월'):'없음'));}catch(_l){}
+    try{if(typeof forecast==='function')forecast();}catch(_f){}
+    return true;
+  }catch(err){try{console.error('[v887] 직접 저장본 복원 실패',err);}catch(_e){}return false;}
+};
+window.fcSnapRestoreV803=restore;try{fcSnapRestoreV803=restore;}catch(_e){}
+
+function start(){list();setTimeout(list,1800);setTimeout(list,5200);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+window.fcManualSnapshotListV887=list;
+})();
+</script>
+
+<style id="v886-customer-delta-detail-style">
+#cdCustomerDetailV886{margin:10px 0 12px;border:1px solid #bfdbfe;border-radius:12px;background:#f8fbff;padding:10px;box-shadow:0 4px 14px rgba(30,64,175,.07)}
+#cdCustomerDetailV886 .cd-detail-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 2px 8px}
+#cdCustomerDetailV886 .cd-detail-title{font-size:13px;font-weight:900;color:#1e3a5f}
+#cdCustomerDetailV886 .cd-detail-profile{display:flex;gap:6px;flex-wrap:wrap;margin:0 2px 8px}
+#cdCustomerDetailV886 .cd-profile-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border:1px solid #dbe4ee;border-radius:999px;background:#fff;color:#475569;font-size:10.5px;font-weight:800}
+#cdCustomerDetailV886 details{border:1px solid #dbe4ee;border-radius:10px;background:#fff;overflow:hidden;margin-top:8px}
+#cdCustomerDetailV886 summary{cursor:pointer;list-style:none;padding:9px 12px;background:#eef5ff;color:#1e3a5f;font-size:12px;font-weight:900}
+#cdCustomerDetailV886 summary::-webkit-details-marker{display:none}
+#cdCustomerDetailV886 .cd-detail-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:10px;padding:10px}
+#cdCustomerDetailV886 .cd-detail-box{min-width:0;border:1px solid #e2e8f0;border-radius:9px;overflow:hidden;background:#fff}
+#cdCustomerDetailV886 .cd-detail-box h4{margin:0;padding:8px 10px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:11.5px;color:#334155}
+#cdCustomerDetailV886 .cd-detail-scroll{overflow:auto;max-height:310px}
+#cdCustomerDetailV886 table{width:100%;border-collapse:collapse;font-size:10.5px}
+#cdCustomerDetailV886 th{position:sticky;top:0;z-index:1;background:#eef2f7;color:#334155;font-weight:900;white-space:nowrap}
+#cdCustomerDetailV886 th,#cdCustomerDetailV886 td{border-bottom:1px solid #edf1f5;padding:6px 7px;text-align:right;white-space:nowrap}
+#cdCustomerDetailV886 th:first-child,#cdCustomerDetailV886 td:first-child,#cdCustomerDetailV886 .l{text-align:left}
+#cdCustomerDetailV886 .up{color:#16a34a;font-weight:800}#cdCustomerDetailV886 .down{color:#dc2626;font-weight:800}
+#cdCustomerDetailV886 .cmYearBtn{cursor:pointer}
+@media(max-width:1050px){#cdCustomerDetailV886 .cd-detail-grid{grid-template-columns:1fr}}
+</style>
+<script id="v886-customer-delta-linked-detail">
+/* ══════════ v886 · 거래처 증감분석 선택 업체 연동 상세 ══════════ */
+(function(){
+'use strict';
+function rowsAll(cust){try{return (typeof CUR!=='undefined'&&Array.isArray(CUR)?CUR:[]).filter(function(r){return r&&r.cust===cust;});}catch(_e){return[];}}
+function money(v){try{return disp(+v||0);}catch(_e){return Math.round(+v||0).toLocaleString('ko-KR');}}
+function num(v){return Math.round(+v||0).toLocaleString('ko-KR');}
+function pct(v){if(v==null||!isFinite(v))return '<span style="color:#94a3b8">-</span>';var c=v>0?'up':v<0?'down':'';return '<span class="'+c+'">'+(v>0?'+':'')+v.toFixed(1)+'%</span>';}
+function day(r){try{var d=r&&(r.d||r.last);return d?fmtD(d):'';}catch(_e){return r&&r.ym||'';}}
+function category(r){try{return typeof mixCatKey==='function'?mixCatKey(r):'';}catch(_e){return'';}}
+function profile(cust){
+  var a=[];try{var cs=(typeof catsOf==='function'?catsOf(cust):[])||[];if(cs.length)a.push('업체분류 '+cs.join(' · '));}catch(_e){}
+  try{a.push('고객관리 '+((typeof mgrS==='function'&&mgrS(cust))||'미배정'));}catch(_e2){}
+  try{a.push('기술개발 '+((typeof mgrT==='function'&&mgrT(cust))||'미배정'));}catch(_e3){}
+  try{var g=typeof gradeRec==='function'?gradeRec(cust):null;if(g&&g.grade)a.push('신용등급 '+g.grade);}catch(_e4){}
+  return a.map(function(x){return '<span class="cd-profile-chip">'+esc(x)+'</span>';}).join('');
+}
+function monthTable(yearRows,prevRows){
+  var cur=new Array(13).fill(0),pre=new Array(13).fill(0),qty=new Array(13).fill(0),cnt=new Array(13).fill(0);
+  yearRows.forEach(function(r){var m=r.d?r.d.getMonth()+1:(+String(r.ym||'').slice(5,7)||0);if(m){cur[m]+=amtOf(r);qty[m]+=+r.qty||0;cnt[m]++;}});
+  prevRows.forEach(function(r){var m=r.d?r.d.getMonth()+1:(+String(r.ym||'').slice(5,7)||0);if(m)pre[m]+=amtOf(r);});
+  var b='';for(var m=1;m<=12;m++){var mom=m>1&&cur[m-1]?((cur[m]-cur[m-1])/cur[m-1]*100):null,yoy=pre[m]?((cur[m]-pre[m])/pre[m]*100):(cur[m]>0?100:null);
+    b+='<tr><td><b>'+m+'월</b></td><td>'+money(cur[m])+'</td><td>'+num(qty[m])+'</td><td>'+num(cnt[m])+'</td><td>'+pct(mom)+'</td><td>'+money(pre[m])+'</td><td>'+pct(yoy)+'</td></tr>';}
+  return '<div class="cd-detail-box"><h4>📅 월별 매출·전년 비교</h4><div class="cd-detail-scroll"><table><thead><tr><th>월</th><th>매출</th><th>수량</th><th>건수</th><th>전월비</th><th>전년 동월</th><th>전년비</th></tr></thead><tbody>'+b+'</tbody></table></div></div>';
+}
+function productTable(yearRows,total){
+  var mp=new Map();yearRows.forEach(function(r){var k=(r.code||'(미상)')+'│'+(r.spec||''),o=mp.get(k);if(!o){o={code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',amt:0,qty:0,cnt:0,last:null,cat:category(r)};mp.set(k,o);}o.amt+=amtOf(r);o.qty+=+r.qty||0;o.cnt++;if(r.d&&(!o.last||r.d>o.last))o.last=r.d;});
+  var ar=Array.from(mp.values()).sort(function(a,b){return b.amt-a.amt;}).slice(0,20),b='';ar.forEach(function(o,i){b+='<tr><td>'+(i+1)+'</td><td class="l"><b>'+esc(o.name||o.code)+'</b><br><span style="color:#64748b">'+esc(o.code)+'</span></td><td class="l">'+esc(o.spec||'(규격없음)')+'</td><td class="l">'+esc(o.cat||'-')+'</td><td>'+money(o.amt)+'</td><td>'+(total?((o.amt/total*100).toFixed(1)+'%'):'-')+'</td><td>'+num(o.qty)+'</td><td>'+num(o.cnt)+'</td><td>'+day(o)+'</td></tr>';});
+  if(!b)b='<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:18px">해당 연도 거래가 없습니다.</td></tr>';
+  return '<div class="cd-detail-box"><h4>📦 품목·규격별 매출 TOP 20</h4><div class="cd-detail-scroll"><table><thead><tr><th>순위</th><th>품번·품명</th><th>규격</th><th>제품구분</th><th>매출</th><th>비중</th><th>수량</th><th>건수</th><th>최근출고</th></tr></thead><tbody>'+b+'</tbody></table></div></div>';
+}
+function recentTable(yearRows){
+  var ar=yearRows.slice().sort(function(a,b){return (+b.d||0)-(+a.d||0);}).slice(0,40),b='';ar.forEach(function(r){var pr=0;try{pr=unitPrice(r);}catch(_e){}b+='<tr><td>'+day(r)+'</td><td class="l">'+esc(r.code||'(미상)')+'</td><td class="l"><b>'+esc(r.name||'')+'</b></td><td class="l">'+esc(r.spec||'(규격없음)')+'</td><td>'+num(r.qty)+'</td><td>'+num(pr)+'</td><td><b>'+money(amtOf(r))+'</b></td><td class="l" title="'+esc(r.bigo||'')+'">'+esc(r.bigo||'-')+'</td></tr>';});
+  if(!b)b='<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:18px">해당 연도 거래가 없습니다.</td></tr>';
+  return '<div class="cd-detail-box" style="grid-column:1/-1"><h4>🧾 최근 거래 원본 40건</h4><div class="cd-detail-scroll"><table><thead><tr><th>일자</th><th>품번</th><th>품명</th><th>규격</th><th>수량</th><th>단가</th><th>금액</th><th>비고</th></tr></thead><tbody>'+b+'</tbody></table></div></div>';
+}
+window.custDeltaOpenDetail=function(cust,year,move,context){
+  try{
+    var root=document.getElementById('result'),main=root&&root.querySelector('.tablewrap');if(!root||!main||!cust)return;
+    context=context==='compete'?'compete':'delta';
+    var all=rowsAll(cust),yrs=Array.from(new Set(all.map(function(r){return r.d?r.d.getFullYear():(+String(r.ym||'').slice(0,4)||0);}).filter(Boolean))).sort(function(a,b){return b-a;});
+    year=+year||new Date().getFullYear();if(!yrs.length)yrs=[year];if(yrs.indexOf(year)<0)year=yrs[0];
+    if(context==='compete'){state.compDetailCust=cust;state.compDetailYear=year;}else{state.cdelta=state.cdelta||{};state.cdelta.detailCust=cust;state.cdelta.detailYear=year;}
+    var old=document.getElementById('cdCustomerDetailV886');if(old)old.remove();
+    var yrRows=all.filter(function(r){return (r.d?r.d.getFullYear():+String(r.ym||'').slice(0,4))===year;}),prevRows=all.filter(function(r){return (r.d?r.d.getFullYear():+String(r.ym||'').slice(0,4))===year-1;}),total=yrRows.reduce(function(a,r){return a+amtOf(r);},0),qty=yrRows.reduce(function(a,r){return a+(+r.qty||0);},0);
+    var chart=(typeof custMonthChartV665==='function')?custMonthChartV665(cust,year,all,yrs,{metric:'amt'}):'';
+    var compInfo='';if(context==='compete')try{var cr=(typeof _compRows==='function'?_compRows():[]).find(function(x){return x&&x.cust===cust;});if(cr){compInfo='<span class="cd-profile-chip">부자재 <b>'+esc((cr.base||[]).join(' · ')||'-')+'</b></span><span class="cd-profile-chip">피봇힌지 <b>'+esc(cr.pivot||'-')+'</b></span><span class="cd-profile-chip">2단경첩 <b>'+esc(cr.hinge2||'-')+'</b></span>';}}catch(_ci){}
+    var p=document.createElement('section');p.id='cdCustomerDetailV886';p.innerHTML='<div class="cd-detail-top"><span class="cd-detail-title">🔎 선택 업체 상세 분석</span><span class="cd-profile-chip">'+year+'년 매출 <b>'+money(total)+'</b></span><span class="cd-profile-chip">출고수량 <b>'+num(qty)+'</b></span><span class="cd-profile-chip">거래행 <b>'+num(yrRows.length)+'</b></span><span style="margin-left:auto"></span><button type="button" class="btn" id="cdFullHistoryV886" style="background:#1d4ed8;color:#fff;border-color:#1d4ed8;font-size:11px">📒 전체 거래내역</button><button type="button" class="btn ghost" id="cdDetailCloseV886" style="font-size:11px">✕ 닫기</button></div><div class="cd-detail-profile">'+profile(cust)+compInfo+'</div>'+chart+'<details open><summary>📋 '+esc(cust)+' 업체관련 상세표 · 월별 비교 / 품목·규격 / 거래 원본</summary><div class="cd-detail-grid">'+monthTable(yrRows,prevRows)+productTable(yrRows,total)+recentTable(yrRows)+'</div></details>';
+    main.parentNode.insertBefore(p,main);
+    p.querySelectorAll('.cmYearBtn').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();window.custDeltaOpenDetail(cust,+b.dataset.y,false,context);});});
+    var close=p.querySelector('#cdDetailCloseV886');if(close)close.addEventListener('click',function(){if(context==='compete'){state.compDetailCust='';state.compDetailYear=0;}else{state.cdelta.detailCust='';state.cdelta.detailYear=0;}p.remove();});
+    var hist=p.querySelector('#cdFullHistoryV886');if(hist)hist.addEventListener('click',function(){state.price=state.price||{};state.price.thYear=year;state.price.thMonth=0;custTradeHistoryV665(cust,function(){if(context==='compete'){state.act='compete';competeView();}else{state.act='cust-delta';customerDelta();}},context==='compete'?'← 동종업체분석으로':'← 거래처 증감분석으로');});
+    if(move!==false){setTimeout(function(){try{var y0=p.getBoundingClientRect().top+(window.scrollY||0)-82;window.scrollTo({top:Math.max(0,y0),behavior:'smooth'});}catch(_e){}},20);}
+  }catch(err){try{console.error('[v886] 거래처 상세 표시 오류',err);}catch(_e){}}
+};
 })();
 </script>
 
