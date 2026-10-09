@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v855</title>
+<title>동방파스텍 매출 분석 도구 v863</title>
 <script>window.APP_BUILD='v874';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
@@ -1975,7 +1975,7 @@ body.fpopen #fpSum{display:block}
         <div class="au-topbar-row"><span class="au-topbar" id="auTopBar"><b class="au-topbar-lab">🔐 로그인</b><span id="auBar"></span></span></div>
       <!-- v784 : GitHub 한 번에 올리기 -->
         <details class="mk-carddet gh-uploaddet" id="ghBoxV784">
-          <summary><b style="font-weight:800;font-size:13px;color:#1e3a5f">🚀 GitHub 업로드 <span class="sub2" style="font-weight:600">(이 파일을 저장소에 바로 배포합니다)</span></b><span class="gh-file-release-v849" aria-label="현재 파일 수정 정보"><span class="gh-file-version-v849">v855</span><span class="gh-file-summary-v849" title="매출 목표전략의 전체 접기·목표금액·전년 대비·①~⑦ 요약줄 스크롤 고정 안정화">전략 요약줄 스크롤 고정</span><span class="gh-file-time-v849">수정 2026-10-09 15:05:46 KST</span></span><span class="mk-bmore">펼쳐보기 ▾</span></summary>
+<summary><b style="font-weight:800;font-size:13px;color:#1e3a5f">🚀 GitHub 업로드 <span class="sub2" style="font-weight:600">(이 파일을 저장소에 바로 배포합니다)</span></b><span class="gh-file-release-v849" aria-label="현재 파일 수정 정보"><span class="gh-file-version-v849">v863</span><span class="gh-file-summary-v849" title="워터폴의 모든 선택 가능 막대에 선택 표시를 적용하고 깜빡이는 제목 애니메이션을 자연스러운 고정 강조로 변경">그래프 선택 표시 안정화</span><span class="gh-file-time-v849">수정 2026-10-09 16:35:00 KST</span></span><span class="mk-bmore">펼쳐보기 ▾</span></summary>
           <div style="margin-top:9px">
             <div class="gs-config-grid">
               <input type="text" id="ghOwner" placeholder="GitHub 계정(owner)" autocomplete="off">
@@ -11211,6 +11211,10 @@ function svgGrouped(series,h,refLine,subLabels){ h=h||320; const W=940;
   refs.forEach(rf=>{ if(!(rf.value>0))return; const ly=ys(rf.value); const col=rf.color||'#dc2626'; const txt=rf.label||'';
     g+=`<line x1="${padL}" y1="${ly.toFixed(1)}" x2="${W-padR}" y2="${ly.toFixed(1)}" stroke="${col}" stroke-width="0.8" stroke-dasharray="4 4" opacity="0.85"/>`;
     const lblW=txt.length*7.6+12, ry=rf.dock?7:Math.max(padT+1,ly-13); const lx=(rf.dock==='left'||(!rf.dock&&rf.align==='left'))?padL:(W-padR-lblW);
+    /* v859 : 상단 라벨에서 해당 기준선 끝점까지 꺾은 리드선을 연결합니다. 막대 영역은 침범하지 않습니다. */
+    if(rf.dock){ const left=rf.dock==='left', ax=left?(lx+8):(lx+lblW-8), ex=left?padL:(W-padR), elbowY=Math.max(ry+16,ly-4);
+      g+=`<path d="M ${ax.toFixed(1)} ${(ry+12).toFixed(1)} L ${ax.toFixed(1)} ${elbowY.toFixed(1)} L ${ex.toFixed(1)} ${ly.toFixed(1)}" fill="none" stroke="${col}" stroke-width="0.9" opacity="0.9"/>`;
+      g+=`<circle cx="${ex.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="#fff" stroke="${col}" stroke-width="1"/>`; }
     g+=`<rect x="${lx.toFixed(1)}" y="${ry.toFixed(1)}" width="${lblW.toFixed(1)}" height="12" rx="2" fill="#fff" stroke="${col}" stroke-width="0.5" opacity="0.92"/>`;
     g+=`<text x="${(lx+5).toFixed(1)}" y="${(ry+8.8).toFixed(1)}" font-size="8.5" font-weight="400" text-anchor="start" fill="${col}">${esc(txt)}</text>`; });
   return `<svg viewBox="0 0 ${W} ${h}" style="width:100%;height:auto">${g}</svg>`;
@@ -11853,10 +11857,13 @@ function monthlyTrend(){
   const fcMonths=[]; for(let m=lastAct+1;m<=12;m++) if(py[m]>0) fcMonths.push(m);
   const fcPctVals=fcMonths.map(m=>pctOf(m)); const uniform = fcMonths.length>0 && fcPctVals.every(v=>v===fcPctVals[0]);
   const bulkNote = fcMonths.length? (uniform? `목표 월 일괄 <b style="color:#d97706">${fcPctVals[0]>=0?'+':''}${fcPctVals[0]}%</b> 적용 중` : `목표월 <b>개별 설정</b> 중`) : '목표월 없음';
+  /* v860 : 월 목표 대비 실제 달성률을 표 안의 소형 가로 막대로 표시합니다. */
+  const fcAchBarV860=(rate,hasAct)=>{ const valid=hasAct&&rate!=null&&isFinite(rate),raw=valid?Math.max(0,rate):0,pct=Math.min(100,raw); const col=!valid?'#cbd5e1':raw>=100?'#16a34a':raw>=80?'#2563eb':raw>=50?'#f59e0b':'#dc2626'; return `<div title="${valid?'목표 대비 '+raw.toFixed(1)+'%':'실적 미발생'}" style="display:flex;align-items:center;justify-content:center;gap:6px;min-width:116px"><span style="position:relative;display:inline-block;width:76px;height:9px;border-radius:999px;background:#e9eef5;overflow:hidden;box-shadow:inset 0 0 0 1px #dbe3ee"><i style="display:block;width:${pct.toFixed(1)}%;height:100%;border-radius:999px;background:${col}"></i></span><b style="min-width:38px;text-align:right;font-size:10.5px;color:${valid?col:'#94a3b8'}">${valid?raw.toFixed(1)+'%':'0.0%'}</b></div>`; };
   // table: 전년 / 목표 / 실적 구분
   let rows=''; for(let m=1;m<=12;m++){ if(py[m]<=0&&cy[m]<=0)continue; const hasAct=m<=actualLastMonth;
     const yoyV = hasAct? (py[m]?(cy[m]-py[m])/py[m]*100:(cy[m]>0?null:0)) : null;
     const ach = (hasAct&&tgt[m]>0)? (cy[m]-tgt[m])/tgt[m]*100 : null;
+    const achRate = (hasAct&&tgt[m]>0)?cy[m]/tgt[m]*100:null;
     const _ti=(state.monthIssue&&state.monthIssue[`${CY}-${String(m).padStart(2,'0')}`])||'';
     rows+=`<tr ${hasAct?`class="trmrow" data-m="${m}" style="cursor:pointer"`:''}><td class="l">${m}월 ${hasAct?'':'<span class="tag f">목표</span>'}${_ti?` <span class="sub2" title="이슈" style="color:#7c3aed">📌${esc(_ti)}</span>`:''}${(state.showElog&&_ti)?` <span class="sub2" style="color:#7c3aed;font-size:9.5px;font-weight:700">✎ ${esc(_ti)}${(state.monthIssueAt&&state.monthIssueAt[`${CY}-${String(m).padStart(2,'0')}`])?' · '+editStamp(state.monthIssueAt[`${CY}-${String(m).padStart(2,'0')}`]):''}</span>`:''}</td>`
       +`<td>${disp(py[m])}</td>`
@@ -11864,11 +11871,13 @@ function monthlyTrend(){
       +`<td>${hasAct?disp(cy[m]):'<span class="sub2">미발생</span>'}</td>`
       +`<td>${hasAct?diffSpan(cy[m]-py[m]):'-'}</td>`
       +`<td>${yoyV==null?'-':pctSpan(yoyV)}</td>`
+      +`<td>${fcAchBarV860(achRate,hasAct)}</td>`
       +`<td>${hasAct?(ach==null?'-':`<b style="color:${ach>=0?'var(--green)':'var(--red)'}">${ach>=0?'+':''}${ach.toFixed(1)}%</b>`):(bepMon>0?`<span class="sub2" style="color:#7c3aed">BEP +${won(bepNeed)}</span>`:'-')}</td></tr>`; }
   const pyElapsed=py.reduce((a,v,mm)=>a+(mm<=actualLastMonth?v:0),0);
   const tgtElapsed=tgt.reduce((a,v,mm)=>a+(mm<=actualLastMonth?v:0),0);
   const totalAch=tgtElapsed?((cyActT-tgtElapsed)/tgtElapsed*100):null;
-  const tot=`<tr class="total-row"><td class="l">합계</td><td>${won(pyT)}</td><td><b style="color:#d97706">${won(tgtT)}</b></td><td>${diffSpan(tgtT-pyT)}</td><td>${pctSpan(pyT?(tgtT-pyT)/pyT*100:null)}</td><td>${won(cyActT)}</td><td>${diffSpan(cyActT-pyElapsed)}</td><td>${pctSpan(pyElapsed?(cyActT-pyElapsed)/pyElapsed*100:null)}</td><td>${totalAch==null?'-':`<b style="color:${totalAch>=0?'var(--green)':'var(--red)'}">${totalAch>=0?'+':''}${totalAch.toFixed(1)}%</b>`}</td></tr>`;
+  const totalAchRate=tgtElapsed?cyActT/tgtElapsed*100:null;
+  const tot=`<tr class="total-row"><td class="l">합계</td><td>${won(pyT)}</td><td><b style="color:#d97706">${won(tgtT)}</b></td><td>${diffSpan(tgtT-pyT)}</td><td>${pctSpan(pyT?(tgtT-pyT)/pyT*100:null)}</td><td>${won(cyActT)}</td><td>${diffSpan(cyActT-pyElapsed)}</td><td>${pctSpan(pyElapsed?(cyActT-pyElapsed)/pyElapsed*100:null)}</td><td>${fcAchBarV860(totalAchRate,totalAchRate!=null)}</td><td>${totalAch==null?'-':`<b style="color:${totalAch>=0?'var(--green)':'var(--red)'}">${totalAch>=0?'+':''}${totalAch.toFixed(1)}%</b>`}</td></tr>`;
   // editor cells (ALL months get target input)
   let cells='';
   for(let m=1;m<=12;m++){ const p=py[m], c=cy[m]; if(p<=0&&c<=0)continue; const v=pctOf(m); const hasAct=m<=actualLastMonth;
@@ -11899,7 +11908,7 @@ function monthlyTrend(){
     ${pdPanelHTML(cyRaw,lastAct,tgt)}
     <div class="note" style="margin:10px 0 4px">아래 표 적용 현황: ${bulkNote} · 빨간 수평선 = 올해 목표 1~12월 <b>월평균 ${won(tgtAvg)}원</b> · 실제 실적은 <b>1~${actualLastMonth}월</b>까지 그래프·표·목표달성률에 표시 · 연매출 목표 금액은 <b>${fcCutLabel()} 실적 + ${fcFutLabel()} 목표</b>로 고정 · 💡 <b>실적 월 클릭</b> 시 그 달 거래처별 매출</div>
     <div style="font-size:14px;font-weight:900;color:#1e3a5f;margin:10px 2px 6px">${CY}년 목표 및 실적</div>
-    <div class="tablewrap" style="margin-top:4px"><table><thead><tr><th class="l">월</th><th>전년(${PY})</th><th>올해목표</th><th>증감액</th><th>증%</th><th>실적(${CY})</th><th>증감액</th><th title="실적 vs 전년 동월(합계=동기간)">전년比</th><th>목표달성</th></tr></thead><tbody>${rows}${tot}</tbody></table></div>
+    <div class="tablewrap" style="margin-top:4px"><table><thead><tr><th class="l">월</th><th>전년(${PY})</th><th>올해목표</th><th>증감액</th><th>증%</th><th>실적(${CY})</th><th>증감액</th><th title="실적 vs 전년 동월(합계=동기간)">전년比</th><th style="min-width:128px" title="월 실적 ÷ 월 목표">목표대비 달성</th><th>목표달성</th></tr></thead><tbody>${rows}${tot}</tbody></table></div>
     <div class="note">목표 %는 1~12월 모두 입력 가능하며, 그래프(목표 막대·평균선)·표·<b>매출 목표</b> 메뉴에 자동 반영·저장됩니다. <b>고철업체·고철 품목 매출은 원매출의 80%</b>로 모든 실적·목표에 반영됩니다. 전년 막대는 체크박스로 표시/숨김.</div>`;
   renderCustom(html,()=>{
     if(typeof setGlobalBar==='function')setGlobalBar(false);
@@ -11922,7 +11931,7 @@ function monthlyTrend(){
     $('#result').querySelectorAll('.pdact').forEach(c=>c.addEventListener('change',e=>{ const m=+e.target.dataset.m; if(!state.pd.actual)state.pd.actual={}; if(e.target.checked)state.pd.actual[m]=true; else delete state.pd.actual[m]; pdTouchV866('actual',m); if(typeof logEdit==='function')logEdit('PD',m+' 실적확정 '+(e.target.checked?'설정':'해제')); saveSettings(); monthlyTrend(); }));
     $('#result').querySelectorAll('.pdck').forEach(c=>c.addEventListener('change',e=>{ state.pd[e.target.dataset.k]=e.target.checked; pdTouchFlagV866(e.target.dataset.k); saveSettings(); monthlyTrend(); }));
     const cb=$('#trShowPY'); cb&&cb.addEventListener('change',e=>{ state.trend.showPY=e.target.checked; monthlyTrend(); });
-    const trc=$('#trCsv'); trc&&trc.addEventListener('click',()=>{ const rows=[]; for(let m=1;m<=12;m++){ if(py[m]<=0&&cy[m]<=0)continue; const ha=m<=actualLastMonth; const yo=ha?(py[m]?((cy[m]-py[m])/py[m]*100):''):''; const ac=(ha&&tgt[m]>0)?((cy[m]-tgt[m])/tgt[m]*100):''; rows.push([m+'월', Math.round(py[m]), Math.round(tgt[m]), ha?Math.round(cy[m]):'', ha?Math.round(cy[m]-py[m]):'', yo===''?'':yo.toFixed(1), ac===''?'':ac.toFixed(1)]); } dlCSV('monthly_trend.csv',['월','전년('+PY+')','목표','실적('+CY+')','증감액','전년비%','목표달성%'],rows); });
+    const trc=$('#trCsv'); trc&&trc.addEventListener('click',()=>{ const rows=[]; for(let m=1;m<=12;m++){ if(py[m]<=0&&cy[m]<=0)continue; const ha=m<=actualLastMonth; const yo=ha?(py[m]?((cy[m]-py[m])/py[m]*100):''):''; const ar=(ha&&tgt[m]>0)?cy[m]/tgt[m]*100:''; const ac=(ha&&tgt[m]>0)?((cy[m]-tgt[m])/tgt[m]*100):''; rows.push([m+'월', Math.round(py[m]), Math.round(tgt[m]), ha?Math.round(cy[m]):'', ha?Math.round(cy[m]-py[m]):'', yo===''?'':yo.toFixed(1), ar===''?'':ar.toFixed(1), ac===''?'':ac.toFixed(1)]); } dlCSV('monthly_trend.csv',['월','전년('+PY+')','목표','실적('+CY+')','증감액','전년비%','목표대비 달성률%','목표달성 증감%'],rows); });
   });
 }
 
@@ -27782,7 +27791,8 @@ html.edge-browser #result .sg-month-plan-svg text.sg-month-axis-text{
 #result .sg-wf-selectable{cursor:pointer;transition:filter .18s ease,opacity .18s ease,stroke-width .18s ease}
 #result rect.sg-wf-selectable:hover,#result rect.sg-wf-selectable.is-selected{filter:drop-shadow(0 3px 3px rgba(30,58,95,.28));opacity:1!important;stroke:#1d4ed8;stroke-width:1.5px}
 #result text.sg-wf-selectable{transform-box:fill-box;transform-origin:center;transition:transform .24s ease,fill .18s ease,font-weight .18s ease;will-change:transform;text-decoration:none!important}
-#result text.sg-wf-selectable:hover,#result text.sg-wf-selectable.is-selected{fill:#1d4ed8!important;text-decoration:none!important;font-weight:900!important;animation:sgWfLabelMotion .42s ease both}
+#result text.sg-wf-selectable:hover,#result text.sg-wf-selectable.is-selected{fill:#1d4ed8!important;text-decoration:none!important;font-weight:900!important;transform:translateY(-1px) scale(1.03)}
+#result .sg-wf-selected-mark-v858{fill:#dbeafe;stroke:#2563eb;stroke-width:1.4px;filter:drop-shadow(0 2px 3px rgba(37,99,235,.22))}
 #result .sg-mekko-v814 .sg-matrix-cell-rect{transition:fill .18s ease,filter .18s ease,stroke .18s ease,stroke-width .18s ease}
 #result .sg-mekko-v814 .sg-wf-selectable:hover .sg-matrix-cell-rect{fill:#fef3c7!important;filter:drop-shadow(0 3px 5px rgba(30,64,175,.22))}
 #result .sg-mekko-v814 .sg-wf-selectable.is-selected .sg-matrix-cell-rect{stroke:#1d4ed8!important;stroke-width:3px!important;filter:drop-shadow(0 3px 5px rgba(30,64,175,.28))}
@@ -27972,7 +27982,13 @@ var SG_TMAP={},SG_SMAP={};
 SG_TYPES.forEach(function(o){SG_TMAP[o.k]=o;});
 SG_STAGES.forEach(function(o){SG_SMAP[o[0]]={t:o[1],p:o[2]};});
 function sgStageLabel(type,key){var i=SG_STAGES.findIndex(function(s){return s[0]===key;}),a=SG_STAGE_LABELS[type]||[];return i>=0?(a[i]||SG_STAGES[i][1]):key;}
-function sgStageOptions(type,selected){return SG_STAGES.map(function(s){return '<option value="'+s[0]+'"'+(selected===s[0]?' selected':'')+'>'+sgStageLabel(type,s[0])+' ('+s[2]+'%)</option>';}).join('');}
+function sgStageOptions(type,selected,actualProb){return SG_STAGES.map(function(s){var pct=(selected===s[0]&&actualProb!=null&&actualProb!==''&&isFinite(+actualProb))?Math.max(0,Math.min(100,+actualProb)):s[2];return '<option value="'+s[0]+'"'+(selected===s[0]?' selected':'')+'>'+sgStageLabel(type,s[0])+' ('+pct+'%)</option>';}).join('');}
+function sgStageFromProbV856(pct){
+  pct=Math.max(0,Math.min(100,+pct||0));
+  var best=SG_STAGES[0][0],gap=Infinity;
+  SG_STAGES.forEach(function(s){var d=Math.abs(s[2]-pct);if(d<gap){gap=d;best=s[0];}});
+  return best;
+}
 function sgTypeSign(k){return (SG_TMAP[k]&&SG_TMAP[k].sign===-1)?-1:1;}
 function sgEffAmountV613(it){try{return sgItemAmountV613(it,sgAnnualTargetMapsV613());}catch(_e){return Math.max(0,+((it&&it.amount)||0));}}
 function sgSignedAmount(it){return sgEffAmountV613(it)*sgTypeSign(it.type);}
@@ -28021,6 +28037,8 @@ function sgPlan(){
   S.strategyPlan.items.forEach(function(it){
     if(it.type==='expand')it.type=(it.prod&&!it.cust)?'growthProd':'growthCust';
     else if(it.type==='defend')it.type='risk';
+    /* v857 : v853에서 만든 신규업체 연결도 새 공통 연동 방식으로 승격합니다. */
+    if(it.targetNewCustV853){it.targetDirectV857=true;it.amountLink=true;}
     /* 기존 저장 항목은 수정 1안으로 보존하고, 이후부터 안별로 완전히 분리합니다. */
     if(it.plan!=='2')it.plan='1';
   });
@@ -28097,6 +28115,58 @@ function sgSyncItemAnnualAdd(it,A,clear){
   map[link.key]=next;
   if(link.kind==='cust')(state.fc.addPctAt=state.fc.addPctAt||{})[link.key]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};
   return true;
+}
+/* v857 : 직접 등록한 신규업체·신규제품을 연간 목표표의 「업체/제품만 추가(금액)」와 같은 자료로 저장합니다. */
+function sgDirectProductTargetV857(label,A,hint){
+  hint=hint||{};label=String(label||hint.name||'').trim();
+  var lists=[A&&A.newProd,A&&A.growProd,A&&A.keepProd],hit=null;
+  lists.some(function(a){return (a||[]).some(function(o){
+    var shown=String(o.label||((o.name||o.code||'')+(o.spec?' · '+o.spec:''))).trim();
+    if(label&&(shown===label||String(o.key||'')===label)){hit=o;return true;}return false;
+  });});
+  var name=String(hint.name||(hit&&(hit.name||hit.label))||label).trim(),spec=String(hint.spec||(hit&&hit.spec)||'').trim();
+  if(!spec&&name.indexOf(' · ')>0){var a=name.split(' · ');name=a.shift().trim();spec=a.join(' · ').trim();}
+  var code=String(hint.code||(hit&&hit.code)||name||'신규제품').trim();
+  return {key:code+'│'+spec,code:code,name:name||code,spec:spec};
+}
+function sgSyncDirectTargetV857(it,A,clear){
+  if(!it||!state.fc)return false;
+  var amt=Math.max(0,Math.round(+it.amount||0)),changed=false;
+  if(it.targetNewCustV853||it.type==='newCust'&&it.targetDirectV857){
+    var old=String(it.targetNewCustKeyV857||'').trim(),key=String(it.cust||it.title||'').trim();
+    state.fc.newCusts=state.fc.newCusts||{};
+    if(old&&old!==key&&Object.prototype.hasOwnProperty.call(state.fc.newCusts,old)){delete state.fc.newCusts[old];changed=true;}
+    if(clear){if((old||key)&&Object.prototype.hasOwnProperty.call(state.fc.newCusts,old||key)){delete state.fc.newCusts[old||key];changed=true;}}
+    else if(key&&amt>0){state.fc.newCusts[key]=amt;it.targetNewCustV853=true;it.targetDirectV857=true;it.targetNewCustKeyV857=key;it.amountLink=true;changed=true;}
+  }
+  if(it.targetNewProdV857||it.type==='newProd'&&it.targetDirectV857){
+    state.fc.newProds=state.fc.newProds||{};
+    var info=sgDirectProductTargetV857(it.prod||it.title,A,it.targetNewProdMetaV857||{}),oldPk=it.targetNewProdKeyV857||'';
+    if(oldPk&&oldPk!==info.key&&Object.prototype.hasOwnProperty.call(state.fc.newProds,oldPk)){delete state.fc.newProds[oldPk];changed=true;}
+    if(clear){var pk=oldPk||info.key;if(pk&&Object.prototype.hasOwnProperty.call(state.fc.newProds,pk)){delete state.fc.newProds[pk];changed=true;}}
+    else if(info.name&&amt>0){var prev=state.fc.newProds[info.key]||{};state.fc.newProds[info.key]=Object.assign({},prev,{code:info.code,name:info.name,spec:info.spec,amt:amt});it.targetNewProdV857=true;it.targetDirectV857=true;it.targetNewProdKeyV857=info.key;it.targetNewProdMetaV857={code:info.code,name:info.name,spec:info.spec};it.amountLink=true;changed=true;}
+  }
+  if(changed){state.fc.matchBaseExact=null;sgTargetMapsCacheV613=null;try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();}catch(_e){}try{if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(fcTargetYear());}catch(_e2){}}
+  return changed;
+}
+/* v858 : 과거 버전에서 목표표 연결 없이 저장된 신규업체·신규제품 직접전략도 목표자료로 승격합니다. */
+function sgEnsureDirectTargetsV858(A,items){
+  var changed=false;
+  (items||[]).forEach(function(it){
+    if(!it||it.off||+it.amount<=0)return;
+    var valid=(it.type==='newCust'&&String(it.cust||'').trim())||(it.type==='newProd'&&String(it.prod||'').trim());
+    if(!valid)return;
+    var needs=!it.targetDirectV857||it.amountLink===false,amt=Math.max(0,Math.round(+it.amount||0));
+    if(it.type==='newCust'){
+      var ck=String(it.cust||'').trim();needs=needs||it.targetNewCustKeyV857!==ck||+((state.fc.newCusts||{})[ck]||0)!==amt;
+    }else{
+      var pi=sgDirectProductTargetV857(it.prod||it.title,A,it.targetNewProdMetaV857||{}),po=(state.fc.newProds||{})[pi.key];
+      needs=needs||it.targetNewProdKeyV857!==pi.key||!po||+po.amt!==amt;
+    }
+    if(needs){it.targetDirectV857=true;it.amountLink=true;if(sgSyncDirectTargetV857(it,A,false))changed=true;}
+  });
+  if(changed){try{sgSave();}catch(_e){}}
+  return changed;
 }
 /* 기존 목표표에 저장된 추가%와 기존업체·기존제품 파이프라인 확률을 최초 1회 대사합니다. */
 function sgEnsureAnnualProbabilityLinks(A){
@@ -28660,7 +28730,7 @@ function sgWaterfallProductPanel(A,key,planItems,useProb,basis,selectedAmount,au
     +'<td style="text-align:center;color:'+(pct!=null&&pct<0?'#dc2626':'#15803d')+'">'+(pct==null?(o.cy>0?'신규':'-'):sgPct(pct))+'</td>'
     +'<td style="text-align:center">'+sgWon(o.nCust)+'</td><td style="text-align:right">'+sgWon(o.qty)+'</td>'
     +'<td style="text-align:right;color:#7c3aed;font-weight:800">'+(o.strategy?sgWon(o.strategy):'-')+'</td></tr>';}).join('');
-  return '<div class="sg-wf-company-panel"><div class="sg-wf-company-head"><b>'+type.ic+' '+type.t+' 제품목록 · '+rows.length+'종</b><span>제품 매출 '+sgShort(totalCy)+(totalStrategy?' · 전략 기대 '+sgShort(totalStrategy):'')+'</span></div>'
+  return '<div class="sg-wf-company-panel"><div class="sg-wf-company-head"><b>'+type.ic+' '+type.t+' 제품목록 · '+rows.length+'종</b><span style="display:inline-flex;align-items:center;gap:8px">제품 매출 '+sgShort(totalCy)+(totalStrategy?' · 전략 기대 '+sgShort(totalStrategy):'')+'<button type="button" class="sgWfDetailCloseV858 btn ghost" style="padding:2px 8px;font-size:10.5px" title="상세목록을 닫고 그래프 선택을 해제합니다">× 닫기</button></span></div>'
     +(scopeNote?'<div style="padding:7px 10px;border-bottom:1px solid #dbeafe;background:#f8fbff;color:#475569;font-size:10.5px;line-height:1.5">'+scopeNote+'</div>':'')
     +(rows.length?'<div class="sg-wf-company-scroll"><table class="sg-wf-company-table"><thead><tr><th style="width:42px">NO</th><th style="width:210px;text-align:left!important">제품명</th><th style="width:180px;text-align:left!important">규격</th><th style="width:105px">'+A.PY+'년</th><th style="width:105px">'+A.CY+'년</th><th style="width:105px">증감</th><th style="width:72px">증감률</th><th style="width:70px">업체수</th><th style="width:90px">수량</th><th style="width:110px">전략 기대금액</th></tr></thead><tbody>'+body+'</tbody></table></div>':'<div style="padding:20px;text-align:center;color:#64748b">연결 제품 없음 · ② 영업전략 추진현황에서 제품 등록</div>')+'</div>';
 }
@@ -28752,7 +28822,7 @@ function sgWaterfallCompanyPanel(A,key,planItems,useProb,basis,selectedAmount,au
     +'<td style="text-align:center;color:'+(pct!=null&&pct<0?'#dc2626':'#15803d')+'">'+(pct==null?'-':sgPct(pct))+'</td>'
     +'<td style="text-align:left!important" title="'+sgEsc(detail)+'">'+sgEsc(detail||'-')+'</td>'
     +'<td style="text-align:right;color:#7c3aed;font-weight:800">'+(o.strategy?sgWon(o.strategy):'-')+'</td></tr>';}).join('');
-  return '<div class="sg-wf-company-panel"><div class="sg-wf-company-head"><b>'+title+' · '+rows.length+'개사</b><span>'+(isProd?'선택제품 매출 ':'올해 매출 ')+sgShort(totalCy)+(totalStrategy?' · 전략 기대 '+sgShort(totalStrategy):'')+'</span></div>'
+  return '<div class="sg-wf-company-panel"><div class="sg-wf-company-head"><b>'+title+' · '+rows.length+'개사</b><span style="display:inline-flex;align-items:center;gap:8px">'+(isProd?'선택제품 매출 ':'올해 매출 ')+sgShort(totalCy)+(totalStrategy?' · 전략 기대 '+sgShort(totalStrategy):'')+'<button type="button" class="sgWfDetailCloseV858 btn ghost" style="padding:2px 8px;font-size:10.5px" title="상세목록을 닫고 그래프 선택을 해제합니다">× 닫기</button></span></div>'
     +(scopeNote?'<div style="padding:7px 10px;border-bottom:1px solid #dbeafe;background:#f8fbff;color:#475569;font-size:10.5px;line-height:1.5">'+scopeNote+'</div>':'')
     +(rows.length?'<div class="sg-wf-company-scroll"><table class="sg-wf-company-table"><thead><tr><th style="width:42px">NO</th><th style="width:190px;text-align:left!important">업체명·대상</th><th style="width:105px">'+A.PY+'년'+(isProd?' 선택제품':'')+'</th><th style="width:105px">'+A.CY+'년'+(isProd?' 선택제품':'')+'</th><th style="width:105px">증감</th><th style="width:72px">증감률</th><th>관련 제품·선정 근거</th><th style="width:110px">전략 기대금액</th></tr></thead><tbody>'+body+'</tbody></table></div>':'<div style="padding:20px;text-align:center;color:#64748b;font-size:12px">연결 업체 없음 · ② 영업전략 추진현황에서 거래처 등록</div>')+'</div>';
 }
@@ -28895,6 +28965,7 @@ function sgMekkoV814(o){
 }
 function sgWaterfall(A){
   var pl=sgPlan(),goalCtx=sgGoalContext(A),planItems=sgPlanItems(goalCtx.plan);
+  sgEnsureDirectTargetsV858(A,planItems);
   var goal=goalCtx.value;
   var autoOn=goalCtx.linked&&goalCtx.year===A.CY,basis=pl.waterfallBasis==='prod'?'prod':'cust',baseVal=A.cyTot,useProb=pl.useProb!==false,vals,autoFuture=0,pipelineExtra=0;
   if(autoOn){
@@ -28906,7 +28977,7 @@ function sgWaterfall(A){
     var pipe={},pipeCount={},linkedCount={};SG_TYPES.forEach(function(t){pipe[t.k]=0;pipeCount[t.k]=0;linkedCount[t.k]=0;});
     planItems.forEach(function(it){
       if(it.off)return;
-      var covered=it.linkKind==='cust'||it.linkKind==='prod'||it.targetNewCustV853===true;
+      var covered=it.linkKind==='cust'||it.linkKind==='prod'||it.targetNewCustV853===true||it.targetNewProdV857===true;
       if(covered){linkedCount[it.type]=(linkedCount[it.type]||0)+1;return;}
       var a=sgSignedAmount(it),p0=(it.prob==null?(SG_SMAP[it.stage]||{p:50}).p:+it.prob),v=useProb?a*(p0/100):a;
       pipe[it.type]=(pipe[it.type]||0)+v;pipeCount[it.type]=(pipeCount[it.type]||0)+1;pipelineExtra+=v;
@@ -29031,15 +29102,21 @@ function sgWaterfall(A){
     /* v661 : 계획 합계에 직접 더하거나 빼는 항목의 제목만 연한 형광으로, 글자 폭에 맞춰 칠합니다.
        (계획 합계는 칠하지 않습니다.) */
     var _sumStep=(st.type==='base'||st.type==='delta');
+    /* 모든 선택 가능 항목에서 제목 폭을 계산해야 선택 표시가 빠지지 않습니다. */
+    var _t=String(st.lab||''), _w=0;
+    for(var _ci=0;_ci<_t.length;_ci++){ var _cc=_t.charCodeAt(_ci);
+      if(_cc>=0xD800&&_cc<=0xDBFF){ _w+=12; _ci++; }
+      else if(_cc>0x1100){ _w+=9.7; }
+      else if(_cc===32){ _w+=3.2; }
+      else { _w+=5.6; } }
     if(_sumStep){
-      var _t=String(st.lab||''), _w=0;
-      for(var _ci=0;_ci<_t.length;_ci++){ var _cc=_t.charCodeAt(_ci);
-        if(_cc>=0xD800&&_cc<=0xDBFF){ _w+=12; _ci++; }        /* 이모지 */
-        else if(_cc>0x1100){ _w+=9.7; }                        /* 한글 등 전각 */
-        else if(_cc===32){ _w+=3.2; }
-        else { _w+=5.6; } }
       var _lw=Math.max(18,_w+3);
       s+='<rect x="'+(cx-_lw/2)+'" y="'+(T+ih+6)+'" width="'+_lw+'" height="13" rx="2" fill="#fef9c3"/>';
+    }
+    if(selectable&&selected===st.k){
+      /* 선택 배경은 제목의 실제 문자 구성에 맞춘 폭만 사용합니다. */
+      var _sw=Math.max(24,_w+9);
+      s+='<rect class="sg-wf-selected-mark-v858" x="'+(cx-_sw/2)+'" y="'+(T+ih+3)+'" width="'+_sw+'" height="19" rx="9.5"/>';
     }
     s+='<text class="sg-wf-item-title'+(selectable?' sg-wf-selectable'+(selected===st.k?' is-selected':''):'')+'" data-screen-px="14"'+(selectable?' data-wf-key="'+st.k+'" tabindex="0" role="button" aria-label="'+sgEsc(st.lab)+' '+(isProductStep?'제품':'업체')+'목록 보기"':'')+' x="'+cx+'" y="'+(T+ih+16)+'" text-anchor="middle" font-size="14" font-weight="700" fill="'+(_sumStep?'#1f2937':((st.type==='delta'||st.type==='info')&&st.v===0?'#94a3b8':'#475569'))+'">'+sgEsc(st.lab)+'</text>';
     /* 제목 아래 보조문구는 표시하지 않습니다. (구분은 막대 스타일과 상단 안내문으로 대신합니다) */
@@ -29086,24 +29163,17 @@ function sgWaterfall(A){
   var head='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px;padding:7px 9px;border:1px solid #bbf7d0;border-radius:8px;background:#f0fdf4;font-size:11px;color:#166534"><b>'+(autoOn?'연간 목표표 자동 연동':'계획 구성 보기')+'</b>'
     +_typeSegV814
     +_typeNoteV814+'</div>';
-  var foot='<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:9px">'
+  var foot='<div style="display:flex;flex-wrap:wrap;gap:7px;margin:0 0 9px">'
     +sgPill(A.CY+'년 실적',sgShort(baseVal)+'원','#1e3a5f')
     +sgPill(autoOn?'남은 목표+추가전략':'전략 계획 합계',(autoOn?'':(useProb?'기대 ':''))+sgShort(planTot)+'원','#7c3aed')
     +sgPill('거래축소 총 영향',sgShort(Math.min(0,cutVal?cutVal.v:0))+'원','#b45309')
     +sgPill('도달 예상',sgShort(end)+'원 ('+rate.toFixed(1)+'%)',end>=goal?'#15803d':'#b91c1c')
     +sgPill(gap>0?'추가로 찾아야 할 매출':'목표 초과 달성',sgShort(Math.abs(gap))+'원',gap>0?'#dc2626':'#15803d')
-    +'</div>'
-    +'<div class="note" style="margin-top:8px">'+(gap>0
-      ? '목표까지 <b style="color:#dc2626">'+sgShort(gap)+'원</b>이 비어 있습니다. '+(autoOn?'연간 목표표의 남은 목표 <b>'+sgShort(autoFuture)+'</b>에 영업전략 순 기대영향 <b>'+((pipelineExtra>=0?'+':'')+sgShort(pipelineExtra))+'</b>과 미수관리 자동 거래축소를 합산한 결과입니다.':'아래 <b>② 영업전략 추진현황</b>에 전략을 등록하면 즉시 반영됩니다.')
-      : (autoOn?'연간 목표표 자동분류와 영업전략 추진현황 직접전략을 합산한 도달예상이 목표를 <b style="color:#15803d">'+sgShort(-gap)+'원</b> 초과합니다.':'등록된 전략만으로 목표를 <b style="color:#15803d">'+sgShort(-gap)+'원</b> 초과합니다. 확률 낮은 항목의 실현 가능성을 재점검하세요.'))+'</div>'
-    /* v806 : 「자동 거래축소 산출 근거」 안내줄은 요청에 따라 표시하지 않습니다. */
-    +'<div class="sub2" style="margin-top:5px"><b>읽는 방법:</b> '+(_wfTypeV814==='B'
-      ? '각 셀은 <b>A 워터폴의 기존 순매출·신규업체·신규제품·신규사업·거래축소</b>를 제품축과 매출처축으로 교차 배분한 계획액입니다. 9개 셀과 오른쪽 4개 막대의 합계는 A 워터폴의 <b>계획합계·도달예상</b>과 항상 같습니다.'
-      : '신규업체·신규사업은 직전 누적금액 위로 증가하고, 💳 거래축소는 위에서 아래로 차감됩니다. 성장업체·거래처위험·기존제품·성장제품은 기존업체 매출에 포함된 참고 비중이라 계획합계에 다시 더하지 않습니다. <b>신규제품</b>은 계획 합계에 별도로 더합니다(기존업체 막대에서 그만큼 빼므로 합계는 같습니다).')+'</div>';
+    +'</div>';
   var selectedObj=steps.filter(function(o){return o.k===selected;})[0],selectedAmount=selectedObj?selectedObj.v:0;
   var _detail=sgWaterfallCompanyPanel(A,selected,planItems,useProb,basis,selectedAmount,autoOn);
   if(_wfTypeV814==='B'&&pl.matrixSelectedCell)_detail=sgMatrixCellEditorV825(A,pl.matrixSelectedCell,goalCtx.year,goalCtx.plan,{keep:existingPlan,newCust:newCustPlan,newProd:newProdPlan,newBiz:newBizPlan,cut:cutPlan,end:end})+_detail;
-  return head+s+_detail+sourceDetail+foot;
+  return foot+head+s+_detail+sourceDetail;
 }
 function sgGoalAmountHTML(A){
   var g=sgGoalContext(A);
@@ -29346,28 +29416,21 @@ function sgPipeline(A){
   var form='<datalist id="sgCustDL">'+custList+'</datalist><datalist id="sgProdDL">'+prodList+'</datalist>'
     +'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:flex-end;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:9px 10px;margin-bottom:9px">'
     +sgFld('구분','<select id="sgFType" style="'+SGI+'width:155px">'+typeOpts+'</select>')
-    +sgFld('대상 거래처','<input id="sgFCust" class="sgSuggestInput" data-suggest-kind="cust" autocomplete="off" placeholder="거래처명 (신규는 직접 입력)" style="'+SGI+'width:176px;text-align:left">')
-    +sgFld('대상 제품','<input id="sgFProd" class="sgSuggestInput" data-suggest-kind="prod" autocomplete="off" placeholder="품명/규격" style="'+SGI+'width:319px;text-align:left">')
+    +sgFld('대상 거래처 <button class="btn" id="sgPickV809" type="button" title="전체 거래처 목록에서 여러 건을 골라 한 번에 등록합니다" style="background:#7c3aed;color:#fff;border-color:#7c3aed;font-size:9.5px;padding:1px 6px">📋 거래처 골라 담기</button>','<input id="sgFCust" class="sgSuggestInput" data-suggest-kind="cust" autocomplete="off" placeholder="거래처명 (신규는 직접 입력)" style="'+SGI+'width:210px;text-align:left">')
+    +sgFld('대상 제품 <button class="btn" id="sgPickProdV854" type="button" title="전체 제품 목록에서 여러 건을 골라 한 번에 등록합니다" style="background:#2563eb;color:#fff;border-color:#2563eb;font-size:9.5px;padding:1px 6px">📦 제품 골라 담기</button>','<input id="sgFProd" class="sgSuggestInput" data-suggest-kind="prod" autocomplete="off" placeholder="품명/규격" style="'+SGI+'width:345px;text-align:left">')
     +sgFld('비고/아이템','<input id="sgFTitle" class="sgSuggestInput" data-suggest-kind="title" autocomplete="off" placeholder="비고 또는 추진 아이템 입력" style="'+SGI+'width:220px;text-align:left">')
     +sgFld('목표/영향금액','<input id="sgFAmt" placeholder="비우면 목표연동" title="비워두고 등록하면 연간 목표표의 올해목표액과 자동 연동됩니다. 금액을 적으면 직접입력으로 고정됩니다." style="'+SGI+'width:127px;text-align:right">')
-    +sgFld('단계','<select id="sgFStage" title="선택한 전략구분에 맞는 단계명으로 표시됩니다" style="'+SGI+'width:155px">'+stageOpts+'</select>')
+    +sgFld('단계','<select id="sgFStage" title="선택한 전략구분에 맞는 단계명으로 표시됩니다" style="'+SGI+'width:175px">'+stageOpts+'</select>')
     +sgFld('시작월','<select id="sgFMon" style="'+SGI+'width:81px">'+[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){return '<option value="'+m+'"'+(m===sgNextMon()?' selected':'')+'>'+m+'월</option>';}).join('')+'</select>')
     +sgFld('담당','<input id="sgFOwner" placeholder="담당자" style="'+SGI+'width:90px">')
     +'<button class="btn" id="sgAdd" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;padding:6px 14px">＋ 전략 등록</button>'
-    +'<button class="btn" id="sgPickV809" type="button" title="전체 거래처 목록에서 여러 건을 골라 한 번에 등록합니다" style="background:#7c3aed;color:#fff;border-color:#7c3aed;padding:6px 12px">📋 거래처 골라 담기</button>'
-    +'<button class="btn" id="sgPickProdV854" type="button" title="전체 제품 목록에서 여러 건을 골라 한 번에 등록합니다" style="background:#2563eb;color:#fff;border-color:#2563eb;padding:6px 12px">📦 제품 골라 담기</button>'
     +'<span style="align-self:center;color:#64748b;font-size:10.5px">불특정 다수 업체 대상은 거래처를 비우고 대상 제품만 입력해도 저장됩니다.</span>'
     +'</div>';
 
   try{ sgApplyTypeNamesV810(); }catch(_e){}
-  var futureNote=sgFutureModeV810()
-    ? '<div style="margin:0 0 8px;padding:7px 11px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:9px;font-size:11.5px;line-height:1.55;color:#4c1d95">'
-      +'🔮 <b>'+((typeof fcTargetYear==="function")?fcTargetYear():"")+'년 목표계획 모드</b> — 아직 실적이 없는 해이므로 '
-      +'<b>📈 성장예상업체 · 📈 성장예상제품 · 💳 거래축소예상</b>은 자동 분류가 아니라 <b>직접 고르는 항목</b>입니다. '
-      +'아래 <b>📋 거래처 골라 담기</b> 또는 <b>📦 제품 골라 담기</b>로 전체 거래처·제품(올해 거래가 없는 업체 포함)에서 예상 대상을 선택하십시오.</div>'
-    : '';
-  var chips=futureNote+'<div class="sg-pipeline-filterbar-v854" style="display:flex;flex-wrap:nowrap;gap:3px;align-items:center;margin-bottom:8px;overflow-x:auto;white-space:nowrap;padding-bottom:2px">'
-    +'<span style="display:inline-flex;flex:0 0 auto;align-items:center;padding:3px 6px;border-radius:12px;background:#ede9fe;color:#6d28d9;font-size:10.5px;font-weight:900">현재 수정 '+activePlan+'안 전용</span>'
+  /* v861 : 목표계획 모드 장문 안내는 숨기고 필터·골라 담기 기능만 유지합니다. */
+  var chips='<div class="sg-pipeline-filterbar-v854" style="display:flex;flex-wrap:nowrap;gap:3px;align-items:center;margin-bottom:8px;overflow-x:auto;white-space:nowrap;padding-bottom:2px">'
+    +'<span style="display:inline-flex;flex:0 0 auto;align-items:center;padding:4px 7px;border-radius:12px;background:#ede9fe;color:#6d28d9;font-size:11px;font-weight:900">현재 수정 '+activePlan+'안 전용</span>'
     +sgChip('all','전체 ('+(items.length+tgtRows.length)+')',filt==='all','#334155')
     +SG_TYPES.map(function(t){
       var n=items.filter(function(i){return i.type===t.k;}).length;
@@ -29376,10 +29439,10 @@ function sgPipeline(A){
       var g=(t.k==='newCust')?tgtRows.length:0;
       return sgChip(t.k,t.ic+' '+t.t+' ('+(n+g)+'건'+(g?' <span style="opacity:.75;color:#1d4ed8">목표표 '+g+'</span>':'')+(x?' <span style="opacity:.75">+'+x+'</span>':'')+')',filt===t.k,t.c); }).join('')
     +'<span style="flex:1 1 0;min-width:0"></span>'
-    +'<button class="btn ghost" id="sgExp" style="flex:0 0 auto;font-size:10.5px;padding:3px 6px">📤 내보내기</button>'
-    +'<button class="btn ghost" id="sgImp" style="flex:0 0 auto;font-size:10.5px;padding:3px 6px">📥 불러오기</button>'
+    +'<button class="btn ghost" id="sgExp" style="flex:0 0 auto;font-size:11px;padding:4px 8px">📤 내보내기</button>'
+    +'<button class="btn ghost" id="sgImp" style="flex:0 0 auto;font-size:11px;padding:4px 8px">📥 불러오기</button>'
     +'</div>'
-    +(function(){ /* v663 : 목표표에 등록한 신규업체를 여기서도 보여 줍니다. */
+    +(function(){ return ''; /* v856 : 목표표 신규업체 안내상자는 요청에 따라 숨기고 자료 연결은 유지합니다. */
        var L=sgTargetNewCustsV663(); if(!L.length)return '';
        var tot=L.reduce(function(a,o){return a+o.amt;},0);
        return '<div style="margin:-2px 0 9px;padding:8px 10px;border:1px solid #bfdbfe;border-radius:9px;background:#f8fbff;font-size:11.5px;line-height:1.75;color:#334155">'
@@ -29392,7 +29455,7 @@ function sgPipeline(A){
          +(L.length>30?('<span class="sub2">외 '+(L.length-30)+'개사</span>'):'')
          +'</div></div>';
      })()
-    +'<div style="display:flex;align-items:flex-start;gap:7px;flex-wrap:wrap;margin:-2px 0 8px;padding:7px 9px;border:1px solid #dbeafe;border-radius:8px;background:#f8fbff;font-size:10.8px;color:#475569;line-height:1.55"><b style="color:#1e3a5f;white-space:nowrap">등록 시 적용 위치</b><span><b>① 매출목표 달성 구성의 영업전략 추가금액</b> · <b>영업 진행단계별 현황</b> · <b>전략 반영 월별 기대매출</b> · <b>목표 달성 전망</b>에 반영됩니다. 성공확률을 켜면 <b>목표/영향금액 × 확률</b>로 계산합니다. 신규·성장·기존·신규사업·거래처 위험은 더하고, 💳 거래축소는 차감합니다. 연간 목표표와 명시적으로 연결된 기존업체·기존제품 추가%만 달성 구성에서 중복 제외하며, 직접 등록한 신규업체·신규제품은 추가 기대금액으로 반영합니다.</span></div>';
+    +'';
 
   var rowsHtml;
   if(!view.length&&!tgtShow.length){
@@ -29421,16 +29484,18 @@ function sgPipeline(A){
       var act=+_actMapV807[mk]||0, hasAct=(act>0&&o.amt>0);
       var autoPr=hasAct?Math.max(0,Math.min(100,Math.round(act/o.amt*100))):100;
       var pr=(meta.prob==null?autoPr:+meta.prob);
-      var st=meta.stage||(hasAct?_nearStageV807(autoPr):'fix');
+      var st=(meta.prob!=null)?sgStageFromProbV856(pr):(meta.stage||(hasAct?_nearStageV807(autoPr):'fix'));
+      if(meta.stage!==st)meta.stage=st;
       var exp2=(hasAct&&meta.prob==null)?Math.round(act):Math.round(o.amt*Math.max(0,Math.min(100,pr))/100);
-      var actTag=hasAct?('<div class="sub2" style="color:#0d9488;font-weight:800;margin-top:2px">실적 '+sgWon(act)+' · 달성 '+autoPr+'%</div>'):'';
+      var shownPrV856=Math.max(0,Math.min(100,Math.round(pr*10)/10));
+      var actTag=hasAct?('<div class="sub2" style="color:#0d9488;font-weight:400;margin-top:2px">실적 '+sgWon(act)+' · 달성 '+shownPrV856+'%</div>'):'';
       rowsHtml+='<tr style="border-bottom:1px solid #eef2f7;background:#f8fbff">'
         +'<td style="padding:6px 5px;text-align:left"><span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:11px;background:#dbeafe;color:#1e40af;font-size:11px;font-weight:900">\ud83c\udfe2 신규업체</span></td>'
         +'<td style="padding:6px 5px;text-align:left"><input class="sgTgtName" list="sgCustDL" autocomplete="off" data-n="'+sgEsc(mk)+'" value="'+sgEsc(mk)+'" title="실제 매출이 생겨 업체명이 다르면 실제 거래처명을 골라 바꾸세요. 출고자료에 있는 업체면 «실제 매출처 연결»로, 없으면 이름만 바뀝니다." style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;font-weight:800;border-color:#bfdbfe;background:#fff;text-align:left"></td>'
         +'<td style="padding:6px 5px;text-align:left;color:#94a3b8">-</td>'
-        +'<td style="padding:6px 5px;text-align:left;color:#1d4ed8;font-weight:700">목표표 등록(업체추가)'+actTag+'</td>'
+        +'<td style="padding:6px 5px;text-align:left;color:#1d4ed8;font-weight:400">목표표 등록(업체추가)'+actTag+'</td>'
         +'<td style="padding:6px 5px;text-align:right;font-weight:900;color:#1d4ed8">'+sgWon(o.amt)+'</td>'
-        +'<td style="padding:6px 5px;text-align:center"><select class="sgTgtStage" data-n="'+sgEsc(mk)+'" style="'+SGI+'width:110px">'+sgStageOptions('newCust',st)+'</select></td>'
+        +'<td style="padding:6px 5px;text-align:center"><select class="sgTgtStage" data-n="'+sgEsc(mk)+'" style="'+SGI+'width:135px">'+sgStageOptions('newCust',st,pr)+'</select></td>'
         +'<td style="padding:6px 5px;text-align:center"><input class="sgTgtProb" data-n="'+sgEsc(mk)+'" value="'+pr+'" style="'+SGI+'width:54px;text-align:center"> %</td>'
         +'<td style="padding:6px 5px;text-align:right;font-weight:800;color:'+(hasAct?'#0d9488':'#1d4ed8')+'">'+sgWon(exp2)+(hasAct?'<div class="sub2" style="color:#0d9488;font-weight:700">실적기준</div>':'')+'</td>'
         +'<td style="padding:6px 5px;text-align:center;color:#94a3b8">-</td>'
@@ -29442,6 +29507,8 @@ function sgPipeline(A){
     view.forEach(function(it){
       var T=SG_TMAP[it.type]||SG_TMAP.newCust;
       var p=(it.prob==null?(SG_SMAP[it.stage]||{p:50}).p:+it.prob);
+      var stageV856=(it.prob==null?(it.stage||sgStageFromProbV856(p)):sgStageFromProbV856(p));
+      if(it.stage!==stageV856)it.stage=stageV856;
       /* v613 : 연간 목표표의 올해목표액과 연동된 금액을 사용합니다. */
       var linked=sgLinkedTargetV613(it,tmaps),linkOn=(linked!=null&&it.amountLink!==false);
       var a=linkOn?linked:(+it.amount||0), signed=a*sgTypeSign(it.type), e=signed*p/100;
@@ -29454,15 +29521,15 @@ function sgPipeline(A){
           +'</td>'
         +'<td style="padding:5px;text-align:left"><input class="sgE sgSuggestInput sg-pipeline-edit" data-suggest-kind="cust" autocomplete="off" data-id="'+it.id+'" data-f="cust" value="'+sgEsc(it.cust||'')+'" style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;border-color:#e2e8f0"></td>'
         +'<td style="padding:5px;text-align:left"><input class="sgE sgSuggestInput sg-pipeline-edit" data-suggest-kind="prod" autocomplete="off" data-id="'+it.id+'" data-f="prod" value="'+sgEsc(it.prod||'')+'" style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;border-color:#e2e8f0"></td>'
-        +'<td style="padding:5px;text-align:left"><input class="sgE sgSuggestInput sg-pipeline-edit" data-suggest-kind="title" autocomplete="off" data-id="'+it.id+'" data-f="note" value="'+sgEsc(sgItemNote(it))+'" style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;border-color:#e2e8f0"></td>'
+        +'<td style="padding:5px;text-align:left"><input class="sgE sgSuggestInput sg-pipeline-edit" data-suggest-kind="title" autocomplete="off" data-id="'+it.id+'" data-f="note" value="'+sgEsc(sgItemNote(it))+'" style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;border-color:#e2e8f0;font-weight:400"></td>'
         +'<td style="padding:5px;text-align:right">'
           +'<input class="sgE" data-id="'+it.id+'" data-f="amount" value="'+sgWon(a)+'" '+(linkOn?'readonly title="연간 목표표의 올해목표액과 연동 중입니다. 🔗을 눌러 직접입력으로 바꿀 수 있습니다."':'title="직접 입력한 금액입니다."')+' style="'+SGI+'width:119px;text-align:right;border-color:'+(linkOn?'#93c5fd':'#e2e8f0')+';background:'+(linkOn?'#eff6ff':'#fff')+';font-weight:800">'
           +(linked!=null?'<div style="margin-top:2px;display:flex;align-items:center;justify-content:flex-end;gap:4px">'
              +'<button class="sgAmtLink btn ghost" data-id="'+it.id+'" data-on="'+(linkOn?'1':'0')+'" title="'+(linkOn?'직접입력으로 전환':'연간 목표표 올해목표액과 다시 연동')+'" style="font-size:9.5px;padding:1px 6px;'+(linkOn?'background:#dbeafe;color:#1d4ed8;border-color:#93c5fd':'')+'">'+(linkOn?'🔗 목표연동':'✎ 직접입력')+'</button>'
              +'<span class="sub2" style="font-size:9px;color:#94a3b8;white-space:nowrap">목표 '+sgShort(linked)+'</span></div>':'')
           +'</td>'
-        +'<td style="padding:5px;text-align:center"><select class="sgE" data-id="'+it.id+'" data-f="stage" style="'+SGI+'width:114px;border-color:#e2e8f0">'
-          +SG_STAGES.map(function(s){return '<option value="'+s[0]+'"'+(it.stage===s[0]?' selected':'')+'>'+sgStageLabel(it.type,s[0])+'</option>';}).join('')+'</select></td>'
+        +'<td style="padding:5px;text-align:center"><select class="sgE" data-id="'+it.id+'" data-f="stage" style="'+SGI+'width:140px;border-color:#e2e8f0">'
+          +SG_STAGES.map(function(s){var shownPct=stageV856===s[0]?p:s[2];return '<option value="'+s[0]+'"'+(stageV856===s[0]?' selected':'')+'>'+sgStageLabel(it.type,s[0])+' ('+shownPct+'%)</option>';}).join('')+'</select></td>'
         +'<td style="padding:5px;text-align:center"><input class="sgE" data-id="'+it.id+'" data-f="prob" value="'+p+'" style="'+SGI+'width:53px;text-align:center;border-color:#e2e8f0">%</td>'
         +'<td style="padding:5px;text-align:right;font-weight:800;color:'+T.c+'">'+sgWon(e)+'</td>'
         +'<td style="padding:5px;text-align:center"><select class="sgE sg-start-month" data-id="'+it.id+'" data-f="mon" style="'+SGI+'">'
@@ -29480,8 +29547,7 @@ function sgPipeline(A){
         +'<td colspan="4" style="padding:6px 5px;font-size:11px">🔗 교차 표시 '+xCnt+'건 (원래 구분에서 집계됨 — 여기서는 참고용)</td>'
         +'<td style="padding:6px 5px;text-align:right;font-size:11px">'+sgWon(xTot)+'</td><td colspan="2"></td>'
         +'<td style="padding:6px 5px;text-align:right;font-size:11px">'+sgWon(xExp)+'</td><td colspan="4"></td></tr>':'')
-      +'</tfoot></table></div>'
-      +'<div class="sub2" style="margin:6px 0 0"><b style="color:#1d4ed8">🔗 목표연동</b> 파란 금액칸은 <b>매출 목표 → 📋 업체별 매출 목표(연간)</b>의 <b>올해목표액</b>과 자동 연동됩니다. 제품전략(신규·성장·기존제품)은 <b>📦 제품(규격)별 매출 목표</b>의 올해목표액을 사용합니다. 목표표에서 조정%·추가%를 바꾸면 이 금액도 함께 바뀝니다.<br><b style="color:#b45309">✎ 직접입력</b>을 누르면 연동을 끊고 금액을 직접 관리할 수 있습니다.<br><b style="color:#64748b">🔗 교차</b> 배지가 붙은 줄은 <b>다른 구분으로 등록된 전략</b>인데, 대상 거래처나 대상 제품이 이 구분에 해당해 함께 보여준 것입니다. 금액은 <b>원래 구분에서만 집계</b>되므로 이중 계상되지 않습니다.</div>';
+      +'</tfoot></table></div>';
   }
 
   // 단계별 퍼널
@@ -29495,7 +29561,7 @@ function sgPipeline(A){
 var SGI='font-family:inherit;font-size:12px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;';
 function sgFld(lab,inner){ return '<div style="display:flex;flex-direction:column;gap:3px"><b style="font-size:11px;color:#64748b">'+lab+'</b>'+inner+'</div>'; }
 function sgChip(v,lab,on,col){
-  return '<button class="sgFilt" data-v="'+v+'" style="flex:0 0 auto;border:1px solid '+(on?col:'#cbd5e1')+';background:'+(on?col:'#fff')+';color:'+(on?'#fff':'#475569')+';border-radius:8px;padding:3px 6px;font-family:inherit;font-size:10.5px;font-weight:800;cursor:pointer">'+lab+'</button>';
+  return '<button class="sgFilt" data-v="'+v+'" style="flex:0 0 auto;border:1px solid '+(on?col:'#cbd5e1')+';background:'+(on?col:'#fff')+';color:'+(on?'#fff':'#475569')+';border-radius:8px;padding:4px 7px;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer">'+lab+'</button>';
 }
 
 /* 영업 진행단계별 현황 */
@@ -30333,11 +30399,11 @@ function sgOverview(A){
     +'<div class="note" style="margin-bottom:10px"><b>사용법:</b> ① 목표 설정 → ② 영업전략 등록 시 그래프 반영. '
     +'③~⑥=<b>기회 위치</b>, ⑦=제품·거래처 우선순위. '
     +'데이터에 없는 신규업체·개발제품·신규사업은 상단 <b>🏢신규업체 / 🧪신규제품 / 🚀신규사업</b> 탭에서 직접 등록.</div>'
-    +sgSecBar(A)
-    /* v779 : 목표 연도·목표안·실적확정 줄을 ① 항목 제목줄에서 꺼내 «전체 접기» 바로 아랫줄로 옮겼습니다. */
-    +'<div class="panel" id="sgGoalCtlRowV779" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:8px 11px;margin:0 0 10px;border-left:4px solid #0d9488;background:#f6fdfc">'
+    /* v862 : 목표 조건을 «전체 접기» 줄 위로 이동하고 세로 여백을 줄였습니다. */
+    +'<div class="panel" id="sgGoalCtlRowV779" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:4px 9px;margin:0 0 7px;border-left:4px solid #0d9488;background:#f6fdfc;min-height:0">'
       +'<b style="font-size:12px;color:#0f766e;white-space:nowrap">🎯 목표 조건</b>'+sgGoalCtl(A,true)
       +'</div>'
+    +sgSecBar(A)
     +sgSec('w','①','매출목표 달성 구성','무엇으로 목표를 채울 것인가','',sgWaterfall(A))
     +sgSec('p','②','영업전략 추진현황','9개 전략분류별 신규·성장·유지·회복·축소 계획','',sgPipeline(A))
     +sgSec('o','③','교차판매 기회맵','거래처/제품 기준을 전환해 확장 기회를 찾습니다','',sgOppMap(A))
@@ -31278,7 +31344,16 @@ function sgBind(A){
     var kind=el.dataset.k, id=el.dataset.id, f=el.dataset.f;
     var D=SG_MAN[kind], col=D.cols.filter(function(c){return c.f===f;})[0];
     var o=sgMan(kind).filter(function(x){return x.id===id;})[0]; if(!o)return;
+    var oldName=o.name;
     o[f]=col&&col.num?sgNum(el.value):el.value;
+    /* 이미 전략등록한 수동 신규업체·제품은 원본 행 수정도 목표표까지 이어집니다. */
+    if(kind==='cust'||kind==='prod')sgPlanItems().forEach(function(it){
+      if(it.type!==D.type||String(it.title||'')!==String(oldName||''))return;
+      it.title=o.name||it.title;it.amount=Math.max(0,+o.amount||0);
+      if(kind==='cust')it.cust=o.name||it.cust;
+      else{it.prod=(o.name||'')+(o.spec?' · '+o.spec:'');it.targetNewProdMetaV857={code:o.code||o.name,name:o.name,spec:o.spec||''};}
+      it.targetDirectV857=true;sgSyncDirectTargetV857(it,A,false);
+    });
     sgSave(); sgRe(); }); });
   $$('.sgManDel').forEach(function(b){ b.addEventListener('click',function(){
     if(!confirm('이 항목을 삭제할까요?'))return;
@@ -31290,17 +31365,23 @@ function sgBind(A){
     var title=o.name||'(무제)';
     var registered=sgPlanItems().filter(function(x){return x.type===D.type&&String(x.title||'')===title;});
     if(registered.length){
-      var ids={};registered.forEach(function(x){ids[x.id]=true;});
+      var ids={};registered.forEach(function(x){ids[x.id]=true;sgSyncDirectTargetV857(x,A,true);});
       pl.items=pl.items.filter(function(x){return !ids[x.id];});
       if(typeof logEdit==='function')logEdit('영업전략',D.t+' 등록 해제: '+title);
       sgSave();sgRe();return;
     }
     var amt=+o.amount||0;
     if(amt<=0){ alert('예상/목표 매출을 먼저 입력하세요.'); return; }
-    pl.items.push({id:sgUid(),plan:sgActivePlan(),type:D.type,title:title,
+    var regItem={id:sgUid(),plan:sgActivePlan(),type:D.type,title:title,
       cust:(kind==='cust'?o.name:(o.target||'')),
       prod:(kind==='prod'?(o.name+(o.spec?' · '+o.spec:'')):(kind==='biz'?(o.market||''):'')),
-      amount:amt,stage:'lead',prob:20,mon:sgNextMon(),owner:o.owner||'',off:false});
+      amount:amt,amountLink:(kind==='cust'||kind==='prod'),stage:'lead',prob:20,mon:sgNextMon(),owner:o.owner||'',off:false};
+    if(kind==='cust'||kind==='prod'){
+      regItem.targetDirectV857=true;
+      if(kind==='prod')regItem.targetNewProdMetaV857={code:o.code||o.name,name:o.name,spec:o.spec||''};
+      sgSyncDirectTargetV857(regItem,A,false);
+    }
+    pl.items.push(regItem);
     sgSave(); sgRe(); }); });
 
   var goal=document.getElementById('sgGoal');
@@ -31373,6 +31454,9 @@ function sgBind(A){
     el.addEventListener('click',open);
     el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
   });
+  $$('.sgWfDetailCloseV858').forEach(function(b){b.addEventListener('click',function(e){
+    e.preventDefault();e.stopPropagation();pl.waterfallSelectedKey='';pl.matrixSelectedCell='';sgSave();sgRe(false);
+  });});
 
   /* v825 : 3×3 매트릭스 셀별 기존데이터 연동·신규 목표 직접등록 */
   var mxCell=pl.matrixSelectedCell||'',mxLink=document.getElementById('sgMxLinkAddV825'),mxDirect=document.getElementById('sgMxDirectAddV825');
@@ -31562,14 +31646,8 @@ function sgBind(A){
     }
     var newItem={id:sgUid(),plan:sgActivePlan(),type:typ,title:title||cust||prodV,note:title,cust:cust,prod:prodV,
       amount:typed?amount:Math.max(0,Math.round(linkedAmt)),amountLink:!typed,stage:st,prob:(SG_SMAP[st]||{p:50}).p,mon:+g('sgFMon')||1,owner:(g('sgFOwner')||'').trim(),off:false};
-    /* v853 : 신규·경쟁사업체를 직접 금액으로 등록하면 업체별 매출 목표의 신규업체와 같은 자료로 연결합니다. */
-    if(typ==='newCust'&&typed&&cust){
-      newItem.targetNewCustV853=true;
-      state.fc.newCusts=state.fc.newCusts||{}; state.fc.newCusts[cust]=Math.max(0,Math.round(amount));
-      state.fc.matchBaseExact=null;
-      if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
-      try{if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(fcTargetYear());}catch(_ny){}
-    }
+    /* v857 : 금액을 직접 입력한 신규업체·신규제품도 목표표의 신규 목표와 즉시 연결합니다. */
+    if(typed&&((typ==='newCust'&&cust)||(typ==='newProd'&&prodV))){newItem.targetDirectV857=true;sgSyncDirectTargetV857(newItem,A,false);}
     pl.items.push(newItem);
     try{ if(typeof logEdit==='function')logEdit('영업전략','등록: '+(title||cust||prodV)+' '+sgWon(amount)); }catch(_e){}
     sgSave(); sgRe();
@@ -31579,12 +31657,8 @@ function sgBind(A){
   var sgTextSaveTimer=0;
   var sgSaveTextEdit=function(el,immediate){
     var it=pl.items.filter(function(x){return x.id===el.dataset.id;})[0]; if(!it)return;
-    var oldCust=it.cust; it[el.dataset.f]=el.value;
-    if(it.targetNewCustV853&&el.dataset.f==='cust'){
-      state.fc.newCusts=state.fc.newCusts||{};
-      if(oldCust&&oldCust!==el.value&&+state.fc.newCusts[oldCust]===Math.round(+it.amount||0))delete state.fc.newCusts[oldCust];
-      if(String(el.value||'').trim())state.fc.newCusts[String(el.value).trim()]=Math.max(0,Math.round(+it.amount||0));
-    }
+    it[el.dataset.f]=el.value;
+    if(it.targetDirectV857&&((it.type==='newCust'&&['cust','title'].indexOf(el.dataset.f)>=0)||(it.type==='newProd'&&['prod','title'].indexOf(el.dataset.f)>=0)))sgSyncDirectTargetV857(it,A,false);
     clearTimeout(sgTextSaveTimer);
     var commit=function(){if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();sgSave();};
     if(immediate)commit();else sgTextSaveTimer=setTimeout(commit,220);
@@ -31597,6 +31671,7 @@ function sgBind(A){
   $$('.sgTgtProb').forEach(function(el){ el.addEventListener('change',function(){
     var n=el.dataset.n; pl.tgtMeta=pl.tgtMeta||{}; var m=pl.tgtMeta[n]||(pl.tgtMeta[n]={});
     m.prob=Math.max(0,Math.min(100,sgNum(el.value)));
+    m.stage=sgStageFromProbV856(m.prob);
     sgSave(); sgRe(); }); });
   $$('.sgTgtName').forEach(function(el){ el.addEventListener('change',async function(){
     var from=el.dataset.n, to=String(el.value||'').trim();
@@ -31634,8 +31709,8 @@ function sgBind(A){
       var it=pl.items.filter(function(x){return x.id===el.dataset.id;})[0]; if(!it)return;
       var f=el.dataset.f, v=el.value;
       /* v613 : 금액을 직접 고치면 목표표 연동을 해제하고 입력값을 사용합니다. */
-      if(f==='amount'){it.amount=sgNum(v);it.amountLink=false;if(it.targetNewCustV853&&it.cust){state.fc.newCusts=state.fc.newCusts||{};state.fc.newCusts[it.cust]=Math.max(0,Math.round(it.amount));state.fc.matchBaseExact=null;}}
-      else if(f==='prob')it.prob=Math.max(0,Math.min(100,sgNum(v)));
+      if(f==='amount'){it.amount=sgNum(v);if(it.targetDirectV857)sgSyncDirectTargetV857(it,A,false);else it.amountLink=false;}
+      else if(f==='prob'){it.prob=Math.max(0,Math.min(100,sgNum(v)));it.stage=sgStageFromProbV856(it.prob);}
       else if(f==='mon')it.mon=+v||1;
       else if(f==='stage'){ it.stage=v; it.prob=(SG_SMAP[v]||{p:50}).p; }
       else it[f]=v;
@@ -31662,7 +31737,7 @@ function sgBind(A){
   $$('.sgDel').forEach(function(b){ b.addEventListener('click',function(){
     if(!confirm('이 전략 항목을 삭제할까요?'))return;
     var old=pl.items.filter(function(x){return x.id===b.dataset.id;})[0];
-    if(old){sgSyncItemAnnualAdd(old,A,true);if(old.targetNewCustV853&&old.cust&&state.fc.newCusts&&+state.fc.newCusts[old.cust]===Math.round(+old.amount||0))delete state.fc.newCusts[old.cust];}
+    if(old){sgSyncItemAnnualAdd(old,A,true);sgSyncDirectTargetV857(old,A,true);}
     pl.items=pl.items.filter(function(x){return x.id!==b.dataset.id;});
     if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();sgSave();sgRe(); }); });
 
