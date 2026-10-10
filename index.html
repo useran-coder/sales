@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v877</title>
-<script>window.APP_BUILD='v877';</script>
+<title>동방파스텍 매출 분석 도구 v878</title>
+<script>window.APP_BUILD='v878';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v877</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v878</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -12866,6 +12866,22 @@ function forecast(){
   const tgtAvgV=_tc2?_ts2/_tc2:tgtAvg;
   /* v677 : 그래프가 실제로 그린 월별 목표·실적을 그대로 보관합니다.
      주간보고 「목표수정액」이 이 값을 그대로 쓰도록 해, 두 화면의 금액을 강제로 일치시킵니다. */
+  /* ══ v878 · 지금 화면에 그린 «월별 목표 막대»를 따로 적어 둡니다. ══
+     다음 연도(2027) 목표는 «기준연도(2026)의 10~12월 목표»를 그대로 써야 하는데,
+     예전에는 숨긴 재계산 결과를 썼고 그 값에는 신규업체 미래월 배분 등 후처리가 빠져 있어
+     합계는 비슷한데 10·11·12월 배분만 달라졌습니다.
+     여기서 적어 둔 값을 다음 연도 계산이 그대로 가져다 쓰게 합니다. */
+  try{
+    var _ltV878={CY:+CY,cut:(typeof fcCutoffMonth==='function')?fcCutoffMonth():lastAct,
+      plan:String((state.fc&&state.fc.activePlan)||'1'),tgt:tgtV.slice(),at:Date.now()};
+    window.__FC_LAST_TGT_V878=_ltV878;
+    /* 사용자가 실제로 본 화면일 때만 연도 보관함에 저장합니다(숨긴 재계산은 제외). */
+    if(!window.__FC_BUILDING_V737 && !(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode())){
+      state.fcYearMisc=state.fcYearMisc||{};
+      var _bm878=state.fcYearMisc[String(CY)]||(state.fcYearMisc[String(CY)]={});
+      _bm878.monthTgtV878={cut:_ltV878.cut,plan:_ltV878.plan,tgt:_ltV878.tgt.slice(),at:_ltV878.at};
+    }
+  }catch(_e878){}
   try{ window.FC_CHART_V677={CY:CY,cutoff:(typeof fcCutoffMonth==='function')?fcCutoffMonth():lastAct,
     plan:String((state.fc&&state.fc.activePlan)||'1'),tgt:tgtV.slice(),act:actV.slice(),base:_tgtBaseV678.slice(),
     py:py.slice(),unMon:_unMonV757.slice(),un:_unV757,
@@ -34587,7 +34603,9 @@ if(typeof window.bindFcCutoffSelector==='function'&&!window.bindFcCutoffSelector
     try{if(fcIsNextYearMode()){
       var one=document.querySelector('#fcBasePlanSeg button[data-p="1"]');
       var two=document.querySelector('#fcBasePlanSeg button[data-p="2"]');
-      var _dmT=fcDataYearMax(), _pk=fcBaseYearPlan();
+      var _dmT=fcDataYearMax();
+      var _pk=fcBaseYearPlan()||(function(){ try{ var st=fcYearStore()[String(_dmT)]; if(st&&st.activePlan)return st.activePlan==='2'?'2':'1'; }catch(_e){}
+                                             return ((state.fc&&state.fc.activePlan)==='2')?'2':'1'; })();
       [one,two].forEach(function(bn,ix){ if(!bn)return; var k=String(ix+1); bn.disabled=false; bn.style.opacity='';
         bn.textContent=k+'안'+(_pk===k?' (기준)':'');
         bn.title=_dmT+' 수정 '+k+'안: 선택한 실적 반영월까지 실적 + 이후월 '+((typeof fcBaseFutureLabelV741==='function')?fcBaseFutureLabelV741():'목표수정액')+'을 '+(_dmT+1)+'년 기준으로 사용'; });
@@ -34625,7 +34643,16 @@ function build2026Plan2(){
   var plans=(fcTargetYear()===dm&&f.targetPlans)?f.targetPlans:st.targetPlans;
   if(!plans)plans=f.targetPlans;
   /* v738 : 기준 목표안(1안/2안) 선택을 따릅니다 */
-  var _pk=(typeof fcBaseYearPlan==='function')?fcBaseYearPlan():'2'; if(_pk!=='1')_pk='2';
+  /* ══ v878 · 기준 목표안을 화면 표시와 똑같이 고릅니다. ══
+     화면(기준 2026년 목표안)은 «직접 고른 값 → 없으면 기준연도의 현재 목표안»을 보여 주는데,
+     계산은 «직접 고른 값 → 없으면 무조건 2안»을 썼습니다.
+     그래서 화면에는 «1안 (기준)»이라고 떠 있는데 실제로는 2026년 2안으로 계산되어,
+     실적인 1~9월은 같고 목표인 10~12월만 계속 다르게 나왔습니다. */
+  /* 화면(기준 OOOO년 목표안)과 «똑같은 규칙»으로 정합니다 :
+       기준연도 보관함의 목표안 → 없으면 1안. (예전 계산은 없으면 2안이었습니다) */
+  var _apDm=(function(){ try{ var st=fcYearStore()[String(dm)]; return (st&&st.activePlan==='2')?'2':'1'; }catch(_e){} return '1'; })();
+  var _pk=(typeof fcBaseYearPlan==='function'&&fcBaseYearPlan())?fcBaseYearPlan():_apDm;
+  if(_pk!=='1')_pk='2';
   var p=plans&&plans[_pk]; if(!p)return null;
   /* v733 : 기준연도 «실적 반영월»(자동=최근 마감월)까지는 실적, 이후는 수정 2안 목표 */
   var _cutB=fcNormalizeCutoff(p.actualCutoffMonth);
@@ -34668,7 +34695,10 @@ function build2026Plan2(){
       var _sil=(typeof _fcSilentV678!=='undefined'); if(_sil)_fcSilentV678=true;
       try{
         forecast();
-        var _hc=window.FC_CHART_V677;
+        /* v878 : FC_CHART_V677 은 값이 비면 «마지막 차트»를 돌려주므로 다음 연도 차트를
+           잘못 집을 수 있습니다. 방금 그린 기준연도 차트를 먼저 봅니다. */
+        var _hc=window.__FC_LAST_TGT_V878;
+        if(!(_hc&&+_hc.CY===+dm))_hc=window.FC_CHART_V677;
         if(_hc&&+_hc.CY===+dm){
           _exactChart={
             tgt:Array.isArray(_hc.tgt)?_hc.tgt.slice():null,
@@ -34692,8 +34722,29 @@ function build2026Plan2(){
       (work.newLines||[]).forEach(function(ln){ var v=(+ln.qty||0)*(+ln.price||0); if(v>0&&ln.cust){nc[ln.cust]=(nc[ln.cust]||0)+v;tot+=v;} });
       if(tot>0)newAlloc={map:nc,tot:tot};
     }catch(_x){}
+    try{ window.__FC_PLAN_DIAG_V878={기준안:_pk,기준확정월:_cutB,
+      차트있음:!!(_exactChart&&_exactChart.tgt),
+      차트10_12:(_exactChart&&_exactChart.tgt)?_exactChart.tgt.slice(10,13).map(function(v){return Math.round((+v||0)/1e6);}):null,
+      tot10_12:(x.fcMonTot||[]).slice(10,13).map(function(v){return Math.round((+v||0)/1e6);}),
+      이후월기준:(typeof fcBaseFutureModeV741==='function')?fcBaseFutureModeV741():'?'}; }catch(_d){}
     var data={cut:_cutB,planCut:fcNormalizeCutoff(p.actualCutoffMonth),tot:(x.fcMonTot||Array(13).fill(0)).slice(),mod:mod,newAlloc:newAlloc,
-      chartTgt:_exactChart&&_exactChart.tgt?_exactChart.tgt:null,chartAct:_exactChart&&_exactChart.act?_exactChart.act:null,
+      chartTgt:(function(){
+        /* v878 : ① 방금 숨겨서 그린 기준연도 차트 → ② 직전에 화면에 그린 기준연도 차트
+                  → ③ 연도 보관함에 저장해 둔 기준연도 월별 목표 순으로 찾습니다.
+           모두 «기준 확정월·기준 목표안»이 같을 때만 씁니다. 없으면 예전 방식 그대로입니다. */
+        if(_exactChart&&_exactChart.tgt)return _exactChart.tgt;
+        try{
+          var lt=window.__FC_LAST_TGT_V878;
+          if(lt&&+lt.CY===+dm&&Array.isArray(lt.tgt)&&lt.tgt.length>=13
+             &&fcNormalizeCutoff(lt.cut)===_cutB&&String(lt.plan||'')===String(_pk))return lt.tgt.slice();
+        }catch(_a){}
+        try{
+          var sv=((state.fcYearMisc||{})[String(dm)]||{}).monthTgtV878;
+          if(sv&&Array.isArray(sv.tgt)&&sv.tgt.length>=13
+             &&fcNormalizeCutoff(sv.cut)===_cutB&&String(sv.plan||'')===String(_pk))return sv.tgt.slice();
+        }catch(_b){}
+        return null;
+      })(),chartAct:_exactChart&&_exactChart.act?_exactChart.act:null,
       cust:cloneMonthMaps(x.fcCustMon),prod:cloneMonthProdMaps(x.fcProdMon),cp:cloneMonthCustProd(x.fcCustProdMon)};
     _plan2Cache={sig:sig,cur:CUR,data:data};return data;
   }catch(_e){return null;}
