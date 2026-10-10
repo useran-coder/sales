@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v876</title>
-<script>window.APP_BUILD='v876';</script>
+<title>동방파스텍 매출 분석 도구 v877</title>
+<script>window.APP_BUILD='v877';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v876</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v877</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -6040,7 +6040,11 @@ function custManagers(){
   }
   const tgtPrev=cust=>Object.values(prevMM[cust]||{}).reduce((a,b)=>a+b,0);
   const _fcFutureForMgr=(YR===CY&&typeof fcFutureTotals==='function')?fcFutureTotals():null;
-  const tgtMonVal=(cust,mm)=>{ if(YR!==CY||fcIsTargetExcludedCust(cust))return 0; if(_fcFutureForMgr&&_fcFutureForMgr.custMon&&_fcFutureForMgr.custMon[mm])return _fcFutureForMgr.custMon[mm].get(cust)||0; const pm=pyMM[cust]||{}; const ov=state.fc.override[cust], ad=state.fc.addPct[cust]; let v=(pm[mm]||0); if(ov!=null&&ov!=='')v*=1+(+ov)/100; else v*=1+_pctM(mm)/100; v*=1+((ad!=null&&ad!=='')?+ad:0)/100; return v; };
+  const tgtMonVal=(cust,mm)=>{ if(YR!==CY||fcIsTargetExcludedCust(cust))return 0;
+    /* v877 : 📋 업체별 매출 목표표가 쓰는 값(state._fc.fcCustMon)이 있으면 그대로 사용해
+       두 화면의 월별 목표금액이 항상 똑같게 만듭니다. */
+    try{ const _F=state._fc; if(_F&&+_F.CY===+YR&&_F.fcCustMon&&_F.fcCustMon[mm]&&_F.fcCustMon[mm].has(cust))return _F.fcCustMon[mm].get(cust)||0; }catch(_e){}
+    if(_fcFutureForMgr&&_fcFutureForMgr.custMon&&_fcFutureForMgr.custMon[mm])return _fcFutureForMgr.custMon[mm].get(cust)||0; const pm=pyMM[cust]||{}; const ov=state.fc.override[cust], ad=state.fc.addPct[cust]; let v=(pm[mm]||0); if(ov!=null&&ov!=='')v*=1+(+ov)/100; else v*=1+_pctM(mm)/100; v*=1+((ad!=null&&ad!=='')?+ad:0)/100; return v; };
   const tgtProj=cust=>{ if(YR===CY){ if(fcIsTargetExcludedCust(cust))return 0; const cm=cyMM[cust]||{}; let p=0; for(let mm=1;mm<=12;mm++){ p += (mm<=_tgtCut ? (cm[mm]||0) : tgtMonVal(cust,mm)); } return p+(extraCustTarget[cust]||0); } const pm=pyMM[cust]||{}; const ov=state.fc.override[cust],ad=state.fc.addPct[cust]; const pf=Object.values(pm).reduce((a,b)=>a+b,0); let proj=(ov!=null&&ov!=='')?pf*(1+(+ov)/100):pf; proj*=1+((ad!=null&&ad!=='')?+ad:0)/100; return proj+(extraCustTarget[cust]||0); };
   if(YR===CY){ const targetCusts=new Set([...Object.keys(pyMM),...Object.keys(cyMM),...Object.keys(extraCustTarget)]); if(_fcFutureForMgr&&_fcFutureForMgr.custMon){ for(let mm=1;mm<=12;mm++){ const cm=_fcFutureForMgr.custMon[mm]; if(cm&&cm.forEach)cm.forEach((_,c)=>targetCusts.add(c)); } } targetCusts.forEach(c=>{ if(c&&!m.has(c))m.set(c,{cust:c,a:0,lz:0,mon:{},lmon:{}}); }); }
   let rows=[...m.values()].map(o=>{ const lr=o.a>0?o.lz/o.a*100:0; const s=mgrS(o.cust)||'미배정', t=mgrT(o.cust)||'미배정', e=mgrE(o.cust)||'미배정'; const prev=tgtPrev(o.cust),proj=tgtProj(o.cust); const diff=proj-prev; const pct=prev?diff/prev*100:(proj!==0?null:0); const rate=proj>0?o.a/proj*100:null; const remavg=_remM?Math.max(0,proj-o.a)/_remM:0; const tmon={}; for(let mm=1;mm<=12;mm++)tmon[mm]=tgtMonVal(o.cust,mm); return {cust:o.cust,a:o.a,lz:o.lz,lr,mon:o.mon,lmon:o.lmon,tmon,effE:e,effS:s,effT:t,prev,proj,diff,pct,rate,remavg}; }).filter(o=>o.a>0||o.prev>0||o.proj!==0||Object.values(o.tmon||{}).some(v=>v!==0));
@@ -11736,7 +11740,9 @@ function fcAnnualExtraTargets(exSet){
 
 function fcFutureTotals(){
   const ys=dataYears(); if(ys.length<2)return{tot:Array(13).fill(0),lastAct:0,pyMonTot:Array(13).fill(0),has:Array(13).fill(false),custMon:Array.from({length:13},()=>new Map())};
-  const PY=ys[0], CY=ys[ys.length-1];
+  /* v877 : «전년»은 기준연도 바로 앞 연도입니다. (과거 2019~2021 자료가 섞이면 ys[0]은 2019가 됩니다) */
+  const CY=ys[ys.length-1];
+  let PY=CY-1; if(ys.indexOf(PY)<0){ const _pv=ys.filter(y=>y<CY); PY=_pv.length?_pv[_pv.length-1]:ys[0]; }
   const M=()=>Array.from({length:13},()=>new Map());
   /* forecast와 동일한 원자료 집계를 재사용한다. 버튼을 누를 때마다 CUR 전체를 다시 순회하던 중복 집계를 제거한다. */
   const base=fcBaseAgg(PY,CY),pyMonTot=base.pyMonTot,pyMonCust=base.pyMonCust,pyMonCustProd=base.pyMonCustProd,cyMonCustProd=base.cyMonCustProd;
@@ -11746,8 +11752,14 @@ function fcFutureTotals(){
   for(let m=1;m<=12;m++){ if(pyMonTot[m]>0){ const pct=(state.fc.pct[m]!=null&&state.fc.pct[m]!=='')?+state.fc.pct[m]:0; const target=pyMonTot[m]*(1+pct/100);
       const cmap=pyMonCust[m]; let ovrSum=0,nonOvrPY=0; cmap.forEach((py,c)=>{ const ov=state.fc.override[c]; if(ov!=null&&ov!=='')ovrSum+=py*(1+(+ov)/100); else nonOvrPY+=py; });
       const factorNon=nonOvrPY>0?(target-ovrSum)/nonOvrPY:0; let mt=0;
-      cmap.forEach((py,c)=>{ const ov=state.fc.override[c]; const cf=(ov!=null&&ov!=='')?(1+(+ov)/100):factorNon; const add=state.fc.addPct[c]; const af=1+((add!=null&&add!=='')?+add:0)/100; const amt=py*cf*af; custMon[m].set(c,amt); if(!exSet.has(c))mt+=amt;
-        const cp=pyMonCustProd[m].get(c); if(cp){ const dst=new Map(); cp.forEach((pe,pk)=>dst.set(pk,{amt:pe.amt*cf*af,qty:pe.qty*cf*af})); custProdMon[m].set(c,dst); }
+      /* v877 : 업체별 «월 조정%»(custMonthPct)를 여기서도 적용합니다.
+         예전에는 📋 업체별 매출 목표표에만 반영되고 👥 거래처 담당자 현황에는 빠져 있어
+         같은 달·같은 업체인데 두 화면의 목표금액이 달랐습니다. (예: 경동원 10월 −25%) */
+      const _cmpV877=state.fc.custMonthPct||{};
+      cmap.forEach((py,c)=>{ const ov=state.fc.override[c]; const cf=(ov!=null&&ov!=='')?(1+(+ov)/100):factorNon; const add=state.fc.addPct[c]; const af=1+((add!=null&&add!=='')?+add:0)/100;
+        const _mp=_cmpV877[c]&&_cmpV877[c][m]; const _mf=1+(((_mp==null||_mp==='')?0:(parseFloat(_mp)||0))/100);
+        const amt=py*cf*af*_mf; custMon[m].set(c,amt); if(!exSet.has(c))mt+=amt;
+        const cp=pyMonCustProd[m].get(c); if(cp){ const dst=new Map(); cp.forEach((pe,pk)=>dst.set(pk,{amt:pe.amt*cf*af*_mf,qty:pe.qty*cf*af*_mf})); custProdMon[m].set(c,dst); }
       });
       has[m]=true; if(m>lastAct)tot[m]=Math.max(0,mt); else tot[m]=Math.max(0,mt); } }
   /* 업체·제품 전체%는 연간 기준으로 미래월에 배분하고, 월별 조정%는 그 배분값에 추가 적용합니다. */
