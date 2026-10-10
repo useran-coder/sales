@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v870</title>
-<script>window.APP_BUILD='v870';</script>
+<title>동방파스텍 매출 분석 도구 v871</title>
+<script>window.APP_BUILD='v871';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1989,7 +1989,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v870</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v871</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -2371,7 +2371,12 @@ function fcTargetYear(){ const f=state.fc||{}, dm=fcDataYearMax(), t=+f.targetYe
 function fcIsNextYearMode(){ return fcTargetYear()>fcDataYearMax(); }
 function fcYearsV712(){ const ys=(typeof dataYears==='function')?dataYears():[]; const dm=ys.length?ys[ys.length-1]:new Date().getFullYear();
   if(fcIsNextYearMode())return {PY:dm,CY:dm+1};
-  return {PY:(ys.length?ys[0]:dm-1),CY:dm}; }
+  /* v871 : «전년»은 기준연도 바로 앞 연도여야 합니다.
+     예전에는 ys[0](자료에 들어 있는 가장 오래된 연도)를 썼기 때문에, 파일에 2019~2021 같은
+     과거 자료가 섞이면 전년 비교와 다음 연도 목표의 기준금액이 그 옛날 실적으로 계산됐습니다. */
+  if(!ys.length)return {PY:dm-1,CY:dm};
+  let _py=dm-1; if(ys.indexOf(_py)<0){ const _pv=ys.filter(y=>y<dm); _py=_pv.length?_pv[_pv.length-1]:ys[0]; }
+  return {PY:_py,CY:dm}; }
 function fcYearStore(){ const f=state.fc; if(!f.yearPlans||typeof f.yearPlans!=='object'||Array.isArray(f.yearPlans))f.yearPlans={}; return f.yearPlans; }
 /* v813 : «연도 보관함»에 저장할 때, 아직 복원이 끝나지 않아 편집값이 비어 있는 상태가
    이미 저장돼 있던 값을 덮어쓰지 못하게 막습니다. (월별 목표%·조정%가 사라지던 원인) */
@@ -12492,10 +12497,16 @@ var _fcBase27Cache=null;
   window.fcBaseAggOrig=_orig;
   fcBaseAgg=function(PY,CY){
     if(!(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode()))return _orig(PY,CY);
-    const ys=dataYears(), dPY=ys[0], dCY=ys[ys.length-1];
+    const ys=dataYears(), dCY=ys[ys.length-1];
+    /* v871 : 기준연도(dCY)의 «전년»은 바로 앞 연도여야 합니다.
+       예전에는 ys[0](가장 오래된 연도)를 썼기 때문에, 파일에 2019~2021 같은 과거 자료가
+       섞여 있으면 다음 연도 목표의 미도래월 기준이 그 옛날 실적으로 계산됐습니다.
+       (2026년 화면의 목표액과 2027년 화면의 «전년(2026)» 금액이 서로 달라지던 원인) */
+    let dPY=dCY-1;
+    if(ys.indexOf(dPY)<0){ const prev=ys.filter(y=>y<dCY); dPY=prev.length?prev[prev.length-1]:ys[0]; }
     const b=_orig(dPY,dCY);
     const bp=fcBasePlanV712(), cut=bp.cut, pct=bp.pct;
-    const sig=JSON.stringify([dPY,dCY,cut,pct,CUR.length]);
+    const sig=JSON.stringify([dPY,dCY,cut,pct,CUR.length,ys.join(',')]);
     if(_fcBase27Cache&&_fcBase27Cache.sig===sig&&_fcBase27Cache.cur===CUR)return _fcBase27Cache.data;
     const M=()=>Array.from({length:13},()=>new Map());
     const pyTot=Array(13).fill(0), pyCust=M(), pyProd=M(), pyCP=M();
