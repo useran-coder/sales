@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v899</title>
-<script>window.APP_BUILD='v899';</script>
+<title>동방파스텍 매출 분석 도구 v902</title>
+<script>window.APP_BUILD='v902';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v899</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v902</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -3600,7 +3600,13 @@ function trendTopV760(label,rows,keyPrefix,opt){
     var yr=(yrs.indexOf(+st.y)>=0)?+st.y:(opt.year&&yrs.indexOf(+opt.year)>=0?+opt.year:yrs[0]);
     st.y=yr;
     var met=(st.m==='qty')?'qty':'amt';
-    return custMonthChartV665(label,yr,rs,yrs,{metric:met,metricToggle:true})
+    var _tgtOpt={};
+    try{
+      if(opt.target&&Array.isArray(opt.target)){
+        _tgtOpt.target=opt.target; _tgtOpt.targetLabel=opt.targetLabel||'목표'; _tgtOpt.targetOn=!!st.tgt;
+      }
+    }catch(_t902){}
+    return custMonthChartV665(label,yr,rs,yrs,Object.assign({metric:met,metricToggle:true},_tgtOpt))
       +'<div class="ctrlbar" style="margin:-4px 0 8px"><button type="button" class="btn ghost ttCloseV760" data-k="'+esc(keyPrefix)+'" style="font-size:12px;padding:4px 12px">✕ 추이 닫기</button>'
       +'<span class="sub2">'+esc(opt.hint||'연도·금액/수량 버튼으로 바꿔 볼 수 있습니다.')+'</span></div>';
   }catch(_e){ return ''; }
@@ -3613,6 +3619,7 @@ function bindTrendTopV760(keyPrefix,rerun){
     root.querySelectorAll('.ttOpenV760[data-k="'+keyPrefix+'"]').forEach(function(b){ b.addEventListener('click',function(){ st.off=0; rerun(); }); });
     root.querySelectorAll('.cmYearBtn').forEach(function(b){ b.addEventListener('click',function(){ st.y=+b.dataset.y; rerun(); }); });
     root.querySelectorAll('.cmMetBtn').forEach(function(b){ b.addEventListener('click',function(){ st.m=b.dataset.m==='qty'?'qty':'amt'; rerun(); }); });
+    root.querySelectorAll('.cmTgtBtn').forEach(function(b){ b.addEventListener('click',function(){ st.tgt=!st.tgt; rerun(); }); });
   }catch(_e){}
 }
 function openDrill(parentRow, cfg){
@@ -8999,7 +9006,10 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
   var nMon=useVals.length, avg=nMon?useVals.reduce(function(a,v){return a+v;},0)/nMon:0;
   var iMax=useVals.length?useIdx[useVals.indexOf(mx)]:-1;
   var iMin=useVals.length?useIdx[useVals.indexOf(mnPos)]:-1;
-  var top=Math.max(mx,avg,Math.max.apply(null,vals.concat([0])))||1;
+  /* ══ v902 · 목표 막대(옵션) — 실적 꺾은선 뒤에 겹쳐 그립니다. ══ */
+  var TGT=(opt.targetOn&&Array.isArray(opt.target))?opt.target:null;
+  var tvals=TGT?[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){return Math.max(0,+TGT[m]||0);}):null;
+  var top=Math.max(mx,avg,Math.max.apply(null,vals.concat(tvals||[]).concat([0])))||1;
   var W=1180,H=320,L=78,Rr=96,T=40,B=46,iw=W-L-Rr,ih=H-T-B;
   var y=function(v){ return T+ih-(v/top)*ih; };
   var x=function(i){ return L+(iw/11)*i; };
@@ -9019,6 +9029,15 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
     g+='<line x1="'+L+'" y1="'+ay+'" x2="'+(W-Rr)+'" y2="'+ay+'" stroke="#f59e0b" stroke-width="1.4" stroke-dasharray="7 4"/>'
       +'<rect x="'+(W-Rr+4)+'" y="'+(ay-10)+'" width="88" height="20" rx="10" fill="#fffbeb" stroke="#f59e0b"/>'
       +'<text x="'+(W-Rr+48)+'" y="'+(ay+4)+'" text-anchor="middle" font-size="10.5" font-weight="800" fill="#b45309">평균 '+FV(avg)+'</text>'; }
+  if(tvals){
+    var tbw=Math.min(34,(iw/11)*0.52);
+    tvals.forEach(function(tv,i){
+      if(!(tv>0))return;
+      var ty=y(tv);
+      g+='<rect x="'+(x(i)-tbw/2)+'" y="'+ty+'" width="'+tbw+'" height="'+Math.max(0,(T+ih)-ty)+'" rx="3" fill="#f59e0b" opacity=".32"><title>'+(i+1)+'월 목표 '+FV(tv)+'</title></rect>'
+        +'<text x="'+x(i)+'" y="'+(ty-2)+'" text-anchor="middle" font-size="9.5" font-weight="800" fill="#b45309" stroke="#fff" stroke-width="2.4" paint-order="stroke">'+FV(tv)+'</text>';
+    });
+  }
   var pts=vals.map(function(v,i){ return x(i)+','+y(v); }).join(' ');
   g+='<polyline points="'+pts+'" fill="none" stroke="#2563eb" stroke-width="2.4" stroke-linejoin="round"/>';
   vals.forEach(function(v,i){
@@ -9042,6 +9061,7 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
   /* 연도 버튼 */
   var yrs=yrsOpt||[...new Set((rows||[]).map(function(r){return r.d?r.d.getFullYear():0;}).filter(Boolean))].sort(function(a,b){return b-a;});
   var yb=yrs.map(function(y2){ return '<button type="button" class="btn'+(y2===+yr?'':' ghost')+' cmYearBtn" data-y="'+y2+'" style="font-size:11.5px;padding:4px 11px'+(y2===+yr?';background:#1e3a5f;color:#fff;border-color:#1e3a5f':'')+'">'+y2+'년</button>'; }).join('');
+  var tb=opt.target?('<button type="button" class="btn'+(opt.targetOn?'':' ghost')+' cmTgtBtn" title="그 해 월 목표를 실적 위에 막대로 겹쳐 봅니다." style="font-size:11.5px;padding:4px 11px;margin-left:4px'+(opt.targetOn?';background:#b45309;color:#fff;border-color:#b45309':';color:#b45309;border-color:#fed7aa;background:#fffbeb')+';font-weight:800">'+esc(opt.targetLabel||'목표')+'</button>'):'';
   var nonPct=allAmt>0?(nonAmt/allAmt*100):0;
   /* v708 : 금액 / 수량 전환 버튼 */
   var mb=opt.metricToggle?('<span class="seg cmMetSeg" style="margin-left:6px">'+
@@ -9051,7 +9071,7 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
   return '<div style="border:1px solid #dbe4ee;border-radius:10px;background:#fff;padding:10px 12px;margin:0 0 8px">'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'
     +'<b style="font-size:13px;color:#1e3a5f">📈 '+esc(cust)+' / '+yr+'년 · 월별 '+MTNAME+' 추이</b>'
-    +'<span style="display:inline-flex;align-items:center;gap:5px;margin-left:4px">'+yb+mb+'</span>'
+    +'<span style="display:inline-flex;align-items:center;gap:5px;margin-left:4px">'+tb+yb+mb+'</span>'
     +'<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;font-size:11.5px;font-weight:800;color:#c2410c" title="레이저 비규격 등 비규격 품목이 그 해 매출에서 차지하는 비중입니다">📐 비규격 비중 '+nonPct.toFixed(1)+'%</span>'
     +'<span class="sub2" style="color:#c2410c">'+disp(nonAmt)+' / '+disp(allAmt)+'</span>'
     +'<span class="sub2" style="margin-left:auto">합계 '+FV(tot)+' · <b style="color:#b45309">평균 '+FV(avg)+'</b>(거래월 '+nMon+'개월) · <b style="color:#dc2626">최고 '+FV(mx)+'</b>'+(iMax>=0?('('+(iMax+1)+'월)'):'')+' · <b style="color:#0d9488">최저 '+FV(mnPos)+'</b>'+(iMin>=0?('('+(iMin+1)+'월)'):'')+' · 출고 '+won(cnt.reduce(function(a,v){return a+v;},0))+'건'+(curM?(' · <b style="color:#94a3b8">'+curM+'월(진행 중)'+(prevM?('·'+prevM+'월(마감 전)'):'')+'·0원 달 제외</b>'):' · <b style="color:#94a3b8">0원 달 제외</b>')+'</span></div>'
@@ -13914,14 +13934,14 @@ async function gsLoad(silent){ const u=(state.gsync&&state.gsync.url)||'', k=(st
   if(!silent&&st){st.style.color='#64748b';st.textContent='불러오는 중…';}
   const _pend=_gsBase?gsDelta():null;
   _gsBusy=true;
-  try{ const r=await fetch(u+(u.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(k)+'&_t='+Date.now(),{cache:'no-store'}); const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요.';} return; } if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패')+' (비밀키 확인)';} return; } gsMerge(d.data||d); gsSetBase(); if(_pend)gsApplyDelta(_pend); state.gsync.lastSync=new Date().toISOString(); state.gsync.syncCount=(state.gsync.syncCount||0)+1; gsUpdateBtn(); if(st){ const ck=o=>o?Object.keys(o).length:0; const nf=(state.fc.notesHtml||state.fc.notesTeam||state.fc.notesSales||state.fc.notesTech)?'✓':'–'; st.style.color='#0f766e'; st.textContent='✓ 불러오기 완료 — 담당자 '+ck(state.mgrOverride)+'·분류 '+ck(state.clsOverride)+'·등급 '+ck(state.gradeOverride)+'·메모 '+(ck(state.fc.custMemo)+ck(state.fc.prodMemo))+'·주요사항 '+nf+' ('+gsFmtTime(state.gsync.lastSync)+')'; } }
+  try{ const r=await fetch(u+(u.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(k)+'&_t='+Date.now(),{cache:'no-store'}); const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요. (자세한 원인은 F12 콘솔)';} try{console.warn(gsHtmlDiagV900(tx));}catch(_g){} return; } if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패')+' (비밀키 확인)';} return; } gsMerge(d.data||d); gsSetBase(); if(_pend)gsApplyDelta(_pend); state.gsync.lastSync=new Date().toISOString(); state.gsync.syncCount=(state.gsync.syncCount||0)+1; gsUpdateBtn(); if(st){ const ck=o=>o?Object.keys(o).length:0; const nf=(state.fc.notesHtml||state.fc.notesTeam||state.fc.notesSales||state.fc.notesTech)?'✓':'–'; st.style.color='#0f766e'; st.textContent='✓ 불러오기 완료 — 담당자 '+ck(state.mgrOverride)+'·분류 '+ck(state.clsOverride)+'·등급 '+ck(state.gradeOverride)+'·메모 '+(ck(state.fc.custMemo)+ck(state.fc.prodMemo))+'·주요사항 '+nf+' ('+gsFmtTime(state.gsync.lastSync)+')'; } }
   catch(e){ if(st){st.style.color='#dc2626';st.textContent='연결 실패: '+(e.message||e);} }
   finally{ saveSettings(); _gsBusy=false; } }
 async function gsSave(silent){ gsCommitNotes(); _gsPushAt=0; const u=(state.gsync&&state.gsync.url)||'', k=(state.gsync&&state.gsync.key)||''; const st=$('#gsStatus');
   if(!u){ if(!silent&&st){st.style.color='#dc2626';st.textContent='URL을 입력하세요.'} return; }
   if(!silent&&st){st.style.color='#64748b';st.textContent='동기화 중…';}
   _gsBusy=true;
-  try{ const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save',key:k,data:gsDelta()})}); const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요.';} return; } if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패')+' (비밀키 확인)';} return; } gsMerge(d.data||d,true); gsSetBase(); state.gsync.lastSync=new Date().toISOString(); state.gsync.syncCount=(state.gsync.syncCount||0)+1; { const _id=Date.now()+'_'+Math.random().toString(36).slice(2,6); state.syncLog=state.syncLog||{}; state.syncLog[_id]={by:((state.gsync&&state.gsync.user)||'(이름없음)'),at:state.gsync.lastSync,act:'저장'}; const _ks=Object.keys(state.syncLog); if(_ks.length>100){_ks.sort();_ks.slice(0,_ks.length-100).forEach(k=>delete state.syncLog[k]);} } gsUpdateBtn(); if(st){st.style.color='#0f766e';st.textContent='✓ 동기화 완료 ('+gsFmtTime(state.gsync.lastSync)+')';} }
+  try{ const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save',key:k,data:gsDelta()})}); const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요. (자세한 원인은 F12 콘솔)';} try{console.warn(gsHtmlDiagV900(tx));}catch(_g){} return; } if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패')+' (비밀키 확인)';} return; } gsMerge(d.data||d,true); gsSetBase(); state.gsync.lastSync=new Date().toISOString(); state.gsync.syncCount=(state.gsync.syncCount||0)+1; { const _id=Date.now()+'_'+Math.random().toString(36).slice(2,6); state.syncLog=state.syncLog||{}; state.syncLog[_id]={by:((state.gsync&&state.gsync.user)||'(이름없음)'),at:state.gsync.lastSync,act:'저장'}; const _ks=Object.keys(state.syncLog); if(_ks.length>100){_ks.sort();_ks.slice(0,_ks.length-100).forEach(k=>delete state.syncLog[k]);} } gsUpdateBtn(); if(st){st.style.color='#0f766e';st.textContent='✓ 동기화 완료 ('+gsFmtTime(state.gsync.lastSync)+')';} }
   catch(e){ if(st){st.style.color='#dc2626';st.textContent='연결 실패: '+(e.message||e);} }
   finally{ saveSettings(); _gsBusy=false; _gsPendingPush=false; } }
 async function gsTest(){ const u=(state.gsync&&state.gsync.url)||'', k=(state.gsync&&state.gsync.key)||''; const st=$('#gsStatus');
@@ -14142,7 +14162,7 @@ async function gsLoad(silent){
   _gsBusy=true;
   try{
     const r=await fetch(u+(u.indexOf('?')>=0?'&':'?')+'action=get&key='+encodeURIComponent(k)+'&_t='+Date.now(),{cache:'no-store'});
-    const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요.';} return; }
+    const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요. (자세한 원인은 F12 콘솔)';} try{console.warn(gsHtmlDiagV900(tx));}catch(_g){} return; }
     if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패')+' (비밀키 확인)';} return; }
     /* v770 : 서버 내용이 이전과 같으면 화면을 다시 그리지 않습니다.
        (매번 매출 목표 화면 전체를 1초 가까이 다시 그려 «버튼이 한참 뒤에 눌리는» 원인이었습니다) */
@@ -14180,7 +14200,7 @@ async function gsSave(silent){
   _gsBusy=true;
   try{
     const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save',key:k,data:payload})});
-    const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요.';} return; }
+    const tx=await r.text(); let d; try{ d=JSON.parse(tx); }catch(_){ if(st){st.style.color='#dc2626';st.textContent='응답 형식 오류 — 웹앱 액세스를 \'모든 사용자\'로, URL은 .../exec 인지 확인하세요. (자세한 원인은 F12 콘솔)';} try{console.warn(gsHtmlDiagV900(tx));}catch(_g){} return; }
     if(!d.ok){ if(st){st.style.color='#dc2626';st.textContent='오류: '+(d.error||'실패')+' (비밀키 확인)';} return; }
     gsMerge(d.data||d,true); gsSetBase(); state.gsync.lastSync=new Date().toISOString(); state.gsync.syncCount=(state.gsync.syncCount||0)+1; gsUpdateBtn();
     if(st){st.style.color='#0f766e';st.textContent='✓ 동기화 완료 — '+sum+' ('+gsFmtTime(state.gsync.lastSync)+')';}
@@ -19044,7 +19064,8 @@ try{
     arr.sort((a,b)=>{const av=_sv(a,ds.k),bv=_sv(b,ds.k);if(typeof av==='string')return ds.d>0?av.localeCompare(bv,'ko'):bv.localeCompare(av,'ko');return ds.d>0?av-bv:bv-av;});
     const _ar=k=>ds.k===k?(ds.d>0?' ▲':' ▼'):'';
     const tp=arr.reduce((a,o)=>a+o.prev,0),tj=arr.reduce((a,o)=>a+o.proj,0);
-    const monOn=!!state.fc._custMonView;
+    /* v901 : 드릴 화면의 월별보기는 «이 화면 전용» 입니다(본표 📋 업체별 매출 목표와 분리). */
+    const monOn=!!state.fc._custDrillMonView;
     const monBtn=`<button class="btn ghost" id="fcCustMonBtn" title="제품·규격별 1~12월 목표금액을 보고, 미래월 조정%를 직접 입력할 수 있습니다." style="font-size:12px;padding:5px 12px;margin-left:6px;font-weight:800;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':'color:#1d4ed8;border-color:#93c5fd;background:#eff6ff'}">📅 월별보기${monOn?' 끄기':''}</button>`;
     let bodyHtml,monthlyRows=[];
     if(monOn){
@@ -19073,11 +19094,11 @@ try{
           const adjust=x.actual?'<span class="fc-month-actual-mark" title="확정실적월은 조정할 수 없습니다">실적</span>':`<input class="fc-month-adjust${x.adjust!==''?' edited':''}" data-pk="${esc(o.pk)}" data-month="${m}" value="${esc(x.adjust)}" inputmode="decimal" placeholder="0" title="제품 전체 목표% 기준 ${m}월 추가 조정률">`;
           return `<td><div class="fc-month-value ${metric}">${fcMonthlyValue(val,metric)}</div><div class="fc-month-adjust-wrap">${adjust}${x.actual?'':'<span>%</span>'}</div></td>`;
         }).join('');
-        return `<tr><td class="rank">${i+1}</td><td class="l"><b>${esc(o.name)}</b><div class="sub2">전체% ${o.baseAdjust===''?'자동':esc(o.baseAdjust)+'%'}</div></td><td class="l">${esc(o.spec||'(규격없음)')}</td>${cells}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(o.total,metric)}</b></td></tr>`;
+        return `<tr><td class="rank">${i+1}</td><td class="l"><b>${esc(o.name)}</b></td><td class="l">${esc(o.spec||'(규격없음)')}</td>${cells}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(o.total,metric)}</b><div class="sub2" style="font-size:10px;color:#94a3b8;font-weight:400">전체% ${o.baseAdjust===''?'자동':esc(o.baseAdjust)+'%'}</div></td></tr>`;
       }).join('')||`<tr><td colspan="16" style="text-align:center;color:#94a3b8;padding:14px">표시할 월별 목표가 없습니다.</td></tr>`;
       const totalRow=monthlyRows.length?`<tr class="total-row"><td></td><td class="l">합 계</td><td></td>${Array.from({length:12},(_,k)=>`<td><b class="fc-month-value ${metric}">${fcMonthlyValue(monthTotals[k+1],metric)}</b></td>`).join('')}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(grand,metric)}</b></td></tr>`:'';
       const modebar=`<div class="fc-month-modebar"><button class="btn ghost ${metric==='amount'?'on':''}" id="fcCustMonAmount" type="button">금액보기</button><button class="btn ghost ${metric==='qty'?'on':''}" id="fcCustMonQty" type="button">수량</button><span class="sub2">제품별 전체 목표%를 기준으로 미래월 조정%를 추가 적용합니다.</span></div>`;
-      bodyHtml=`${modebar}<div class="tablewrap" style="max-height:1120px"><table class="fc-month-target-table ${metric==='amount'?'amount-view':'qty-view'}"><thead><tr><th>순위</th><th class="l">품명<div style="font-size:11px;color:#94a3b8">전체%</div></th><th class="l">규격</th>${Array.from({length:12},(_,k)=>`<th>${k+1}월<div style="font-size:11px;color:#94a3b8">${k+1<=f.lastAct?'확정실적':'조정%'}</div></th>`).join('')}<th>합계</th></tr></thead><tbody>${mrows}${totalRow}</tbody></table></div>
+      bodyHtml=`${modebar}<div class="tablewrap" style="max-height:1120px"><table class="fc-month-target-table ${metric==='amount'?'amount-view':'qty-view'}"><thead><tr><th>순위</th><th class="l">품명</th><th class="l">규격</th>${Array.from({length:12},(_,k)=>`<th>${k+1}월<div style="font-size:11px;color:#94a3b8">${k+1<=f.lastAct?'확정실적':'조정%'}</div></th>`).join('')}<th>합계<div style="font-size:11px;color:#94a3b8">전체%</div></th></tr></thead><tbody>${mrows}${totalRow}</tbody></table></div>
       <div class="note">${esc(c)}의 제품·규격별 <b>1~12월 ${metric==='amount'?'목표금액':'목표수량'}</b>입니다. 1~${f.lastAct}월은 확정실적이라 수정되지 않으며, 이후 월은 제품의 <b>전체 목표%</b>를 먼저 반영한 값에 월별 조정%를 추가 적용합니다. 월 조정 시 금액과 수량이 같은 비율로 함께 변경됩니다.</div>`;
     }else{
       const rows=arr.map((o,i)=>`<tr><td class="rank">${i+1}</td><td class="l">${esc(o.code)}</td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>${disp(o.prev)}</td><td>${disp(o.proj)}</td><td><input class="fccpov${o.cpov!==''?' edited':''}" data-pk="${esc(o.pk)}" value="${esc(o.cpov)}" placeholder="목표%" style="width:56px;text-align:right;font-size:13px;padding:3px;border:1px solid var(--line);border-radius:5px;font-family:inherit" onclick="event.stopPropagation()"></td><td>${diffSpan(o.diff)}</td><td>${pctSpan(o.pct)}</td><td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.cq))}</td></tr>`).join('');
@@ -19086,19 +19107,39 @@ try{
     const metricText=monOn?(fcMonthlyMetric()==='amount'?' · 월별 목표금액':' · 월별 목표수량'):'';
     /* v760 : 업체를 고르면(월별보기 포함) 표 위에 그 업체의 월별 매출 추이를 표시합니다 */
     const _ttKeyC='fcCust:'+c;
-    const _ttTopC=trendTopV760(c,(typeof CUR!=='undefined'?CUR:[]).filter(r=>r&&r.cust===c),_ttKeyC,{hint:'표 아래는 제품·규격별 목표입니다.'});
+    /* v902 : 그 해(목표 연도) 월 목표를 추이 그래프에 겹쳐 볼 수 있게 넘깁니다. */
+    let _tgtArrV902=null,_tgtLabV902='';
+    try{
+      const _ty=(typeof fcTargetYear==='function')?fcTargetYear():null;
+      const _F=state._fc;
+      if(_ty&&_F&&_F.fcCustMon){
+        const _cut=(typeof fcCutoffMonth==='function')?fcCutoffMonth():0;
+        _tgtArrV902=Array(13).fill(0);
+        for(let _m=1;_m<=12;_m++){
+          let _v=0;
+          try{
+            if(_m<=_cut&&_F.cyMonCust&&_F.cyMonCust[_m])_v=+(_F.cyMonCust[_m].get(c)||0);
+            if(!_v&&_F.fcCustMon[_m])_v=+(_F.fcCustMon[_m].get(c)||0);
+          }catch(_e9){}
+          _tgtArrV902[_m]=_v;
+        }
+        if(_tgtArrV902.reduce((a,v)=>a+v,0)<=0)_tgtArrV902=null;
+        _tgtLabV902='🎯 '+_ty+'년 목표';
+      }
+    }catch(_e902){}
+    const _ttTopC=trendTopV760(c,(typeof CUR!=='undefined'?CUR:[]).filter(r=>r&&r.cust===c),_ttKeyC,{hint:'표 아래는 제품·규격별 목표입니다.',target:_tgtArrV902,targetLabel:_tgtLabV902});
     const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← 목록으로</button><span class="title">${esc(c)} ▸ 제품·규격별 목표</span><span class="meta">${fcRangeLabel()} · 전년 ${won(tp)} → 목표 ${won(tj)}${metricText}</span>${monBtn}<span class="spacer"></span><button class="btn ghost" id="fcdCsv">엑셀 내보내기</button></div>${_ttTopC}${bodyHtml}`;
     renderCustom(html,()=>{
       bindTrendTopV760(_ttKeyC,()=>fcDrillCust(c));
       $('#backBtn').addEventListener('click',forecast);
-      const mb=$('#fcCustMonBtn');mb&&mb.addEventListener('click',()=>{fcOrderUnlockV802(); state.fc._custMonView=!state.fc._custMonView;fcDrillCust(c);});
+      const mb=$('#fcCustMonBtn');mb&&mb.addEventListener('click',()=>{fcOrderUnlockV802(); state.fc._custDrillMonView=!state.fc._custDrillMonView;fcDrillCust(c);});
       const amountBtn=$('#fcCustMonAmount');amountBtn&&amountBtn.addEventListener('click',()=>{state.fc._custMonMetric='amount';fcDrillCust(c);});
       const qtyBtn=$('#fcCustMonQty');qtyBtn&&qtyBtn.addEventListener('click',()=>{state.fc._custMonMetric='qty';fcDrillCust(c);});
       $('#result').querySelectorAll('.fcds').forEach(th=>{th.style.cursor='pointer';th.addEventListener('click',()=>{const k=th.dataset.sk;if(ds.k===k)ds.d*=-1;else{ds.k=k;ds.d=(['code','name','spec'].includes(k)?1:-1);}fcDrillCust(c);});});
       $('#result').querySelectorAll('.fccpov').forEach(inp=>{inp.addEventListener('change',()=>{state.fc.custProdOverride=state.fc.custProdOverride||{};const pk=inp.dataset.pk,v=inp.value.trim(),k=c+'│'+pk;if(v==='')delete state.fc.custProdOverride[k];else state.fc.custProdOverride[k]=v;logEdit('제품목표',`${c} · ${pk} 전체 목표 ${v===''?'해제':v+'%'}`);v796SaveSoon();v797Defer(()=>{forecast();fcDrillCust(c);});});inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});inp.addEventListener('click',e=>e.stopPropagation());});
       $('#result').querySelectorAll('.fc-month-adjust').forEach(inp=>{inp.addEventListener('click',e=>e.stopPropagation());inp.addEventListener('change',()=>{const pk=inp.dataset.pk,m=+inp.dataset.month,key=fcMonthAdjustKey(c,pk,m),raw=inp.value.trim().replace(',','.');state.fc.custProdOverride=state.fc.custProdOverride||{};if(raw===''){delete state.fc.custProdOverride[key];}else{let n=Number(raw);if(!isFinite(n))n=0;n=Math.max(-100,Math.min(1000,n));state.fc.custProdOverride[key]=String(n);}logEdit('제품월목표',`${c} · ${pk} · ${m}월 조정 ${raw===''?'해제':state.fc.custProdOverride[key]+'%'}`);v796SaveSoon();v797Defer(()=>{forecast();fcDrillCust(c);});});inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});});
       fcBindNegativeFields($('#result'));
-      const cc=$('#fcdCsv');cc&&cc.addEventListener('click',()=>{if(state.fc._custMonView){const metric=fcMonthlyMetric(),label=metric==='amount'?'금액':'수량',aoa=[['순위','품명','규격',...Array.from({length:12},(_,k)=>(k+1)+'월'),'합계']];monthlyRows.forEach((o,i)=>aoa.push([i+1,o.name,o.spec,...Array.from({length:12},(_,k)=>Math.round(metric==='amount'?o.months[k+1].amt:o.months[k+1].qty)),Math.round(o.total)]));dlXLSX(`forecast_customer_monthly_${metric}.xlsx`,`월별목표${label}`,aoa);}else dlCSV('forecast_customer_products.csv',['순위','품번','품명','규격','전년','올해목표','증감액','증감%','전년수량','목표수량'],arr.map((o,i)=>[i+1,o.code,o.name,o.spec,Math.round(o.prev),Math.round(o.proj),Math.round(o.diff),o.pct==null?'신규':o.pct.toFixed(1),Math.round(o.pq),Math.round(o.cq)]));});
+      const cc=$('#fcdCsv');cc&&cc.addEventListener('click',()=>{if(state.fc._custDrillMonView){const metric=fcMonthlyMetric(),label=metric==='amount'?'금액':'수량',aoa=[['순위','품명','규격',...Array.from({length:12},(_,k)=>(k+1)+'월'),'합계']];monthlyRows.forEach((o,i)=>aoa.push([i+1,o.name,o.spec,...Array.from({length:12},(_,k)=>Math.round(metric==='amount'?o.months[k+1].amt:o.months[k+1].qty)),Math.round(o.total)]));dlXLSX(`forecast_customer_monthly_${metric}.xlsx`,`월별목표${label}`,aoa);}else dlCSV('forecast_customer_products.csv',['순위','품번','품명','규격','전년','올해목표','증감액','증감%','전년수량','목표수량'],arr.map((o,i)=>[i+1,o.code,o.name,o.spec,Math.round(o.prev),Math.round(o.proj),Math.round(o.diff),o.pct==null?'신규':o.pct.toFixed(1),Math.round(o.pq),Math.round(o.cq)]));});
     });
   };
 
@@ -22362,6 +22403,30 @@ async function dsDecode(enc,b64){
  }
  return JSON.parse(new TextDecoder().decode(u8));
 }
+/* ══ v900 · 구글 웹앱이 JSON 대신 «HTML 페이지»를 돌려줄 때, 무엇을 고쳐야 하는지 알려 줍니다. ══ */
+function gsHtmlDiagV900(tx,where){
+  var t=String(tx||''),low=t.toLowerCase(),head=t.slice(0,220);
+  var why='';
+  if(low.indexOf('accounts.google.com')>=0||low.indexOf('servicelogin')>=0||low.indexOf('signin')>=0)
+    why='구글 «로그인 화면»이 돌아왔습니다. 웹앱이 로그인한 사람만 쓰도록 배포돼 있습니다.';
+  else if(low.indexOf('ppconfig')>=0||low.indexOf('deleteisenforced')>=0)
+    why='구글 «접근 차단/보호 안내» 페이지가 돌아왔습니다. 웹앱 액세스 권한이 제한돼 있거나 배포가 만료되었습니다.';
+  else if(low.indexOf('authorization')>=0||t.indexOf('승인')>=0)
+    why='스크립트 «권한 승인»이 필요합니다. Apps Script 편집기에서 함수를 한 번 실행해 권한을 허용하세요.';
+  else if(low.indexOf('script.google.com/macros')>=0&&low.indexOf('moved')>=0)
+    why='웹앱 주소가 바뀌었습니다(배포가 교체됨).';
+  else why='웹앱 주소나 배포 설정이 올바르지 않습니다.';
+  return '응답 형식 오류 — 서버가 JSON 이 아닌 «웹페이지»를 돌려줬습니다.'+(where?(' ('+where+')'):'')+'\n\n'
+    +'▸ 원인 : '+why+'\n\n'
+    +'▸ 해결 순서\n'
+    +'  ① Apps Script 편집기 → «배포» → «배포 관리» → 연필(수정)\n'
+    +'  ② 실행 사용자 : «나(소유자)» · 액세스 권한 : «모든 사용자»  ← 꼭 «모든 사용자»\n'
+    +'     («Google 계정이 있는 모든 사용자»가 아니라 «모든 사용자»입니다)\n'
+    +'  ③ «버전 : 새 버전» 으로 바꾼 뒤 «배포» → 새 /exec 주소 복사\n'
+    +'  ④ 이 프로그램의 구글 동기화 URL 에 그 주소를 붙여넣기 (끝이 /exec 인지 확인, /dev 아님)\n'
+    +'  ⑤ 그래도 같으면 편집기에서 아무 함수나 한 번 실행해 «권한 허용» 후 다시 시도\n\n'
+    +'▸ 서버가 보낸 내용(앞부분) : '+head;
+}
 function dsHash(s){ var h=0x811c9dc5; for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=(h+((h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24)))>>>0; } return ('0000000'+h.toString(16)).slice(-8); }
 
 /* ── 통신 ── */
@@ -22370,7 +22435,7 @@ async function dsCall(payload){
  payload.key=dsPass();
  var r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
  var tx=await r.text(); DS.lastRaw=String(tx||'').slice(0,300); var d;
- try{ d=JSON.parse(tx); }catch(_){ throw new Error('응답 형식 오류 — 서버가 JSON 이 아닌 것을 돌려줬습니다.\n\n서버 응답: '+DS.lastRaw); }
+ try{ d=JSON.parse(tx); }catch(_){ throw new Error(gsHtmlDiagV900(tx,'매출자료 공유')); }
  if(d&&d.error)throw new Error(d.error);
  if(String(payload.action||'').indexOf('ds')===0 && !d.ver && !d.manifest){
   var diag=await dsProbe();
@@ -22922,7 +22987,7 @@ async function mvsCall(p){
   p.key=dsPass();
   var r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p)});
   var tx=await r.text(),d;
-  try{ d=JSON.parse(tx); }catch(_){ throw new Error('응답 형식 오류 — 서버가 JSON 이 아닌 것을 돌려줬습니다.'); }
+  try{ d=JSON.parse(tx); }catch(_){ throw new Error(gsHtmlDiagV900(tx)); }
   if(d&&d.error)throw new Error(d.error);
   return d;
 }
@@ -39982,6 +40047,82 @@ setInterval(function(){
     });
   }catch(e){}
 },2500);
+})();
+</script>
+<script id="v901-drill-toolbar">
+/* ══════════════════════════════════════════════════════════════
+   v901 · 「○○ ▸ 제품·규격별 목표」 화면 정리
+   ① 📅 월별보기 버튼을 «✕ 추이 닫기» 왼쪽으로 옮깁니다.
+   ② 금액보기·수량 버튼을 같은 줄 맨 오른쪽으로 옮깁니다.
+   ③ 화면이 저절로 본표(📋 업체별 매출 목표)로 넘어가지 않게 드릴 화면을 지킵니다.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+function bar(){
+  try{
+    var close=document.querySelector('#result .ttCloseV760');
+    return close?close.parentNode:null;
+  }catch(e){ return null; }
+}
+function move(){
+  try{
+    var b=bar(); if(!b)return;
+    var close=b.querySelector('.ttCloseV760'); if(!close)return;
+    /* ① 월별보기 → 닫기 버튼 왼쪽 */
+    var mb=document.getElementById('fcCustMonBtn');
+    if(mb&&mb.parentNode!==b){ b.insertBefore(mb,close); mb.style.marginLeft='0'; mb.style.marginRight='6px'; }
+    /* ② 금액보기·수량 → 같은 줄 맨 오른쪽 */
+    var mode=document.querySelector('#result .fc-month-modebar');
+    if(mode){
+      var a=document.getElementById('fcCustMonAmount'), q=document.getElementById('fcCustMonQty');
+      if(a&&q&&a.parentNode!==b){
+        if(!b.querySelector('.v901-spacer')){
+          var sp=document.createElement('span'); sp.className='v901-spacer'; sp.style.cssText='flex:1 1 auto'; b.appendChild(sp);
+        }
+        var wrap=document.createElement('span');
+        wrap.className='v901-metric'; wrap.style.cssText='display:inline-flex;gap:6px;margin-left:auto';
+        wrap.appendChild(a); wrap.appendChild(q); b.appendChild(wrap);
+        b.style.display='flex'; b.style.alignItems='center'; b.style.flexWrap='wrap'; b.style.gap='6px';
+        /* 남은 안내문만 있는 빈 모드바는 숨깁니다 */
+        var left=mode.textContent.replace(/\s/g,'');
+        if(!left)mode.style.display='none'; else mode.style.margin='0 0 6px';
+      }
+    }
+  }catch(e){}
+}
+setInterval(move,700);
+document.addEventListener('click',function(){ setTimeout(move,120); setTimeout(move,500); },true);
+
+/* ③ 드릴 화면 지키기 — 배경 동기화 등으로 화면을 다시 그릴 때 본표로 튀지 않게 합니다. */
+(function(){
+  try{
+    if(typeof window.fcDrillCust==='function'&&!window.fcDrillCust.__v901){
+      var o=window.fcDrillCust;
+      var w=function(c){ try{ window.__FC_DRILL_V901=String(c||''); }catch(e){} return o.apply(this,arguments); };
+      w.__v901=true; window.fcDrillCust=w;
+    }
+    if(typeof window.forecast==='function'&&!window.forecast.__v901){
+      var of=window.forecast;
+      var wf=function(){ try{ window.__FC_DRILL_V901=''; }catch(e){} return of.apply(this,arguments); };
+      wf.__v901=true; window.forecast=wf;
+    }
+    if(typeof window.runAct==='function'&&!window.runAct.__v901){
+      var or=window.runAct;
+      var wr=function(){
+        try{
+          if(state&&state.act==='forecast'&&window.__FC_DRILL_V901&&typeof window.fcDrillCust==='function'){
+            var c=window.__FC_DRILL_V901;
+            var r=or.apply(this,arguments);
+            setTimeout(function(){ try{ window.fcDrillCust(c); }catch(e){} },0);
+            return r;
+          }
+        }catch(e){}
+        return or.apply(this,arguments);
+      };
+      wr.__v901=true; window.runAct=wr;
+    }
+  }catch(e){}
+})();
 })();
 </script>
 </body>
