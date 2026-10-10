@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v897</title>
-<script>window.APP_BUILD='v897';</script>
+<title>동방파스텍 매출 분석 도구 v899</title>
+<script>window.APP_BUILD='v899';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v897</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v899</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -13727,7 +13727,7 @@ function fcDrillCust(c){ state._inDrill=true; const f=state._fc; if(!f)return; c
   let arr=[...keys].map(pk=>{ let prev=0,pq=0,proj=0,cq=0; for(let m=m1;m<=m2;m++){ const pm=f.pyMonCustProd[m].get(c); const pe=pm&&pm.get(pk); if(pe){prev+=pe.amt;pq+=pe.qty;} const sm=(m<=f.lastAct?f.cyMonCustProd[m]:f.fcCustProdMon[m]).get(c); const ce=sm&&sm.get(pk); if(ce){proj+=ce.amt;cq+=ce.qty;} } const meta=f.prodMeta.get(pk)||{code:pk,name:'',spec:''}; state.fc.custProdOverride=state.fc.custProdOverride||{}; const _cpk=c+'│'+pk; const cpov=state.fc.custProdOverride[_cpk]; let projF=proj; if(cpov!=null&&cpov!=='')projF=prev*(1+(+cpov)/100); if(fcIsTargetExcludedCust(c)){projF=0;cq=0;} const diff=projF-prev,pct=prev?diff/prev*100:(projF>0?null:0); return {pk,...meta,prev,proj:projF,diff,pct,pq,cq,cpov:(cpov==null?'':cpov)}; }).filter(o=>o.prev>0||o.proj>0);
   const ds=state.fc._dsC||(state.fc._dsC={k:'proj',d:-1}); const _sv=(o,k)=>['code','name','spec'].includes(k)?(o[k]||''):(o[k]==null?-Infinity:o[k]); arr.sort((a,b)=>{ const av=_sv(a,ds.k),bv=_sv(b,ds.k); if(typeof av==='string')return ds.d>0?av.localeCompare(bv,'ko'):bv.localeCompare(av,'ko'); return ds.d>0?av-bv:bv-av; }); const _ar=k=>ds.k===k?(ds.d>0?' ▲':' ▼'):''; const tp=arr.reduce((a,o)=>a+o.prev,0), tj=arr.reduce((a,o)=>a+o.proj,0);
   const monOn=!!state.fc._custMonView;
-  const monBtn=`<button class="btn ghost" id="fcCustMonBtn" style="font-size:12px;padding:5px 12px;margin-left:6px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별보기${monOn?' 끄기':''}</button>`;
+  const monBtn=`<button class="btn ghost" id="fcCustMonBtn" title="제품·규격별 1~12월 목표금액을 보고, 미래월 조정%를 직접 입력할 수 있습니다." style="font-size:12px;padding:5px 12px;margin-left:6px;font-weight:800;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':'color:#1d4ed8;border-color:#93c5fd;background:#eff6ff'}">📅 월별보기${monOn?' 끄기':''}</button>`;
   let bodyHtml;
   if(monOn){
     const keysAll=new Set(); for(let m=1;m<=12;m++){ const sm=(m<=f.lastAct?f.cyMonCustProd[m]:f.fcCustProdMon[m]).get(c); if(sm)sm.forEach((_,pk)=>keysAll.add(pk)); }
@@ -19045,7 +19045,7 @@ try{
     const _ar=k=>ds.k===k?(ds.d>0?' ▲':' ▼'):'';
     const tp=arr.reduce((a,o)=>a+o.prev,0),tj=arr.reduce((a,o)=>a+o.proj,0);
     const monOn=!!state.fc._custMonView;
-    const monBtn=`<button class="btn ghost" id="fcCustMonBtn" style="font-size:12px;padding:5px 12px;margin-left:6px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별보기${monOn?' 끄기':''}</button>`;
+    const monBtn=`<button class="btn ghost" id="fcCustMonBtn" title="제품·규격별 1~12월 목표금액을 보고, 미래월 조정%를 직접 입력할 수 있습니다." style="font-size:12px;padding:5px 12px;margin-left:6px;font-weight:800;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':'color:#1d4ed8;border-color:#93c5fd;background:#eff6ff'}">📅 월별보기${monOn?' 끄기':''}</button>`;
     let bodyHtml,monthlyRows=[];
     if(monOn){
       const metric=fcMonthlyMetric(),keysAll=new Set();
@@ -30617,13 +30617,33 @@ function sgMonthlyPlan(items,A){
     var labelY=v<0?Math.min(T+ih-2,top+h+9):Math.max(10,top-5);
     s+='<rect x="'+(cx-bw/2)+'" y="'+top+'" width="'+bw+'" height="'+Math.max(0,h)+'" rx="2.5" fill="'+col+'" opacity=".85"><title>'+(i+1)+'월 순 기대매출 영향 '+sgWon(v)+'원</title></rect>'
       +(Math.abs(v)>=.5?'<text class="sg-month-value-text" x="'+cx+'" y="'+labelY+'" text-anchor="middle" fill="'+col+'" stroke="#fff" stroke-width="2.4" paint-order="stroke">'+sgShort(v)+'</text>':'')
-      +'<text class="sg-month-axis-text" x="'+cx+'" y="'+(T+ih+13)+'" text-anchor="middle" style="font-size:6.3px!important;font-weight:400!important" fill="#64748b">'+(i+1)+'</text>'; });
+      +'<text class="sg-month-axis-text" x="'+cx+'" y="'+(T+ih+13)+'" text-anchor="middle" style="font-size:6.3px!important;font-weight:400!important" fill="#64748b">'+(i+1)+'월</text>'; });
   s+='<line x1="'+L+'" y1="'+zeroY+'" x2="'+(W-R)+'" y2="'+zeroY+'" stroke="#94a3b8" stroke-width="1.2"/></svg>';
   return '<div class="sg-month-plan-box" style="border:1px solid #dbe3ee;border-radius:10px;padding:10px;background:#fff">'
     +'<b style="font-size:12.5px;color:#1e3a5f">🗓️ 전략 반영 월별 기대매출 (시작월 기준 균등 배분)</b>'
     +'<div class="sub2" style="margin:3px 0 6px">초록은 목표 증가, 갈색은 거래축소 차감입니다. 시작월 이후 순 기대매출 영향을 균등 배분합니다.</div>'+s+'</div>';
 }
 
+/* ══ v898 · ② 영업전략 추진현황의 «월별 반영 금액»을 다른 화면에서도 쓸 수 있게 내보냅니다. ══ */
+window.sgStrategyMonthlyV898=function(){
+  try{
+    var items=(typeof sgPlanItems==='function')?sgPlanItems():[];
+    var mon=Array(13).fill(0), list=[];
+    items.forEach(function(it){
+      if(!it||it.off)return;
+      var a=(typeof sgSignedAmount==='function')?sgSignedAmount(it):(+it.amount||0);
+      var p=(it.prob==null?((SG_SMAP[it.stage]||{p:50}).p):+it.prob);
+      var st=Math.min(12,Math.max(1,+it.mon||1));
+      var tot=a*p/100, per=tot/(12-st+1), each={};
+      for(var m=st;m<=12;m++){ mon[m]+=per; each[m]=per; }
+      list.push({cust:it.cust||it.title||'(업체 미지정)',prod:it.prod||'',
+        note:(typeof sgItemNote==='function')?sgItemNote(it):'',
+        type:it.type||'',amount:+it.amount||0,prob:p,expect:tot,start:st,per:per,by:each,
+        matrix:String(it.matrixCell||'')});
+    });
+    return {mon:mon,list:list};
+  }catch(e){ return {mon:Array(13).fill(0),list:[]}; }
+};
 /* ---------- 5. 교차판매 기회맵 (분포도) ---------- */
 function sgOppMap(A){
   var mode=sgPlan().oppMode==='product'?'product':'customer';
@@ -34117,8 +34137,16 @@ function memoText(it){
   catch(_e){ note=String((it&&it.note)||'').trim(); }
   /* 비고가 거래처명과 같으면 의미가 없으므로 제외합니다. */
   if(note&&it&&String(it.cust||'').trim()===note)note='';
-  if(prod&&note)return prod+' / '+note;
-  return prod||note||'';
+  /* v898 : 금액·확률·시작월을 함께 적어, 목표표에서 «어디서 얼마가» 늘었는지 바로 보이게 합니다. */
+  var extra='';
+  try{
+    var amt=Math.round(+((it&&it.amount)||0));
+    var pb=(it&&it.prob!=null)?+it.prob:((typeof SG_SMAP!=='undefined'&&SG_SMAP[it&&it.stage])?SG_SMAP[it.stage].p:50);
+    var st=Math.min(12,Math.max(1,+((it&&it.mon)||1)));
+    if(amt)extra=' ('+amt.toLocaleString('ko-KR')+'원 × '+pb+'% = '+Math.round(amt*pb/100).toLocaleString('ko-KR')+'원 · '+st+'월~)';
+  }catch(_x898){}
+  if(prod&&note)return prod+' / '+note+extra;
+  return (prod||note||'')+((prod||note)?extra:'');
 }
 
 function collect(){
@@ -35507,6 +35535,7 @@ function build(){
   var C=window.FC_CHART_V677; if(!C||!C.py)return;   /* v758 : 값이 없으면 직전 표를 그대로 둡니다 */
   if(el.getAttribute('data-at')===String(C.at))return;
   el.setAttribute('data-at',String(C.at));
+  try{ window.__SGM_V898=null; }catch(_c898){}   /* v898 : 전략 월별 집계를 새로 읽습니다 */
   var f=(typeof state!=='undefined'&&state.fc)?state.fc:{};
   var TD='border:1px solid #e2e8f0;padding:3px 8px;font-size:11.5px';
   var rows='', tot=0, gap=0, anyGap=false;
@@ -35521,6 +35550,13 @@ function build(){
     var un=+(C.unMon&&C.unMon[m])||0; cs+=ebtn('신규 배분 '+(Math.abs(un)>=1000?('+'+W(un)+'원'):'0'),'#7c3aed','new',m,Math.abs(un)>=1000?1:0);
     var pd=+(C.pdMon&&C.pdMon[m])||0; if(Math.abs(pd)>=1000)cs+=chip('PD +'+W(pd)+'원','#0d9488');
     var ex=+(C.exTgt&&C.exTgt[m])||0; cs+=ebtn('목표제외 '+(Math.abs(ex)>=1000?('-'+W(ex)+'원'):'0'),'#64748b','exclude',m,Math.abs(ex)>=1000?1:0);
+    /* v898 : ② 영업전략 추진현황이 그 달에 반영돼 있으면 표시하고, 누르면 내용을 폅니다. */
+    try{
+      var SM=window.__SGM_V898||(window.__SGM_V898=(typeof window.sgStrategyMonthlyV898==='function')?window.sgStrategyMonthlyV898():{mon:[],list:[]});
+      var sv=+(SM.mon&&SM.mon[m])||0;
+      var sn=(SM.list||[]).filter(function(o){return Math.abs(+o.by[m]||0)>=1;}).length;
+      cs+=ebtn('② 추진현황 '+(sn?(sn+'건 '+(sv>0?'+':'')+W(sv)+'원'):'0'),'#0ea5e9','strategy',m,sn?1:0);
+    }catch(_s898){}
     if(!cs)cs='<span style="color:#94a3b8">-</span>';
     var dc=(Math.abs(d)<500000)?'#94a3b8':(d>0?'#b91c1c':'#1d4ed8');
     rows+='<tr><td style="'+TD+';text-align:center;font-weight:700">'+m+'월</td>'+
@@ -35537,7 +35573,20 @@ function build(){
   if(o3)yr+=chip('제품 조정% '+o3+'건','#ca8a04'); if(o4)yr+=chip('제품 추가% '+o4+'건','#ca8a04');
   if(o5)yr+=chip('거래처×제품% '+o5+'건','#0369a1');
   if(nc)yr+=chip('신규업체 '+nc+'개','#7c3aed'); if(np)yr+=chip('신규제품 '+np+'개','#7c3aed'); if(nl)yr+=chip('신규라인 '+nl+'건','#7c3aed');
-  if(!yr)yr='<span style="color:#94a3b8">연간 조정값 없음</span>';
+  /* ══ v899 · 추가증감액의 «진짜 출처»를 여기에서 바로 보여 줍니다. ══
+     연간 조정값이 없어도 «업체 월%·제품 월%·② 추진현황»이 금액을 바꿉니다. */
+  try{
+    var mSum=function(map){ var n=0,ms=[]; for(var mm=1;mm<=12;mm++){ var c=cntMon(map,mm); if(c){ n+=c; ms.push(mm+'월'); } } return {n:n,ms:ms}; };
+    var cm=mSum(f.custMonthPct), pm=mSum(f.prodMonthPct);
+    if(cm.n)yr+=chip('업체 월% '+cm.n+'건 ('+cm.ms.join('·')+')','#ea580c');
+    if(pm.n)yr+=chip('제품 월% '+pm.n+'건 ('+pm.ms.join('·')+')','#ca8a04');
+    var SM2=window.__SGM_V898||(window.__SGM_V898=(typeof window.sgStrategyMonthlyV898==='function')?window.sgStrategyMonthlyV898():{mon:[],list:[]});
+    var sTot=0; for(var m3=1;m3<=12;m3++)sTot+=(+(SM2.mon&&SM2.mon[m3])||0);
+    if((SM2.list||[]).length)yr+=chip('② 추진현황 '+SM2.list.length+'건 '+(sTot>0?'+':'')+W(sTot)+'원','#0ea5e9');
+    var exY=0; for(var m4=1;m4<=12;m4++)exY+=Math.abs(+(C.exTgt&&C.exTgt[m4])||0);
+    if(exY>=1000)yr+=chip('목표제외 합계 -'+W(exY)+'원','#64748b');
+  }catch(_y899){}
+  if(!yr)yr='<span style="color:#94a3b8">연간 조정값 없음 · 월별 설정도 없음</span>';
   var th='border:1px solid #cbd5e1;padding:4px 8px;background:#1e3a5f;color:#fff;font-size:11px;white-space:nowrap';
   var head='기준 합계 '+W(tot)+'원 · 목표 합계 '+W(tot+gap)+'원 · 차이 <b style="color:'+(gap>0?'#b91c1c':'#1d4ed8')+'">'+(gap>0?'+':'')+W(gap)+'원</b>';
   el.innerHTML='<details id="fcDiffDetV757"'+(OPEN?' open':'')+' style="margin:8px 0 2px;border:1px solid #fed7aa;border-radius:10px;background:#fffbeb">'+
@@ -35572,6 +35621,43 @@ function build(){
   try{ if(EDIT.kind&&EDIT.m){ OPEN=true; openEdit(EDIT.kind,EDIT.m,true); } }catch(_e){}
   /* v792 : 📊 BEP · 👥 사업부 인원 상자를 이 점검 패널 바로 아래로 옮깁니다 */
   try{ if(typeof bepHeadMoveV792==='function')bepHeadMoveV792(); }catch(_e){}
+}
+/* ══ v898 · ② 영업전략 추진현황 월별 내역 ══ */
+function openStrategyV898(m,force){
+  var box=document.getElementById('fcDiffEditV757'); if(!box)return;
+  if(!force && box.getAttribute('data-k')==='strategy'+m){ box.innerHTML=''; box.removeAttribute('data-k'); EDIT={kind:'',m:0}; return; }
+  box.setAttribute('data-k','strategy'+m); EDIT={kind:'strategy',m:m};
+  var SM=(typeof window.sgStrategyMonthlyV898==='function')?window.sgStrategyMonthlyV898():{mon:[],list:[]};
+  window.__SGM_V898=SM;
+  var rowsAll=(SM.list||[]).filter(function(o){return Math.abs(+o.by[m]||0)>=1;});
+  var col='#0ea5e9';
+  var TD='border:1px solid #e2e8f0;padding:3px 8px;font-size:11.5px';
+  var TH='border:1px solid #cbd5e1;padding:4px 8px;background:'+col+';color:#fff;font-size:11px;text-align:left';
+  var sum=rowsAll.reduce(function(a,o){return a+(+o.by[m]||0);},0);
+  var body=rowsAll.map(function(o,i){
+    return '<tr><td style="'+TD+';text-align:left">'+(i+1)+'</td>'+
+      '<td style="'+TD+';text-align:left">'+esc2(o.cust)+'</td>'+
+      '<td style="'+TD+';text-align:left">'+esc2(o.prod||'-')+'</td>'+
+      '<td style="'+TD+';text-align:left">'+esc2(o.note||'')+(o.matrix?(' · 매트릭스 연동'):'')+'</td>'+
+      '<td style="'+TD+';text-align:left">'+W(o.amount)+'</td>'+
+      '<td style="'+TD+';text-align:left">'+o.prob+'%</td>'+
+      '<td style="'+TD+';text-align:left">'+W(o.expect)+'</td>'+
+      '<td style="'+TD+';text-align:left">'+o.start+'월~12월</td>'+
+      '<td style="'+TD+';text-align:left;font-weight:800;color:'+col+'">'+((+o.by[m]||0)>0?'+':'')+W(o.by[m])+'</td></tr>';
+  }).join('');
+  if(!body)body='<tr><td colspan="9" style="'+TD+';text-align:center;color:#94a3b8">'+m+'월에 반영된 ② 영업전략 추진현황 항목이 없습니다.</td></tr>';
+  box.innerHTML='<div style="margin:9px 0 2px;border:1px solid '+col+'55;border-radius:9px;background:#fff;padding:9px 11px">'+
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'+
+    '<b style="font-size:12px;color:'+col+'">'+m+'월 · ② 영업전략 추진현황 '+rowsAll.length+'건 · 합계 '+(sum>0?'+':'')+W(sum)+'원</b>'+
+    '<span style="font-size:11px;color:#64748b">기대매출 = 목표/영향금액 × 확률. 시작월부터 12월까지 균등 배분한 그 달의 몫입니다.</span>'+
+    '<span style="margin-left:auto"><button type="button" id="fcdxClose898" class="btn ghost" style="font-size:11px;padding:4px 10px">닫기</button></span></div>'+
+    '<div style="overflow:auto;max-height:340px"><table style="border-collapse:collapse;width:100%;min-width:900px"><thead><tr>'+
+    '<th style="'+TH+';width:40px">NO</th><th style="'+TH+';width:190px">대상 거래처</th><th style="'+TH+';width:180px">대상 제품</th>'+
+    '<th style="'+TH+'">비고/아이템</th><th style="'+TH+';width:130px">목표/영향금액</th><th style="'+TH+';width:60px">확률</th>'+
+    '<th style="'+TH+';width:130px">기대매출</th><th style="'+TH+';width:110px">배분구간</th><th style="'+TH+';width:120px">'+m+'월 반영액</th>'+
+    '</tr></thead><tbody>'+body+'</tbody></table></div></div>';
+  var cb=document.getElementById('fcdxClose898');
+  if(cb)cb.addEventListener('click',function(){ box.innerHTML=''; box.removeAttribute('data-k'); EDIT={kind:'',m:0}; });
 }
 /* ── 기준과 동일하게 맞추기 ─────────────────────────────── */
 var KEYS=['pct','pctAt','override','overrideAt','addPct','addPctAt','prodOverride','prodAddPct','custProdOverride','custMonthPct','prodMonthPct','newCusts','newProds','newCustReplacements'];
@@ -35707,6 +35793,7 @@ function openSpecial(kind,m,force){
   box.querySelectorAll('.fcdx-special-del').forEach(function(b){b.onclick=async function(){var k=b.getAttribute('data-key');if(kind==='new'){if(!await uiConfirm('이 신규 목표를 삭제할까요?<br><span class="sub2">신규업체·신규제품은 삭제 후 목표표의 「↶ 삭제 복구」로 되돌릴 수 있습니다.</span>'))return;if(k.indexOf('c:')===0){var ck=k.slice(2);if(typeof fcRememberDeletedTarget==='function')fcRememberDeletedTarget('cust',ck,{amount:f.newCusts[ck],addPct:f.addPct&&f.addPct[ck],override:f.override&&f.override[ck],memo:f.custMemo&&f.custMemo[ck],replacement:f.newCustReplacements&&f.newCustReplacements[ck]});delete f.newCusts[ck];}else if(k.indexOf('p:')===0){var pk=k.slice(2);if(typeof fcRememberDeletedTarget==='function')fcRememberDeletedTarget('prod',pk,{product:f.newProds[pk],addPct:f.prodAddPct&&f.prodAddPct[pk],memo:f.prodMemo&&f.prodMemo[pk]});delete f.newProds[pk];}else if(k.indexOf('l:')===0)f.newLines.splice(+k.slice(2),1);}else{var n=k.indexOf('exclude:')===0?k.slice(8):k,nk=norm(n);[f.exclCust,state.cmgrExcl,f.targetExclCust,f.targetOnlyExcl].forEach(function(mp){Object.keys(mp||{}).forEach(function(x){if(norm(x)===nk)delete mp[x];});});}try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();}catch(_e){} afterWrite(document.getElementById('fcDiffMsgV757'),lab+' 항목을 삭제했습니다.');};});
 }
 function openEdit(kind,m,force){
+  if(kind==='strategy'){openStrategyV898(m,force);return;}
   if(kind==='new'||kind==='exclude'){openSpecial(kind,m,force);return;}
   var box=document.getElementById('fcDiffEditV757'); if(!box)return;
   /* v775 : 같은 버튼을 다시 누르면 닫고, 화면을 다시 그려 복원할 때(force)는 그대로 엽니다 */
