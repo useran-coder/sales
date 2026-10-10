@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v893</title>
-<script>window.APP_BUILD='v893';</script>
+<title>동방파스텍 매출 분석 도구 v896</title>
+<script>window.APP_BUILD='v896';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v893</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v896</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -29547,6 +29547,62 @@ function sgTargetNewCustsV663(){
   return out;
 }
 try{ window.sgTargetNewCustsV663=sgTargetNewCustsV663; }catch(_e){}
+/* ══════════════════════════════════════════════════════════════
+   v895 · 매트릭스 칸을 고르면 «그 칸에 연동된 업체 목록»을 보여 줍니다.
+   예전에는 칸의 분류(예: 거래처 위험) 목록이 떠서 «0개사»로 나왔습니다.
+   목록의 업체를 누르면 ② 영업전략 추진현황에서 그 줄로 이동합니다.
+   ══════════════════════════════════════════════════════════════ */
+function sgMxCellPanelV895(A,cellId){
+  try{
+    var d=sgMatrixCellDefV825(cellId)||{},ctx=sgGoalContext(A),no=(typeof sgMxNoV867==='function')?sgMxNoV867(cellId):'';
+    var list=[];
+    /* ② 영업전략 추진현황에서 이 칸을 고른 줄 */
+    try{
+      sgMxLinkedItemsV867(ctx.plan,cellId).forEach(function(it){
+        var prob=it.prob==null?((SG_SMAP[it.stage]||{p:50}).p):+it.prob;
+        list.push({cust:it.cust||it.title||'(업체 미지정)',prod:it.prod||'',
+          amount:Math.abs(+sgEffAmountV613(it)||0),
+          expect:Math.abs((+sgEffAmountV613(it)||0)*(prob/100)),
+          note:sgItemNote(it),src:'② 추진현황',type:it.type||'',off:!!it.off,id:it.id||''});
+      });
+    }catch(_e1){}
+    /* 목표표에 등록하며 이 칸을 고른 신규업체 */
+    try{ sgMxLinkedTgtV867(cellId).forEach(function(o){
+      list.push({cust:o.cust||'',prod:o.prod||'',amount:Math.max(0,+o.amount||0),expect:Math.max(0,+o.amount||0),
+        note:o.note||'목표표 등록',src:'목표표',type:o.type||'newCust',off:false,id:''});
+    }); }catch(_e2){}
+    /* 칸 배분으로 직접 등록한 줄 */
+    try{ (sgMatrixCellRowsV825(ctx.year,ctx.plan,cellId,false)||[]).forEach(function(r){
+      list.push({cust:r.cust||'',prod:r.prod||'',amount:Math.max(0,+r.amount||0),expect:Math.max(0,+r.amount||0),
+        note:r.note||(r.source==='existing'?'기존데이터 연동':'직접등록'),src:'셀 배분',type:d.k||'',off:false,id:''});
+    }); }catch(_e3){}
+    var on=list.filter(function(o){return !o.off;});
+    var sumA=on.reduce(function(a,o){return a+o.amount;},0),sumE=on.reduce(function(a,o){return a+o.expect;},0);
+    var head='<div class="sg-wf-company-panel"><div class="sg-wf-company-head">'
+      +'<b>🧩 매트릭스 '+no+'번 · '+sgEsc(d.a||'')+' — 연동 업체 '+on.length+'개</b>'
+      +'<span style="display:inline-flex;align-items:center;gap:8px">금액 '+sgShort(sumA)+'원 · 기대 '+sgShort(sumE)+'원'
+      +'<button type="button" class="sgWfDetailCloseV858 btn ghost" style="padding:2px 8px;font-size:10.5px" title="목록을 닫고 선택을 해제합니다">× 닫기</button></span></div>'
+      +'<div style="padding:7px 10px;border-bottom:1px solid #dbeafe;background:#f8fbff;color:#475569;font-size:10.5px;line-height:1.5">'
+      +'이 칸(<b>'+sgEsc(d.a||'')+'</b>)에 연동된 업체입니다. <b>업체 줄을 누르면</b> 아래 ② 영업전략 추진현황에서 그 줄로 이동합니다. '
+      +'연동은 ② 추진현황의 <b>매트 1~9</b> 칸에서 번호를 골라 만듭니다.</div>';
+    if(!list.length)return head+'<div style="padding:20px;text-align:center;color:#64748b;font-size:12px">이 칸에 연동된 업체가 없습니다 · ② 영업전략 추진현황에서 «매트» 열에 '+no+'번을 고르세요</div></div>';
+    var body=list.map(function(o,i){
+      return '<tr class="sgMxCustRowV895" data-cust="'+sgEsc(o.cust)+'" data-type="'+sgEsc(o.type)+'" data-id="'+sgEsc(o.id)+'" style="cursor:pointer'+(o.off?';opacity:.45':'')+'" title="누르면 ② 영업전략 추진현황에서 이 업체 줄을 찾아갑니다">'
+        +'<td style="text-align:center">'+(i+1)+'</td>'
+        +'<td style="text-align:left!important;font-weight:800;color:#1e3a5f">'+sgEsc(o.cust||'-')+'</td>'
+        +'<td style="text-align:left!important">'+sgEsc(o.prod||'-')+'</td>'
+        +'<td style="text-align:right">'+(o.amount?sgWon(o.amount):'-')+'</td>'
+        +'<td style="text-align:right;color:#7c3aed;font-weight:800">'+(o.expect?sgWon(Math.round(o.expect)):'-')+'</td>'
+        +'<td style="text-align:left!important">'+sgEsc(o.note||'')+(o.off?' · 미반영':'')+'</td>'
+        +'<td style="text-align:center;color:#64748b">'+sgEsc(o.src)+'</td></tr>';
+    }).join('');
+    return head+'<div class="sg-wf-company-scroll"><table class="sg-wf-company-table"><thead><tr>'
+      +'<th style="width:42px">NO</th><th style="width:210px;text-align:left!important">업체·대상</th>'
+      +'<th style="width:200px;text-align:left!important">대상 제품</th><th style="width:130px">목표/영향금액</th>'
+      +'<th style="width:130px">기대매출</th><th style="text-align:left!important">비고</th><th style="width:100px">출처</th>'
+      +'</tr></thead><tbody>'+body+'</tbody></table></div></div>';
+  }catch(_e){ return ''; }
+}
 function sgWaterfallCompanyPanel(A,key,planItems,useProb,basis,selectedAmount,autoOn){
   if(!key)return '';
   var type=SG_TMAP[key]||null,rows=[],byName={},isProd=['newProd','growthProd','keepProd'].indexOf(key)>=0;
@@ -29695,7 +29751,7 @@ function sgMxSelectV867(attrName,attrVal,cur){
     tips.push(n+'. '+sgMxRowColLabelV867(n)+' — '+(dd.a||''));
   }
   var tip=tips.join('\n');
-  return '<select class="sgMxPickV867" '+attrName+'="'+sgEsc(attrVal)+'" title="3×3 방화문부자재 계획 매트릭스의 몇 번 칸에 넣을지 고릅니다.\n'+sgEsc(tip)+'" style="'+SGI+'width:22px;min-width:22px;padding:5px 0;text-align:center;border-color:'+(cn?'#60a5fa':'#e2e8f0')+';background:'+(cn?'#eff6ff':'#fff')+';font-weight:'+(cn?'800':'400')+'">'+o+'</select>';
+  return '<select class="sgMxPickV867" '+attrName+'="'+sgEsc(attrVal)+'" title="3×3 방화문부자재 계획 매트릭스의 몇 번 칸에 넣을지 고릅니다.\n'+sgEsc(tip)+'" style="'+SGI+'width:44px;min-width:44px;padding:5px 1px;text-align:center;border-color:'+(cn?'#60a5fa':'#e2e8f0')+';background:'+(cn?'#eff6ff':'#fff')+';font-weight:'+(cn?'800':'400')+'">'+o+'</select>';
 }
 /* 이 매트릭스 칸에 연동된 ② 추진현황 줄 */
 function sgMxLinkedItemsV867(plan,cellId){
@@ -29763,6 +29819,15 @@ function sgMatrixTargetValsV825(o,_Y892,_P892){
         var v=ex.reduce(function(a,x){return a+((x&&!x.off)?Math.max(0,+x.amount||0):0);},0);
         if(v>0){fixed[d.id]=v;fsum+=v;}
       });
+      window.__MX_OVER_V896=null;
+      if(fsum>plan&&plan>0){
+        /* v896 : ② 추진현황 연동 금액이 A 워터폴 계획보다 크면 매트릭스 합계가 계획과 어긋납니다.
+           합계를 계획에 맞춰 비례 축소하고, 그래프 아래에 초과 사실을 알려 줍니다. */
+        window.__MX_OVER_V896={fixed:fsum,plan:plan};
+        var sc=plan/fsum,u3=0,keys=Object.keys(fixed);
+        keys.forEach(function(k,i){ var v=(i===keys.length-1)?Math.max(0,plan-u3):Math.floor(fixed[k]*sc); u3+=v; fixed[k]=v; });
+        fsum=plan;
+      }
       if(fsum>0){
         var rest=Math.max(0,plan-fsum),base=0;
         defs.forEach(function(d){base+=(+out[d.id]||0);});
@@ -29858,7 +29923,8 @@ function sgMekkoV814(o){
   ticks.forEach(function(t){var x=bx+bw*t/maxP;s+='<line x1="'+x+'" y1="'+my+'" x2="'+x+'" y2="'+matrixBottom+'" stroke="#cbd5e1" stroke-dasharray="3 3"/><text x="'+x+'" y="'+(matrixBottom+17)+'" text-anchor="middle" font-size="9" fill="#64748b">'+t+'%</text>';});
   groups.forEach(function(g,i){var y=barTop+i*barGap,w=bw*g.p/maxP;s+='<text x="'+(bx-12)+'" y="'+(y-6)+'" text-anchor="end" font-size="11" font-weight="800" fill="#1e293b">'+g.a+'</text><text x="'+(bx-12)+'" y="'+(y+9)+'" text-anchor="end" font-size="9" fill="#64748b">('+g.b+')</text><rect x="'+bx+'" y="'+(y-20)+'" width="'+w.toFixed(1)+'" height="40" fill="'+g.c+'"/><text x="'+(bx+w+7).toFixed(1)+'" y="'+(y+3)+'" font-size="9.8" fill="#334155">'+sgShort(g.v)+' ('+g.p.toFixed(1)+'%)</text>';});
   s+='<line x1="'+bx+'" y1="'+my+'" x2="'+bx+'" y2="'+matrixBottom+'" stroke="#475569" stroke-width="1.5"/><line x1="'+bx+'" y1="'+matrixBottom+'" x2="'+(bx+bw)+'" y2="'+matrixBottom+'" stroke="#475569" stroke-width="1.5"/>'
-    +'<text x="'+(bx+bw/2)+'" y="430" text-anchor="middle" font-size="10.5" fill="'+(gap>0?'#dc2626':'#15803d')+'">목표 '+sgGoalShort(goal)+' · 계획 '+sgShort(end)+' ('+rate.toFixed(1)+'%) · '+(gap>0?'부족 '+sgShort(gap):'초과 '+sgShort(-gap))+'</text></svg>';
+    +'<text x="'+(bx+bw/2)+'" y="430" text-anchor="middle" font-size="10.5" fill="'+(gap>0?'#dc2626':'#15803d')+'">목표 '+sgGoalShort(goal)+' · 계획 '+sgShort(end)+' ('+rate.toFixed(1)+'%) · '+(gap>0?'부족 '+sgShort(gap):'초과 '+sgShort(-gap))+'</text>'
+    +((window.__MX_OVER_V896&&window.__MX_OVER_V896.fixed>window.__MX_OVER_V896.plan)?('<text x="'+(bx+bw/2)+'" y="444" text-anchor="middle" font-size="10" fill="#b91c1c">\u26a0 \u2461 \ucd94\uc9c4\ud604\ud669 \uc5f0\ub3d9 '+sgShort(window.__MX_OVER_V896.fixed)+' &gt; \uacc4\ud68d '+sgShort(window.__MX_OVER_V896.plan)+' \u2014 \uce78 \uae08\uc561\uc744 \uacc4\ud68d\uc5d0 \ub9de\ucd94\uc5b4 \uc904\uc5ec \ud45c\uc2dc</text>'):'')+'</svg>';
   return s;
 }
 function sgWaterfall(A){
@@ -30070,7 +30136,10 @@ function sgWaterfall(A){
     +sgPill(gap>0?'추가로 찾아야 할 매출':'목표 초과 달성',sgShort(Math.abs(gap))+'원',gap>0?'#dc2626':'#15803d')
     +'</div>';
   var selectedObj=steps.filter(function(o){return o.k===selected;})[0],selectedAmount=selectedObj?selectedObj.v:0;
-  var _detail=sgWaterfallCompanyPanel(A,selected,planItems,useProb,basis,selectedAmount,autoOn);
+  /* v895 : 매트릭스 칸을 고른 상태면 그 칸의 연동 업체 목록을 보여 줍니다. */
+  var _mxSelV895='';
+  try{ _mxSelV895=sgUiGetV869('matrixSelectedCell','')||''; }catch(_x895){}
+  var _detail=_mxSelV895?sgMxCellPanelV895(A,_mxSelV895):sgWaterfallCompanyPanel(A,selected,planItems,useProb,basis,selectedAmount,autoOn);
   /* v869 : 셀 배분 입력은 ② 영업전략 추진현황의 «매트릭스 1~9» 선택으로 대신합니다. */
   return foot+head+s+_detail+sourceDetail;
 }
@@ -30370,14 +30439,15 @@ function sgPipeline(A){
   }else{
     var tot=0,exp=0,xTot=0,xExp=0,xCnt=0;
     rowsHtml='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;min-width:1180px">'
-      +'<colgroup><col style="width:8%"><col style="width:10%"><col style="width:185.33px"><col style="width:278px"><col style="width:10%"><col style="width:9%"><col style="width:5%"><col style="width:9%"><col style="width:5%"><col style="width:6%"><col style="width:4%"><col style="width:4%"></colgroup>'
+      /* v894 : 열 수(13개)에 맞춰 colgroup 을 다시 맞추고 매트·단계·확률을 고정폭으로 둡니다. */
+      +'<colgroup><col style="width:10%"><col style="width:54px"><col style="width:185.33px"><col style="width:250.2px"><col style="width:10%"><col style="width:9%"><col style="width:154px"><col style="width:58px"><col style="width:6%"><col style="width:62px"><col style="width:5%"><col style="width:48px"><col style="width:60px"></colgroup>'
       +'<thead><tr style="background:#eef2f7;color:#334155">'
       +'<th style="padding:6px 5px;text-align:left">구분</th>'
       +'<th style="padding:6px 2px;text-align:center;width:1%;white-space:nowrap" title="3×3 방화문부자재 계획 매트릭스의 칸 번호(1~9)를 고르면 그 칸에 연동됩니다.">매트<br><span style="font-weight:600;color:#64748b;font-size:9.5px">1~9</span></th>'
       +'<th style="padding:6px 5px;text-align:left;width:185.33px">대상 거래처</th>'
-      +'<th style="padding:6px 5px;text-align:left;width:278px">대상 제품</th><th style="padding:6px 5px;text-align:left">비고/아이템</th>'
-      +'<th style="padding:6px 5px;text-align:right">목표/영향금액</th><th style="padding:6px 5px;text-align:center">단계</th>'
-      +'<th style="padding:6px 5px;text-align:center">확률</th><th style="padding:6px 5px;text-align:right">기대매출</th>'
+      +'<th style="padding:6px 5px;text-align:left;width:250.2px">대상 제품</th><th style="padding:6px 5px;text-align:left">비고/아이템</th>'
+      +'<th style="padding:6px 5px;text-align:right">목표/영향금액</th><th style="padding:6px 2px;text-align:center;width:154px">단계</th>'
+      +'<th style="padding:6px 5px;text-align:center;width:58px">확률</th><th style="padding:6px 5px;text-align:right">기대매출</th>'
       +'<th style="padding:6px 5px;text-align:center">시작</th><th style="padding:6px 5px;text-align:center">담당</th>'
       +'<th style="padding:6px 5px;text-align:center;width:50px">반영</th><th style="padding:6px 5px;width:62px"></th></tr></thead><tbody>';
     /* v806 : 목표표 등록 신규업체 행도 «단계·확률»을 고칠 수 있고, 실제 매출이 생기면
@@ -30430,7 +30500,7 @@ function sgPipeline(A){
           +'</td>'
         +'<td style="padding:5px 2px;text-align:center">'+sgMxSelectV867('data-id',it.id,String(it.matrixCell||''))+'</td>'
         +'<td style="padding:5px;text-align:left;width:185.33px"><input class="sgE sgSuggestInput sg-pipeline-edit" data-suggest-kind="cust" autocomplete="off" data-id="'+it.id+'" data-f="cust" value="'+sgEsc(it.cust||'')+'" style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;border-color:#e2e8f0"></td>'
-        +'<td style="padding:5px;text-align:left;width:278px"><input class="sgE sgSuggestInput sg-pipeline-edit" data-suggest-kind="prod" autocomplete="off" data-id="'+it.id+'" data-f="prod" value="'+sgEsc(it.prod||'')+'" style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;border-color:#e2e8f0"></td>'
+        +'<td style="padding:5px;text-align:left;width:250.2px"><input class="sgE sgSuggestInput sg-pipeline-edit" data-suggest-kind="prod" autocomplete="off" data-id="'+it.id+'" data-f="prod" value="'+sgEsc(it.prod||'')+'" style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;border-color:#e2e8f0"></td>'
         +'<td style="padding:5px;text-align:left"><input class="sgE sgSuggestInput sg-pipeline-edit" data-suggest-kind="title" autocomplete="off" data-id="'+it.id+'" data-f="note" value="'+sgEsc(sgItemNote(it))+'" style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;border-color:#e2e8f0;font-weight:400"></td>'
         +'<td style="padding:5px;text-align:right">'
           +'<input class="sgE" data-id="'+it.id+'" data-f="amount" value="'+sgWon(a)+'" '+(linkOn?'readonly title="연간 목표표의 올해목표액과 연동 중입니다. 🔗을 눌러 직접입력으로 바꿀 수 있습니다."':'title="직접 입력한 금액입니다."')+' style="'+SGI+'width:119px;text-align:right;border-color:'+(linkOn?'#93c5fd':'#e2e8f0')+';background:'+(linkOn?'#eff6ff':'#fff')+';font-weight:800">'
@@ -30438,9 +30508,9 @@ function sgPipeline(A){
              +'<button class="sgAmtLink btn ghost" data-id="'+it.id+'" data-on="'+(linkOn?'1':'0')+'" title="'+(linkOn?'직접입력으로 전환':'연간 목표표 올해목표액과 다시 연동')+'" style="font-size:9.5px;padding:1px 6px;'+(linkOn?'background:#dbeafe;color:#1d4ed8;border-color:#93c5fd':'')+'">'+(linkOn?'🔗 목표연동':'✎ 직접입력')+'</button>'
              +'<span class="sub2" style="font-size:9px;color:#94a3b8;white-space:nowrap">목표 '+sgShort(linked)+'</span></div>':'')
           +'</td>'
-        +'<td style="padding:5px;text-align:center"><select class="sgE" data-id="'+it.id+'" data-f="stage" style="'+SGI+'width:145px;border-color:#e2e8f0">'
+        +'<td style="padding:5px 2px;text-align:center;white-space:nowrap"><select class="sgE" data-id="'+it.id+'" data-f="stage" style="'+SGI+'width:146px;max-width:146px;border-color:#e2e8f0">'
           +SG_STAGES.map(function(s){var shownPct=stageV856===s[0]?p:s[2];return '<option value="'+s[0]+'"'+(stageV856===s[0]?' selected':'')+'>'+sgStageLabel(it.type,s[0])+' ('+shownPct+'%)</option>';}).join('')+'</select></td>'
-        +'<td style="padding:5px;text-align:center"><input class="sgE" data-id="'+it.id+'" data-f="prob" value="'+p+'" style="'+SGI+'width:40px;text-align:center;border-color:#e2e8f0">%</td>'
+        +'<td style="padding:5px;text-align:center"><input class="sgE" data-id="'+it.id+'" data-f="prob" value="'+p+'" style="'+SGI+'width:40px;text-align:center;border-color:#e2e8f0;margin-left:10px">%</td>'
         +'<td style="padding:5px;text-align:right;font-weight:800;color:'+T.c+'">'+sgWon(e)+'</td>'
         +'<td style="padding:5px;text-align:center"><select class="sgE sg-start-month" data-id="'+it.id+'" data-f="mon" style="'+SGI+'">'
           +[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){return '<option value="'+m+'"'+((+it.mon||1)===m?' selected':'')+'>'+m+'월</option>';}).join('')+'</select></td>'
@@ -32409,6 +32479,36 @@ function sgBind(A){
     el.addEventListener('click',open);
     el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
   });
+  /* v895 : 매트릭스 칸 목록의 업체 줄을 누르면 ② 영업전략 추진현황의 해당 줄로 이동합니다. */
+  $$('.sgMxCustRowV895').forEach(function(tr){ tr.addEventListener('click',function(e){
+    e.preventDefault();e.stopPropagation();
+    var cust=tr.dataset.cust||'',ty=tr.dataset.type||'';
+    try{ if(ty)sgUiSetV869('filter',ty); }catch(_f){}
+    window.__SG_FOCUS_CUST_V895=cust;
+    sgSave(); sgRe(true);
+  }); });
+  (function(){
+    var want=window.__SG_FOCUS_CUST_V895||''; if(!want)return;
+    window.__SG_FOCUS_CUST_V895='';
+    setTimeout(function(){
+      try{
+        var hit=null;
+        document.querySelectorAll('#result input.sg-pipeline-edit[data-f="cust"]').forEach(function(inp){
+          if(!hit&&String(inp.value||'').trim()===String(want).trim())hit=inp;
+        });
+        if(!hit)return;
+        var row=hit.closest('tr');
+        if(row){
+          row.scrollIntoView({behavior:'smooth',block:'center'});
+          var old=row.style.background;
+          row.style.transition='background .3s ease';
+          row.style.background='#fef9c3';
+          setTimeout(function(){ row.style.background=old||''; },2600);
+        }
+        hit.focus({preventScroll:true});
+      }catch(_s){}
+    },450);
+  })();
   $$('.sgWfDetailCloseV858').forEach(function(b){b.addEventListener('click',function(e){
     e.preventDefault();e.stopPropagation();sgUiSetV869('waterfallSelectedKey','');sgUiSetV869('matrixSelectedCell','');sgSave();sgRe(false);
   });});
