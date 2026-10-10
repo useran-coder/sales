@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v871</title>
-<script>window.APP_BUILD='v871';</script>
+<title>동방파스텍 매출 분석 도구 v872</title>
+<script>window.APP_BUILD='v872';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -791,7 +791,8 @@
 .field.hide-v866{display:none!important}
 #homeTopRowV866{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 /* v869 : 📅 기간 ~ 👤 사용자 ~ 로그아웃 간격을 매입분석 도구↔기간 간격과 같게 */
-header .appver,header .appuser,header .hdr-user{margin-left:8px!important}
+header .appver,header .appuser{margin-left:8px!important}
+header .hdr-user{margin-left:0!important}
 header .hdr-user{gap:6px}
 /* v869 : 수정이력 버튼이 헤더 밖(파일·관리)으로 가면서 header 범위 CSS 가 안 먹던 것을 보완 —
    📅 기간 버튼과 똑같은 알약 모양으로 맞춥니다. */
@@ -1989,7 +1990,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v871</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v872</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -2014,7 +2015,7 @@ body.fpopen #fpSum{display:block}
         <div class="au-topbar-row"><button id="headerElogBtn" class="header-history-btn" type="button" title="전체 수정이력" style="margin-right:8px">🕘 수정이력</button><span class="au-topbar" id="auTopBar"><b class="au-topbar-lab">🔐 로그인</b><span id="auBar"></span></span></div>
       <!-- v784 : GitHub 한 번에 올리기 -->
         <details class="mk-carddet gh-uploaddet" id="ghBoxV784">
-<summary><b style="font-weight:800;font-size:13px;color:#1e3a5f">🚀 GitHub 업로드 <span class="sub2" style="font-weight:600">(이 파일을 저장소에 바로 배포합니다)</span></b><span class="gh-file-release-v849" aria-label="현재 파일 수정 정보"><span class="gh-file-version-v849">v863</span><span class="gh-file-summary-v849" title="워터폴의 모든 선택 가능 막대에 선택 표시를 적용하고 깜빡이는 제목 애니메이션을 자연스러운 고정 강조로 변경">그래프 선택 표시 안정화</span><span class="gh-file-time-v849">수정 2026-10-09 16:35:00 KST</span></span><span class="mk-bmore">펼쳐보기 ▾</span></summary>
+<summary><b style="font-weight:800;font-size:13px;color:#1e3a5f">🚀 GitHub 업로드 <span class="sub2" style="font-weight:600">(이 파일을 저장소에 바로 배포합니다)</span></b><span class="gh-file-release-v849" id="ghRelBadgeV872" aria-label="업로드 상태"><span class="gh-file-version-v849" id="ghRelVerV872">-</span><span class="gh-file-summary-v849" id="ghRelStateV872">확인 중…</span><span class="gh-file-time-v849" id="ghRelTimeV872"></span></span><span class="mk-bmore">펼쳐보기 ▾</span></summary>
           <div style="margin-top:9px">
             <div class="gs-config-grid">
               <input type="text" id="ghOwner" placeholder="GitHub 계정(owner)" autocomplete="off">
@@ -35663,10 +35664,13 @@ window.addEventListener('load',function(){ setTimeout(install,300); setTimeout(i
         throw new Error(em);
       }
       var url=(d&&d.commit&&d.commit.html_url)||'';
+      ghRelSaveV872({ver:ver||'',at:Date.now(),state:'uploaded',url:url,
+        path:c.owner+'/'+c.repo+'/'+c.path});
       say('🟢 <b>올렸습니다</b> — '+esc(c.owner+'/'+c.repo+'/'+c.path)+' · '+esc(ver||'버전미상')+(from?(' · 보낸 파일 '+esc(from)):'')
-         +'<br><span style="font-weight:600;color:#475569">GitHub Pages 반영까지 1~2분 걸립니다.</span>'
+         +'<br><span style="font-weight:600;color:#475569">GitHub Pages 반영을 자동으로 확인합니다…</span>'
          +(url?(' <a href="'+url+'" target="_blank" rel="noopener" style="color:#1d4ed8">커밋 보기 ↗</a>'):''),'#0f766e');
       try{ if(typeof logEdit==='function')logEdit('배포','GitHub 업로드 '+(ver||'')+' → '+c.owner+'/'+c.repo+'/'+c.path); }catch(_l){}
+      ghWatchPagesV872(c,ver||'',url,from||'');
     }catch(e){ say('🔴 '+esc(String(e.message||e)),'#dc2626'); }
     finally{ if(btn)btn.disabled=false; if(btn2)btn2.disabled=false; }
   }
@@ -35682,12 +35686,71 @@ window.addEventListener('load',function(){ setTimeout(install,300); setTimeout(i
       var m=t.match(/APP_BUILD='([^']+)'/);
       var here=(window.APP_BUILD||'?');
       var there=m?m[1]:'?';
-      say((there===here?'🟢':'🟠')+' 배포된 버전 <b>'+esc(there)+'</b> · 지금 보고 있는 버전 <b>'+esc(here)+'</b>'
-        +(there===here?' — 같습니다.':' — 다릅니다. 올리기를 눌러 주세요.'), there===here?'#0f766e':'#b45309');
+      if(there===here){ var _o=ghRelLoadV872()||{}; ghRelSaveV872({ver:here,at:_o.at||Date.now(),state:'live',
+        url:_o.url||'',path:c.owner+'/'+c.repo+'/'+c.path,liveAt:Date.now()}); }
+      say((there===here?'✅':'🟠')+' 배포된 버전 <b>'+esc(there)+'</b> · 지금 보고 있는 버전 <b>'+esc(here)+'</b>'
+        +(there===here?' — 같습니다. 반영 완료.':' — 다릅니다. 올리기를 눌러 주세요.'), there===here?'#0f766e':'#b45309');
     }catch(e){ say('🔴 '+esc(String(e.message||e)),'#dc2626'); }
   }
+  /* ══ v872 · 업로드한 버전·시각을 제목줄 배지에 그대로 보여 주고,
+        GitHub Pages 반영이 끝나면 «✅ 반영 완료»로 바꿉니다. ══ */
+  var GH_REL_KEY_V872='gh_release_v872';
+  function ghRelLoadV872(){ try{ return JSON.parse(localStorage.getItem(GH_REL_KEY_V872)||'null')||null; }catch(_e){ return null; } }
+  function ghRelSaveV872(o){ try{ localStorage.setItem(GH_REL_KEY_V872,JSON.stringify(o)); }catch(_e){} ghRelPaintV872(); }
+  function ghTimeTextV872(ms){
+    try{
+      var d=new Date(ms),z=function(n){return ('0'+n).slice(-2);};
+      return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+' '+z(d.getHours())+':'+z(d.getMinutes())+' KST';
+    }catch(_e){ return ''; }
+  }
+  function ghRelPaintV872(){
+    var v=el('ghRelVerV872'),st=el('ghRelStateV872'),tm=el('ghRelTimeV872'),bx=el('ghRelBadgeV872');
+    if(!v||!st||!tm)return;
+    var here=String(window.APP_BUILD||'');
+    var o=ghRelLoadV872();
+    v.textContent=here||'-';
+    if(!o||!o.ver){ st.textContent='아직 올린 기록 없음'; tm.textContent=''; if(bx)bx.title='이 PC에서 아직 올린 적이 없습니다.'; return; }
+    var same=(String(o.ver)===here);
+    var label=(o.state==='live')?'✅ 반영 완료':(o.state==='uploaded'?'⏳ 반영 확인 중':'🟠 반영 지연');
+    if(!same)label='올림 '+o.ver+' (현재 파일 '+here+')';
+    st.textContent=label;
+    tm.textContent='올림 '+ghTimeTextV872(o.at);
+    if(bx)bx.title=(o.path||'')+' · 올린 버전 '+o.ver+' · '+ghTimeTextV872(o.at)
+      +(o.state==='live'?' · GitHub Pages 반영 확인됨':'');
+  }
+  /* 업로드 뒤 Pages 가 새 버전을 돌려줄 때까지 확인합니다. */
+  function ghWatchPagesV872(c,ver,url,from){
+    var tries=0,max=12;
+    var tick=function(){
+      tries++;
+      var u='https://'+c.owner+'.github.io/'+c.repo+'/'+(c.path==='index.html'?'':c.path)+'?_gh='+Date.now();
+      fetch(u,{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
+        var m=t&&t.match(/APP_BUILD='([^']+)'/);
+        var there=m?m[1]:'';
+        if(there&&ver&&there===ver){
+          ghRelSaveV872({ver:ver,at:(ghRelLoadV872()||{}).at||Date.now(),state:'live',url:url,
+            path:c.owner+'/'+c.repo+'/'+c.path,liveAt:Date.now()});
+          say('✅ <b>GitHub Pages 반영 완료</b> — '+esc(c.owner+'/'+c.repo+'/'+c.path)+' · <b>'+esc(ver)+'</b>'
+             +(from?(' · 보낸 파일 '+esc(from)):'')
+             +'<br><span style="font-weight:600;color:#475569">'+esc(ghTimeTextV872(Date.now()))+' 확인 · 이제 다른 PC·태블릿에서도 새 버전이 열립니다.</span>'
+             +(url?(' <a href="'+url+'" target="_blank" rel="noopener" style="color:#1d4ed8">커밋 보기 ↗</a>'):''),'#0f766e');
+          return;
+        }
+        if(tries>=max){
+          ghRelSaveV872(Object.assign(ghRelLoadV872()||{},{state:'slow'}));
+          say('🟠 <b>올리기는 끝났지만</b> GitHub Pages 반영이 아직 확인되지 않습니다 ('+(tries*15)+'초 경과).'
+             +'<br><span style="font-weight:600;color:#475569">잠시 뒤 «🔍 현재 배포 버전 확인»을 눌러 주세요.</span>','#b45309');
+          return;
+        }
+        setTimeout(tick,15000);
+      }).catch(function(){ if(tries<max)setTimeout(tick,15000); });
+    };
+    setTimeout(tick,12000);
+  }
+
   function mount(){
     var box=el('ghBoxV784'); if(!box||box.__v784)return; box.__v784=1;
+    try{ ghRelPaintV872(); }catch(_e){}
     var c=cfg();
     if(el('ghOwner'))el('ghOwner').value=c.owner;
     if(el('ghRepo'))el('ghRepo').value=c.repo;
