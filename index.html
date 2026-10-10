@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v889</title>
-<script>window.APP_BUILD='v889';</script>
+<title>동방파스텍 매출 분석 도구 v892</title>
+<script>window.APP_BUILD='v892';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v889</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v892</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -28788,7 +28788,7 @@ function sgPlan(){
     if(it.type==='expand')it.type=(it.prod&&!it.cust)?'growthProd':'growthCust';
     else if(it.type==='defend')it.type='risk';
     /* v857 : v853에서 만든 신규업체 연결도 새 공통 연동 방식으로 승격합니다. */
-    if(it.targetNewCustV853){it.targetDirectV857=true;it.amountLink=true;}
+    if(it.targetNewCustV853){it.targetDirectV857=true;if(it.amountLink!==false)it.amountLink=true;}   /* v892 : 직접입력 선택 보존 */
     /* 기존 저장 항목은 수정 1안으로 보존하고, 이후부터 안별로 완전히 분리합니다. */
     if(it.plan!=='2')it.plan='1';
   });
@@ -28943,14 +28943,17 @@ function sgEnsureDirectTargetsV858(A,items){
     if(!it||it.off||+it.amount<=0)return;
     var valid=(it.type==='newCust'&&String(it.cust||'').trim())||(it.type==='newProd'&&String(it.prod||'').trim());
     if(!valid)return;
-    var needs=!it.targetDirectV857||it.amountLink===false,amt=Math.max(0,Math.round(+it.amount||0));
+    /* v891 : 사용자가 «직접입력»으로 바꾼 항목(amountLink===false)을 다시 목표연동으로 되돌리지 않습니다.
+       예전에는 여기서 amountLink=true 로 덮어써서 🔗 목표연동 버튼이 눌리지 않는 것처럼 보였습니다. */
+    var _userDirect891=(it.amountLink===false);
+    var needs=!it.targetDirectV857,amt=Math.max(0,Math.round(+it.amount||0));
     if(it.type==='newCust'){
       var ck=String(it.cust||'').trim();needs=needs||it.targetNewCustKeyV857!==ck||+((state.fc.newCusts||{})[ck]||0)!==amt;
     }else{
       var pi=sgDirectProductTargetV857(it.prod||it.title,A,it.targetNewProdMetaV857||{}),po=(state.fc.newProds||{})[pi.key];
       needs=needs||it.targetNewProdKeyV857!==pi.key||!po||+po.amt!==amt;
     }
-    if(needs){it.targetDirectV857=true;it.amountLink=true;if(sgSyncDirectTargetV857(it,A,false))changed=true;}
+    if(needs){it.targetDirectV857=true;if(!_userDirect891)it.amountLink=true;if(sgSyncDirectTargetV857(it,A,false))changed=true;}
   });
   if(changed){try{sgSave();}catch(_e){}}
   return changed;
@@ -29673,7 +29676,7 @@ function sgMxSelectV867(attrName,attrVal,cur){
     tips.push(n+'. '+sgMxRowColLabelV867(n)+' — '+(dd.a||''));
   }
   var tip=tips.join('\n');
-  return '<select class="sgMxPickV867" '+attrName+'="'+sgEsc(attrVal)+'" title="3×3 방화문부자재 계획 매트릭스의 몇 번 칸에 넣을지 고릅니다.\n'+sgEsc(tip)+'" style="'+SGI+'width:38px;min-width:38px;padding:5px 1px;text-align:center;border-color:'+(cn?'#60a5fa':'#e2e8f0')+';background:'+(cn?'#eff6ff':'#fff')+';font-weight:'+(cn?'800':'400')+'">'+o+'</select>';
+  return '<select class="sgMxPickV867" '+attrName+'="'+sgEsc(attrVal)+'" title="3×3 방화문부자재 계획 매트릭스의 몇 번 칸에 넣을지 고릅니다.\n'+sgEsc(tip)+'" style="'+SGI+'width:29px;min-width:29px;padding:5px 0;text-align:center;border-color:'+(cn?'#60a5fa':'#e2e8f0')+';background:'+(cn?'#eff6ff':'#fff')+';font-weight:'+(cn?'800':'400')+'">'+o+'</select>';
 }
 /* 이 매트릭스 칸에 연동된 ② 추진현황 줄 */
 function sgMxLinkedItemsV867(plan,cellId){
@@ -29708,7 +29711,8 @@ function sgMatrixLabelV826(labels,key,fallback){
 }
 function sgMatrixEditInputV826(x,y,w,h,key,value,align,weight){
   var fs=(+weight||500)>=700?12:11;
-  return '<foreignObject x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'"><input xmlns="http://www.w3.org/1999/xhtml" class="sgMxTextEditV826" data-label-key="'+sgEsc(key)+'" value="'+sgEsc(value)+'" style="width:100%;height:100%;box-sizing:border-box;border:1px solid #60a5fa;border-radius:4px;background:#fff;color:#0f172a;text-align:'+(align||'center')+';font: '+(weight||'500')+' '+fs+'px sans-serif;padding:2px 4px;outline:none" /></foreignObject>';
+  /* v891 : foreignObject 높이가 입력칸과 같으면 아래 테두리가 잘려 «아랫줄 선»이 사라집니다. 4px 여유를 둡니다. */
+  return '<foreignObject x="'+x+'" y="'+(y-1)+'" width="'+(w+2)+'" height="'+(h+5)+'" overflow="visible"><input xmlns="http://www.w3.org/1999/xhtml" class="sgMxTextEditV826" data-label-key="'+sgEsc(key)+'" value="'+sgEsc(value)+'" style="width:'+w+'px;height:'+h+'px;box-sizing:border-box;border:1px solid #60a5fa;border-radius:4px;background:#fff;color:#0f172a;text-align:'+(align||'center')+';font: '+(weight||'500')+' '+fs+'px sans-serif;padding:2px 4px;outline:none" /></foreignObject>';
 }
 function sgMatrixCellRowsV825(year,plan,id,create){
   var pl=sgPlan(),Y=String(year||''),P=plan==='2'?'2':'1';
@@ -29718,7 +29722,7 @@ function sgMatrixCellRowsV825(year,plan,id,create){
   if(!Array.isArray(pl.matrixCellData[Y][P][id])){if(!create)return[];pl.matrixCellData[Y][P][id]=[];}
   return pl.matrixCellData[Y][P][id];
 }
-function sgMatrixTargetValsV825(o){
+function sgMatrixTargetValsV825(o,_Y892,_P892){
   o=o||{};
   /* A 워터폴의 직접 합산 구성만 사용합니다. 거래축소는 기존 순매출에서 차감합니다. */
   var keep=Math.max(0,(+o.keep||0)-Math.abs(+o.cut||0)),nc=Math.max(0,+o.newCust||0),np=Math.max(0,+o.newProd||0),nb=Math.max(0,+o.newBiz||0);
@@ -29730,11 +29734,32 @@ function sgMatrixTargetValsV825(o){
      두 축의 교차값은 비례배분하여 합계가 A 워터폴의 계획합계와 정확히 같게 합니다. */
   var row=[nb,np,keep+nc],col=[keep+np,nc,nb],used=0;
   defs.forEach(function(d,i){var r=Math.floor(i/3),c=i%3,v=i===defs.length-1?Math.max(0,plan-used):Math.floor(row[r]*col[c]/plan);out[d.id]=v;used+=v;});
+  /* ══ v892 · ② 영업전략 추진현황에서 «매트 번호»를 고른 금액은 그 칸에 먼저 배정합니다. ══
+     예전에는 행·열 비례배분만 해서, 3번을 골라 금액을 넣어도 그 칸의 계획·%가 거의 0이었습니다. */
+  try{
+    if(_Y892!=null&&typeof sgMxExtraV867==='function'){
+      var fixed={},fsum=0;
+      defs.forEach(function(d){
+        var ex=sgMxExtraV867(_P892,d.id)||[];
+        var v=ex.reduce(function(a,x){return a+((x&&!x.off)?Math.max(0,+x.amount||0):0);},0);
+        if(v>0){fixed[d.id]=v;fsum+=v;}
+      });
+      if(fsum>0){
+        var rest=Math.max(0,plan-fsum),base=0;
+        defs.forEach(function(d){base+=(+out[d.id]||0);});
+        var u2=0;
+        defs.forEach(function(d,i){
+          var share=(i===defs.length-1)?Math.max(0,rest-u2):Math.floor(base>0?rest*(+out[d.id]||0)/base:rest/defs.length);
+          u2+=share; out[d.id]=share+(fixed[d.id]||0);
+        });
+      }
+    }
+  }catch(_e892){}
   return out;
 }
 function sgMatrixCellEditorV825(A,cellId,year,plan,alloc){
   var d=sgMatrixCellDefV825(cellId);if(!d)return'';
-  var rows=sgMatrixCellRowsV825(year,plan,cellId,false),targets=sgMatrixTargetValsV825(alloc),target=targets[cellId]||0;
+  var rows=sgMatrixCellRowsV825(year,plan,cellId,false),targets=sgMatrixTargetValsV825(alloc,year,plan),target=targets[cellId]||0;
   var linked=rows.reduce(function(a,o){return a+(+o.amount||0);},0),remain=target-linked;
   var custs=(A.custs||[]).slice().sort(function(a,b){return(+b.cy||0)-(+a.cy||0);}),seenC={};
   var custOpts=custs.map(function(o){var n=String(o.name||'').trim();if(!n||seenC[n])return'';seenC[n]=1;return'<option value="'+sgEsc(n)+'"></option>';}).join('');
@@ -29774,7 +29799,7 @@ function sgMatrixCellEditorV825(A,cellId,year,plan,alloc){
 }
 function sgMekkoV814(o){
   var goal=Math.max(0,+o.goal||0),end=Math.max(0,+o.end||0),year=+o.year||0,plan=o.plan==='2'?'2':'1',selCell=o.selectedCell||'';
-  var W=1400,H=450,mx=160,my=65,cw=225,ch=105,bx=1070,bw=230,cells=sgMatrixDefsV825(),valsById=sgMatrixTargetValsV825(o),vals=cells.map(function(c){return valsById[c.id]||0;}),total=vals.reduce(function(a,v){return a+v;},0),pl=sgPlan(),edit=!!pl.matrixTextEdit,labels=sgMatrixLabelsV826(year,plan);
+  var W=1400,H=450,mx=160,my=65,cw=225,ch=105,bx=1070,bw=230,cells=sgMatrixDefsV825(),valsById=sgMatrixTargetValsV825(o,year,plan),vals=cells.map(function(c){return valsById[c.id]||0;}),total=vals.reduce(function(a,v){return a+v;},0),pl=sgPlan(),edit=!!window.__MX_EDIT_V892,labels=sgMatrixLabelsV826(year,plan);
   if(total<=0)return '<svg class="sg-waterfall-svg sg-mekko-v814" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="3×3 방화문부자재 계획 매트릭스"><rect x="'+mx+'" y="'+my+'" width="'+(cw*3)+'" height="'+(ch*3)+'" fill="#f8fafc" stroke="#cbd5e1"/><text x="'+(mx+cw*1.5)+'" y="'+(my+ch*1.5)+'" text-anchor="middle" font-size="12" fill="#94a3b8">A 워터폴에 표시할 계획 금액이 없습니다.</text></svg>';
   var rows=[{t:'수입·대체 하드웨어',s:'직수입·대리점·대체전환'},{t:'주문·협업 개발품',s:'주문생산·협업개발·품질대응'},{t:'전용·공용품 주력 부자재',s:'규격·비규격·레이저·철판'}];
   var cols=[{t:'기존 거래처',s:'방화문 제조사 반복거래'},{t:'신규 및 복수거래처',s:'신규 진입·제품구색 확대'},{t:'경쟁사 거래처',s:'타사 부자재 사용처 윈백'}];
@@ -29792,7 +29817,7 @@ function sgMekkoV814(o){
     linked+=exSum; hasLinked=hasLinked||exCnt>0;
     var linkCnt=linkedRows.length+exCnt;
     s+='<g class="sg-wf-selectable'+(isSel?' is-selected':'')+'" data-wf-key="'+c.k+'" data-matrix-cell="'+c.id+'" tabindex="0" role="button" aria-label="'+sgEsc(cols[col].t+' × '+rows[row].t)+' 목표 연결" style="cursor:pointer">'
-      +'<rect class="sg-matrix-cell-rect" x="'+x+'" y="'+y+'" width="'+cw+'" height="'+ch+'" fill="'+c.fill+'" stroke="'+(isSel?'#1d4ed8':'#ffffff')+'" stroke-width="'+(isSel?3:2)+'"><title>'+sgEsc(cols[col].t+' × '+rows[row].t)+' : A 워터폴 배분 '+sgWon(vals[i])+'원 · 연결 '+sgWon(linked)+'원</title></rect>'
+      +'<rect class="sg-matrix-cell-rect" x="'+x+'" y="'+y+'" width="'+cw+'" height="'+ch+'" fill="'+c.fill+'" stroke="'+(isSel?'#1d4ed8':'#94a3b8')+'" stroke-width="'+(isSel?3:1.2)+'"><title>'+sgEsc(cols[col].t+' × '+rows[row].t)+' : A 워터폴 배분 '+sgWon(vals[i])+'원 · 연결 '+sgWon(linked)+'원</title></rect>'
       +(edit?(sgMatrixEditInputV826(x+12,cy+(hasLinked?-41:-35),cw-24,22,'cell_'+c.id+'_a',sgMatrixLabelV826(labels,'cell_'+c.id+'_a',c.a),'center','800')+sgMatrixEditInputV826(x+12,cy+(hasLinked?-17:-11),cw-24,21,'cell_'+c.id+'_b',sgMatrixLabelV826(labels,'cell_'+c.id+'_b',c.b),'center','500')):('<text x="'+cx+'" y="'+(cy+(hasLinked?-25:-19))+'" text-anchor="middle" font-size="11.2" font-weight="800" fill="'+c.txt+'">'+sgEsc(sgMatrixLabelV826(labels,'cell_'+c.id+'_a',c.a))+'</text><text x="'+cx+'" y="'+(cy+(hasLinked?-8:0))+'" text-anchor="middle" font-size="9.5" fill="'+c.txt+'">'+sgEsc(sgMatrixLabelV826(labels,'cell_'+c.id+'_b',c.b))+'</text>'))
       +'<text x="'+cx+'" y="'+(cy+(hasLinked?12:21))+'" text-anchor="middle" font-size="12.2" font-weight="700" fill="#dc2626">계획 '+sgShort(vals[i])+' ('+pct(i)+')</text>'
       +'<circle cx="'+(x+15)+'" cy="'+(y+15)+'" r="10.5" fill="#1e3a5f" opacity="'+(isSel?'1':'.82')+'"/>'
@@ -30011,7 +30036,7 @@ function sgWaterfall(A){
   var _typeSegV814='<span class="sg-wf-type-v814" style="display:inline-flex;border:1px solid #93c5fd;border-radius:7px;overflow:hidden">'
     +'<button type="button" class="sgWfTypeBtnV814" data-t="A" title="워터폴 — 무엇을 더하고 빼서 목표를 채우는지" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:none;cursor:pointer;background:'+(_wfTypeV814==='A'?'#1d4ed8':'#fff')+';color:'+(_wfTypeV814==='A'?'#fff':'#1e3a5f')+'">A 워터폴</button>'
     +'<button type="button" class="sgWfTypeBtnV814" data-t="B" '+(_matrixEnabledV814?'':'disabled aria-disabled="true"')+' title="'+(_matrixEnabledV814?'A 워터폴 연동 3×3 제품·매출처 계획 매트릭스':'2026년에는 B 매트릭스를 사용할 수 없습니다.')+'" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:none;border-left:1px solid #bfdbfe;cursor:'+(_matrixEnabledV814?'pointer':'not-allowed')+';opacity:'+(_matrixEnabledV814?'1':'.45')+';background:'+(_wfTypeV814==='B'?'#1d4ed8':'#fff')+';color:'+(_wfTypeV814==='B'?'#fff':'#1e3a5f')+'">B 매트릭스</button></span>'
-    +(_wfTypeV814==='B'?'<button type="button" id="sgMxTextToggleV826" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:1px solid '+(pl.matrixTextEdit?'#0f766e':'#93c5fd')+';border-radius:7px;background:'+(pl.matrixTextEdit?'#0f766e':'#fff')+';color:'+(pl.matrixTextEdit?'#fff':'#1d4ed8')+';cursor:pointer;line-height:normal">'+(pl.matrixTextEdit?'완료':'수정')+'</button><span id="sgMxSyncNoteV886" style="margin-left:7px;font-size:11px;font-weight:700;color:#15803d"></span>':'');
+    +(_wfTypeV814==='B'?'<button type="button" id="sgMxTextToggleV826" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:1px solid '+(window.__MX_EDIT_V892?'#0f766e':'#93c5fd')+';border-radius:7px;background:'+(window.__MX_EDIT_V892?'#0f766e':'#fff')+';color:'+(window.__MX_EDIT_V892?'#fff':'#1d4ed8')+';cursor:pointer;line-height:normal">'+(window.__MX_EDIT_V892?'완료':'수정')+'</button><span id="sgMxSyncNoteV886" style="margin-left:7px;font-size:11px;font-weight:700;color:#15803d"></span>':'');
   var _typeNoteV814=(_wfTypeV814==='B')
     ? ''
     : '<span><b>형광 제목</b> 계획 합계 반영 · <b>진한 누적막대</b> 기존업체＋신규업체＋신규제품－거래축소＋신규사업 · <b>점선막대</b> 중복 합산 제외</span>';
@@ -30394,9 +30419,9 @@ function sgPipeline(A){
              +'<button class="sgAmtLink btn ghost" data-id="'+it.id+'" data-on="'+(linkOn?'1':'0')+'" title="'+(linkOn?'직접입력으로 전환':'연간 목표표 올해목표액과 다시 연동')+'" style="font-size:9.5px;padding:1px 6px;'+(linkOn?'background:#dbeafe;color:#1d4ed8;border-color:#93c5fd':'')+'">'+(linkOn?'🔗 목표연동':'✎ 직접입력')+'</button>'
              +'<span class="sub2" style="font-size:9px;color:#94a3b8;white-space:nowrap">목표 '+sgShort(linked)+'</span></div>':'')
           +'</td>'
-        +'<td style="padding:5px;text-align:center"><select class="sgE" data-id="'+it.id+'" data-f="stage" style="'+SGI+'width:116px;border-color:#e2e8f0">'
+        +'<td style="padding:5px;text-align:center"><select class="sgE" data-id="'+it.id+'" data-f="stage" style="'+SGI+'width:138px;border-color:#e2e8f0">'
           +SG_STAGES.map(function(s){var shownPct=stageV856===s[0]?p:s[2];return '<option value="'+s[0]+'"'+(stageV856===s[0]?' selected':'')+'>'+sgStageLabel(it.type,s[0])+' ('+shownPct+'%)</option>';}).join('')+'</select></td>'
-        +'<td style="padding:5px;text-align:center"><input class="sgE" data-id="'+it.id+'" data-f="prob" value="'+p+'" style="'+SGI+'width:53px;text-align:center;border-color:#e2e8f0">%</td>'
+        +'<td style="padding:5px;text-align:center"><input class="sgE" data-id="'+it.id+'" data-f="prob" value="'+p+'" style="'+SGI+'width:40px;text-align:center;border-color:#e2e8f0">%</td>'
         +'<td style="padding:5px;text-align:right;font-weight:800;color:'+T.c+'">'+sgWon(e)+'</td>'
         +'<td style="padding:5px;text-align:center"><select class="sgE sg-start-month" data-id="'+it.id+'" data-f="mon" style="'+SGI+'">'
           +[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){return '<option value="'+m+'"'+((+it.mon||1)===m?' selected':'')+'>'+m+'월</option>';}).join('')+'</select></td>'
@@ -32320,7 +32345,11 @@ function sgBind(A){
   var mxTextToggle=document.getElementById('sgMxTextToggleV826');
   if(mxTextToggle)mxTextToggle.addEventListener('click',function(e){
     e.preventDefault();e.stopPropagation();
-    pl.matrixTextEdit=!pl.matrixTextEdit;
+    /* v892 : «수정» 모드는 이 PC·이 화면에서만 쓰는 상태입니다.
+       예전에는 동기화되는 설정에 저장돼, 다른 PC에서 켜 둔 수정 모드가 내려와
+       ② 추진현황의 다른 버튼만 눌러도 매트릭스가 수정 상태로 보였습니다. */
+    window.__MX_EDIT_V892=!window.__MX_EDIT_V892;
+    try{ delete pl.matrixTextEdit; }catch(_m892){ pl.matrixTextEdit=false; }
     try{ if(typeof sgMxTextCommitV886==='function')sgMxTextCommitV886(); else sgSave(); }catch(_e){}
     /* v873 : 지연 재렌더 대기열에 막히지 않고 입력 필드를 즉시 다시 만듭니다. */
     try{window.__sgFastRender=true;sgRender();}
@@ -32643,7 +32672,9 @@ function sgBind(A){
       var it=pl.items.filter(function(x){return x.id===el.dataset.id;})[0]; if(!it)return;
       var f=el.dataset.f, v=el.value;
       /* v613 : 금액을 직접 고치면 목표표 연동을 해제하고 입력값을 사용합니다. */
-      if(f==='amount'){it.amount=sgNum(v);if(it.targetDirectV857)sgSyncDirectTargetV857(it,A,false);else it.amountLink=false;}
+      /* v892 : 금액을 직접 고쳐 넣으면 «목표연동»을 풉니다(목표표 승격 항목도 동일).
+         예전에는 목표표에 승격된 항목만 연동이 유지돼, 입력 직후 이전 금액으로 되돌아갔습니다. */
+      if(f==='amount'){it.amount=sgNum(v);it.amountLink=false;if(it.targetDirectV857)sgSyncDirectTargetV857(it,A,false);}
       else if(f==='prob'){it.prob=Math.max(0,Math.min(100,sgNum(v)));it.stage=sgStageFromProbV856(it.prob);}
       else if(f==='mon')it.mon=+v||1;
       else if(f==='stage'){ it.stage=v; it.prob=(SG_SMAP[v]||{p:50}).p; }
@@ -32654,7 +32685,8 @@ function sgBind(A){
     });
   });
   /* v613 : 목표연동 ↔ 직접입력 전환 */
-  $$('.sgAmtLink').forEach(function(b){ b.addEventListener('click',function(){
+  $$('.sgAmtLink').forEach(function(b){ b.addEventListener('click',function(e){
+    try{ e.preventDefault(); e.stopPropagation(); }catch(_e892){}
     var it=pl.items.filter(function(x){return x.id===b.dataset.id;})[0]; if(!it)return;
     if(b.dataset.on==='1'){
       /* 직접입력으로 전환할 때는 현재 연동금액을 그대로 시작값으로 둡니다. */
@@ -39581,6 +39613,100 @@ function boot(){
       setTimeout(function(){ repair(); setTimeout(repair,4000); },2500); }
   },300);
 }
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
+<script id="v890-matrix-label-keep">
+/* ══════════════════════════════════════════════════════════════
+   v890 · 3×3 매트릭스 문구가 «원래 글자로 되돌아가는» 현상을 막습니다.
+   원인 : 글자를 고치는 동안(또는 고친 직후) 서버에서 내려온 설정이
+          state.strategyPlan 을 통째로 덮어써서 방금 친 글자가 사라졌습니다.
+   대책 : 이 PC에서 고친 글자를 12시간 동안 따로 적어 두고,
+          서버 자료를 받은 뒤·화면을 다시 그린 뒤에 그 글자를 되살립니다.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var LS='SG_MX_LABEL_LOCAL_V890', KEEP_MS=12*60*60*1000;
+function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}')||{}; }catch(e){ return {}; } }
+function save(o){ try{ localStorage.setItem(LS,JSON.stringify(o)); }catch(e){} }
+function prune(o){ var n=Date.now(),ch=false; Object.keys(o).forEach(function(k){ if(!o[k]||!o[k].t||(n-o[k].t)>KEEP_MS){ delete o[k]; ch=true; } }); return ch; }
+function ML(create){
+  try{
+    if(typeof state==='undefined'||!state)return null;
+    var pl=state.strategyPlan; if(!pl||typeof pl!=='object')return null;
+    if(!pl.matrixLabels||typeof pl.matrixLabels!=='object'){ if(!create)return null; pl.matrixLabels={}; }
+    return pl.matrixLabels;
+  }catch(e){ return null; }
+}
+/* 지금 화면의 연도|안 — 어느 칸에 들어갔는지 실제 값으로 찾아냅니다 */
+function findCtx(key,val){
+  var m=ML(false);
+  if(m){
+    var ys=Object.keys(m);
+    for(var i=0;i<ys.length;i++){
+      var ps=Object.keys(m[ys[i]]||{});
+      for(var j=0;j<ps.length;j++){
+        var o=m[ys[i]][ps[j]]||{};
+        if(Object.prototype.hasOwnProperty.call(o,key)&&String(o[key])===String(val))return ys[i]+'|'+ps[j];
+      }
+    }
+  }
+  try{ return String(fcTargetYear())+'|'+((state.fc&&state.fc.activePlan==='2')?'2':'1'); }catch(e){}
+  return '';
+}
+/* ① 이 PC의 수정 내용을 기록 (앱의 자체 처리 뒤에 실행되도록 버블 단계) */
+document.addEventListener('input',function(e){
+  try{
+    var el=e.target;
+    if(!el||!el.classList||!el.classList.contains('sgMxTextEditV826'))return;
+    var key=el.dataset.labelKey||''; if(!key)return;
+    var c=findCtx(key,el.value); if(!c)return;
+    var o=load(); prune(o); o[c+'|'+key]={v:el.value,t:Date.now()}; save(o);
+  }catch(_e){}
+},false);
+/* ② 보관해 둔 글자를 되살리기 */
+function reapply(){
+  try{
+    var o=load(); if(prune(o))save(o);
+    var ks=Object.keys(o); if(!ks.length)return false;
+    var m=ML(true); if(!m)return false;
+    var changed=false,byKey={};
+    ks.forEach(function(k){
+      var rec=o[k]; if(!rec)return;
+      var p=k.split('|'); if(p.length<3)return;
+      var Y=p[0],P=p[1],key=p.slice(2).join('|');
+      if(!m[Y])m[Y]={};
+      if(!m[Y][P])m[Y][P]={};
+      if(m[Y][P][key]!==rec.v){ m[Y][P][key]=rec.v; changed=true; }
+      byKey[key]=rec.v;
+    });
+    try{
+      document.querySelectorAll('.sgMxTextEditV826').forEach(function(inp){
+        var k=inp.dataset.labelKey||'';
+        if(byKey[k]!==undefined&&inp!==document.activeElement&&inp.value!==byKey[k]){ inp.value=byKey[k]; changed=true; }
+      });
+      document.querySelectorAll('.sg-mekko-v814 text').forEach(function(t){});
+    }catch(e1){}
+    if(changed)console.log('[v890] 매트릭스 문구를 이 PC에서 고친 내용으로 되살렸습니다.');
+    return changed;
+  }catch(e){ return false; }
+}
+window.sgMxReapplyV890=reapply;
+window.sgMxForgetV890=function(){ try{ localStorage.removeItem(LS); console.log('[v890] 이 PC의 매트릭스 문구 보관 기록을 지웠습니다.'); }catch(e){} };
+/* ③ 서버 자료를 받은 직후 되살리기 */
+['gsApplyField','gsApply','gsLoad','gsSync','gsPull'].forEach(function(fn){
+  try{
+    if(typeof window[fn]!=='function'||window[fn].__v890)return;
+    var orig=window[fn];
+    var w=function(){ var r=orig.apply(this,arguments);
+      try{ clearTimeout(window.__v890Tm); window.__v890Tm=setTimeout(reapply,300); }catch(e){}
+      return r; };
+    w.__v890=true; window[fn]=w;
+  }catch(e){}
+});
+/* ④ 주기 확인 — 화면을 다시 그려 입력칸이 새로 생겨도 값을 유지 */
+setInterval(function(){ try{ if(document.querySelector('.sgMxTextEditV826')||document.querySelector('.sg-mekko-v814'))reapply(); }catch(e){} },4000);
+function boot(){ var n=0,t=setInterval(function(){ n++; if(window.__V718_RESTORED||n>40){ clearInterval(t); setTimeout(reapply,3000); } },300); }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
