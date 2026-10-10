@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v878</title>
-<script>window.APP_BUILD='v878';</script>
+<title>동방파스텍 매출 분석 도구 v879</title>
+<script>window.APP_BUILD='v879';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v878</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v879</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -2451,7 +2451,10 @@ function fcSwitchYear(y){
     state.fcYearMisc=state.fcYearMisc||{};
     /* v789 : 📝 매출목표 주요사항도 목표 연도별로 보관합니다 */
     try{ if(typeof gsCommitNotes==='function')gsCommitNotes(); }catch(_n){}
+    /* v879 : 연도 보관함을 새로 만들 때 «화면에 그린 월별 목표»가 지워지지 않게 먼저 챙겨 둡니다. */
+    var _keepTgtV879=null; try{ _keepTgtV879=(state.fcYearMisc[String(cur)]||{}).monthTgtV878||null; }catch(_k879){}
     state.fcYearMisc[String(cur)]={notesHtml:String(f.notesHtml||''),notesTeam:String(f.notesTeam||''),notesSales:String(f.notesSales||''),notesTech:String(f.notesTech||''),notesMeta:_cp(f.notesMeta),exclCust:_cp(f.exclCust),cmgrExcl:_cp(state.cmgrExcl),sgTomb:_cp(state.strategyActionTombstones),sgRestoreAt:(+state.strategyActionRestoreAt||0),targetExclCust:_cp(f.targetExclCust),targetOnlyExcl:_cp(f.targetOnlyExcl),strategyPlan:_cp(state.strategyPlan)};
+    try{ if(_keepTgtV879)state.fcYearMisc[String(cur)].monthTgtV878=_keepTgtV879; }catch(_k2){}
     const mv=state.fcYearMisc[String(next)];
     if(mv){
       f.notesHtml=String(mv.notesHtml||''); f.notesTeam=String(mv.notesTeam||'');
@@ -34652,6 +34655,14 @@ function build2026Plan2(){
        기준연도 보관함의 목표안 → 없으면 1안. (예전 계산은 없으면 2안이었습니다) */
   var _apDm=(function(){ try{ var st=fcYearStore()[String(dm)]; return (st&&st.activePlan==='2')?'2':'1'; }catch(_e){} return '1'; })();
   var _pk=(typeof fcBaseYearPlan==='function'&&fcBaseYearPlan())?fcBaseYearPlan():_apDm;
+  /* v879 : 기준 목표안을 «직접 고르지 않았다면», 사용자가 실제로 본 기준연도 화면의 목표안을 따릅니다.
+     (보관함의 activePlan 과 화면이 서로 다를 수 있어, 화면이 기준입니다) */
+  try{
+    if(!(typeof fcBaseYearPlan==='function'&&fcBaseYearPlan())){
+      var _svP=((state.fcYearMisc||{})[String(dm)]||{}).monthTgtV878;
+      if(_svP&&(_svP.plan==='1'||_svP.plan==='2'))_pk=_svP.plan;
+    }
+  }catch(_p879){}
   if(_pk!=='1')_pk='2';
   var p=plans&&plans[_pk]; if(!p)return null;
   /* v733 : 기준연도 «실적 반영월»(자동=최근 마감월)까지는 실적, 이후는 수정 2안 목표 */
@@ -34722,27 +34733,35 @@ function build2026Plan2(){
       (work.newLines||[]).forEach(function(ln){ var v=(+ln.qty||0)*(+ln.price||0); if(v>0&&ln.cust){nc[ln.cust]=(nc[ln.cust]||0)+v;tot+=v;} });
       if(tot>0)newAlloc={map:nc,tot:tot};
     }catch(_x){}
-    try{ window.__FC_PLAN_DIAG_V878={기준안:_pk,기준확정월:_cutB,
-      차트있음:!!(_exactChart&&_exactChart.tgt),
-      차트10_12:(_exactChart&&_exactChart.tgt)?_exactChart.tgt.slice(10,13).map(function(v){return Math.round((+v||0)/1e6);}):null,
-      tot10_12:(x.fcMonTot||[]).slice(10,13).map(function(v){return Math.round((+v||0)/1e6);}),
-      이후월기준:(typeof fcBaseFutureModeV741==='function')?fcBaseFutureModeV741():'?'}; }catch(_d){}
+    try{
+      var _svD=((state.fcYearMisc||{})[String(dm)]||{}).monthTgtV878;
+      window.__FC_PLAN_DIAG_V878={기준안:_pk,기준확정월:_cutB,
+        사용한값:(typeof window.__FC_TGT_SRC_V879==='string')?window.__FC_TGT_SRC_V879:'?',
+        화면저장값:(_svD&&Array.isArray(_svD.tgt))?_svD.tgt.slice(10,13).map(function(v){return Math.round((+v||0)/1e6);}):null,
+        화면저장_확정월:_svD?_svD.cut:null, 화면저장_목표안:_svD?_svD.plan:null,
+        숨긴재계산10_12:(_exactChart&&_exactChart.tgt)?_exactChart.tgt.slice(10,13).map(function(v){return Math.round((+v||0)/1e6);}):null,
+        tot10_12:(x.fcMonTot||[]).slice(10,13).map(function(v){return Math.round((+v||0)/1e6);}),
+        이후월기준:(typeof fcBaseFutureModeV741==='function')?fcBaseFutureModeV741():'?'};
+    }catch(_d){}
     var data={cut:_cutB,planCut:fcNormalizeCutoff(p.actualCutoffMonth),tot:(x.fcMonTot||Array(13).fill(0)).slice(),mod:mod,newAlloc:newAlloc,
       chartTgt:(function(){
-        /* v878 : ① 방금 숨겨서 그린 기준연도 차트 → ② 직전에 화면에 그린 기준연도 차트
-                  → ③ 연도 보관함에 저장해 둔 기준연도 월별 목표 순으로 찾습니다.
-           모두 «기준 확정월·기준 목표안»이 같을 때만 씁니다. 없으면 예전 방식 그대로입니다. */
-        if(_exactChart&&_exactChart.tgt)return _exactChart.tgt;
-        try{
-          var lt=window.__FC_LAST_TGT_V878;
-          if(lt&&+lt.CY===+dm&&Array.isArray(lt.tgt)&&lt.tgt.length>=13
-             &&fcNormalizeCutoff(lt.cut)===_cutB&&String(lt.plan||'')===String(_pk))return lt.tgt.slice();
-        }catch(_a){}
+        /* ══ v879 · «2026년 화면에 실제로 그려진 월별 목표»를 1순위로 씁니다. ══
+           진단 결과 : 같은 2026년·같은 1안·같은 확정월(9월)인데도
+             · 2026 화면         : 813 / 900 / 877
+             · 숨겨서 다시 그린 값 : 682 / 963 / 929   ← 2027 기준이 이 값을 쓰고 있었습니다
+           숨긴 재계산은 제외업체·PD 설정 등이 화면과 달라질 수 있어 믿을 수 없습니다.
+           그래서 «사용자가 실제로 본 기준연도 목표»를 그대로 가져다 씁니다.
+           (같은 확정월·같은 목표안일 때만. 저장값이 없으면 예전 방식 그대로입니다) */
         try{
           var sv=((state.fcYearMisc||{})[String(dm)]||{}).monthTgtV878;
           if(sv&&Array.isArray(sv.tgt)&&sv.tgt.length>=13
-             &&fcNormalizeCutoff(sv.cut)===_cutB&&String(sv.plan||'')===String(_pk))return sv.tgt.slice();
+             &&fcNormalizeCutoff(sv.cut)===_cutB&&String(sv.plan||'')===String(_pk)){
+            try{ window.__FC_TGT_SRC_V879='화면저장값'; }catch(_s){}
+            return sv.tgt.slice();
+          }
         }catch(_b){}
+        if(_exactChart&&_exactChart.tgt){ try{ window.__FC_TGT_SRC_V879='숨긴재계산'; }catch(_s2){} return _exactChart.tgt; }
+        try{ window.__FC_TGT_SRC_V879='월합계'; }catch(_s3){}
         return null;
       })(),chartAct:_exactChart&&_exactChart.act?_exactChart.act:null,
       cust:cloneMonthMaps(x.fcCustMon),prod:cloneMonthProdMaps(x.fcProdMon),cp:cloneMonthCustProd(x.fcCustProdMon)};
