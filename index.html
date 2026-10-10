@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v875</title>
-<script>window.APP_BUILD='v875';</script>
+<title>동방파스텍 매출 분석 도구 v876</title>
+<script>window.APP_BUILD='v876';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v875</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v876</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -11683,6 +11683,17 @@ function bindFcCutoffSelector(rerun){ bindFcTargetPlanSelector('fcTargetPlanSel'
   }
   sel.addEventListener('change',function(){
     var m=fcNormalizeCutoff(sel.value); state.fc.actualCutoffMonth=m;
+    /* v876 : 실적확정월을 지금 연도·목표안 보관함에도 바로 적어 다른 PC·태블릿과 같아지게 합니다. */
+    try{
+      var _y=String((typeof fcTargetYear==='function')?fcTargetYear():''), _p=(state.fc.activePlan==='2'?'2':'1');
+      if(state.fc.targetPlans&&state.fc.targetPlans[_p])state.fc.targetPlans[_p].actualCutoffMonth=m;
+      if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
+      if(_y&&typeof fcSaveYearPlan==='function')fcSaveYearPlan(+_y);
+      if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();
+      state.fc.cutAt=state.fc.cutAt||{};
+      state.fc.cutAt[_y+'|'+_p]={m:m,t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};
+      if(typeof logEdit==='function')logEdit('실적확정',_y+'년 수정 '+_p+'안 실적확정 '+(m?m+'월':'없음'));
+    }catch(_cv876){}
     /* v843 : 고르는 즉시 목록이 닫히도록 포커스를 풀고, 로그·동기화 밀어내기 같은 «화면과 무관한 뒷일»만
        그린 뒤로 미룹니다. 값 반영·저장 순서는 예전 그대로라 선택이 되돌아가지 않습니다. */
     try{ sel.blur(); }catch(_b){}
@@ -13702,8 +13713,66 @@ function gsMerge(d,skipRender){ if(!d)return;
   if(d.priceSets)state.priceSets=mergePriceSets(state.priceSets||[], d.priceSets);
   if(d.editLog){state.editLog=mergeEditLog(state.editLog||[], d.editLog); if(typeof refreshElogBtns==='function')refreshElogBtns();}
   if(d.custProdOverride)state.fc.custProdOverride={...state.fc.custProdOverride,...d.custProdOverride};
+  try{ fcAdoptCutoffV876(d); }catch(_cv){}
   if(typeof buildHeadMonthly==='function')buildHeadMonthly();
   saveSettings(); state._mgrCountsCache=null; if(typeof buildSummary==='function')buildSummary(); _gsApplying=true; if(!skipRender&&state.act&&CUR.length){ var _kp3={minv:1,rawinv:1,safety:1,disposal:1,matprice:1,price:1,forecast:1,trend:1,strategy:1,weekly1:1,weekly2:1,weekly3:1,cmgr:1,ar:1}; if(state._inDrill||_kp3[state.act]){ state._syncDeferred=true; } else { runAct(); } } const _ned=document.getElementById('fcNotesEd'); if(_ned){ const _nf={main:'notesHtml',team:'notesTeam',sales:'notesSales',tech:'notesTech'}[state.fc.notesTab||'main']; _ned.innerHTML=state.fc[_nf]||''; } setTimeout(()=>{_gsApplying=false;},700); }
+/* ══ v876 · 받은 실적확정월을 현재 보고 있는 연도·목표안에 확실히 적용합니다.
+   예전에는 서버에서 받은 fcActualCutoffMonth 가 곧바로 목표안의 옛 값으로 덮여,
+   다른 PC·태블릿에서 확정월이 서로 달라 보였습니다. ══ */
+function fcAdoptCutoffV876(d){
+  try{
+    if(!d||d.fcActualCutoffMonth==null)return;
+    var m=fcNormalizeCutoff(d.fcActualCutoffMonth);
+    var y=String((typeof fcTargetYear==='function')?fcTargetYear():''), pl=(state.fc.activePlan==='2'?'2':'1');
+    /* 더 최근에 바뀐 쪽을 따릅니다. */
+    var mine=((state.fc.cutAt||{})[y+'|'+pl]||{}).t||0;
+    var theirs=((d.fcCutAtV876||{})[y+'|'+pl]||{}).t||0;
+    if(theirs&&mine&&mine>theirs)return;
+    if(theirs)m=fcNormalizeCutoff(((d.fcCutAtV876||{})[y+'|'+pl]||{}).m);
+    state.fc.actualCutoffMonth=m;
+    if(state.fc.targetPlans&&state.fc.targetPlans[pl])state.fc.targetPlans[pl].actualCutoffMonth=m;
+    if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
+    if(y&&typeof fcSaveYearPlan==='function')fcSaveYearPlan(+y);
+    if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();
+    var sel=document.getElementById('fcCutoffSel'); if(sel)sel.value=String(m);
+  }catch(_e){}
+}
+window.fcAdoptCutoffV876=fcAdoptCutoffV876;
+
+/* ══ v876 · 월별 목표 금액 진단 ══
+   10~12월 금액이 PC마다 다르게 보일 때, 그 숫자가 어떤 값들로 만들어졌는지 그대로 찍습니다.
+   두 PC에서 각각 콘솔에 fcMonthDiagV876() 을 입력해 결과를 비교하면 원인을 바로 알 수 있습니다. */
+window.fcMonthDiagV876=function(){
+  var out={};
+  try{
+    var f=state.fc||{};
+    out.연도=(typeof fcTargetYear==='function')?fcTargetYear():'';
+    out.목표안=f.activePlan==='2'?'2안':'1안';
+    out.실적확정월=(typeof fcCutoffMonth==='function')?fcCutoffMonth():f.actualCutoffMonth;
+    out.다음연도모드=(typeof fcIsNextYearMode==='function')?fcIsNextYearMode():false;
+    out.자료연도=(typeof dataYears==='function')?dataYears():[];
+    var ch=window.FC_CHART_V677||{};
+    out.차트연도=ch.CY;
+    out.목표막대=(ch.tgt||[]).map(function(v){return Math.round((+v||0)/1e6);});
+    out.실적막대=(ch.act||[]).map(function(v){return Math.round((+v||0)/1e6);});
+    try{ var B=fcBaseAgg(0,0); out.기준월별=(B.pyMonTot||[]).map(function(v){return Math.round((+v||0)/1e6);}); }catch(_b){ out.기준월별='err'; }
+    out['월별목표%']=JSON.stringify(f.pct||{});
+    out.신규업체수=Object.keys(f.newCusts||{}).length;
+    out.신규업체합=Object.values(f.newCusts||{}).reduce(function(a,v){return a+(+v||0);},0);
+    out.신규라인수=(f.newLines||[]).length;
+    out.제외거래처=Object.keys(f.exclCust||{}).length;
+    out.목표합산제외=Object.keys(f.targetExclCust||{}).length;
+    try{ out.추가목표=JSON.parse(JSON.stringify(fcAnnualExtraTargets())); }catch(_x){}
+    out.빌드=window.APP_BUILD||'';
+  }catch(e){ out.오류=String(e&&e.message||e); }
+  try{
+    console.log('[월별 목표 진단] ------------------------------');
+    Object.keys(out).forEach(function(k){ console.log('  '+k+' :', out[k]); });
+    console.log('  (10·11·12월 목표막대 =', (out.목표막대||[]).slice(10,13).join(' / '), '백만)');
+  }catch(_c){}
+  return out;
+};
+
 function fcNotesSyncYearV789(){
   /* v789 : 지금 보고 있는 목표 연도 보관함에 주요사항을 함께 저장합니다. */
   try{
@@ -13811,7 +13880,7 @@ function gsFields(){ return [
   ['fcNewProds',state.fc,'newProds'],['fcNewLines',state.fc,'newLines'],
   ['fcCustMemo',state.fc,'custMemo'],['fcProdMemo',state.fc,'prodMemo'],
   ['fcNotesHtml',state.fc,'notesHtml'],['fcNotesTeam',state.fc,'notesTeam'],['fcNotesSales',state.fc,'notesSales'],['fcNotesTech',state.fc,'notesTech'],['fcNotesMeta',state.fc,'notesMeta'],
-  ['fcExclCust',state.fc,'exclCust'],['fcTargetExclCust',state.fc,'targetExclCust'],['fcExclProd',state.fc,'exclProd'],['fcShowExclRows',state.fc,'showExclRows'],['fcActualCutoffMonth',state.fc,'actualCutoffMonth'],['fcAnnualHist',state.fc,'annualHist'],
+  ['fcExclCust',state.fc,'exclCust'],['fcTargetExclCust',state.fc,'targetExclCust'],['fcExclProd',state.fc,'exclProd'],['fcShowExclRows',state.fc,'showExclRows'],['fcActualCutoffMonth',state.fc,'actualCutoffMonth'],['fcCutAtV876',state.fc,'cutAt'],['fcAnnualHist',state.fc,'annualHist'],
   ['monthIssue',state,'monthIssue'],['monthIssueAt',state,'monthIssueAt'],
   ['syncLog',state,'syncLog'],['inv',state,'inv'],['pd',state,'pd'],['scrapVendors',state,'scrapVendors'],['scrapVendorOff',state,'scrapVendorOff'],
   ['retainMemo',state,'retainMemo'],['retainMemoAt',state,'retainMemoAt'],['retainExcl',state,'retainExcl'],['retainVisit',state,'retainVisit'],
