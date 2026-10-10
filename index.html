@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v883</title>
-<script>window.APP_BUILD='v883';</script>
+<title>동방파스텍 매출 분석 도구 v884</title>
+<script>window.APP_BUILD='v884';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v883</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v884</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -8548,6 +8548,18 @@ function mixCatOf(r){ const key=(r.code||'(미상)')+'│'+(r.spec||''),nm=r.nam
 function mixCatKey(o){ return mixCatOf({code:o.code,spec:o.spec,name:o.name}); }
 function mixOverrideCust(key){ const ov=(state.gbunOverride||{})[key]; return ov&&ov.cust?ov.cust:''; }
  function mixBadge(cat,clickKey){ const c=MIX_TXT[cat]||'#475569',bg=MIX_BG[cat]||'#f1f5f9'; const ic=MIX_ICON[cat]?MIX_ICON[cat]+' ':''; const cl=clickKey?` class="mixedit app-product-icon" data-k="${esc(clickKey)}" title="클릭하면 제품구분을 변경하거나 새 구분을 추가할 수 있습니다." style="cursor:pointer;`:' class="app-product-icon" style="'; return `<span${cl}display:inline-block;padding:1px 8px;border-radius:8px;font-size:10.5px;font-weight:700;background:${bg};color:${c}">${ic}${cat}${clickKey?' ✎':''}</span>`; }
+/* v884 : 단가표·업체별 «규격/비규격 비중» 막대 — 📐 규격/비규격 매출 화면과 같은 기준 */
+const SPECQ_DEF=[['std','규격','#15803d'],['non','비규격','#c2410c'],['oem','유통/OEM','#1d4ed8'],['other','기타','#6d28d9']];
+function specZeroObj(){ return {std:0,non:0,oem:0,other:0}; }
+function specBarHtml(sq,basisLabel){
+  sq=sq||specZeroObj();
+  const tot=SPECQ_DEF.reduce((a,[k])=>a+(sq[k]||0),0);
+  if(!tot)return '<span style="font-size:11px;color:#94a3b8">-</span>';
+  const bl=basisLabel?(' · '+basisLabel):'';
+  const bar=SPECQ_DEF.map(([k,lab,c])=>{const p=(sq[k]||0)/tot*100; return p>0?`<span title="${lab}${bl} ${p.toFixed(1)}%" style="display:inline-block;height:12px;width:${p.toFixed(1)}%;background:${c}"></span>`:'';}).join('');
+  const leg=SPECQ_DEF.map(([k,lab,c])=>{const p=(sq[k]||0)/tot*100; return p>0?`<span style="font-size:11px;color:${c};white-space:nowrap;font-weight:400">${lab} ${p.toFixed(0)}%</span>`:'';}).join(' ');
+  return `<div style="min-width:140px"><div style="display:flex;width:100%;border-radius:4px;overflow:hidden;background:#f1f5f9;height:12px;border:1px solid #e2e8f0">${bar}</div><div style="display:flex;flex-wrap:wrap;gap:1px 8px;margin-top:2px">${leg}</div></div>`;
+}
 function mixBarHtml(mq,basisLabel){ const seg=mixCats().map(k=>[k,MIX_COL[k]]); const tot=seg.reduce((a,[k])=>a+(mq[k]||0),0)||1; const bl=basisLabel?(' · '+basisLabel):''; const bar=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span title="${k}${bl} ${p.toFixed(1)}%" style="display:inline-block;height:12px;width:${p.toFixed(1)}%;background:${c}"></span>`:'';}).join(''); const leg=seg.map(([k,c])=>{const p=(mq[k]||0)/tot*100; return p>0?`<span style="font-size:11px;color:${c};white-space:nowrap;font-weight:400">${MIX_ICON[k]} ${k} ${p.toFixed(0)}%</span>`:'';}).join(' '); return `<div style="min-width:170px"><div style="display:flex;width:100%;border-radius:4px;overflow:hidden;background:#f1f5f9;height:12px;border:1px solid #e2e8f0">${bar}</div><div style="display:flex;flex-wrap:wrap;gap:1px 8px;margin-top:2px">${leg}</div></div>`; }
 function mixChipsHtml(cur,id){ const opt=[['all','전체'],...mixCats().map(c=>[c,c])]; return `<div class="seg" id="${id}">${opt.map(([v,l])=>{const on=cur===v; const c=v==='all'?'#1e3a5f':(MIX_TXT[v]||MIX_COL[v]); const bg=v==='all'?'#eef2f7':(MIX_BG&&MIX_BG[v]?MIX_BG[v]:'#fff'); return `<button data-v="${v}" class="${on?'on':''}" style="${on?('background:'+c+';color:#fff;border-color:'+c):('color:'+c+';background:'+bg+';border-color:'+c)}">${l}</button>`;}).join('')}</div>`; }
 function mixSummary(arr){ const cnt=mixZeroObj(),qty=mixZeroObj(); let totQ=0; arr.forEach(o=>{ const c=o.mixCat||mixCatKey(o); cnt[c]=(cnt[c]||0)+1; qty[c]=(qty[c]||0)+(o.qty||0); totQ+=(o.qty||0); }); const seg=mixCats(); return `<div style="display:flex;flex-wrap:wrap;gap:7px 18px;align-items:center;padding:9px 14px;background:#faf9ff;border:1px solid #ece9fb;border-radius:10px;margin:6px 0 2px;font-size:12px"><span><b>전체</b> ${won(arr.length)}종</span>${seg.map(k=>`<span style="color:${MIX_TXT[k]}"><b>${MIX_ICON[k]} ${k}</b> ${won(cnt[k])}종 · 수량 <b>${totQ?(qty[k]/totQ*100).toFixed(1):0}%</b></span>`).join('')}<span class="sub2">레이저=품명에 레이저·LASER·(L)·임가공 · 기타=운반비/실커버/스텐실/도어가공/PD커버/금형/후레임바/고철/EGI 등 · 전용=1개 거래처 · 공용=2개사↑</span></div>`; }
@@ -8785,18 +8797,21 @@ function priceTable(){
     arr.forEach(o=>o.pkN=(pkByCust[o.key]||{size:0}).size);
     const _qtyEx={}; rows.forEach(r=>{ if(r.name==='피스'||r.name==='피봇힌지피스')return; _qtyEx[r.cust]=(_qtyEx[r.cust]||0)+(r.qty||0); }); arr.forEach(o=>{ o.qty=_qtyEx[o.key]||0; });
     const mixByCust={}; rows.forEach(r=>{ if(r.name==='피스'||r.name==='피봇힌지피스')return; let mm=mixByCust[r.cust]; if(!mm){mm=mixZeroObj();mixByCust[r.cust]=mm;} const v=mixBasis==='amt'?Math.max(amtOf(r),0):(r.qty>0?r.qty:0),mc=mixCatOf(r); mm[mc]=(mm[mc]||0)+v; });
+    const specByCust={}; rows.forEach(r=>{ if(r.name==='피스'||r.name==='피봇힌지피스')return; let sm=specByCust[r.cust]; if(!sm){sm=specZeroObj();specByCust[r.cust]=sm;} const v=mixBasis==='amt'?Math.max(amtOf(r),0):(r.qty>0?r.qty:0),sk=(typeof qtyaKindOf==='function')?qtyaKindOf(r):'std'; sm[sk]=(sm[sk]||0)+v; });
+    arr.forEach(o=>{ o.specQ=specByCust[o.key]||specZeroObj(); const sq=o.specQ,st2=SPECQ_DEF.reduce((a,[k])=>a+(sq[k]||0),0); o.nonRate=st2?(sq.non||0)/st2*100:0; o.stdRate=st2?(sq.std||0)/st2*100:0; });
     arr.forEach(o=>{ o.mixQ=mixByCust[o.key]||mixZeroObj(); const mq=o.mixQ,tq=mixCats().reduce((sum,c)=>sum+(mq[c]||0),0)||0; o.exQp=tq?(mq.전용품||0)/tq*100:0; o.shQp=tq?(mq.공용품||0)/tq*100:0; });
     const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
       {k:'label',t:'거래처',cls:'l',cell:o=>esc(o.label)+' '+catChip(o.key)},
       {k:'grade',t:'신용등급',cell:o=>gradeBadge(gradeRec(o.key).grade),sortVal:o=>gradeRec(o.key).grade||''},
       {k:'cat',t:'신용상태',cell:o=>{const col=GRADE_COL[catOf(o.key)]||{bg:'#eef2f8',tx:'#475569'}; return `<span style="display:inline-block;padding:1px 8px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col.bg};color:${col.tx}">${catOf(o.key)}</span>`;},sortVal:o=>catOf(o.key)},
       {k:'pkN',t:'품목/규격수',cell:o=>won(o.pkN),sortVal:o=>o.pkN},
+      {k:'specq',t:`규격/비규격 비중(${mixBasisLabel})`,cls:'l',cell:o=>specBarHtml(o.specQ,mixBasisLabel),sortVal:o=>o.nonRate},
       {k:'mix',t:`구성 비중(${mixBasisLabel} · ${mixCats().join('·')})`,cls:'l',nosort:true,cell:o=>mixBarHtml(o.mixQ,mixBasisLabel)},
       {k:'amt',t:`매출액(${unitLabel()})`,cell:o=>disp(o.amt),sortVal:o=>o.amt},
       {k:'cnt',t:'거래일수',cell:o=>won(o.cnt),sortVal:o=>o.cnt},
       {k:'qty',t:'출고수량',cell:o=>won(o.qty),sortVal:o=>o.qty} ];
-    render('단가표 · 업체별', `${pricePeriodLabel()} · 구성비중 ${mixBasisLabel} · 거래처 ${won(arr.length)}개 · 출고수량·구성비중 피스·피봇힌지피스 제외 · <b>업체를 클릭</b>하면 단가표`, arr, cols, 'amt',
-      `거래처를 클릭하면 <b>제품·규격별 마지막 출고단가</b>·<b>타사 최고/최저</b>가 나옵니다. 구성비중은 선택 기간의 <b>${mixBasisLabel}</b>이며 반품·음수 수량/매출은 비중 계산에서 제외합니다. 제품구분은 <b>제품 구분 변경</b>에서 지정·추가한 값을 즉시 반영하며, 미지정 품목만 전체 거래기간 판매처를 기준으로 전용·공용 자동 판정합니다. 새 제품구분도 구성비중에 자동 추가됩니다.`,
+    render('단가표 · 업체별', `${pricePeriodLabel()} · 구성비중 ${mixBasisLabel} · 거래처 ${won(arr.length)}개 · 출고수량·구성비중·규격비중 피스·피봇힌지피스 제외 · <b>업체를 클릭</b>하면 단가표`, arr, cols, 'amt',
+      `거래처를 클릭하면 <b>제품·규격별 마지막 출고단가</b>·<b>타사 최고/최저</b>가 나옵니다. 구성비중은 선택 기간의 <b>${mixBasisLabel}</b>이며 반품·음수 수량/매출은 비중 계산에서 제외합니다. <b>규격/비규격 비중</b>은 📐 규격/비규격 매출 화면과 같은 기준(규격·비규격·유통/OEM·기타)이며 열 머리글을 누르면 <b>비규격률</b>로 정렬됩니다. 제품구분은 <b>제품 구분 변경</b>에서 지정·추가한 값을 즉시 반영하며, 미지정 품목만 전체 거래기간 판매처를 기준으로 전용·공용 자동 판정합니다. 새 제품구분도 구성비중에 자동 추가됩니다.`,
       {controlsHtml:ctrl,onMount:bind,total:{label:'합 계',amt:tot},drill:{custom:row=>{ const pq=state._pendingItemQ||''; state._pendingItemQ=''; custPriceList(row.label, rows.filter(r=>r.cust===row.key), ()=>priceTable(), pq); }}});
   } else {
     const m=new Map();
