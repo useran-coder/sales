@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v884</title>
-<script>window.APP_BUILD='v884';</script>
+<title>동방파스텍 매출 분석 도구 v886</title>
+<script>window.APP_BUILD='v886';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v884</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v886</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -3979,7 +3979,8 @@ function fcChartArraysV678(){
 }
 function wrMonthlyTargetLink(y,asOf){
   const ys=dataYears(); if(ys.length<2||+y!==ys[ys.length-1])return null;
-  const PY=ys[0],CY=ys[ys.length-1],py=monthlyTotals(PY);
+  /* v886 : 전년은 «자료의 가장 오래된 해»가 아니라 «기준연도−1»입니다(2019~2021 자료가 있으면 2019가 잡혔습니다). */
+  const CY=ys[ys.length-1],PY=(ys.indexOf(CY-1)>=0?CY-1:ys[ys.length-2]),py=monthlyTotals(PY);
   const fixedActualThrough=fcCutoffMonth();
   const exSet=fcTargetExcludedCustSet(),pdIncluded=!exSet.has('PD사업부'),fut=fcFutureTotals();
   const target=Array(13).fill(0),modified=Array(13).fill(0),baseTarget=Array(13).fill(0);
@@ -6041,6 +6042,31 @@ function custManagers(){
     (state.fc.newLines||[]).forEach(ln=>{ const amt=(+ln.qty||0)*(+ln.price||0); if(amt>0){ cmgrExtra.line+=amt; addExtraCust(ln.cust,amt); } });
     if(typeof pdYearTotal==='function'&&fcPdInAnnualTarget()){ const pdv=pdYearTotal(); if(pdv!==0){ cmgrExtra.pd+=pdv; extraCustTarget['PD사업부']=(extraCustTarget['PD사업부']||0)+pdv; } }
   }
+  /* ══ v886 · 신규업체·신규라인·PD 목표를 «월별로» 나눕니다. ══
+     예전에는 이 금액이 연간 올해목표에만 더해지고 월별 칸에는 들어가지 않아
+     월별 목표 합계가 주간보고「1. 연 목표대비 달성」의 목표액보다 그만큼 작았습니다. */
+  const _exMonV886={};
+  if(YR===CY){
+    try{
+      let _w=Array(13).fill(0),_wt=0;
+      try{
+        const _L=(typeof wrMonthlyTargetLink==='function'&&!window.__FC_BUILDING_V737)?wrMonthlyTargetLink(CY,new Date(CY,11,31)):null;
+        if(_L&&Array.isArray(_L.unallocSpread)){ for(let mm=1;mm<=12;mm++){ _w[mm]=Math.max(0,+_L.unallocSpread[mm]||0); _wt+=_w[mm]; } }
+      }catch(_e1){}
+      Object.keys(extraCustTarget).forEach(c=>{
+        const amt=+extraCustTarget[c]||0; if(!(amt>0))return;
+        const o={};
+        if(c==='PD사업부'&&typeof pdMonth==='function'){
+          let ps=0,pv=Array(13).fill(0);
+          for(let mm=1;mm<=12;mm++){ pv[mm]=Math.max(0,+pdMonth(mm)||0); ps+=pv[mm]; }
+          for(let mm=1;mm<=12;mm++)o[mm]=ps>0?(amt*pv[mm]/ps):(amt/12);
+        }else if(_wt>0){ for(let mm=1;mm<=12;mm++)o[mm]=amt*_w[mm]/_wt; }
+        else { for(let mm=1;mm<=12;mm++)o[mm]=amt/12; }
+        _exMonV886[c]=o;
+      });
+    }catch(_e886){}
+  }
+  const exMonV886=(c,mm)=>{ const o=_exMonV886[c]; return o?(+o[mm]||0):0; };
   const tgtPrev=cust=>Object.values(prevMM[cust]||{}).reduce((a,b)=>a+b,0);
   const _fcFutureForMgr=(YR===CY&&typeof fcFutureTotals==='function')?fcFutureTotals():null;
   const tgtMonVal=(cust,mm)=>{ if(YR!==CY||fcIsTargetExcludedCust(cust))return 0;
@@ -6050,7 +6076,7 @@ function custManagers(){
     if(_fcFutureForMgr&&_fcFutureForMgr.custMon&&_fcFutureForMgr.custMon[mm])return _fcFutureForMgr.custMon[mm].get(cust)||0; const pm=pyMM[cust]||{}; const ov=state.fc.override[cust], ad=state.fc.addPct[cust]; let v=(pm[mm]||0); if(ov!=null&&ov!=='')v*=1+(+ov)/100; else v*=1+_pctM(mm)/100; v*=1+((ad!=null&&ad!=='')?+ad:0)/100; return v; };
   const tgtProj=cust=>{ if(YR===CY){ if(fcIsTargetExcludedCust(cust))return 0; const cm=cyMM[cust]||{}; let p=0; for(let mm=1;mm<=12;mm++){ p += (mm<=_tgtCut ? (cm[mm]||0) : tgtMonVal(cust,mm)); } return p+(extraCustTarget[cust]||0); } const pm=pyMM[cust]||{}; const ov=state.fc.override[cust],ad=state.fc.addPct[cust]; const pf=Object.values(pm).reduce((a,b)=>a+b,0); let proj=(ov!=null&&ov!=='')?pf*(1+(+ov)/100):pf; proj*=1+((ad!=null&&ad!=='')?+ad:0)/100; return proj+(extraCustTarget[cust]||0); };
   if(YR===CY){ const targetCusts=new Set([...Object.keys(pyMM),...Object.keys(cyMM),...Object.keys(extraCustTarget)]); if(_fcFutureForMgr&&_fcFutureForMgr.custMon){ for(let mm=1;mm<=12;mm++){ const cm=_fcFutureForMgr.custMon[mm]; if(cm&&cm.forEach)cm.forEach((_,c)=>targetCusts.add(c)); } } targetCusts.forEach(c=>{ if(c&&!m.has(c))m.set(c,{cust:c,a:0,lz:0,mon:{},lmon:{}}); }); }
-  let rows=[...m.values()].map(o=>{ const lr=o.a>0?o.lz/o.a*100:0; const s=mgrS(o.cust)||'미배정', t=mgrT(o.cust)||'미배정', e=mgrE(o.cust)||'미배정'; const prev=tgtPrev(o.cust),proj=tgtProj(o.cust); const diff=proj-prev; const pct=prev?diff/prev*100:(proj!==0?null:0); const rate=proj>0?o.a/proj*100:null; const remavg=_remM?Math.max(0,proj-o.a)/_remM:0; const tmon={}; for(let mm=1;mm<=12;mm++)tmon[mm]=tgtMonVal(o.cust,mm); return {cust:o.cust,a:o.a,lz:o.lz,lr,mon:o.mon,lmon:o.lmon,tmon,effE:e,effS:s,effT:t,prev,proj,diff,pct,rate,remavg}; }).filter(o=>o.a>0||o.prev>0||o.proj!==0||Object.values(o.tmon||{}).some(v=>v!==0));
+  let rows=[...m.values()].map(o=>{ const lr=o.a>0?o.lz/o.a*100:0; const s=mgrS(o.cust)||'미배정', t=mgrT(o.cust)||'미배정', e=mgrE(o.cust)||'미배정'; const prev=tgtPrev(o.cust),proj=tgtProj(o.cust); const diff=proj-prev; const pct=prev?diff/prev*100:(proj!==0?null:0); const rate=proj>0?o.a/proj*100:null; const remavg=_remM?Math.max(0,proj-o.a)/_remM:0; const tmon={}; for(let mm=1;mm<=12;mm++)tmon[mm]=tgtMonVal(o.cust,mm)+exMonV886(o.cust,mm); return {cust:o.cust,a:o.a,lz:o.lz,lr,mon:o.mon,lmon:o.lmon,tmon,effE:e,effS:s,effT:t,prev,proj,diff,pct,rate,remavg}; }).filter(o=>o.a>0||o.prev>0||o.proj!==0||Object.values(o.tmon||{}).some(v=>v!==0));
   // 방문필요는 다른 담당·분류·제외 필터와 무관하게 전체 대상에서 모아 본다.
   const allRows=rows, visitCount=allRows.filter(o=>state.retainVisit&&state.retainVisit[o.cust]).length;
   if(CF.visitOnly) rows=allRows.filter(o=>state.retainVisit&&state.retainVisit[o.cust]);
@@ -8795,6 +8821,9 @@ function priceTable(){
     const {arr,tot}=aggBy(rows,'cust');
     const pkByCust={}; rows.forEach(r=>{ const k=(r.code||'(미상)')+'│'+(r.spec||''); (pkByCust[r.cust]||(pkByCust[r.cust]=new Set())).add(k); });
     arr.forEach(o=>o.pkN=(pkByCust[o.key]||{size:0}).size);
+    /* v885 : 품목/규격수 옆 비중 — 전체 고유 품목·규격 수(선택 기간) 대비 */
+    const _allPk=new Set(); rows.forEach(r=>_allPk.add((r.code||'(미상)')+'│'+(r.spec||''))); const _allPkN=_allPk.size||0;
+    arr.forEach(o=>{ o.pkPct=_allPkN?(o.pkN/_allPkN*100):0; });
     const _qtyEx={}; rows.forEach(r=>{ if(r.name==='피스'||r.name==='피봇힌지피스')return; _qtyEx[r.cust]=(_qtyEx[r.cust]||0)+(r.qty||0); }); arr.forEach(o=>{ o.qty=_qtyEx[o.key]||0; });
     const mixByCust={}; rows.forEach(r=>{ if(r.name==='피스'||r.name==='피봇힌지피스')return; let mm=mixByCust[r.cust]; if(!mm){mm=mixZeroObj();mixByCust[r.cust]=mm;} const v=mixBasis==='amt'?Math.max(amtOf(r),0):(r.qty>0?r.qty:0),mc=mixCatOf(r); mm[mc]=(mm[mc]||0)+v; });
     const specByCust={}; rows.forEach(r=>{ if(r.name==='피스'||r.name==='피봇힌지피스')return; let sm=specByCust[r.cust]; if(!sm){sm=specZeroObj();specByCust[r.cust]=sm;} const v=mixBasis==='amt'?Math.max(amtOf(r),0):(r.qty>0?r.qty:0),sk=(typeof qtyaKindOf==='function')?qtyaKindOf(r):'std'; sm[sk]=(sm[sk]||0)+v; });
@@ -8804,13 +8833,13 @@ function priceTable(){
       {k:'label',t:'거래처',cls:'l',cell:o=>esc(o.label)+' '+catChip(o.key)},
       {k:'grade',t:'신용등급',cell:o=>gradeBadge(gradeRec(o.key).grade),sortVal:o=>gradeRec(o.key).grade||''},
       {k:'cat',t:'신용상태',cell:o=>{const col=GRADE_COL[catOf(o.key)]||{bg:'#eef2f8',tx:'#475569'}; return `<span style="display:inline-block;padding:1px 8px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col.bg};color:${col.tx}">${catOf(o.key)}</span>`;},sortVal:o=>catOf(o.key)},
-      {k:'pkN',t:'품목/규격수',cell:o=>won(o.pkN),sortVal:o=>o.pkN},
+      {k:'pkN',t:'품목/규격수',cell:o=>`${won(o.pkN)}<span style="margin-left:5px;font-size:10.5px;font-weight:700;color:#0d9488" title="선택 기간 전체 고유 품목·규격 ${won(_allPkN)}종 중 이 거래처가 취급한 비중입니다">${o.pkPct.toFixed(1)}%</span>`,sortVal:o=>o.pkN},
       {k:'specq',t:`규격/비규격 비중(${mixBasisLabel})`,cls:'l',cell:o=>specBarHtml(o.specQ,mixBasisLabel),sortVal:o=>o.nonRate},
       {k:'mix',t:`구성 비중(${mixBasisLabel} · ${mixCats().join('·')})`,cls:'l',nosort:true,cell:o=>mixBarHtml(o.mixQ,mixBasisLabel)},
       {k:'amt',t:`매출액(${unitLabel()})`,cell:o=>disp(o.amt),sortVal:o=>o.amt},
       {k:'cnt',t:'거래일수',cell:o=>won(o.cnt),sortVal:o=>o.cnt},
       {k:'qty',t:'출고수량',cell:o=>won(o.qty),sortVal:o=>o.qty} ];
-    render('단가표 · 업체별', `${pricePeriodLabel()} · 구성비중 ${mixBasisLabel} · 거래처 ${won(arr.length)}개 · 출고수량·구성비중·규격비중 피스·피봇힌지피스 제외 · <b>업체를 클릭</b>하면 단가표`, arr, cols, 'amt',
+    render('단가표 · 업체별', `${pricePeriodLabel()} · 구성비중 ${mixBasisLabel} · 거래처 ${won(arr.length)}개 · 출고수량·구성비중·규격비중 피스·피봇힌지피스 제외 · 품목/규격수 비중은 전체 ${won(_allPkN)}종 기준 · <b>업체를 클릭</b>하면 단가표`, arr, cols, 'amt',
       `거래처를 클릭하면 <b>제품·규격별 마지막 출고단가</b>·<b>타사 최고/최저</b>가 나옵니다. 구성비중은 선택 기간의 <b>${mixBasisLabel}</b>이며 반품·음수 수량/매출은 비중 계산에서 제외합니다. <b>규격/비규격 비중</b>은 📐 규격/비규격 매출 화면과 같은 기준(규격·비규격·유통/OEM·기타)이며 열 머리글을 누르면 <b>비규격률</b>로 정렬됩니다. 제품구분은 <b>제품 구분 변경</b>에서 지정·추가한 값을 즉시 반영하며, 미지정 품목만 전체 거래기간 판매처를 기준으로 전용·공용 자동 판정합니다. 새 제품구분도 구성비중에 자동 추가됩니다.`,
       {controlsHtml:ctrl,onMount:bind,total:{label:'합 계',amt:tot},drill:{custom:row=>{ const pq=state._pendingItemQ||''; state._pendingItemQ=''; custPriceList(row.label, rows.filter(r=>r.cust===row.key), ()=>priceTable(), pq); }}});
   } else {
@@ -28786,6 +28815,21 @@ function sgToggleSecV874(k){
   SG_SECS.forEach(function(x){ sgOpenSetV874(x,x===k?!onlyMe:false); });
 }
 function sgSave(){ try{ if(typeof saveSettings==='function')saveSettings(); }catch(_e){} }
+/* ══ v886 · 3×3 매트릭스 문구 수정을 «다른 PC에도» 반영합니다. ══
+   예전에는 saveSettings()만 불러 이 PC에만 저장되고 공용설정 변경으로 잡히지 않아
+   서버(구글시트) 올리기가 일어나지 않았습니다. 이제 공용설정 커밋으로 즉시 올립니다. */
+function sgMxTextCommitV886(){
+  try{
+    if(typeof sharedSettingCommit==='function'){
+      Promise.resolve(sharedSettingCommit('매트릭스 문구')).catch(function(){ try{sgSave();}catch(_x){} });
+    }else{ sgSave(); }
+    try{
+      var n=document.getElementById('sgMxSyncNoteV886');
+      if(n){ n.textContent='✔ 저장·동기화'; clearTimeout(window.__sgMxNoteTmV886);
+        window.__sgMxNoteTmV886=setTimeout(function(){ try{n.textContent='';}catch(_y){} },2600); }
+    }catch(_t){}
+  }catch(_e){}
+}
 function sgUid(){ return 'sg'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function sgCreditKey(n){
   var v=String(n||'');
@@ -29935,7 +29979,7 @@ function sgWaterfall(A){
   var _typeSegV814='<span class="sg-wf-type-v814" style="display:inline-flex;border:1px solid #93c5fd;border-radius:7px;overflow:hidden">'
     +'<button type="button" class="sgWfTypeBtnV814" data-t="A" title="워터폴 — 무엇을 더하고 빼서 목표를 채우는지" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:none;cursor:pointer;background:'+(_wfTypeV814==='A'?'#1d4ed8':'#fff')+';color:'+(_wfTypeV814==='A'?'#fff':'#1e3a5f')+'">A 워터폴</button>'
     +'<button type="button" class="sgWfTypeBtnV814" data-t="B" '+(_matrixEnabledV814?'':'disabled aria-disabled="true"')+' title="'+(_matrixEnabledV814?'A 워터폴 연동 3×3 제품·매출처 계획 매트릭스':'2026년에는 B 매트릭스를 사용할 수 없습니다.')+'" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:none;border-left:1px solid #bfdbfe;cursor:'+(_matrixEnabledV814?'pointer':'not-allowed')+';opacity:'+(_matrixEnabledV814?'1':'.45')+';background:'+(_wfTypeV814==='B'?'#1d4ed8':'#fff')+';color:'+(_wfTypeV814==='B'?'#fff':'#1e3a5f')+'">B 매트릭스</button></span>'
-    +(_wfTypeV814==='B'?'<button type="button" id="sgMxTextToggleV826" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:1px solid '+(pl.matrixTextEdit?'#0f766e':'#93c5fd')+';border-radius:7px;background:'+(pl.matrixTextEdit?'#0f766e':'#fff')+';color:'+(pl.matrixTextEdit?'#fff':'#1d4ed8')+';cursor:pointer;line-height:normal">'+(pl.matrixTextEdit?'완료':'수정')+'</button>':'');
+    +(_wfTypeV814==='B'?'<button type="button" id="sgMxTextToggleV826" style="font-family:inherit;font-size:11px;font-weight:800;padding:4px 11px;border:1px solid '+(pl.matrixTextEdit?'#0f766e':'#93c5fd')+';border-radius:7px;background:'+(pl.matrixTextEdit?'#0f766e':'#fff')+';color:'+(pl.matrixTextEdit?'#fff':'#1d4ed8')+';cursor:pointer;line-height:normal">'+(pl.matrixTextEdit?'완료':'수정')+'</button><span id="sgMxSyncNoteV886" style="margin-left:7px;font-size:11px;font-weight:700;color:#15803d"></span>':'');
   var _typeNoteV814=(_wfTypeV814==='B')
     ? ''
     : '<span><b>형광 제목</b> 계획 합계 반영 · <b>진한 누적막대</b> 기존업체＋신규업체＋신규제품－거래축소＋신규사업 · <b>점선막대</b> 중복 합산 제외</span>';
@@ -32245,7 +32289,7 @@ function sgBind(A){
   if(mxTextToggle)mxTextToggle.addEventListener('click',function(e){
     e.preventDefault();e.stopPropagation();
     pl.matrixTextEdit=!pl.matrixTextEdit;
-    try{sgSave();}catch(_e){}
+    try{ if(typeof sgMxTextCommitV886==='function')sgMxTextCommitV886(); else sgSave(); }catch(_e){}
     /* v873 : 지연 재렌더 대기열에 막히지 않고 입력 필드를 즉시 다시 만듭니다. */
     try{window.__sgFastRender=true;sgRender();}
     catch(_e2){sgRe(true);}
@@ -32259,10 +32303,11 @@ function sgBind(A){
         labels[key]=inp.value;
         $$('.sgMxTextEditV826[data-label-key="'+key+'"]').forEach(function(peer){if(peer!==inp&&peer.value!==inp.value)peer.value=inp.value;});
         clearTimeout(window._sgMxTextSaveTimerV826);
-        window._sgMxTextSaveTimerV826=setTimeout(sgSave,150);
+        window._sgMxTextSaveTimerV826=setTimeout(sgMxTextCommitV886,700);
       }
     });
-    inp.addEventListener('change',function(){clearTimeout(window._sgMxTextSaveTimerV826);sgSave();});
+    inp.addEventListener('change',function(){clearTimeout(window._sgMxTextSaveTimerV826);sgMxTextCommitV886();});
+    inp.addEventListener('blur',function(){clearTimeout(window._sgMxTextSaveTimerV826);sgMxTextCommitV886();});
   });
   $$('.sg-wf-selectable[data-wf-key]').forEach(function(el){
     /* 같은 항목을 다시 선택하면 선택을 해제합니다. */
@@ -39374,6 +39419,79 @@ function boot(){
       if(apply())return;
       var m=0,t2=setInterval(function(){ m++; if(apply()||m>60)clearInterval(t2); },500);
     },5600); }
+  },300);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
+<script id="v886-target-consistency">
+/* ══════════════════════════════════════════════════════════════
+   v886 · 월별 목표 «한 가지 기준» 유지 장치
+   ① 기준연도 월별 목표(화면저장값)를 자료를 읽은 직후에 미리 만들어 둡니다.
+      → 2027 목표를 먼저 열어도 «숨긴재계산»이 쓰이지 않아 10~12월이 바뀌지 않습니다.
+   ② fcCheck3V886() : 매출 목표 · 주간보고 · 거래처 담당자 세 화면의 월별 목표를 대조합니다.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+function cy(){ try{ return (typeof fcDataYearMax==='function')?fcDataYearMax():null; }catch(e){ return null; } }
+function saved(y){ try{ return ((state.fcYearMisc||{})[String(y)]||{}).monthTgtV878||null; }catch(e){ return null; } }
+function cut(){ try{ return (typeof fcBaseCutV733==='function')?fcBaseCutV733():fcCutoffMonth(); }catch(e){ return 0; } }
+function needWarm(){
+  var y=cy(); if(!y)return false;
+  var sv=saved(y); if(!sv||!Array.isArray(sv.tgt)||sv.tgt.length<13)return true;
+  try{ return fcNormalizeCutoff(sv.cut)!==fcNormalizeCutoff(cut()); }catch(e){ return false; }
+}
+function warm(){
+  try{
+    if(typeof state==='undefined'||!state||!window.CUR||!CUR.length)return false;
+    if(window.__FC_BUILDING_V737)return false;
+    if(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode())return false;  /* 다음 연도 화면이면 건드리지 않음 */
+    if(!needWarm())return true;
+    if(typeof fcChartArraysV678==='function'){ fcChartArraysV678(); }
+    else if(typeof forecast==='function'){
+      var sil=(typeof _fcSilentV678!=='undefined'); if(sil)_fcSilentV678=true;
+      try{ forecast(); } finally { if(sil)_fcSilentV678=false; }
+    }
+    return !needWarm();
+  }catch(e){ return false; }
+}
+window.fcWarmBaseTgtV886=warm;
+
+/* 세 화면 대조 */
+window.fcCheck3V886=function(){
+  try{
+    var y=cy(); if(!y){ console.warn('[v886] 자료가 없습니다.'); return null; }
+    warm();
+    var L=(typeof wrMonthlyTargetLink==='function')?wrMonthlyTargetLink(y,new Date(y,11,31)):null;
+    var sv=saved(y);
+    var out=[],bad=[];
+    var mil=function(v){ return Math.round((+v||0)/1e6); };
+    for(var m=1;m<=12;m++){
+      var a=sv&&sv.tgt?+sv.tgt[m]||0:0;          /* 매출 목표 화면(그래프 목표 막대) */
+      var b=L?+L.target[m]||0:0;                  /* 주간보고 「1. 연 목표대비 달성」 목표액 */
+      out.push({월:m+'월','매출목표(백만)':mil(a),'주간보고 목표액(백만)':mil(b),'차이(백만)':mil(b-a)});
+      if(Math.abs(b-a)>1e6)bad.push(m+'월');
+    }
+    console.table(out);
+    console.log('[v886] 기준연도 '+y+' · 확정월 '+cut()+' · 화면저장값 '+(sv?('있음(목표안 '+sv.plan+', 확정월 '+sv.cut+')'):'없음'));
+    if(bad.length)console.warn('[v886] 매출 목표 화면과 주간보고 목표액이 다른 달: '+bad.join(', ')
+      +'  — 주간보고 목표액에는 신규업체·신규라인·PD 목표가 12개월에 나눠 들어갑니다(매출 목표 그래프 막대는 기본 월목표).');
+    else console.log('[v886] 두 화면 월별 목표 일치 ✔');
+    console.log('[v886] 거래처 담당자 현황 합계행의 월별 목표는 v886부터 신규업체·신규라인·PD 목표를 월별로 나눠 더하므로 주간보고 목표액과 같아야 합니다.');
+    return {기준연도:y,화면저장값:!!sv,불일치월:bad};
+  }catch(e){ console.warn('[v886] 점검 실패',e); return null; }
+};
+
+function boot(){
+  var n=0,t=setInterval(function(){
+    n++;
+    if(window.__V718_RESTORED||n>40){
+      clearInterval(t);
+      setTimeout(function(){
+        if(warm())return;
+        var m=0,t2=setInterval(function(){ m++; if(warm()||m>40)clearInterval(t2); },1000);
+      },6000);
+    }
   },300);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
