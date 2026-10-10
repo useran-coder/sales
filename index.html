@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v888</title>
-<script>window.APP_BUILD='v888';</script>
+<title>동방파스텍 매출 분석 도구 v889</title>
+<script>window.APP_BUILD='v889';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v888</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v889</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -8587,6 +8587,16 @@ function mixOverrideCust(key){ const ov=(state.gbunOverride||{})[key]; return ov
 /* v884 : 단가표·업체별 «규격/비규격 비중» 막대 — 📐 규격/비규격 매출 화면과 같은 기준 */
 const SPECQ_DEF=[['std','규격','#15803d'],['non','비규격','#c2410c'],['oem','유통/OEM','#1d4ed8'],['other','기타','#6d28d9']];
 function specZeroObj(){ return {std:0,non:0,oem:0,other:0}; }
+/* v889 : 막대 대신 «규격·비규격·유통/OEM·기타»를 각각 열로 나눠 숫자로 표시합니다. */
+const SPECQ_LAB={std:['규격','#15803d'],non:['비규격','#c2410c'],oem:['유통/OEM','#1d4ed8'],other:['기타','#6d28d9']};
+function specPctCellV889(o,kind){
+  const sq=o.specQ||{},tot=+o.specTot||0,v=+sq[kind]||0;
+  const L=SPECQ_LAB[kind]||['','#64748b'];
+  if(!tot)return '<span style="color:#cbd5e1">–</span>';
+  if(!v)return '<span style="color:#e2e8f0">0%</span>';
+  const p=v/tot*100;
+  return `<span style="font-weight:800;color:${L[1]}" title="${L[0]} ${Math.round(v).toLocaleString('ko-KR')} / 합계 ${Math.round(tot).toLocaleString('ko-KR')}">${p.toFixed(p<10?1:0)}%</span>`;
+}
 function specBarHtml(sq,basisLabel){
   sq=sq||specZeroObj();
   const tot=SPECQ_DEF.reduce((a,[k])=>a+(sq[k]||0),0);
@@ -8837,20 +8847,30 @@ function priceTable(){
     const _qtyEx={}; rows.forEach(r=>{ if(r.name==='피스'||r.name==='피봇힌지피스')return; _qtyEx[r.cust]=(_qtyEx[r.cust]||0)+(r.qty||0); }); arr.forEach(o=>{ o.qty=_qtyEx[o.key]||0; });
     const mixByCust={}; rows.forEach(r=>{ if(r.name==='피스'||r.name==='피봇힌지피스')return; let mm=mixByCust[r.cust]; if(!mm){mm=mixZeroObj();mixByCust[r.cust]=mm;} const v=mixBasis==='amt'?Math.max(amtOf(r),0):(r.qty>0?r.qty:0),mc=mixCatOf(r); mm[mc]=(mm[mc]||0)+v; });
     const specByCust={}; rows.forEach(r=>{ if(r.name==='피스'||r.name==='피봇힌지피스')return; let sm=specByCust[r.cust]; if(!sm){sm=specZeroObj();specByCust[r.cust]=sm;} const v=mixBasis==='amt'?Math.max(amtOf(r),0):(r.qty>0?r.qty:0),sk=(typeof qtyaKindOf==='function')?qtyaKindOf(r):'std'; sm[sk]=(sm[sk]||0)+v; });
-    arr.forEach(o=>{ o.specQ=specByCust[o.key]||specZeroObj(); const sq=o.specQ,st2=SPECQ_DEF.reduce((a,[k])=>a+(sq[k]||0),0); o.nonRate=st2?(sq.non||0)/st2*100:0; o.stdRate=st2?(sq.std||0)/st2*100:0; });
+    arr.forEach(o=>{ o.specQ=specByCust[o.key]||specZeroObj(); const sq=o.specQ,st2=SPECQ_DEF.reduce((a,[k])=>a+(sq[k]||0),0);
+      o.specTot=st2;
+      o.stdRate=st2?(sq.std||0)/st2*100:0; o.nonRate=st2?(sq.non||0)/st2*100:0;
+      o.oemRate=st2?(sq.oem||0)/st2*100:0; o.otherRate=st2?(sq.other||0)/st2*100:0; });
     arr.forEach(o=>{ o.mixQ=mixByCust[o.key]||mixZeroObj(); const mq=o.mixQ,tq=mixCats().reduce((sum,c)=>sum+(mq[c]||0),0)||0; o.exQp=tq?(mq.전용품||0)/tq*100:0; o.shQp=tq?(mq.공용품||0)/tq*100:0; });
     const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
       {k:'label',t:'거래처',cls:'l',cell:o=>esc(o.label)+' '+catChip(o.key)},
       {k:'grade',t:'신용등급',cell:o=>gradeBadge(gradeRec(o.key).grade),sortVal:o=>gradeRec(o.key).grade||''},
       {k:'cat',t:'신용상태',cell:o=>{const col=GRADE_COL[catOf(o.key)]||{bg:'#eef2f8',tx:'#475569'}; return `<span style="display:inline-block;padding:1px 8px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col.bg};color:${col.tx}">${catOf(o.key)}</span>`;},sortVal:o=>catOf(o.key)},
-      {k:'pkN',t:'품목/규격수',cell:o=>`${won(o.pkN)}<span style="margin-left:5px;font-size:10.5px;font-weight:700;color:#0d9488" title="선택 기간 전체 고유 품목·규격 ${won(_allPkN)}종 중 이 거래처가 취급한 비중입니다">${o.pkPct.toFixed(1)}%</span>`,sortVal:o=>o.pkN},
-      {k:'specq',t:`규격/비규격 비중(${mixBasisLabel})`,cls:'l',cell:o=>specBarHtml(o.specQ,mixBasisLabel),sortVal:o=>o.nonRate},
+      {k:'pkN',t:'품목/규격수',cell:o=>`${won(o.pkN)}<span style="margin-left:5px;font-size:10.5px;font-weight:700;color:#0d9488" title="이 거래처가 선택 기간에 출고받은 «품번＋규격» 조합 ${won(o.pkN)}종 ÷ 전체 ${won(_allPkN)}종. 업체끼리 같은 품목을 쓰므로 모든 업체의 %를 더하면 100%를 넘습니다.">${o.pkPct.toFixed(1)}%</span>`,sortVal:o=>o.pkN},
+      {k:'stdR',t:`규격<div style="font-size:9px;color:#94a3b8;font-weight:400">${mixBasisLabel}</div>`,
+        cell:o=>specPctCellV889(o,'std'),sortVal:o=>o.stdRate},
+      {k:'nonR',t:`비규격<div style="font-size:9px;color:#94a3b8;font-weight:400">${mixBasisLabel}</div>`,
+        cell:o=>specPctCellV889(o,'non'),sortVal:o=>o.nonRate},
+      {k:'oemR',t:`유통/OEM<div style="font-size:9px;color:#94a3b8;font-weight:400">${mixBasisLabel}</div>`,
+        cell:o=>specPctCellV889(o,'oem'),sortVal:o=>o.oemRate},
+      {k:'etcR',t:`기타<div style="font-size:9px;color:#94a3b8;font-weight:400">${mixBasisLabel}</div>`,
+        cell:o=>specPctCellV889(o,'other'),sortVal:o=>o.otherRate},
       {k:'mix',t:`구성 비중(${mixBasisLabel} · ${mixCats().join('·')})`,cls:'l',nosort:true,cell:o=>mixBarHtml(o.mixQ,mixBasisLabel)},
       {k:'amt',t:`매출액(${unitLabel()})`,cell:o=>disp(o.amt),sortVal:o=>o.amt},
       {k:'cnt',t:'거래일수',cell:o=>won(o.cnt),sortVal:o=>o.cnt},
       {k:'qty',t:'출고수량',cell:o=>won(o.qty),sortVal:o=>o.qty} ];
     render('단가표 · 업체별', `${pricePeriodLabel()} · 구성비중 ${mixBasisLabel} · 거래처 ${won(arr.length)}개 · 출고수량·구성비중·규격비중 피스·피봇힌지피스 제외 · 품목/규격수 비중은 전체 ${won(_allPkN)}종 기준 · <b>업체를 클릭</b>하면 단가표`, arr, cols, 'amt',
-      `거래처를 클릭하면 <b>제품·규격별 마지막 출고단가</b>·<b>타사 최고/최저</b>가 나옵니다. 구성비중은 선택 기간의 <b>${mixBasisLabel}</b>이며 반품·음수 수량/매출은 비중 계산에서 제외합니다. <b>규격/비규격 비중</b>은 📐 규격/비규격 매출 화면과 같은 기준(규격·비규격·유통/OEM·기타)이며 열 머리글을 누르면 <b>비규격률</b>로 정렬됩니다. 제품구분은 <b>제품 구분 변경</b>에서 지정·추가한 값을 즉시 반영하며, 미지정 품목만 전체 거래기간 판매처를 기준으로 전용·공용 자동 판정합니다. 새 제품구분도 구성비중에 자동 추가됩니다.`,
+      `거래처를 클릭하면 <b>제품·규격별 마지막 출고단가</b>·<b>타사 최고/최저</b>가 나옵니다. 구성비중은 선택 기간의 <b>${mixBasisLabel}</b>이며 반품·음수 수량/매출은 비중 계산에서 제외합니다. <b>규격·비규격·유통/OEM·기타</b> 열은 각 거래처 안에서 그 구분이 차지하는 비율(네 열의 합=100%)이며 📐 규격/비규격 매출 화면과 같은 기준입니다. 열 머리글을 누르면 그 구분의 비율로 정렬됩니다. <b>품목/규격수</b>는 선택 기간에 그 거래처가 출고받은 «품번＋규격» 조합의 가짓수이고, 옆의 %는 전체 품번＋규격 가짓수 대비 비율입니다(여러 거래처가 같은 품목을 쓰므로 모든 업체의 %를 더하면 100%를 넘습니다). 제품구분은 <b>제품 구분 변경</b>에서 지정·추가한 값을 즉시 반영하며, 미지정 품목만 전체 거래기간 판매처를 기준으로 전용·공용 자동 판정합니다. 새 제품구분도 구성비중에 자동 추가됩니다.`,
       {controlsHtml:ctrl,onMount:bind,total:{label:'합 계',amt:tot},drill:{custom:row=>{ const pq=state._pendingItemQ||''; state._pendingItemQ=''; custPriceList(row.label, rows.filter(r=>r.cust===row.key), ()=>priceTable(), pq); }}});
   } else {
     const m=new Map();
