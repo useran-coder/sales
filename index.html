@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v886</title>
-<script>window.APP_BUILD='v886';</script>
+<title>동방파스텍 매출 분석 도구 v888</title>
+<script>window.APP_BUILD='v888';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v886</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v888</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -3990,8 +3990,17 @@ function wrMonthlyTargetLink(y,asOf){
   /* v678 : 매출 목표 화면 그래프가 그린 '기본 월목표'를 그대로 씁니다(조정%·추가%·월별% 모두 반영된 값). */
   const _chart=fcChartArraysV678();
   const _useChart=!!(_chart&&_chart.CY===CY&&_chart.cutoff===fixedActualThrough);
+  /* ══ v888 · 매출 목표 화면이 «다음 연도»를 보고 있으면 그래프가 그 해 것이라 쓸 수 없습니다.
+     예전에는 이때 전년×조정%의 거친 계산으로 되돌아가 목표액·목표수정액이 화면과 크게 달랐습니다.
+     이제는 기준연도 화면이 실제로 그린 월별 목표(저장값)를 그대로 씁니다. ══ */
+  let _svTgt=null;
+  try{
+    const _s888=((state.fcYearMisc||{})[String(CY)]||{}).monthTgtV878;
+    if(_s888&&Array.isArray(_s888.tgt)&&_s888.tgt.length>=13&&fcNormalizeCutoff(_s888.cut)===fixedActualThrough)_svTgt=_s888.tgt;
+  }catch(_e888){}
   for(let m=1;m<=12;m++){
     if(_useChart){ baseTarget[m]=+_chart.base[m]||0; continue; }
+    if(_svTgt){ baseTarget[m]=+_svTgt[m]||0; continue; }
     const base=(fut.has&&fut.has[m])?fut.tot[m]:(py[m]>0?py[m]*(1+pctOf(m)/100):0);
     baseTarget[m]=base+((pdIncluded&&fcPdInAnnualTarget())?pdMonth(m):0); // 신규업체·신규라인(unallocated) 배분 전 기본 목표
   }
@@ -4036,6 +4045,7 @@ function wrMonthlyTargetLink(y,asOf){
     modified[m]=(m<=fixedActualThrough)?((annualTargetActual[m]||0)+(m===12?_tailUnalloc:0)):((baseTarget[m]||0)+unallocSpreadFut[m]);
     /* v678 : 미래월은 그래프 목표 막대와 원 단위까지 같게 맞춥니다. */
     if(_useChart&&m>fixedActualThrough)modified[m]=+_chart.tgt[m]||0;
+    else if(!_useChart&&_svTgt&&m>fixedActualThrough)modified[m]=+_svTgt[m]||0;   /* v888 : 저장값 기준 */
   }
   const targetTotal=target.reduce((a,v)=>a+(v||0),0);
   const modifiedTotal=modified.reduce((a,v)=>a+(v||0),0);
@@ -28601,10 +28611,12 @@ html.edge-browser #result .sg-month-plan-svg text.sg-month-axis-text{
 #result .sg-bridge-row:hover,#result .sg-bridge-row.is-selected{background:#eff6ff!important;box-shadow:inset 3px 0 #2563eb}
 #result .sg-bridge-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
 #result .sg-bridge-arrow{display:inline-block;width:14px;color:#2563eb;font-weight:900}
-#result .sg-bridge-bar{cursor:pointer;transform-box:fill-box;transform-origin:center bottom;transition:transform .22s ease,filter .22s ease,opacity .22s ease,stroke-width .22s ease}
-#result .sg-bridge-bar:hover,#result .sg-bridge-bar.is-selected{transform:translateY(-3px) scale(1.08,1.045);filter:drop-shadow(0 5px 4px rgba(30,58,95,.28));opacity:1!important;stroke:#1d4ed8;stroke-width:1.6px}
+/* v887 : 막대가 커지면 위아래 글자를 가려서, 확대 대신 «외곽선 색»만 바뀌게 합니다. */
+#result .sg-bridge-bar{cursor:pointer;transform-box:fill-box;transform-origin:center bottom;transition:stroke .16s ease,stroke-width .16s ease,opacity .16s ease}
+#result .sg-bridge-bar:hover,#result .sg-bridge-bar.is-selected{transform:none!important;filter:none!important;opacity:1!important;stroke:#1d4ed8!important;stroke-width:2.4px!important;paint-order:stroke fill}
+#result .sg-bridge-bar.is-selected{stroke:#1d4ed8!important;stroke-width:3px!important;stroke-dasharray:none!important}
 #result .sg-bridge-bar:focus{outline:none}
-#result .sg-bridge-bar:focus-visible{filter:drop-shadow(0 0 4px rgba(37,99,235,.75));stroke:#1d4ed8;stroke-width:2px}
+#result .sg-bridge-bar:focus-visible{filter:none;stroke:#1d4ed8;stroke-width:2.6px}
 #result .sg-bridge-company-panel{margin-top:8px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 5px 14px rgba(30,64,175,.08)}
 #result .sg-bridge-company-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;background:#eff6ff;color:#1e3a5f;font-size:10.5px;font-weight:900}
 #result .sg-bridge-company-scroll{max-height:250px;overflow:auto}
@@ -39470,13 +39482,12 @@ window.fcCheck3V886=function(){
       var a=sv&&sv.tgt?+sv.tgt[m]||0:0;          /* 매출 목표 화면(그래프 목표 막대) */
       var b=L?+L.target[m]||0:0;                  /* 주간보고 「1. 연 목표대비 달성」 목표액 */
       out.push({월:m+'월','매출목표(백만)':mil(a),'주간보고 목표액(백만)':mil(b),'차이(백만)':mil(b-a)});
-      if(Math.abs(b-a)>1e6)bad.push(m+'월');
+      if(m>fcNormalizeCutoff(cut())&&Math.abs(b-a)>1e6)bad.push(m+'월');
     }
     console.table(out);
     console.log('[v886] 기준연도 '+y+' · 확정월 '+cut()+' · 화면저장값 '+(sv?('있음(목표안 '+sv.plan+', 확정월 '+sv.cut+')'):'없음'));
-    if(bad.length)console.warn('[v886] 매출 목표 화면과 주간보고 목표액이 다른 달: '+bad.join(', ')
-      +'  — 주간보고 목표액에는 신규업체·신규라인·PD 목표가 12개월에 나눠 들어갑니다(매출 목표 그래프 막대는 기본 월목표).');
-    else console.log('[v886] 두 화면 월별 목표 일치 ✔');
+    if(bad.length)console.warn('[v886] ⚠ 확정월 이후(목표월)에서 두 화면이 다른 달: '+bad.join(', '));
+    else console.log('[v886] 목표월(확정월 이후) 금액 완전 일치 ✔  (1~'+fcNormalizeCutoff(cut())+'월은 확정 실적월이라 «매출목표=원래 월목표», «주간보고 목표액=12개월 고정배분»으로 설계상 다릅니다)');
     console.log('[v886] 거래처 담당자 현황 합계행의 월별 목표는 v886부터 신규업체·신규라인·PD 목표를 월별로 나눠 더하므로 주간보고 목표액과 같아야 합니다.');
     return {기준연도:y,화면저장값:!!sv,불일치월:bad};
   }catch(e){ console.warn('[v886] 점검 실패',e); return null; }
@@ -39492,6 +39503,62 @@ function boot(){
         var m=0,t2=setInterval(function(){ m++; if(warm()||m>40)clearInterval(t2); },1000);
       },6000);
     }
+  },300);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
+<script id="v888-cutoff-restore">
+/* ══════════════════════════════════════════════════════════════
+   v888 · 실적확정(1안/2안) 월이 «처음 열 때 없음»으로 돌아가지 않게 합니다.
+   한 번 고른 값은 state.fc.cutAt['연도|안'] 에 기록되고 구글시트로도 같이 전달됩니다.
+   복원 직후 목표안 값이 비어 있으면 그 기록으로 되살립니다.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+function norm(v){ try{ return fcNormalizeCutoff(v); }catch(e){ return +v||0; } }
+function repair(){
+  try{
+    if(typeof state==='undefined'||!state||!state.fc)return false;
+    if(window.__FC_BUILDING_V737)return false;
+    var f=state.fc;
+    if(typeof fcEnsureTargetPlans==='function')fcEnsureTargetPlans();
+    var y=String((typeof fcTargetYear==='function')?fcTargetYear():''), p=(f.activePlan==='2'?'2':'1');
+    var rec=(f.cutAt||{})[y+'|'+p];
+    if(!rec)return true;                      /* 기록이 없으면 손대지 않습니다 */
+    var want=norm(rec.m); if(!(want>0))return true;
+    var cur=norm(f.actualCutoffMonth);
+    var planCur=(f.targetPlans&&f.targetPlans[p])?norm(f.targetPlans[p].actualCutoffMonth):0;
+    if(cur===want&&planCur===want)return true;
+    /* 비어 있을 때만 되살립니다(사용자가 일부러 «없음»으로 바꾼 직후에는 cutAt 도 0이라 여기 오지 않습니다) */
+    if(cur===0||planCur===0){
+      if(cur===0)f.actualCutoffMonth=want;
+      if(f.targetPlans&&f.targetPlans[p]&&planCur===0)f.targetPlans[p].actualCutoffMonth=want;
+      try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(e1){}
+      try{ if(y&&typeof fcSaveYearPlan==='function')fcSaveYearPlan(+y); }catch(e2){}
+      try{ if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718(); }catch(e3){}
+      try{ if(typeof saveSettings==='function')saveSettings(); }catch(e4){}
+      console.log('[v888] 실적확정('+p+'안) '+want+'월 복원 — 저장된 기록('+(rec.u||'')+' · '+new Date(rec.t||Date.now()).toLocaleString('ko-KR')+')');
+      try{ if(state.act&&typeof runAct==='function')runAct(); }catch(e5){}
+    }
+    return true;
+  }catch(e){ return false; }
+}
+window.fcRepairCutV888=repair;
+/* 목표안·연도를 바꾼 뒤에도 같은 기록을 따라가게 합니다 */
+['fcSwitchYear','fcSetActivePlan','fcApplyTargetPlan'].forEach(function(fn){
+  try{
+    if(typeof window[fn]!=='function'||window[fn].__v888)return;
+    var o=window[fn];
+    var w=function(){ var r=o.apply(this,arguments); try{ setTimeout(repair,0); }catch(e){} return r; };
+    w.__v888=true; window[fn]=w; try{ eval(fn+'=w'); }catch(e){}
+  }catch(e){}
+});
+function boot(){
+  var n=0,t=setInterval(function(){
+    n++;
+    if(window.__V718_RESTORED||n>40){ clearInterval(t);
+      setTimeout(function(){ repair(); setTimeout(repair,4000); },2500); }
   },300);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
