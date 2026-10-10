@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v880</title>
-<script>window.APP_BUILD='v880';</script>
+<title>동방파스텍 매출 분석 도구 v883</title>
+<script>window.APP_BUILD='v883';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2007,7 +2007,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v880</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v883</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -37266,6 +37266,7 @@ window.fcSyncCheckV841=function(){
       var n=0; try{ n=JSON.stringify(o[k]==null?'':o[k]).length; }catch(_e){ return; }
       out.합계+=n;
       if(n>40000)out.큰항목.push(k+' '+n.toLocaleString()+'자');
+      if(n>(out.최대||0)){out.최대=n;out.최대항목=k;}
     });
     years().forEach(function(y){
       var cnt=0,size=0;
@@ -37276,10 +37277,20 @@ window.fcSyncCheckV841=function(){
     });
   }catch(_e){}
   try{
-    console.log('[동기화 점검] 전체 '+out.합계.toLocaleString()+'자');
+    /* ══ v881 · 경고 기준을 «서버가 실제로 쓰는 한도»로 바로잡았습니다. ══
+       예전에는 «한 칸 한도 50,000자»를 항목별로 적용해 경고했는데, 이는 사실이 아니었습니다.
+       서버(Code.gs)는 전체 자료를 한 덩어리 JSON 으로 만든 뒤 40,000자씩 여러 줄로 나눠 저장합니다.
+         · writeBlobTransactional() → makeRows(json) : CHUNK = 40,000자 단위 분할
+         · 실제 한도는 «전체 합계» MAX_JSON_CHARS = 15,000,000자
+       즉 항목 하나가 10만 자여도 여러 줄로 나뉘어 그대로 저장·전달됩니다.
+       그래서 항목별 경고는 없애고, 전체 사용률만 알려 줍니다. */
+    var LIM=15000000, pct=(out.합계/LIM*100);
+    console.log('[동기화 점검] 전체 '+out.합계.toLocaleString()+'자 / 한도 '+LIM.toLocaleString()+'자 ('+pct.toFixed(1)+'%)'
+      +(out.최대항목?(' · 가장 큰 항목 '+out.최대항목+' '+(out.최대||0).toLocaleString()+'자'):''));
     console.table(out.연도);
-    if(out.큰항목.length)console.warn('한 칸 한도(50,000자)에 가까운 항목:',out.큰항목.join(' · '));
-    else console.log('한 칸 한도를 넘는 항목 없음 ✔');
+    if(pct>=80)console.warn('⚠ 동기화 자료가 서버 한도의 '+pct.toFixed(0)+'%입니다. 오래된 자료 정리를 검토하세요.');
+    else if(out.큰항목.length)console.log('용량이 큰 항목(참고 · 저장에는 문제 없음):',out.큰항목.join(' · '));
+    else console.log('용량 여유 충분 ✔');
   }catch(_c){}
   return out;
 };
@@ -39224,5 +39235,134 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+<!-- v882 : 철강시세 2026.10.10 갱신 (10/1 제강사 인상 + 10/6 원료시황) -->
+<script id="v882-steel-market-update">
+(function(){
+'use strict';
+var TAG='2026-10-10-steel-v882';
+var UPDATE={
+  stAsOf:'2026-10-10',
+  stVerify:'<b>2026.10.10 갱신</b> — 2026.10.1부 제강사 가격 고시 반영(현대제철 판재류 톤당 <b>+4만원</b>, H형강 +5만원 / 동국제강 철근 +1만원) · 원료는 철강금속신문 주간원료동향 2026.10.6 기준(철광석 Fe61% 북중국 CFR 주평균 <b>$93.58</b>, 전주 -$1.98 · 하방 압력 지속) · 중국 국경절(10.1~7)로 원료 일일시세 3일 공백 · <b>국내 열연·냉연·도금 유통가는 유료 시황지 구독분이라 8월 기준을 그대로 두었습니다 — 10/1 인상분이 아직 반영돼 있지 않으니 실제 구매단가로 표에서 직접 수정하십시오.</b>',
+  stSummary:'<b>원료는 내리는데 판가는 올립니다.</b> 철광석이 10월 첫 주 <b>$93.58</b>(전주 -$1.98)로 하락세를 이어가고 제강사가 수익성 악화로 감산까지 하는 상황인데, 국내 제강사는 10월 1일자로 <b>현대제철 판재류 톤당 4만원</b>·H형강 5만원, 동국제강 철근 1만원을 인상 고시했습니다. 성수기 진입과 4분기 설비보수를 명분으로 든 인상이라 <b>원가가 아니라 수급 논리</b>입니다. 고시가와 유통가 괴리도 큽니다 — 철근은 유통가(84~85만원)가 고시가보다 5~6만원 낮고, H형강 소형은 고시가(123만원)가 유통가(117~118만원)보다 높습니다. 방화문 주력인 EGI·PO는 원가 측면 인상 명분이 약해진 구간이므로 <b>인상분 전액 수용 전 협상 여지가 있습니다.</b>',
+  stPolicy:'① <b>10월 인상은 수급 논리</b>이고 철광석은 하락 중이므로, 인상 전액 수용 전에 원료 추이를 근거로 협상하십시오 ② 고시가-유통가 괴리(철근 5~6만원)가 크니 반드시 <b>실거래 유통가 기준</b>으로 발주하십시오 ③ 인상 안착 여부는 10월 중순 이후 주문·출하에서 갈리므로 10월 전반은 분할 발주로 대응 ④ EGI는 중국산 반덤핑 대상에서 빠져 있어 도금재 중 가격 방어력이 가장 약합니다 — 수입재 견적을 협상 지렛대로 확보하십시오 ⑤ 중국 국경절 이후 재개되는 원료시세 방향이 11월 가격의 선행 신호입니다.',
+  stDates:'price|시세 2026.7.22 · 열연/후판 2026.8.21 · <b>10.1 인상분 미반영</b>\nraw|철광석 2026.10.6 (Fe61% CFR $93.58) · LME 2026.8.20 · 원료탄 2026.8.21\nfx|2026.8.21\nscrap|시세 2026.6.15 · 인하 2026.8.19\nintl|2026.8.11 ~ 8.22\nfcast|산정기준일 2026.8.22\ntrade|2026.8.22\nsens|2026.8.22\ncost|유통가 2026.7.22~8.21 기준 (10.1 인상 전)\nvendor|2026.10.1 고시 기준',
+  stSrc:'철강금속신문 「주간원료동향」(2026.10.6) · 아이뉴스24 「철강사 10월 가격 인상」(2026.9.30) · 제강사 10월 고시가(현대제철·동국제강) · LME 공식시세 · 국내 판재류 유통가는 유료 시황지(2026.7~8월분)'
+};
+function apply(){
+  try{
+    if(typeof state==='undefined'||typeof MK_DEFAULT!=='object')return false;
+    state.market=state.market&&typeof state.market==='object'?state.market:{};
+    if(state.market.contentSteelV882===TAG)return false;
+    state.market.d=state.market.d&&typeof state.market.d==='object'?state.market.d:{};
+    /* 이력은 같은 날짜 줄만 교체하고 나머지는 보존합니다. */
+    var prior=String(state.market.d.stHistory||MK_DEFAULT.stHistory||'').split('\n')
+      .filter(function(l){return String(l||'').trim()&&String(l).indexOf('2026-10-10|')!==0;}).join('\n');
+    UPDATE.stHistory='2026-10-10|<b>10월 제강사 가격 인상 고시 반영</b> — 현대제철 판재류 톤당 +4만원·H형강 +5만원(소형 123만·대형 136만, SS275 현금), 동국제강 철근 SD400 D10 90만원(+1만원). 유통가는 철근 84~85만원·H형강 중소형 117~118만원으로 <b>고시가와 5~6만원 괴리</b>. 원료는 철광석 Fe61% CFR 주평균 $93.58(전주 -$1.98)로 하락 지속 — <b>원가가 아닌 수급 논리의 인상</b>이므로 협상 여지 있음. 국내 판재류 유통가는 미확인이라 8월 기준 유지.'
+      + (prior?('\n'+prior):'');
+    Object.keys(UPDATE).forEach(function(k){ MK_DEFAULT[k]=UPDATE[k]; state.market.d[k]=UPDATE[k]; });
+    state.market.contentSteelV882=TAG;
+    try{ if(typeof saveSettings==='function')saveSettings(); }catch(_e){}
+    if(state.act==='market-steel'&&typeof marketSteel==='function')marketSteel();
+    return true;
+  }catch(_e){ return false; }
+}
+function boot(){ var n=0,t=setInterval(function(){ n++; if(window.__V718_RESTORED||n>40){ clearInterval(t);
+  /* 먼저 도는 모든 시장자료 블록보다 뒤에 적용되도록 넉넉히 기다립니다 */
+  setTimeout(apply,5200);
+} },300); }
+if(document.readyState==='complete')setTimeout(boot,520);
+else window.addEventListener('load',function(){ setTimeout(boot,520); },{once:true});
+})();
+</script>
+<script id="v883-firedoor-market-update">
+(function(){
+'use strict';
+var TAG='2026-10-10-fd-v883';
+var U={};
+
+U.fdIdx='주택 준공 실적|최근 납품시장의 후행 검증; 같은 달 매출 아님|2026 1~8월 150,664호(-27.2%) · 1~7월 -41.4%에서 낙폭 축소\n'
+ +'주택 착공 세대수|18~30개월 뒤 납품 후보군의 핵심 선행지표|2026 1~8월 156,396호(+10.8%)\n'
+ +'주택 인허가|착공 이전 장기 후보군; 전환율을 함께 봐야 함|2026 1~8월 145,314호(+1.3%) — 감소세에서 플러스 전환\n'
+ +'공동주택 분양|6~18개월 뒤 착공·사양확정의 직전 선행지표|2026 1~8월 +35.3%\n'
+ +'현장 골조율·예정준공일|방화문 견적·승인·납품월을 직접 결정|월별 현장 공정표로 관리\n'
+ +'승인도면·견적·수주잔고|공식통계보다 가까운 3~12개월 선행지표|거래처·현장·납품월별 확률가중\n'
+ +'건설기성|전체 현장 진척의 방향; 건축/토목을 분리|국가데이터처 월별 공표\n'
+ +'미분양·PF·회수조건|착공지연·공사중단·대금회수 위험|지방·중소 시행사 우선 점검\n'
+ +'품질인정·사양변경|재시험·재승인·납품지연 위험|승인 BOM·로트·성적서 변경관리';
+
+U.fdNews='2026.10|긍정|현재 수요|1~8월 주택 준공 150,664호(-27.2%) — 1~7월 -41.4%에서 낙폭 14.2%p 축소\n'
+ +'2026.10|긍정|선행 지표|1~8월 주택 착공 156,396호(+10.8%) · 공동주택 분양 +35.3%\n'
+ +'2026.10|긍정|장기 선행|1~8월 인허가 145,314호(+1.3%) — 전년 수준 회복, 2029 공백 위험 완화\n'
+ +'2026.10|부정|원가 변동|제강사 10/1부 판재류 톤당 +4만원 · H형강 +5만원 인상 고시\n'
+ +'2026.08|긍정|중장기 공급|수도권 23만호+α 신속공급 방안 — 착공 확인 전 매출 선반영 금지\n'
+ +'2026.08|부정|현재 수요|7월 건설수주 -34.0%·건설기성 -3.2% — 물량과 수주의 괴리 지속\n'
+ +'2026.07|부정|리스크|상반기 건설사 폐업 2,092곳 12년 만에 최다 · PF 연체 4.65%\n'
+ +'2026.02|긍정|규제 강화|건축자재 품질인정기준 개정 — 복합 방화셔터 품목 신설';
+
+U.fdIns='<b>① 세 개의 시계를 분리</b> — 인허가는 장기 후보, 착공은 중기 후보, 준공은 최근 납품의 결과입니다. 서로 더하지 말고 코호트로 연결합니다.\n'
+ +'<b>② 준공 절벽은 «바닥 통과» 국면</b> — 1~8월 준공 150,664호(-27.2%)로 1~7월 -41.4%에서 낙폭이 14.2%p 줄었습니다. 저점을 지났을 가능성이 크지만 전년비는 아직 마이너스이므로 회복이 아니라 «감소폭 축소»로 읽으십시오.\n'
+ +'<b>③ 2028 회복의 조건은 유지</b> — 1~8월 착공 +10.8%, 분양 +35.3%는 2028년 납품 회복의 필요조건입니다. 골조율·승인도면·수주잔고 확인 전 증산은 금지합니다.\n'
+ +'<b>④ 2029 재공백 위험은 완화</b> — 인허가가 1~7월 -7.9%에서 1~8월 +1.3%로 플러스 전환했습니다. 다만 인허가→착공 전환율(통상 60~70%)을 12개월 추적해 확정하십시오.\n'
+ +'<b>⑤ 원가가 새 변수</b> — 10/1부 판재류 +4만원·H형강 +5만원 인상 고시가 나왔고 유통가는 고시가와 5~6만원 괴리 상태입니다. 견적 유효기간 30일·소재가 연동조항을 이번 분기에 반드시 적용하십시오.\n'
+ +'<b>⑥ 현장별 납품 캘린더가 최종 기준</b> — 전국 총량보다 상위 거래처의 현장명·골조율·승인일·납품예정월·회수조건을 합산한 확률가중 수주잔고를 목표에 반영합니다.';
+
+U.fdKw='2026년 현황|바닥 통과|준공 -27.2% 낙폭 축소|저점 확인 국면|#ea580c\n'
+ +'2027년 전망|상저하고|착공 반등 미도달 구간|상반기 버티기|#d97706\n'
+ +'2028년 전환|납품 회복|착공 +10.8%·분양 +35.3% 도달|반등 기대|#16a34a\n'
+ +'원가 압박|10월 인상 고시|판재류 +4만원 · H형강 +5만원|연동조항 필수|#b91c1c\n'
+ +'대금회수 리스크|PF 연체 4.65%|폐업 2,092곳·회생 확산|최우선 관리|#7c3aed';
+
+U.fdLagAsOf='2026-10-10 · 공식자료는 국토교통부 「2026년 8월 주택통계」(1~8월 준공 150,664호 -27.2% · 착공 156,396호 +10.8% · 인허가 145,314호 +1.3%)까지 반영했습니다. 세대당 세트수와 착공 후 M+18~30 납품 범위는 사내 계획 가정이며, 실제 현장별 착공일·골조율·승인도면일·예정준공일로 교정해야 합니다.';
+
+U.fdLagNote='<b>착공 기준 그래프는 미래 후보 일감, 준공 기준 그래프는 최근 납품시장의 후행 검증값</b>입니다. 준공은 같은 달 매출이 아닙니다. 방화문은 통상 준공 6~12개월 전에 들어가므로 준공계열은 최근 출고 흐름과 비교해야 합니다. 2026 착공 +10.8%와 분양 +35.3%는 2027년 스펙·견적 증가와 2028년 전후 출하 회복의 조건일 뿐 보장은 아닙니다. 확인 순서는 <b>착공 → 골조율 → 승인도면 → 수주잔고 → 납품예정월</b>이며, 어느 단계든 지연되면 회복 시점도 뒤로 이동합니다.';
+
+U.fdDemand='2026 하반기|바닥 통과 확인|보합~-5%|준공 낙폭이 -41.4%→-27.2%로 축소. 다만 확정발주 외 선재고 금지\n'
+ +'2027 상반기|저점 방어|보합~-5%|2025 저착공 영향과 동절기. 현금·고정비·회수조건 우선\n'
+ +'2027 하반기|선행 회복 확인|0~+10%|견적·승인도면·수주잔고가 먼저 늘 수 있으나 출하 회복은 현장별로 제한\n'
+ +'2028년|조건부 물량 회복|기본 +5~15%|2026 착공(+10.8%)·분양(+35.3%) 반등분 도달 구간. 골조율·예정준공일 확인 시에만 증산\n'
+ +'2029년 이후|재공백 위험 완화|범위 전망|인허가 +1.3% 전환이 착공으로 이어지는지 12개월 전환율로 감시';
+
+U.fdPhase='일시 반등|2026.09~12|4개월|2024년 착공 반등(30.3만호, +24%)분이 납품 창에 도달. 1~8월 준공 150,664호(-27.2%)로 절벽 완화 확인. 12월은 계절 피크|확정발주 기준 연말 생산 집중, 1월 급감 대비 원자재 선매입 금지, 미수금 회수\n'
+ +'최저점|2027.01~05|5개월|2025년 상반기 착공 10.3만호(월평균 1.7만호)가 납품 시점 도달. 설 연휴 겹친 2월이 연중 바닥(지수 66)|고정비 절감·설비보수·표준화, 승인도면·견적 전환율 월별 추적, 인력 유지 최소선 관리\n'
+ +'바닥 다지기|2027.06~10|5개월|2025년 6·9월 착공(2.9만·3.0만호)이 반영되나 8월 저착공·9~10월 연휴로 등락|수주잔고 3개월 연속 증가·회수조건 확인 후 외주·인력 단계 확대\n'
+ +'연말 집중 출하|2027.11~2028.03|5개월|2025년 12월 착공 6.42만호(월간 최대)가 21~27개월 창에 들어옴 → 2028 상반기 준공분 투입|현장별 납품 캘린더로 증산, 원자재 분할 선확보, 과잉재고 금지\n'
+ +'재공백 점검|2029년 이후|상시|2026 인허가가 1~8월 +1.3%로 플러스 전환해 공백 위험은 완화. 착공 전환율 확인 전 목표 선반영 금지|공공·정비·비주거 파이프라인으로 민간주택 공백 보완';
+
+U.fdMonthIns='<b>① 2027년은 회복의 해가 아니라 «상저하고»의 해</b>입니다. 2027 연평균 지수 93은 2026년 9~12월 평균 112보다 약 17% 낮습니다. 2025년 착공이 27.3만호(-10.2%)로 줄었기 때문입니다.\n'
+ +'<b>② 상반기가 바닥</b>입니다. 2027년 1~5월 평균 77 — 2025년 상반기 착공 10.3만호(월평균 1.7만호)가 납품 시점에 도달합니다. 설 연휴로 조업 18일인 2월이 연중 최저(66)입니다.\n'
+ +'<b>③ 하반기 반등은 «한 달»에 기대고 있습니다.</b> 2025년 12월 착공 6.42만호(공표)가 연간 착공의 24%입니다. 현장이 지연·분산되면 11~12월 피크가 2028년 1~3월로 밀리므로 연말 증산은 확정발주 기준으로만 하십시오.\n'
+ +'<b>④ 준공 절벽 완화가 통계로 확인</b> — 1~8월 준공 150,664호(-27.2%)로 1~7월 -41.4%에서 낙폭이 14.2%p 줄었습니다. 저점 통과 국면이나 전년비는 아직 마이너스입니다.\n'
+ +'<b>⑤ 2026년 착공 반등(1~8월 156,396호, +10.8%)과 분양(+35.3%)은 2028년 납품 회복의 필요조건</b>입니다. 지역 편차가 크므로 전국 총량이 아니라 거래처 현장 소재지 기준으로 판단하십시오.\n'
+ +'<b>⑥ 인허가는 1~8월 145,314호(+1.3%)로 플러스 전환</b>했습니다. 2029년 이후 재공백 위험이 줄었으나, 인허가→착공 전환율(통상 60~70%)을 12개월 추적해 확정해야 합니다.\n'
+ +'<b>⑦ 생산능력 확대 조건</b>은 시장지수가 아니라 ① 확정 수주잔고 ② 납품월 ③ 회수조건 ④ 한계이익 네 가지 동시 충족입니다. 월별 지수는 생산계획 시나리오이므로 매월 실제 발주잔고로 교정하십시오.';
+
+function apply(){
+  try{
+    if(typeof state==='undefined'||!state)return false;
+    state.market=state.market||{};
+    state.market.d=state.market.d||{};
+    if(state.market.contentFdV883===TAG)return false;
+    var MD=(typeof MK_DEFAULT!=='undefined')?MK_DEFAULT:null;
+    Object.keys(U).forEach(function(k){ if(MD)MD[k]=U[k]; state.market.d[k]=U[k]; });
+    state.market.contentFdV883=TAG;
+    try{ if(typeof save==='function')save(); }catch(e1){}
+    try{ if(state.act&&String(state.act).indexOf('market')===0&&typeof runAct==='function')runAct(); }catch(e2){}
+    console.log('[v883] 방화문시장 분석 — 2026년 8월 주택통계 기준으로 갱신 (준공 -27.2% · 착공 +10.8% · 인허가 +1.3% · 분양 +35.3%)');
+    return true;
+  }catch(e){ console.warn('[v883] 방화문시장 갱신 실패',e); return false; }
+}
+function boot(){
+  var n=0,t=setInterval(function(){
+    n++;
+    if(window.__V718_RESTORED||n>40){ clearInterval(t); setTimeout(function(){
+      if(apply())return;
+      var m=0,t2=setInterval(function(){ m++; if(apply()||m>60)clearInterval(t2); },500);
+    },5600); }
+  },300);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
 </body>
 </html>
