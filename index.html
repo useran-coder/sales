@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v946</title>
-<script>window.APP_BUILD='v946';</script>
+<title>동방파스텍 매출 분석 도구 v947</title>
+<script>window.APP_BUILD='v947';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2035,7 +2035,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v946</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v947</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -19443,7 +19443,7 @@ try{
         _tgtLabV902='🎯 '+_ty+'년 목표'; window.__FC_TGT_YEAR_V906=_ty;
       }
     }catch(_e902){}
-    const _ttTopC=trendTopV760(c,(typeof CUR!=='undefined'?CUR:[]).filter(r=>r&&r.cust===c),_ttKeyC,{hint:'표 아래는 제품·규격별 목표입니다.',target:_tgtArrV902,targetLabel:_tgtLabV902,targetYear:(typeof fcTargetYear==='function'?fcTargetYear():0)});
+    const _ttTopC=trendTopV760(c,(typeof CUR!=='undefined'?CUR:[]).filter(r=>r&&r.cust===c),_ttKeyC,{hint:'',target:_tgtArrV902,targetLabel:_tgtLabV902,targetYear:(typeof fcTargetYear==='function'?fcTargetYear():0)});
     const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← 목록으로</button><span class="title">${esc(c)} ▸ 제품·규격별 목표</span><span class="meta">${fcRangeLabel()} · 전년 ${won(tp)} → 목표 ${won(tj)}${metricText}</span>${monBtn}<span class="spacer"></span><button class="btn ghost" id="fcdCsv">엑셀 내보내기</button></div>${_ttTopC}${bodyHtml}`;
     renderCustom(html,()=>{
       bindTrendTopV760(_ttKeyC,()=>fcDrillCust(c));
@@ -40692,7 +40692,14 @@ function move(){
     var mb=document.getElementById('fcCustMonBtn');
     if(mb){ mb.style.margin='0'; mb.classList.add('v903-ready'); }
     var a=document.getElementById('fcCustMonAmount'), q=document.getElementById('fcCustMonQty');
-    [mb,a,q,close].forEach(function(el){ if(el)L.appendChild(el); });
+    /* ══ v947 · «필요할 때만» 옮깁니다. ══
+       전에는 0.7초마다 버튼을 통째로 다시 붙여 넣어, 마우스를 올리면 깜빡이고
+       누르는 순간 요소가 교체되며 클릭이 취소됐습니다. */
+    var want=[mb,a,q,close].filter(Boolean);
+    var cur=Array.prototype.filter.call(L.children,function(x){ return want.indexOf(x)>=0; });
+    var same=(cur.length===want.length)&&want.every(function(el,i){ return cur[i]===el; })
+             &&want.every(function(el){ return el.parentNode===L; });
+    if(!same)want.forEach(function(el){ L.appendChild(el); });
     var mode=document.querySelector('#result .fc-month-modebar');
     if(mode)mode.style.display='none';
   }catch(e){}
@@ -41441,7 +41448,13 @@ document.addEventListener('click',function(e){
   background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}
 #result .ctrlbar .v944-left>#fcCustMonAmount:not(.on),#result .ctrlbar .v944-left>#fcCustMonQty:not(.on){
   color:#1d4ed8!important;border-color:#93c5fd!important;background:#eff6ff!important}
+/* v947 : 제품·규격별 목표 표 글자 13px */
+#result table.fcd-prod-fit th,#result table.fcd-prod-fit td,
+#result table.fc-month-target-table th,#result table.fc-month-target-table td{font-size:13px!important}
+#result table.fcd-prod-fit th .sub2,#result table.fcd-prod-fit td .sub2,
+#result table.fc-month-target-table th div,#result table.fc-month-target-table td .sub2{font-size:11px!important}
 #result #fcdToolRowV943{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin:0 0 8px}
+#result .ctrlbar #fcdSearchWrapV939{margin-left:auto!important}
 #result #fcdSearchWrapV939{display:inline-flex;align-items:center;gap:6px}
 /* ══ v942 · 한 줄로 고정 ══
    이 줄은 flex 줄바꿈이 켜져 있어, 폭이 모자라면 «추이 보기»가 아랫줄로 내려가며
