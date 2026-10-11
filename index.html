@@ -31044,7 +31044,7 @@ function sgPipeline(A){
         +'<td style="padding:6px 2px;text-align:center">'+sgMxSelectV867('data-n',mk,String(meta.mxCell||''))+'</td>'
         +'<td style="padding:6px 5px;text-align:left"><input class="sgTgtName sgSuggestInput" data-suggest-kind="cust" autocomplete="off" data-n="'+sgEsc(mk)+'" value="'+sgEsc(mk)+'" title="실제 매출이 생겨 업체명이 다르면 실제 거래처명을 골라 바꾸세요. 출고자료에 있는 업체면 «실제 매출처 연결»로, 없으면 이름만 바뀝니다." style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;font-weight:400;border-color:#bfdbfe;background:#fff;text-align:left"></td>'
         +'<td style="padding:6px 5px;text-align:left;color:#94a3b8">-</td>'
-        +'<td style="padding:6px 5px;text-align:left;color:#1d4ed8;font-weight:400">목표표 등록(업체추가)'+actTag+'</td>'
+        +'<td style="padding:6px 5px;text-align:left;color:#94a3b8;font-weight:400">-</td>'
         +'<td style="padding:6px 5px;text-align:right;font-weight:900;color:#1d4ed8">'+sgWon(o.amt)+'<div class="sub2" style="margin-top:2px;font-size:9.5px;color:#64748b;font-weight:700;white-space:nowrap">'+sgMonthShortV949(o.amt,(+meta.mon||sgNextMon()))+'</div></td>'
         +'<td style="padding:6px 2px;text-align:center;white-space:nowrap"><select class="sgTgtStage" data-n="'+sgEsc(mk)+'" style="'+SGI+'width:146px;max-width:146px;border-color:#e2e8f0">'+sgStageOptions('newCust',st,pr)+'</select></td>'
         +'<td style="padding:6px 5px;text-align:center"><input class="sgTgtProb" data-n="'+sgEsc(mk)+'" value="'+pr+'" style="'+SGI+'width:40px;text-align:center;border-color:#e2e8f0;margin-left:10px"> %</td>'
@@ -32608,9 +32608,12 @@ function sgBind(A){
     state.strategyTab=card.dataset.tab||'overview';window.scrollTo(0,0);sgSave();sgRe(true);
   });});
   $$('.sgFilt').forEach(function(b){ b.addEventListener('click',function(){
+    /* v953 : 구분 필터는 워터폴 금액을 바꾸지 않으므로 기존 ① 노드를 그대로 유지해 제목 깜빡임을 막습니다. */
+    var keepW=document.querySelector('#result .sgSec[data-k="w"]');
     sgUiSetV869('filter',b.dataset.v);
     if(b.dataset.v!=='all'&&SG_TMAP[b.dataset.v])pl.formTypeV854=b.dataset.v;
-    sgSave(); sgRe();
+    sgSave(); sgRe(true);
+    if(keepW)setTimeout(function(){try{var fresh=document.querySelector('#result .sgSec[data-k="w"]');if(fresh&&fresh!==keepW)fresh.replaceWith(keepW);}catch(_e953){}},0);
   }); });
 
   /* 한글 IME 조합이 끝난 뒤 검색을 반영해 자모 분리·입력 중 포커스 손실을 방지 */
@@ -33236,9 +33239,11 @@ function sgBind(A){
     document.body.appendChild(d);
     var sel={}; Object.keys(have).forEach(function(k){ sel[k]=1; });
     var mode='all', q='';
+    /* v953 : 공백으로 나눈 모든 검색어를 포함하면 찾습니다. 가운데점·따옴표·괄호 차이도 무시합니다. */
+    var qnorm=function(v){try{v=String(v||'').normalize('NFKC');}catch(_e){v=String(v||'');}return v.toLowerCase().replace(/[\s·ㆍ.()（）\[\]{}"'’“”_-]+/g,'');};
     var visible=function(){
       return src.filter(function(o){ var n=nameOf(o); if(!n)return false;
-        if(q&&n.toLowerCase().indexOf(q)<0)return false;
+        if(q){var hn=qnorm(n),tokens=String(q).split(/\s+/).map(qnorm).filter(Boolean);if(tokens.some(function(t){return hn.indexOf(t)<0;}))return false;}
         if(mode==='rec')return !!rec[n];
         if(mode==='up')return (+o.diff||0)>0;
         if(mode==='dn')return (+o.diff||0)<0;
@@ -33264,7 +33269,7 @@ function sgBind(A){
           +'<td style="text-align:right;font-weight:800;color:'+(dv>=0?'#15803d':'#dc2626')+'">'+(dv>=0?'+':'')+sgWon(Math.round(dv))+'</td></tr>';
       }).join('');
       d.querySelector('#sgPickList').innerHTML='<table class="mk-tbl" style="width:100%;font-size:12px"><thead><tr>'
-        +'<th></th><th class="l">'+(dim==='prod'?'제품(품명/규격)':'거래처')+'</th><th>올해</th><th>전년</th><th>증감</th></tr></thead><tbody>'
+        +'<th></th><th class="l">'+(dim==='prod'?'제품(품명/규격)':'거래처')+'</th><th>올해 '+A.CY+'</th><th>전년 '+A.PY+'</th><th>증감</th></tr></thead><tbody>'
         +(rows||'<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:18px">해당 항목이 없습니다.</td></tr>')+'</tbody></table>';
       var _pv=visible().filter(function(o){ return (+o.cy||0)<=0&&(+o.py||0)>0; }).length;
       d.querySelector('#sgPickCnt').textContent='선택 '+Object.keys(sel).filter(function(k){return sel[k];}).length+'건 · 표시 '+visible().length+'건'+(_pv?(' (전년만 '+_pv+'건)'):'');
@@ -33292,17 +33297,21 @@ function sgBind(A){
       Object.keys(have).forEach(function(n){ if(!sel[n]){
         pl.items=(pl.items||[]).filter(function(x){ return x.id!==have[n]; }); removed++; } });
       /* 새로 체크된 항목 등록 */
+      var addedItems=[];
       Object.keys(sel).forEach(function(n){ if(!sel[n]||have[n])return;
         var o=src.filter(function(x){ return nameOf(x)===n; })[0]||{};
         var seed={type:typ,cust:(dim==='prod'?'':n),prod:(dim==='prod'?n:''),title:n};
         var lk=null; try{ lk=sgLinkedTargetV613(seed,maps); }catch(_e){}
         var useLink=(lk!=null&&isFinite(lk));
-        pl.items.push({id:sgUid(),plan:sgActivePlan(),type:typ,title:n,note:'',cust:seed.cust,prod:seed.prod,
+        var pickedItem={id:sgUid(),plan:sgActivePlan(),type:typ,title:n,note:'',cust:seed.cust,prod:seed.prod,
           amount:useLink?Math.max(0,Math.round(lk)):Math.max(0,Math.round(+o.cy||0)),
-          amountLink:useLink,stage:st,prob:(SG_SMAP[st]||{p:50}).p,mon:mon,owner:owner,off:false});
+          amountLink:useLink,stage:st,prob:(SG_SMAP[st]||{p:50}).p,mon:mon,owner:owner,off:false};
+        pl.items.push(pickedItem);addedItems.push(pickedItem);
         added++; });
+      try{state.strategyPlan.items=pl.items;}catch(_sp953){}
+      addedItems.forEach(function(it){try{if(window.sgNewItemRememberV922)window.sgNewItemRememberV922(it);if(window.sgEditRememberV952)window.sgEditRememberV952(it);}catch(_g953){}});
       try{ if(typeof logEdit==='function')logEdit('영업전략',T.t+' 목록 선택 — 등록 '+added+'건 · 해제 '+removed+'건'); }catch(_e){}
-      close(); sgSave(); sgRe();
+      close(); try{sgAmtCommitV909();}catch(_c953){sgSave();} sgRe(true);
     });
   }; };
   if(pickBtn)pickBtn.addEventListener('click',openPickV854('cust'));
