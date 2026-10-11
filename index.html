@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v903</title>
-<script>window.APP_BUILD='v903';</script>
+<title>동방파스텍 매출 분석 도구 v904</title>
+<script>window.APP_BUILD='v904';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2008,7 +2008,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v903</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v904</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -9011,7 +9011,7 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
   var TGT=(opt.targetOn&&Array.isArray(opt.target))?opt.target:null;
   var tvals=TGT?[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){return Math.max(0,+TGT[m]||0);}):null;
   var top=Math.max(mx,avg,Math.max.apply(null,vals.concat(tvals||[]).concat([0])))||1;
-  var W=1180,H=320,L=78,Rr=96,T=40,B=46,iw=W-L-Rr,ih=H-T-B;
+  var W=1180,H=334,L=78,Rr=96,T=40,B=60,iw=W-L-Rr,ih=H-T-B;
   var y=function(v){ return T+ih-(v/top)*ih; };
   var x=function(i){ return L+(iw/11)*i; };
   var g='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="'+esc(cust)+' 월별 '+MTNAME+' 추이">';
@@ -9021,9 +9021,10 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
   /* v691 : 현재 월 세로선 — 같은 해를 보고 있을 때만 표시 */
   if(curM>=1&&curM<=12){
     var cx=x(curM-1);
+    /* v904 : 배지를 그래프 위가 아니라 «월 표시 아래»에 둡니다(목표 막대 금액과 겹치지 않게). */
     g+='<line x1="'+cx+'" y1="'+T+'" x2="'+cx+'" y2="'+(T+ih)+'" stroke="#dc2626" stroke-width="1.6" stroke-dasharray="5 4" opacity=".75"/>'
-      +'<rect x="'+(cx-30)+'" y="'+(T-17)+'" width="60" height="16" rx="8" fill="#fef2f2" stroke="#fca5a5"/>'
-      +'<text x="'+cx+'" y="'+(T-5)+'" text-anchor="middle" font-size="10" font-weight="900" fill="#dc2626">'+curM+'월 현재</text>';
+      +'<rect x="'+(cx-30)+'" y="'+(T+ih+26)+'" width="60" height="16" rx="8" fill="#fef2f2" stroke="#fca5a5"/>'
+      +'<text x="'+cx+'" y="'+(T+ih+38)+'" text-anchor="middle" font-size="10" font-weight="900" fill="#dc2626">'+curM+'월 현재</text>';
   }
   /* 평균 가로 점선 */
   if(avg>0){ var ay=y(avg);
@@ -9061,7 +9062,9 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
   g+='<line x1="'+L+'" y1="'+(T+ih)+'" x2="'+(W-Rr)+'" y2="'+(T+ih)+'" stroke="#cbd5e1"/></svg>';
   /* 연도 버튼 */
   var yrs=yrsOpt||[...new Set((rows||[]).map(function(r){return r.d?r.d.getFullYear():0;}).filter(Boolean))].sort(function(a,b){return b-a;});
-  var yb=yrs.map(function(y2){ return '<button type="button" class="btn'+(y2===+yr?'':' ghost')+' cmYearBtn" data-y="'+y2+'" style="font-size:11.5px;padding:4px 11px'+(y2===+yr?';background:#1e3a5f;color:#fff;border-color:#1e3a5f':'')+'">'+y2+'년</button>'; }).join('');
+  /* v904 : 🎯 목표 보기가 켜져 있으면 연도 버튼의 선택 색을 뺍니다. */
+  var _yOnV904=!opt.targetOn;
+  var yb=yrs.map(function(y2){ var on=_yOnV904&&(y2===+yr); return '<button type="button" class="btn'+(on?'':' ghost')+' cmYearBtn" data-y="'+y2+'" style="font-size:11.5px;padding:4px 11px'+(on?';background:#1e3a5f;color:#fff;border-color:#1e3a5f':'')+'">'+y2+'년</button>'; }).join('');
   var tb=opt.target?('<button type="button" class="btn'+(opt.targetOn?'':' ghost')+' cmTgtBtn" title="그 해 월 목표를 실적 위에 막대로 겹쳐 봅니다." style="font-size:11.5px;padding:4px 11px;margin-left:4px'+(opt.targetOn?';background:#b45309;color:#fff;border-color:#b45309':';color:#b45309;border-color:#fed7aa;background:#fffbeb')+';font-weight:800">'+esc(opt.targetLabel||'목표')+'</button>'):'';
   var nonPct=allAmt>0?(nonAmt/allAmt*100):0;
   /* v708 : 금액 / 수량 전환 버튼 */
@@ -10314,8 +10317,18 @@ function bar(amt,max){ const f=max?amt/max:0; return `<span class="barwrap"><spa
 function monthOf(r){ return +r.ym.slice(5,7); }
 function dataYears(){ return [...new Set(CUR.map(r=>+r.y))].sort((a,b)=>a-b); }
 function fmtM(n){ return Math.round(n/1e6).toLocaleString('ko-KR'); }
-function pctSpan(p){ return p==null?'<span class="badge b-blue" style="font-size:10px">신규</span>':`<b style="color:${p>=0?'var(--green)':'var(--red)'}">${p>=0?'+':''}${p.toFixed(1)}%</b>`; }
-function diffSpan(d){ return `<span style="color:${d>=0?'var(--green)':'var(--red)'}">${d>=0?'+':''}${disp(d)}</span>`; }
+/* v904 : 0(또는 반올림해서 0.0%)이면 색을 빼고 일반 글자색으로 보여 줍니다. */
+function pctSpan(p){
+  if(p==null)return '<span class="badge b-blue" style="font-size:10px">신규</span>';
+  const z=Math.abs(p)<0.05;
+  const col=z?'var(--ink,#334155)':(p>0?'var(--green)':'var(--red)');
+  return `<b style="color:${col}">${z?'':(p>0?'+':'')}${z?'0.0':p.toFixed(1)}%</b>`;
+}
+function diffSpan(d){
+  const z=Math.abs(Math.round(+d||0))===0;
+  const col=z?'var(--ink,#334155)':(d>0?'var(--green)':'var(--red)');
+  return `<span style="color:${col}">${z?'':(d>0?'+':'')}${disp(z?0:d)}</span>`;
+}
 /* v621 : 조정%·추가%가 만든 추가증감액. 0이면 눈에 띄지 않게, 값이 있으면 색으로 강조합니다. */
 function fcAdjSpan(d){ d=Math.round(+d||0);
   if(!d)return '<span style="color:#cbd5e1">-</span>';
