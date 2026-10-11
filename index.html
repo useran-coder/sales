@@ -30356,10 +30356,15 @@ function sgMxLinkedItemsV867(plan,cellId){
 /* 이 매트릭스 칸에 연동된 목표표 등록 신규업체 줄 */
 function sgMxLinkedTgtV867(cellId){
   if(!cellId)return[];
-  var pl=sgPlan(),out=[];
+  var pl=sgPlan(),out=[],registered={};
+  /* v956 : ② 추진현황에 같은 업체가 직접 등록돼 있으면 목표표 자동 행을 또 만들지 않습니다. */
+  try{ sgPlanItems(sgActivePlan()).forEach(function(it){
+    var n=String((it&&it.cust)||'').trim();
+    if(n)registered[sgCrossNorm(n)]=1;
+  }); }catch(_e){}
   try{ ((typeof sgTargetNewCustsV663==='function')?sgTargetNewCustsV663():[]).forEach(function(o){
     var n=String(o.name||''),m=(pl.tgtMeta||{})[n]||{};
-    if(String(m.mxCell||'')===cellId)out.push({cust:n,prod:'',amount:Math.max(0,+o.amt||0),note:'목표표 등록(업체추가)',type:'newCust'});
+    if(!registered[sgCrossNorm(n)]&&String(m.mxCell||'')===cellId)out.push({cust:n,prod:'',amount:Math.max(0,+o.amt||0),note:'목표표 등록(업체추가)',type:'newCust'});
   }); }catch(_e){}
   return out;
 }
@@ -30722,7 +30727,11 @@ function sgWaterfall(A){
   s=s.replace(/ font-weight="(?:700|800|900)"/g,'');
   /* v826 : B타입은 A 워터폴의 계획 구성을 3×3 제품·매출처 교차표로 변환합니다. */
   var _matrixEnabledV814=(+goalCtx.year!==2026);
-  var _wfTypeV814=(_matrixEnabledV814&&pl.wfChartType==='B')?'B':'A';
+  /* v957 : A/B 보기 선택은 서버 동기화 대상인 계획값을 읽지 않습니다.
+     과거에 저장된 B 값이 자료 동기화 때 다시 내려와 A 화면을 강제로 바꾸던 문제를 막습니다.
+     현재 화면에서 사용자가 직접 누른 값만 유지하며 최초 진입은 항상 A 워터폴입니다. */
+  var _wfLocalV957=Object.prototype.hasOwnProperty.call(SG_UI_LOCAL_V869,'wfChartType')?SG_UI_LOCAL_V869.wfChartType:'A';
+  var _wfTypeV814=(_matrixEnabledV814&&_wfLocalV957==='B')?'B':'A';
   if(_wfTypeV814==='B'){
     s=sgMekkoV814({keep:existingPlan,newCust:newCustPlan,newProd:newProdPlan,newBiz:newBizPlan,
       cut:cutPlan,end:end,goal:goal,year:goalCtx.year,plan:goalCtx.plan,selected:selected,selectedCell:sgUiGetV869('matrixSelectedCell','')});
@@ -31183,8 +31192,11 @@ function sgPipeline(A){
       +'</tfoot></table></div>';
   }
 
-  // 단계별 퍼널
-  var chartItems=items.concat(tgtChartItems);
+  // 단계별 퍼널·월별 기대매출은 현재 표에 선택된 구분과 같은 직접 등록 건만 사용합니다.
+  // 이전에는 칩으로 한 구분을 골라도 숨겨진 전체 전략을 계속 합산하여 표 합계와 그래프가 달랐습니다.
+  // 교차 표시 건은 원래 구분에서만 집계하고, 목표표 자동 건은 신규·경쟁사업체에서만 더합니다.
+  var chartItems=(filt==='all'?items:items.filter(function(i){return i.type===filt;})).slice();
+  if(filt==='all'||filt==='newCust')chartItems=chartItems.concat(tgtChartItems);
   var funnel=sgFunnel(chartItems);
   // 월별 계획 누적
   var monthly=sgMonthlyPlan(chartItems,A);
@@ -31249,15 +31261,29 @@ function sgFunnelListPanel(r,on){
 }
 
 /* 월별 계획 반영 곡선 */
-function sgMonthlyPlan(items,A){
-  var act=items.filter(function(i){return !i.off;});
-  var mon=new Array(12).fill(0);
-  act.forEach(function(it){
-    var a=sgSignedAmount(it), p=(it.prob==null?(SG_SMAP[it.stage]||{p:50}).p:+it.prob);
+/* v955 : 표와 월별 그래프가 목표연동 금액·확률·시작월을 정확히 같은 방식으로 계산합니다. */
+function sgMonthlyCalcV955(items){
+  var mon=Array(13).fill(0),list=[],maps=null;
+  try{maps=sgAnnualTargetMapsV613();}catch(_e){}
+  (items||[]).forEach(function(it){
+    if(!it||it.off)return;
+    var linked=null;
+    try{linked=sgLinkedTargetV613(it,maps);}catch(_e){}
+    var amount=(linked!=null&&it.amountLink!==false)?linked:Math.max(0,+it.amount||0);
+    var signed=amount*sgTypeSign(it.type);
+    var p=it.prob==null?(SG_SMAP[it.stage]||{p:50}).p:+it.prob;
+    p=Math.max(0,Math.min(100,isFinite(p)?p:0));
     var st=Math.min(12,Math.max(1,+it.mon||1));
-    var per=(a*p/100)/(12-st+1);
-    for(var m=st;m<=12;m++)mon[m-1]+=per;
+    var expect=signed*p/100,per=expect/(13-st),each={};
+    for(var m=st;m<=12;m++){mon[m]+=per;each[m]=per;}
+    list.push({cust:it.cust||it.title||'(업체 미지정)',prod:it.prod||'',
+      note:(typeof sgItemNote==='function')?sgItemNote(it):'',type:it.type||'',amount:amount,
+      prob:p,expect:expect,start:st,per:per,by:each,matrix:String(it.matrixCell||'')});
   });
+  return {mon:mon,list:list,total:list.reduce(function(a,o){return a+o.expect;},0)};
+}
+function sgMonthlyPlan(items,A){
+  var calc=sgMonthlyCalcV955(items),mon=calc.mon.slice(1);
   /* v890 : 양수 막대 위 금액이 잘리지 않도록 상단 라벨 공간을 확보합니다. */
   var W=420,H=176,L=44,R=10,T=26,B=24,iw=W-L-R,ih=H-T-B;
   var maxPos=Math.max(0,...mon),minNeg=Math.min(0,...mon),empty=mon.every(function(v){return Math.abs(v)<.5;});
@@ -31276,7 +31302,7 @@ function sgMonthlyPlan(items,A){
   s+='<line x1="'+L+'" y1="'+zeroY+'" x2="'+(W-R)+'" y2="'+zeroY+'" stroke="#94a3b8" stroke-width="1.2"/></svg>';
   return '<div class="sg-month-plan-box" style="border:1px solid #dbe3ee;border-radius:10px;padding:10px;background:#fff">'
     +'<b style="font-size:12.5px;color:#1e3a5f">🗓️ 전략 반영 월별 기대매출 (시작월 기준 균등 배분)</b>'
-    +'<div class="sub2" style="margin:3px 0 6px">초록은 목표 증가, 갈색은 거래축소 차감입니다. 시작월 이후 순 기대매출 영향을 균등 배분합니다.</div>'+s+'</div>';
+    +'<div class="sub2" style="margin:3px 0 6px">초록은 목표 증가, 갈색은 거래축소 차감입니다. 시작월 이후 순 기대매출 영향을 균등 배분합니다. · 연간 기대매출 <b style="color:#0f766e">'+sgWon(calc.total)+'원</b></div>'+s+'</div>';
 }
 
 /* ══ v898 · ② 영업전략 추진현황의 «월별 반영 금액»을 다른 화면에서도 쓸 수 있게 내보냅니다. ══ */
@@ -31287,20 +31313,7 @@ window.__sgMxForceRenderV908=function(){
 window.sgStrategyMonthlyV898=function(){
   try{
     var items=(typeof sgPlanItems==='function')?sgPlanItems():[];
-    var mon=Array(13).fill(0), list=[];
-    items.forEach(function(it){
-      if(!it||it.off)return;
-      var a=(typeof sgSignedAmount==='function')?sgSignedAmount(it):(+it.amount||0);
-      var p=(it.prob==null?((SG_SMAP[it.stage]||{p:50}).p):+it.prob);
-      var st=Math.min(12,Math.max(1,+it.mon||1));
-      var tot=a*p/100, per=tot/(12-st+1), each={};
-      for(var m=st;m<=12;m++){ mon[m]+=per; each[m]=per; }
-      list.push({cust:it.cust||it.title||'(업체 미지정)',prod:it.prod||'',
-        note:(typeof sgItemNote==='function')?sgItemNote(it):'',
-        type:it.type||'',amount:+it.amount||0,prob:p,expect:tot,start:st,per:per,by:each,
-        matrix:String(it.matrixCell||'')});
-    });
-    return {mon:mon,list:list};
+    return sgMonthlyCalcV955(items);
   }catch(e){ return {mon:Array(13).fill(0),list:[]}; }
 };
 /* ---------- 5. 교차판매 기회맵 (분포도) ---------- */
@@ -33118,7 +33131,8 @@ function sgBind(A){
   if(waterfallBasis)waterfallBasis.addEventListener('change',function(){pl.waterfallBasis=waterfallBasis.value==='prod'?'prod':'cust';sgSave();sgRe();});
   /* v814 : 달성 구성 그래프 A/B 전환 */
   $$('.sgWfTypeBtnV814').forEach(function(b){ b.addEventListener('click',function(){
-    pl.wfChartType=(b.dataset.t==='B')?'B':'A'; sgSave(); sgRe(); }); });
+    /* v957 : 사용자가 누른 경우에만 전환하고 동기화 계획에는 저장하지 않습니다. */
+    SG_UI_LOCAL_V869.wfChartType=(b.dataset.t==='B')?'B':'A'; sgRe(); }); });
   /* v826 : 매트릭스 문구는 수정 모드에서만 입력선이 보이며 계획 금액·비율은 편집 대상에서 제외합니다. */
   var mxTextToggle=document.getElementById('sgMxTextToggleV826');
   if(mxTextToggle)mxTextToggle.addEventListener('click',function(e){
