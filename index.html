@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v937</title>
-<script>window.APP_BUILD='v937';</script>
+<title>동방파스텍 매출 분석 도구 v939</title>
+<script>window.APP_BUILD='v939';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1998,7 +1998,10 @@ body.fpopen #fpSum{display:block}
 #gsSyncDet > summary #appVer{border-color:#dcf5ea !important}
 #gsSyncDet > summary .mk-bmore{border-color:#d9f3ef !important}
 </style>
-<style id="v903-hide-monbtn">#result #fcCustMonBtn{visibility:hidden}#result #fcCustMonBtn.v903-ready{visibility:visible}</style>
+<style id="v903-hide-monbtn">#result #fcCustMonBtn{visibility:hidden}#result #fcCustMonBtn.v903-ready{visibility:visible}
+/* v939 : 금액보기·수량 버튼이 제자리로 옮겨지기 전에 잠깐 보였다 사라지는 깜빡임을 막습니다. */
+#result .fc-month-modebar{visibility:hidden;height:0;margin:0!important;padding:0!important;overflow:hidden}
+#result .v901-metric #fcCustMonAmount,#result .v901-metric #fcCustMonQty{visibility:visible}</style>
 <style id="v916-sqfind">
 #result .sq-find{display:inline-flex;align-items:center;gap:0;height:34px;width:min(420px,34vw);border:1px solid #cbd5e1;border-radius:9px;background:#fff;overflow:hidden}
 #result .sq-find:focus-within{border-color:#94a3b8;box-shadow:0 0 0 3px rgba(100,116,139,.10)}
@@ -2027,7 +2030,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v937</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v939</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -9306,7 +9309,7 @@ function custTradeHistoryV665(cust,back,backLabel){
     return o;
   };
   var arr=rows.map(toTradeRow), arrYear=yearRows.map(toTradeRow);
-  var tabs='<div class="ctrlbar" style="flex-wrap:wrap;gap:6px"><b style="font-size:12px">연도</b>'
+  var tabs='<div class="ctrlbar th-ctrl-v938" style="flex-wrap:wrap;gap:6px"><b style="font-size:12px">연도</b>'
     +yrs.map(function(y2){ return '<button type="button" class="btn'+(y2===yr?'':' ghost')+' thYearBtn" data-y="'+y2+'" style="font-size:12px;padding:5px 12px'+(y2===yr?';background:#1e3a5f;color:#fff;border-color:#1e3a5f':'')+'">'+y2+'년</button>'; }).join('')
     +'<span style="width:1px;height:24px;background:#dbe2ea;display:inline-block;margin:0 4px"></span>'
     +'<b style="font-size:12px">월 선택</b>'
@@ -9316,12 +9319,13 @@ function custTradeHistoryV665(cust,back,backLabel){
     +'</select>'
     +'<span class="sub2">전체월 또는 1월~12월을 선택하세요.</span>'
     +'<span style="width:1px;height:24px;background:#dbe2ea;display:inline-block;margin:0 4px"></span>'
+    +'<span style="flex:1 1 auto"></span>'
     +'<b style="font-size:12px">표 검색</b>'
     +'<input type="search" id="thQ" autocomplete="off" spellcheck="false" lang="ko" inputmode="text" placeholder="품번 · 품명 · 규격 · 비고 · 일자 (띄어쓰기로 여러 개)" '
     +'style="font-family:inherit;font-size:12.5px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;width:330px">'
     +'<button type="button" class="btn ghost" id="thQClear" style="font-size:12px;padding:5px 10px">\u2715 지우기</button>'
     +'<span class="sub2" id="thQCnt"></span>'
-    +'<span class="sub2" style="margin-left:8px">연도·월 선택 시 그래프와 표가 함께 바뀝니다 · 선택 월을 다시 누르면 전체 월로 복귀 · 표 제목을 눌러 정렬</span></div>';
+    +'<span id="thExportSlotV938" style="display:inline-flex;align-items:center;gap:6px"></span></div>';
   var chart=custMonthChartV665(cust,yr,all,null,{monthPick:true,selectedMonth:selMonth});
   var totAmt=arr.reduce(function(a,o){return a+o.amt;},0), totQty=arr.reduce(function(a,o){return a+o.qty;},0);
   var cols=[ {k:'rank',t:'순위',cls:'rank',cell:function(o,i){return i+1;}},
@@ -19404,7 +19408,7 @@ try{
         return `<tr><td class="rank">${i+1}</td><td class="l"><b>${esc(o.name)}</b></td><td class="l">${esc(o.spec||'(규격없음)')}</td>${cells}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(o.total,metric)}</b><div class="sub2" style="font-size:10px;color:#94a3b8;font-weight:400">전체% ${o.baseAdjust===''?'자동':esc(o.baseAdjust)+'%'}</div></td></tr>`;
       }).join('')||`<tr><td colspan="16" style="text-align:center;color:#94a3b8;padding:14px">표시할 월별 목표가 없습니다.</td></tr>`;
       const totalRow=monthlyRows.length?`<tr class="total-row"><td></td><td class="l">합 계</td><td></td>${Array.from({length:12},(_,k)=>`<td><b class="fc-month-value ${metric}">${fcMonthlyValue(monthTotals[k+1],metric)}</b></td>`).join('')}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(grand,metric)}</b></td></tr>`:'';
-      const modebar=`<div class="fc-month-modebar"><button class="btn ghost ${metric==='amount'?'on':''}" id="fcCustMonAmount" type="button">금액보기</button><button class="btn ghost ${metric==='qty'?'on':''}" id="fcCustMonQty" type="button">수량</button><span class="sub2">제품별 전체 목표%를 기준으로 미래월 조정%를 추가 적용합니다.</span></div>`;
+      const modebar=`<div class="fc-month-modebar"><button class="btn ghost ${metric==='amount'?'on':''}" id="fcCustMonAmount" type="button">금액보기</button><button class="btn ghost ${metric==='qty'?'on':''}" id="fcCustMonQty" type="button">수량</button></div>`;
       bodyHtml=`${modebar}<div class="tablewrap" style="max-height:1120px"><table class="fc-month-target-table ${metric==='amount'?'amount-view':'qty-view'}"><thead><tr><th>순위</th><th class="l">품명</th><th class="l">규격</th>${Array.from({length:12},(_,k)=>`<th>${k+1}월<div style="font-size:11px;color:#94a3b8">${k+1<=f.lastAct?'확정실적':'조정%'}</div></th>`).join('')}<th>합계<div style="font-size:11px;color:#94a3b8">전체%</div></th></tr></thead><tbody>${mrows}${totalRow}</tbody></table></div>
       <div class="note">${esc(c)}의 제품·규격별 <b>1~12월 ${metric==='amount'?'목표금액':'목표수량'}</b>입니다. 1~${f.lastAct}월은 확정실적이라 수정되지 않으며, 이후 월은 제품의 <b>전체 목표%</b>를 먼저 반영한 값에 월별 조정%를 추가 적용합니다. 월 조정 시 금액과 수량이 같은 비율로 함께 변경됩니다.</div>`;
     }else{
@@ -40677,9 +40681,54 @@ function fallbackShow(){
     if(mb&&!bar())mb.classList.add('v903-ready');
   }catch(e){}
 }
-setInterval(function(){ move(); fallbackShow(); },700);
-setTimeout(function(){ move(); fallbackShow(); },260);
-document.addEventListener('click',function(){ setTimeout(move,120); setTimeout(move,500); },true);
+/* v939 : 화면이 그려지는 «그 순간» 바로 옮겨 깜빡임을 없앱니다. */
+function tools(){
+  try{
+    var b=bar(); if(!b)return;
+    if(!document.getElementById('fcdSearchWrapV939')){
+      var w=document.createElement('span');
+      w.id='fcdSearchWrapV939';
+      w.style.cssText='display:inline-flex;align-items:center;gap:6px;margin-left:auto;flex:0 0 auto';
+      w.innerHTML='<b style="font-size:12px;color:#334155">표 검색</b>'
+        +'<input type="search" id="fcdQV939" autocomplete="off" spellcheck="false" placeholder="품번 · 품명 · 규격 (띄어쓰기로 여러 개)">'
+        +'<button type="button" class="btn ghost" id="fcdQClearV939">\u2715 지우기</button>';
+      b.appendChild(w);
+    }
+    var slot=document.getElementById('fcdSearchWrapV939');
+    var csv=document.getElementById('fcdCsv');
+    if(slot&&csv&&csv.parentNode!==slot)slot.appendChild(csv);
+  }catch(e){}
+}
+function filt(){
+  try{
+    var q=document.getElementById('fcdQV939'); if(!q)return;
+    var toks=String(q.value||'').trim().toLowerCase().split(/\s+/).filter(Boolean);
+    var t=document.querySelector('#result table.fcd-prod-fit,#result table.fc-month-target-table');
+    if(!t||!t.tBodies[0])return;
+    Array.prototype.forEach.call(t.tBodies[0].rows,function(tr){
+      if(tr.classList&&tr.classList.contains('total-row'))return;
+      if(!toks.length){ tr.style.display=''; return; }
+      var h=tr.__v939h;
+      if(h==null){ h=(tr.textContent||'').toLowerCase().replace(/\s+/g,' '); tr.__v939h=h; }
+      tr.style.display=toks.every(function(x){return h.indexOf(x)>=0;})?'':'none';
+    });
+  }catch(e){}
+}
+document.addEventListener('input',function(e){ if(e.target&&e.target.id==='fcdQV939'){ clearTimeout(window.__v939T); window.__v939T=setTimeout(filt,120); } },true);
+document.addEventListener('click',function(e){
+  try{ if(e.target&&e.target.closest&&e.target.closest('#fcdQClearV939')){ var q=document.getElementById('fcdQV939'); if(q){q.value='';filt();q.focus();} } }catch(_e){}
+},true);
+function all(){ move(); tools(); fallbackShow(); }
+try{
+  var r=document.getElementById('result');
+  if(r&&window.MutationObserver){
+    new MutationObserver(function(){ if(window.__v939R)return; window.__v939R=1;
+      requestAnimationFrame(function(){ window.__v939R=0; all(); }); }).observe(r,{childList:true,subtree:true});
+  }
+}catch(e){}
+setInterval(all,700);
+setTimeout(all,0); setTimeout(all,60); setTimeout(all,260);
+document.addEventListener('click',function(){ setTimeout(all,0); setTimeout(all,120); setTimeout(all,500); },true);
 
 /* ③ 드릴 화면 지키기 — 배경 동기화 등으로 화면을 다시 그릴 때 본표로 튀지 않게 합니다. */
 (function(){
@@ -41286,5 +41335,52 @@ var t=setInterval(function(){ try{ if(localStorage.getItem(FLAG)){ clearInterval
 setTimeout(function(){ run(false); },1500);
 })();
 </script>
+<style id="v938-trade-head">
+/* ══ v938 · 거래내역 : 표 위 검색·지우기·엑셀을 오른쪽으로 ══ */
+.th-ctrl-v938{flex-wrap:nowrap!important;align-items:center}
+.th-ctrl-v938 #thExportSlotV938 #exportBtn{font-size:12px!important;padding:5px 12px!important;border-radius:8px!important;white-space:nowrap}
+</style>
+<script id="v938-trade-head-script">
+(function(){
+'use strict';
+function fix(){
+  try{
+    var slot=document.getElementById('thExportSlotV938');
+    if(!slot){
+      /* 거래내역 화면이 아니면 아무것도 하지 않습니다 */
+      return;
+    }
+    /* 그래프 위 검색칸은 이 화면에서 숨깁니다 */
+    var sb=document.getElementById('searchBox');
+    if(sb&&!document.getElementById('cplHeadSlotV933'))sb.style.display='none';
+    var ex=document.getElementById('exportBtn');
+    if(ex&&ex.parentNode!==slot){ ex.style.display=''; slot.appendChild(ex); }
+  }catch(e){}
+}
+setInterval(fix,600);
+})();
+</script>
+<style id="v939-drill-ui">
+/* ══ v939 · 제품·규격별 목표 화면 ══ */
+#result input.fccpov,#result input.fc-month-adjust{
+  box-sizing:border-box!important;width:62px!important;height:27px!important;
+  padding:3px 8px!important;border:1px solid #e2e8f0!important;border-radius:7px!important;
+  background:#fff!important;font-family:inherit!important;font-size:12px!important;
+  font-weight:400!important;font-style:normal!important;color:#1f2937!important;
+  text-align:right!important;box-shadow:none!important;outline:none}
+#result input.fccpov.edited,#result input.fc-month-adjust.edited{
+  border-color:#f59e0b!important;background:#fffbeb!important;font-weight:700!important;color:#b45309!important}
+#result input.fccpov:focus,#result input.fc-month-adjust:focus{
+  border-color:#94a3b8!important;box-shadow:0 0 0 2px rgba(148,163,184,.25)!important}
+#result input.fccpov::placeholder,#result input.fc-month-adjust::placeholder{
+  color:#b6c0cc!important;font-style:normal!important;font-weight:400!important}
+#fcdSearchWrapV939 #fcdQV939{
+  box-sizing:border-box;width:330px;height:34px;padding:0 10px;
+  border:1px solid #cbd5e1;border-radius:8px;background:#fff;
+  font-family:inherit;font-size:12.5px;font-weight:400;color:#1f2937;outline:none}
+#fcdSearchWrapV939 #fcdQV939::placeholder{color:#94a3b8}
+#fcdSearchWrapV939 #fcdQV939:focus{border-color:#94a3b8;box-shadow:0 0 0 2px rgba(148,163,184,.2)}
+#fcdSearchWrapV939 .btn,#fcdSearchWrapV939 #fcdCsv{font-size:12px!important;padding:6px 12px!important;border-radius:8px!important;white-space:nowrap}
+</style>
 </body>
 </html>
