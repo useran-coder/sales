@@ -41953,5 +41953,115 @@ window.addEventListener('focus',function(){if(PAGE[state.act])setTimeout(functio
 window.goalCrossPcSyncV970={push:function(){lastSig='';queuePush('수동점검');},pull:function(){pull(true);},snapshot:function(){return cp(businessState());}};
 })();
 </script>
+<script id="v971-exact-restore-and-pd-year-isolation">
+(function(){
+'use strict';
+/* v971
+   ① 직접 저장본 복원 뒤 선택 연도×목표안의 값을 다시 대조해 초기화 기록이 재삭제하지 못하게 함
+   ② 엑셀 불러오기 직전 상태도 되돌리기 목록에 보관
+   ③ PD 임가공비 보관함은 현재 연도 슬롯만 갱신하고 다른 연도는 절대 덮지 않음 */
+function cp(v){try{return JSON.parse(JSON.stringify(v==null?{}:v));}catch(e){return{};}}
+function plain(v){return!!v&&typeof v==='object'&&!Array.isArray(v);}
+function year(){try{return String((state.fc&&state.fc._ctxYear)||fcTargetYear()||'');}catch(e){return'';}}
+function plan(){try{return state.fc&&state.fc.activePlan==='2'?'2':'1';}catch(e){return'1';}}
+function same(a,b){try{return JSON.stringify(a)===JSON.stringify(b);}catch(e){return false;}}
+
+/* 표에서 수정 가능한 목표값을 저장본에 빠짐없이 포함합니다. */
+try{
+  var extra=[
+    ['pctAt','월별 목표% 수정시각'],['overrideAt','업체 조정% 수정시각'],['addPctAt','업체 추가% 수정시각'],
+    ['custMonthAdd','업체 월 전략금액'],['prodMonthAdd','제품 월 전략금액'],
+    ['actualCutoffMonth','실적확정']
+  ];
+  if(typeof FC_SNAP_FIELDS_V803!=='undefined')extra.forEach(function(x){
+    if(!FC_SNAP_FIELDS_V803.some(function(f){return f[0]===x[0];}))FC_SNAP_FIELDS_V803.push(x);
+  });
+}catch(e){}
+
+/* 선택한 저장본과 실제 복원 결과를 필드별로 재대조합니다. */
+try{
+  var oldRestore=window.fcSnapRestoreV803;
+  if(typeof oldRestore==='function'&&!oldRestore.__v971){
+    var restore=async function(idx){
+      var rows=[];try{rows=await fcSnapListV803();}catch(e){}
+      var it=rows&&rows[idx],ok=await oldRestore.apply(this,arguments);if(!ok||!it||!it.d)return ok;
+      var y=String(it.y||year()),p=it.p==='2'?'2':'1';
+      /* 옛 초기화 시계를 먼저 해제한 뒤 저장본 전체를 다시 씁니다. */
+      try{if(typeof window.fcLedgerClearYearV842==='function')window.fcLedgerClearYearV842(y);}catch(e){}
+      var changed=false;
+      try{
+        (typeof FC_SNAP_FIELDS_V803!=='undefined'?FC_SNAP_FIELDS_V803:[]).forEach(function(f){
+          var k=f[0];if(!Object.prototype.hasOwnProperty.call(it.d,k))return;
+          if(!same(state.fc[k],it.d[k])){state.fc[k]=cp(it.d[k]);changed=true;}
+        });
+        if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
+        var tp=state.fc&&state.fc.targetPlans&&state.fc.targetPlans[p];
+        if(tp)(typeof FC_SNAP_FIELDS_V803!=='undefined'?FC_SNAP_FIELDS_V803:[]).forEach(function(f){var k=f[0];if(Object.prototype.hasOwnProperty.call(it.d,k))tp[k]=cp(it.d[k]);});
+        if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(+y);
+        if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();
+        /* 직접 저장 권위본도 복원 결과로 다시 확정합니다. */
+        if(changed&&typeof window.fcManualAdoptRestoreV887==='function')await window.fcManualAdoptRestoreV887(it);
+        else if(typeof saveSettings==='function')await saveSettings();
+        if(typeof gsSave==='function'&&state.gsync&&state.gsync.url)await gsSave(true);
+        if(typeof forecast==='function')forecast();
+      }catch(e){try{console.error('[v971] 복원 대조 실패',e);}catch(x){}}
+      return true;
+    };
+    restore.__v971=true;window.fcSnapRestoreV803=restore;try{fcSnapRestoreV803=restore;}catch(e){}
+  }
+}catch(e){}
+
+/* 엑셀 불러오기 버튼을 누른 순간의 현재 상태를 먼저 보관합니다.
+   파일을 잘못 선택하거나 빈칸으로 덮어써도 🕘 되돌리기에서 직전 상태를 선택할 수 있습니다. */
+var importGuard=0;
+document.addEventListener('click',function(e){
+  try{
+    var b=e.target&&e.target.closest?e.target.closest('#fcXlsMenuV847 button'):null;
+    if(!b||String(b.textContent||'').indexOf('엑셀 불러오기')<0||importGuard)return;
+    importGuard=1;setTimeout(function(){importGuard=0;},1200);
+    var root=state.fcManualPlansV881||{},no=+root.nextNo||0;
+    if(typeof window.fcManualSnapshotV885==='function')
+      Promise.resolve(window.fcManualSnapshotV885(year(),plan(),no,Date.now())).then(function(it){if(it){it.label='엑셀 불러오기 전';}}).catch(function(){});
+  }catch(x){}
+},true);
+
+/* PD 연도 보관 시 현재 연도 이외의 슬롯은 호출 전 값 그대로 복구합니다. */
+try{
+  var oldYearSync=window.fcSyncYearStoresV718;
+  if(typeof oldYearSync==='function'&&!oldYearSync.__pdYearV971){
+    var yearSync=function(){
+      var y=year(),before=cp(state.pdYears||{}),live=cp(state.pd||{}),r=oldYearSync.apply(this,arguments);
+      state.pdYears=plain(state.pdYears)?state.pdYears:{};
+      Object.keys(before).forEach(function(k){if(k!==y)state.pdYears[k]=before[k];});
+      if(y){state.pdYears[y]=live;if(plain(state.pdYears[y]._syncV866))state.pdYears[y]._syncV866.year=y;}
+      return r;
+    };
+    yearSync.__pdYearV971=true;window.fcSyncYearStoresV718=yearSync;try{fcSyncYearStoresV718=yearSync;}catch(e){}
+  }
+}catch(e){}
+
+/* 전체 초기화 역시 선택 연도 하나만 바꾸고, 2026 등 다른 연도와 삭제시각은 보존합니다. */
+try{
+  var oldPdReset=window.pdResetYearV866;
+  if(typeof oldPdReset==='function'&&!oldPdReset.__pdYearV971){
+    var pdReset=function(y){
+      y=String(y||year());var before=cp(state.pdYears||{}),led=cp(state.pdResetYearsV880||{}),r=oldPdReset.apply(this,arguments);
+      state.pdYears=plain(state.pdYears)?state.pdYears:{};
+      Object.keys(before).forEach(function(k){if(k!==y)state.pdYears[k]=before[k];});
+      state.pdResetYearsV880=plain(state.pdResetYearsV880)?state.pdResetYearsV880:{};
+      Object.keys(led).forEach(function(k){if(k!==y)state.pdResetYearsV880[k]=led[k];});
+      if(y&&plain(state.pdYears[y])&&plain(state.pdYears[y]._syncV866))state.pdYears[y]._syncV866.year=y;
+      return r;
+    };
+    pdReset.__pdYearV971=true;window.pdResetYearV866=pdReset;try{pdResetYearV866=pdReset;}catch(e){}
+  }
+}catch(e){}
+
+window.fcRestoreAuditV971=function(it){
+  var out={year:it&&it.y,plan:it&&it.p,match:true,diff:[]};if(!it||!it.d)return out;
+  Object.keys(it.d).forEach(function(k){if(!same(state.fc&&state.fc[k],it.d[k])){out.match=false;out.diff.push(k);}});return out;
+};
+})();
+</script>
 </body>
 </html>
