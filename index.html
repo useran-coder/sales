@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v921</title>
-<script>window.APP_BUILD='v921';</script>
+<title>동방파스텍 매출 분석 도구 v923</title>
+<script>window.APP_BUILD='v923';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2020,7 +2020,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v921</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v923</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -33130,6 +33130,19 @@ function sgBind(A){
   if(pickBtn)pickBtn.addEventListener('click',openPickV854('cust'));
   if(pickProdBtnV854)pickProdBtnV854.addEventListener('click',openPickV854('prod'));
 
+  /* ══ v923 · 전략표 수정은 «현재 state 의 목록»에서 항목을 찾습니다. ══
+     전에는 화면을 그릴 때 잡아 둔 옛 목록(pl)만 봐서, 배경 동기화로 목록이 바뀐 뒤에는
+     금액·단계를 고쳐도 저장되지 않는 것처럼 보였습니다. */
+  var sgPickV923=function(id){
+    if(id==null||id==='')return null;
+    var sid=String(id),out=null;
+    try{
+      if(state&&state.strategyPlan&&Array.isArray(state.strategyPlan.items))
+        out=state.strategyPlan.items.filter(function(x){return x&&String(x.id)===sid;})[0]||null;
+    }catch(_e){}
+    if(!out){ try{ out=pl.items.filter(function(x){return x&&String(x.id)===sid;})[0]||null; }catch(_e2){} }
+    return out;
+  };
   var add=document.getElementById('sgAdd');
   var addAmtV853=document.getElementById('sgFAmt');
   if(addAmtV853)addAmtV853.addEventListener('input',function(){sgMoneyTypingV853(addAmtV853);});
@@ -33152,21 +33165,27 @@ function sgBind(A){
       amount:typed?amount:Math.max(0,Math.round(linkedAmt)),amountLink:!typed,stage:st,prob:(SG_SMAP[st]||{p:50}).p,mon:+g('sgFMon')||1,owner:(g('sgFOwner')||'').trim(),off:false};
     /* v857 : 금액을 직접 입력한 신규업체·신규제품도 목표표의 신규 목표와 즉시 연결합니다. */
     /* v917 : 신규업체·신규제품뿐 아니라 «성장예상/기존» 제품·업체 전략도 목표표에 바로 연결합니다. */
+    /* v922 : «먼저 목록에 넣고 저장» 한 뒤 목표표 연동을 돌립니다.
+       전에는 연동(fcSyncActivePlan·fcSaveYearPlan)이 먼저 돌아, 그 사이 배경 동기화가
+       끼어들면 방금 만든 항목이 목록에 들어가기 전에 날아가 «등록됐다가 지워지는» 현상이 있었습니다. */
+    pl.items.push(newItem);
+    sgSave();
+    try{ if(window.sgNewItemRememberV922)window.sgNewItemRememberV922(newItem); }catch(_n922){}
     if(typed&&(( ['newCust','growthCust','keepCust'].indexOf(typ)>=0 && cust && !prodV )
             || ( ['newProd','growthProd','keepProd'].indexOf(typ)>=0 && prodV ))){
       newItem.targetDirectV857=true;
       if(prodV)newItem.targetNewProdV857=true; else newItem.targetNewCustV853=true;
       sgSyncDirectTargetV857(newItem,A,false);
     }
-    pl.items.push(newItem);
+    try{ if(window.sgAmtRememberV910)window.sgAmtRememberV910(newItem.id,newItem.amount,newItem.amountLink,newItem.stage,newItem.prob,newItem.mon); }catch(_r922){}
     try{ if(typeof logEdit==='function')logEdit('영업전략','등록: '+(title||cust||prodV)+' '+sgWon(amount)); }catch(_e){}
-    sgSave(); sgRe();
+    sgSave(); try{ sgAmtCommitV909(); }catch(_c922){} sgRe(true);
   });
 
   /* 텍스트 수정은 전체 화면을 다시 그리지 않고 즉시 저장해 첫 입력이 사라지는 현상을 막습니다. */
   var sgTextSaveTimer=0;
   var sgSaveTextEdit=function(el,immediate){
-    var it=pl.items.filter(function(x){return x.id===el.dataset.id;})[0]; if(!it)return;
+    var it=sgPickV923(el.dataset.id); if(!it)return;
     it[el.dataset.f]=el.value;
     if(it.targetDirectV857&&((it.type==='newCust'&&['cust','title'].indexOf(el.dataset.f)>=0)||(it.type==='newProd'&&['prod','title'].indexOf(el.dataset.f)>=0)))sgSyncDirectTargetV857(it,A,false);
     clearTimeout(sgTextSaveTimer);
@@ -33234,9 +33253,25 @@ function sgBind(A){
       el.addEventListener('change',function(){sgSaveTextEdit(el,true);});
       return;
     }
-    if(el.dataset.f==='amount')el.addEventListener('input',function(){sgMoneyTypingV853(el);});
+    if(el.dataset.f==='amount')el.addEventListener('input',function(){
+      sgMoneyTypingV853(el);
+      /* v923 : 타이핑 중에도 곧바로 저장합니다. 전에는 blur(change) 전에 화면이 다시 그려지면
+         입력하던 금액이 통째로 사라져 «입력해도 등록이 안 되는» 것처럼 보였습니다. */
+      clearTimeout(el.__v923T);
+      el.__v923T=setTimeout(function(){
+        try{
+          var it2=sgPickV923(el.dataset.id); if(!it2)return;
+          var nv=sgNum(el.value); if(!isFinite(nv))return;
+          it2.amount=nv; it2.amountLink=false;
+          if(it2.targetDirectV857)sgSyncDirectTargetV857(it2,A,false);
+          if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
+          if(window.sgAmtRememberV910)window.sgAmtRememberV910(it2.id,it2.amount,false,it2.stage,it2.prob,it2.mon);
+          sgSave(); sgAmtCommitV909();
+        }catch(_e923){}
+      },400);
+    });
     el.addEventListener('change',function(){
-      var it=pl.items.filter(function(x){return x.id===el.dataset.id;})[0]; if(!it)return;
+      var it=sgPickV923(el.dataset.id); if(!it)return;
       var f=el.dataset.f, v=el.value;
       /* v613 : 금액을 직접 고치면 목표표 연동을 해제하고 입력값을 사용합니다. */
       /* v892 : 금액을 직접 고쳐 넣으면 «목표연동»을 풉니다(목표표 승격 항목도 동일).
@@ -33259,7 +33294,7 @@ function sgBind(A){
   /* v613 : 목표연동 ↔ 직접입력 전환 */
   $$('.sgAmtLink').forEach(function(b){ b.addEventListener('click',function(e){
     try{ e.preventDefault(); e.stopPropagation(); }catch(_e892){}
-    var it=pl.items.filter(function(x){return x.id===b.dataset.id;})[0]; if(!it)return;
+    var it=sgPickV923(b.dataset.id); if(!it)return;
     if(b.dataset.on==='1'){
       /* 직접입력으로 전환할 때는 현재 연동금액을 그대로 시작값으로 둡니다. */
       var cur=sgLinkedTargetV613(it,sgAnnualTargetMapsV613());
@@ -33271,13 +33306,16 @@ function sgBind(A){
     sgSave(); sgAmtCommitV909(); sgRe(true);
   }); });
   $$('.sgOff').forEach(function(el){ el.addEventListener('change',function(){
-    var it=pl.items.filter(function(x){return x.id===el.dataset.id;})[0]; if(!it)return;
+    var it=sgPickV923(el.dataset.id); if(!it)return;
     it.off=!el.checked; sgSave(); sgRe(); }); });
   $$('.sgDel').forEach(function(b){ b.addEventListener('click',function(){
     if(!confirm('이 전략 항목을 삭제할까요?'))return;
-    var old=pl.items.filter(function(x){return x.id===b.dataset.id;})[0];
+    try{ if(window.sgNewItemForgetV922)window.sgNewItemForgetV922(b.dataset.id); }catch(_f922){}
+    var old=sgPickV923(b.dataset.id);
     if(old){sgSyncItemAnnualAdd(old,A,true);sgSyncDirectTargetV857(old,A,true);}
     pl.items=pl.items.filter(function(x){return x.id!==b.dataset.id;});
+    try{ if(state&&state.strategyPlan&&Array.isArray(state.strategyPlan.items)&&state.strategyPlan.items!==pl.items)
+      state.strategyPlan.items=state.strategyPlan.items.filter(function(x){return String(x.id)!==String(b.dataset.id);}); }catch(_d923){}
     if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();sgSave();sgRe(); }); });
 
   /* 우선 실행과제: 자동 추천 수정·숨김, 사용자 과제 추가·수정·삭제 */
@@ -33342,8 +33380,8 @@ function sgBind(A){
     sgPaintRow(rid);
   };
   var sgCommitPct=function(el,pct,live){
-    var it=pl.items.filter(function(x){return x.id===el.dataset.iid;})[0]||sgFindQuickItem(el.dataset.k,el.dataset.n);
-    if(!it){var p=sgRowInput(el.dataset.rid,'sgLinkedAddPct');it=p?(pl.items.filter(function(x){return x.id===p.dataset.iid;})[0]||sgFindQuickItem(p.dataset.k,p.dataset.n)):null;}
+    var it=sgPickV923(el.dataset.iid)||sgFindQuickItem(el.dataset.k,el.dataset.n);
+    if(!it){var p=sgRowInput(el.dataset.rid,'sgLinkedAddPct');it=p?(sgPickV923(p.dataset.iid)||sgFindQuickItem(p.dataset.k,p.dataset.n)):null;}
     if(it){it.prob=pct;var pe=sgRowInput(el.dataset.rid,'sgLinkedAddPct');if(pe)pe.dataset.iid=it.id;sgSyncItemAnnualAdd(it,A,false);}
     if(!live){
       if(typeof logEdit==='function')logEdit('전략확률',(el.dataset.n||el.dataset.addKey||'')+' 추가%·증감예상액 변경');
@@ -33368,12 +33406,12 @@ function sgBind(A){
     paint();
     inp.addEventListener('input',function(){
       var raw=inp.value.trim(),val=raw===''?0:Math.max(0,Math.min(100,sgNum(raw)));
-      var it=pl.items.filter(function(x){return x.id===inp.dataset.iid;})[0]||sgFindQuickItem(inp.dataset.k,inp.dataset.n);
+      var it=sgPickV923(inp.dataset.iid)||sgFindQuickItem(inp.dataset.k,inp.dataset.n);
       if(it){it.prob=val;inp.dataset.iid=it.id;sgSyncItemAnnualAdd(it,A,false);}
       sgSyncRow(inp.dataset.rid,'pct',val);
     });
     inp.addEventListener('change',function(){
-      var it=pl.items.filter(function(x){return x.id===inp.dataset.iid;})[0]||sgFindQuickItem(inp.dataset.k,inp.dataset.n);
+      var it=sgPickV923(inp.dataset.iid)||sgFindQuickItem(inp.dataset.k,inp.dataset.n);
       if(it)sgSyncItemAnnualAdd(it,A,false);
       if(typeof logEdit==='function')logEdit('전략확률',(inp.dataset.n||inp.dataset.addKey||'')+' 추가%·확률 변경');
       if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
@@ -33391,7 +33429,7 @@ function sgBind(A){
   $$('.sgQuick').forEach(function(b){ b.addEventListener('click',function(){
     var k=b.dataset.k, n=b.dataset.n, a=+b.dataset.a||0,type=sgQuickType(k);
     var isProd=(k==='newProd'||k==='growth'||k==='keepProd');
-    var old=pl.items.filter(function(x){return x.id===b.dataset.iid;})[0]||sgFindQuickItem(k,n);
+    var old=sgPickV923(b.dataset.iid)||sgFindQuickItem(k,n);
     if(old){
       sgSyncItemAnnualAdd(old,A,true);
       pl.items=pl.items.filter(function(x){return x.id!==old.id;});
@@ -40354,6 +40392,7 @@ window.sgAmtRememberV910=function(id,amount,link,stage,prob,mon){
 };
 function amtReapply(){
   try{
+    if(window.sgEditingV923&&window.sgEditingV923())return false;   /* v923 : 입력 중에는 건드리지 않습니다 */
     var o=amtLoad(); if(amtPrune(o))amtSave(o);
     var ks=Object.keys(o); if(!ks.length)return false;
     if(typeof state==='undefined'||!state||!state.strategyPlan||!Array.isArray(state.strategyPlan.items))return false;
@@ -40751,6 +40790,86 @@ setInterval(function(){
     });
   }catch(_e){}
 },200);
+})();
+</script>
+<script id="v922-new-item-guard">
+(function(){
+'use strict';
+/* ══ v922 · 방금 등록한 전략 항목을 10분 동안 지킵니다. ══
+   배경 동기화로 옛 목록이 내려와도 방금 만든 항목이 사라지지 않습니다. */
+var LS='SG_NEWITEM_LOCAL_V922', TTL=10*60*1000;
+function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}')||{}; }catch(e){ return {}; } }
+function save(o){ try{ localStorage.setItem(LS,JSON.stringify(o)); }catch(e){} }
+function prune(o){ var n=Date.now(),ch=false; Object.keys(o).forEach(function(k){ if(!o[k]||!o[k].t||(n-o[k].t)>TTL){ delete o[k]; ch=true; } }); return ch; }
+window.sgNewItemRememberV922=function(it){
+  try{ if(!it||!it.id)return; var o=load(); prune(o);
+    o[String(it.id)]={t:Date.now(),it:JSON.parse(JSON.stringify(it))}; save(o);
+  }catch(e){}
+};
+window.sgNewItemForgetV922=function(id){ try{ var o=load(); delete o[String(id)]; save(o); }catch(e){} };
+window.sgNewItemClearV922=function(){ try{ localStorage.removeItem(LS); console.log('[v922] 등록 보관 기록을 지웠습니다.'); }catch(e){} };
+function reinsert(){
+  try{
+    var o=load(); if(prune(o))save(o);
+    var ks=Object.keys(o); if(!ks.length)return false;
+    if(typeof state==='undefined'||!state||!state.strategyPlan)return false;
+    if(!Array.isArray(state.strategyPlan.items))state.strategyPlan.items=[];
+    var arr=state.strategyPlan.items, have={}, ch=false;
+    arr.forEach(function(x){ if(x&&x.id)have[String(x.id)]=x; });
+    ks.forEach(function(k){
+      var rec=o[k]; if(!rec||!rec.it)return;
+      if(!have[k]){ arr.push(JSON.parse(JSON.stringify(rec.it))); ch=true; }
+    });
+    if(ch){
+      console.log('[v922] 방금 등록한 전략 항목을 되살렸습니다.');
+      try{
+        if(typeof state!=='undefined'&&state&&state.act==='strategy'&&typeof runAct==='function'&&!(window.sgEditingV923&&window.sgEditingV923())){
+          clearTimeout(window.__v922Re); window.__v922Re=setTimeout(function(){ if(window.sgEditingV923&&window.sgEditingV923())return; try{ runAct('strategy'); }catch(e3){} },260);
+        }
+      }catch(e2){}
+    }
+    return ch;
+  }catch(e){ return false; }
+}
+window.sgNewItemReinsertV922=reinsert;
+/* 등록 직후·동기화 직후·주기적으로 점검합니다 */
+document.addEventListener('click',function(e){
+  try{ if(e.target&&e.target.closest&&e.target.closest('#sgAdd')){ [120,400,900,1800,3000].forEach(function(ms){ setTimeout(reinsert,ms); }); } }catch(_e){}
+},true);
+['gsApplyField','gsApply','gsLoad','gsSync','gsPull'].forEach(function(fn){
+  try{
+    if(typeof window[fn]!=='function'||window[fn].__v922)return;
+    var orig=window[fn];
+    var w=function(){ var r=orig.apply(this,arguments);
+      try{ clearTimeout(window.__v922Tm); window.__v922Tm=setTimeout(reinsert,320); }catch(e){}
+      return r; };
+    w.__v922=true; window[fn]=w;
+  }catch(e){}
+});
+setInterval(reinsert,2000);
+})();
+</script>
+<script id="v923-edit-guard">
+(function(){
+'use strict';
+/* ══ v923 · 전략표를 입력·수정하는 동안에는 다시 그리기·되살리기를 멈춥니다. ══ */
+var last=0;
+window.sgEditingV923=function(){
+  try{
+    var a=document.activeElement;
+    if(a&&(a.tagName==='INPUT'||a.tagName==='SELECT'||a.tagName==='TEXTAREA')){
+      if(a.classList&&(a.classList.contains('sgE')||a.classList.contains('sgTgtName')||a.classList.contains('sgTgtProb')||a.classList.contains('sgTgtOwner')))return true;
+      if(a.id&&/^sgF/.test(a.id))return true;
+    }
+    return (Date.now()-last)<1200;   /* 방금 입력을 끝낸 직후에도 잠시 보호합니다 */
+  }catch(e){ return false; }
+};
+document.addEventListener('input',function(e){
+  try{
+    var a=e.target; if(!a)return;
+    if((a.classList&&a.classList.contains('sgE'))||(a.id&&/^sgF/.test(a.id)))last=Date.now();
+  }catch(_e){}
+},true);
 })();
 </script>
 </body>
