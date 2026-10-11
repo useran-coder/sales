@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v947</title>
-<script>window.APP_BUILD='v947';</script>
+<title>동방파스텍 매출 분석 도구 v949</title>
+<script>window.APP_BUILD='v949';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2035,7 +2035,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v947</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v949</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -40673,7 +40673,11 @@ setInterval(function(){
 function bar(){
   try{
     var close=document.querySelector('#result .ttCloseV760')||document.querySelector('#result .ttOpenV760');
-    return close?close.parentNode:null;
+    if(!close)return null;
+    /* ══ v949 · 묶음(.v944-left)이 아니라 «그 줄(.ctrlbar)»을 돌려줍니다. ══
+       전에는 버튼을 묶음에 넣은 뒤 bar() 가 그 묶음을 가리켜, 묶음 안에 또 묶음과
+       검색줄이 계속 새로 만들어지며 화면이 깜빡였습니다. */
+    return close.closest('.ctrlbar')||close.parentNode;
   }catch(e){ return null; }
 }
 function move(){
@@ -40724,8 +40728,9 @@ function tools(){
         +'<input type="search" id="fcdQV939" autocomplete="off" spellcheck="false" placeholder="품번 · 품명 · 규격 (띄어쓰기로 여러 개)">'
         +'<button type="button" class="btn ghost" id="fcdQClearV939">\u2715 지우기</button></span>';
     }
-    if(row.parentNode!==b.parentNode||row.previousElementSibling!==b){
-      b.insertAdjacentElement('afterend',row);
+    /* v948 : 자리가 이미 맞으면 건드리지 않습니다(계속 옮겨 깜빡이던 문제). */
+    if(row.previousElementSibling!==b||row.parentNode!==b.parentNode){
+      if(!(row.parentNode===b.parentNode&&row.previousElementSibling===b))b.insertAdjacentElement('afterend',row);
     }
     var slot=document.getElementById('fcdSearchWrapV939');
     var csv=document.getElementById('fcdCsv');
@@ -40751,17 +40756,31 @@ document.addEventListener('input',function(e){ if(e.target&&e.target.id==='fcdQV
 document.addEventListener('click',function(e){
   try{ if(e.target&&e.target.closest&&e.target.closest('#fcdQClearV939')){ var q=document.getElementById('fcdQV939'); if(q){q.value='';filt();q.focus();} } }catch(_e){}
 },true);
-function all(){ move(); tools(); fallbackShow(); }
+/* ══ v948 · 관찰자 재진입(무한 되그리기) 차단 ══
+   전에는 all() 이 DOM 을 건드리고 → 관찰자가 다시 all() 을 부르는 순환이 매 프레임 일어나
+   화면이 계속 깜빡였습니다. 이제 all() 이 도는 동안에는 관찰을 끊습니다. */
+var _mo=null,_busy=false;
+function all(){
+  if(_busy)return; _busy=true;
+  try{ if(_mo)_mo.disconnect(); }catch(e){}
+  try{ move(); tools(); fallbackShow(); }catch(e){}
+  try{ if(_mo){ var r2=document.getElementById('result'); if(r2)_mo.observe(r2,{childList:true,subtree:true}); } }catch(e){}
+  _busy=false;
+}
 try{
   var r=document.getElementById('result');
   if(r&&window.MutationObserver){
-    new MutationObserver(function(){ if(window.__v939R)return; window.__v939R=1;
-      requestAnimationFrame(function(){ window.__v939R=0; all(); }); }).observe(r,{childList:true,subtree:true});
+    _mo=new MutationObserver(function(){
+      if(_busy)return;
+      clearTimeout(window.__v948T);
+      window.__v948T=setTimeout(all,80);
+    });
+    _mo.observe(r,{childList:true,subtree:true});
   }
 }catch(e){}
-setInterval(all,700);
-setTimeout(all,0); setTimeout(all,60); setTimeout(all,260);
-document.addEventListener('click',function(){ setTimeout(all,0); setTimeout(all,120); setTimeout(all,500); },true);
+setInterval(all,1500);
+setTimeout(all,0); setTimeout(all,120); setTimeout(all,400);
+document.addEventListener('click',function(){ clearTimeout(window.__v948C); window.__v948C=setTimeout(all,150); },true);
 
 /* ③ 드릴 화면 지키기 — 배경 동기화 등으로 화면을 다시 그릴 때 본표로 튀지 않게 합니다. */
 (function(){
