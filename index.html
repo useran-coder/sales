@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v902</title>
-<script>window.APP_BUILD='v902';</script>
+<title>동방파스텍 매출 분석 도구 v903</title>
+<script>window.APP_BUILD='v903';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1991,6 +1991,7 @@ body.fpopen #fpSum{display:block}
 #gsSyncDet > summary #appVer{border-color:#dcf5ea !important}
 #gsSyncDet > summary .mk-bmore{border-color:#d9f3ef !important}
 </style>
+<style id="v903-hide-monbtn">#result #fcCustMonBtn{visibility:hidden}#result #fcCustMonBtn.v903-ready{visibility:visible}</style>
 </head>
 <body>
 <header>
@@ -2007,7 +2008,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v902</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v903</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -9035,7 +9036,7 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
       if(!(tv>0))return;
       var ty=y(tv);
       g+='<rect x="'+(x(i)-tbw/2)+'" y="'+ty+'" width="'+tbw+'" height="'+Math.max(0,(T+ih)-ty)+'" rx="3" fill="#f59e0b" opacity=".32"><title>'+(i+1)+'월 목표 '+FV(tv)+'</title></rect>'
-        +'<text x="'+x(i)+'" y="'+(ty-2)+'" text-anchor="middle" font-size="9.5" font-weight="800" fill="#b45309" stroke="#fff" stroke-width="2.4" paint-order="stroke">'+FV(tv)+'</text>';
+        +'<text x="'+x(i)+'" y="'+(ty-2)+'" text-anchor="middle" font-size="9.5" font-weight="400" fill="#b45309" stroke="#fff" stroke-width="2.4" paint-order="stroke">'+FV(tv)+'</text>';
     });
   }
   var pts=vals.map(function(v,i){ return x(i)+','+y(v); }).join(' ');
@@ -40060,17 +40061,18 @@ setInterval(function(){
 'use strict';
 function bar(){
   try{
-    var close=document.querySelector('#result .ttCloseV760');
+    var close=document.querySelector('#result .ttCloseV760')||document.querySelector('#result .ttOpenV760');
     return close?close.parentNode:null;
   }catch(e){ return null; }
 }
 function move(){
   try{
     var b=bar(); if(!b)return;
-    var close=b.querySelector('.ttCloseV760'); if(!close)return;
+    var close=b.querySelector('.ttCloseV760')||b.querySelector('.ttOpenV760'); if(!close)return;
     /* ① 월별보기 → 닫기 버튼 왼쪽 */
     var mb=document.getElementById('fcCustMonBtn');
     if(mb&&mb.parentNode!==b){ b.insertBefore(mb,close); mb.style.marginLeft='0'; mb.style.marginRight='6px'; }
+    if(mb)mb.classList.add('v903-ready');
     /* ② 금액보기·수량 → 같은 줄 맨 오른쪽 */
     var mode=document.querySelector('#result .fc-month-modebar');
     if(mode){
@@ -40090,7 +40092,14 @@ function move(){
     }
   }catch(e){}
 }
-setInterval(move,700);
+function fallbackShow(){
+  try{
+    var mb=document.getElementById('fcCustMonBtn');
+    if(mb&&!bar())mb.classList.add('v903-ready');
+  }catch(e){}
+}
+setInterval(function(){ move(); fallbackShow(); },700);
+setTimeout(function(){ move(); fallbackShow(); },260);
 document.addEventListener('click',function(){ setTimeout(move,120); setTimeout(move,500); },true);
 
 /* ③ 드릴 화면 지키기 — 배경 동기화 등으로 화면을 다시 그릴 때 본표로 튀지 않게 합니다. */
@@ -40098,14 +40107,32 @@ document.addEventListener('click',function(){ setTimeout(move,120); setTimeout(m
   try{
     if(typeof window.fcDrillCust==='function'&&!window.fcDrillCust.__v901){
       var o=window.fcDrillCust;
-      var w=function(c){ try{ window.__FC_DRILL_V901=String(c||''); }catch(e){} return o.apply(this,arguments); };
+      var w=function(c){ try{ window.__FC_DRILL_V901=String(c||''); clearTimeout(window.__FC_DRILL_TM_V903); }catch(e){} return o.apply(this,arguments); };
       w.__v901=true; window.fcDrillCust=w;
     }
-    if(typeof window.forecast==='function'&&!window.forecast.__v901){
-      var of=window.forecast;
-      var wf=function(){ try{ window.__FC_DRILL_V901=''; }catch(e){} return of.apply(this,arguments); };
-      wf.__v901=true; window.forecast=wf;
-    }
+    /* v903 : forecast() 가 어디서 불리든(배경 동기화·% 저장 등) 드릴 화면을 보고 있었다면 되돌립니다.
+       「← 목록으로」로 나갈 때만 표시를 지웁니다. */
+    document.addEventListener('click',function(e){
+      try{ var t=e.target&&e.target.closest?e.target.closest('#backBtn'):null; if(t)window.__FC_DRILL_V901=''; }catch(_e){}
+    },true);
+    var restore=function(){
+      try{
+        clearTimeout(window.__FC_DRILL_TM_V903);
+        var c=window.__FC_DRILL_V901; if(!c)return;
+        window.__FC_DRILL_TM_V903=setTimeout(function(){
+          try{ if(window.__FC_DRILL_V901&&typeof window.fcDrillCust==='function')window.fcDrillCust(window.__FC_DRILL_V901); }catch(e){}
+        },70);
+      }catch(e){}
+    };
+    window.__fcDrillRestoreV903=restore;
+    ['forecast','fcFastForecast'].forEach(function(fn){
+      try{
+        if(typeof window[fn]!=='function'||window[fn].__v903)return;
+        var o2=window[fn];
+        var w2=function(){ var r=o2.apply(this,arguments); restore(); return r; };
+        w2.__v903=true; window[fn]=w2;
+      }catch(e){}
+    });
     if(typeof window.runAct==='function'&&!window.runAct.__v901){
       var or=window.runAct;
       var wr=function(){
