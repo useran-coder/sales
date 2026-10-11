@@ -30902,6 +30902,22 @@ function sgMatchesChip(it,filt,A){
 
 function sgPipeline(A){
   var pl=sgPlan(), activePlan=sgActivePlan(),items=sgPlanItems(activePlan).slice();
+  /* 기대매출 아래에 표시할 대상의 전년 매출입니다. 제품이 지정되면 제품 기준, 아니면 거래처 기준입니다. */
+  var sgPrevForItemV948=function(it){
+    try{
+      var prod=String((it&&it.prod)||'').trim();
+      if(prod){
+        var po=(A.prods||[]).filter(function(o){return String(o.label||'').trim()===prod||String(o.key||'').trim()===prod||String(o.name||'').trim()===prod;})[0];
+        if(po)return +po.py||0;
+      }
+      var cust=String((it&&it.cust)||'').trim();
+      if(cust){
+        var co=(A.custs||[]).filter(function(o){return String(o.name||'').trim()===cust;})[0];
+        if(co)return +co.py||0;
+      }
+    }catch(_e){}
+    return 0;
+  };
   var filt=sgUiGetV869('filter','all')||'all';
   var formTypeV854=(pl.formTypeV854&&SG_TMAP[pl.formTypeV854])?pl.formTypeV854:((filt!=='all'&&SG_TMAP[filt])?filt:'newCust');
   var view=filt==='all'?items:items.filter(function(i){return sgMatchesChip(i,filt,A);});
@@ -31062,7 +31078,8 @@ function sgPipeline(A){
         +'<td style="padding:5px 2px;text-align:center;white-space:nowrap"><select class="sgE" data-id="'+it.id+'" data-f="stage" style="'+SGI+'width:146px;max-width:146px;border-color:#e2e8f0">'
           +SG_STAGES.map(function(s){var shownPct=stageV856===s[0]?p:s[2];return '<option value="'+s[0]+'"'+(stageV856===s[0]?' selected':'')+'>'+sgStageLabel(it.type,s[0])+' ('+shownPct+'%)</option>';}).join('')+'</select></td>'
         +'<td style="padding:5px;text-align:center"><input class="sgE" data-id="'+it.id+'" data-f="prob" value="'+p+'" style="'+SGI+'width:40px;text-align:center;border-color:#e2e8f0;margin-left:10px">%</td>'
-        +'<td style="padding:5px;text-align:right;font-weight:800;color:'+T.c+'">'+sgWon(e)+'</td>'
+        +'<td style="padding:5px;text-align:right;font-weight:800;color:'+T.c+'">'+sgWon(e)
+          +'<div class="sub2" style="font-size:9.5px;color:#64748b;font-weight:400;white-space:nowrap">전년 '+sgWon(sgPrevForItemV948(it))+'</div></td>'
         +'<td style="padding:5px;text-align:center"><select class="sgE sg-start-month" data-id="'+it.id+'" data-f="mon" style="'+SGI+'">'
           +[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){return '<option value="'+m+'"'+((+it.mon||1)===m?' selected':'')+'>'+m+'월</option>';}).join('')+'</select></td>'
         +'<td style="padding:5px;text-align:center"><input class="sgE" data-id="'+it.id+'" data-f="owner" value="'+sgEsc(it.owner||'')+'" style="'+SGI+'width:58px;text-align:center;border-color:#e2e8f0"></td>'
@@ -33376,14 +33393,21 @@ function sgBind(A){
   $$('.sgMxPickV867').forEach(function(el){ el.addEventListener('change',function(){
     var cell=sgMxIdByNoV867(el.value);
     if(el.dataset.id!=null&&el.dataset.id!==''){
-      var it=sgPlan().items.filter(function(x){return String(x.id)===String(el.dataset.id);})[0];
-      if(it){ if(cell)it.matrixCell=cell; else delete it.matrixCell; }
+      var it=(typeof sgPickV923==='function')?sgPickV923(el.dataset.id):sgPlan().items.filter(function(x){return String(x.id)===String(el.dataset.id);})[0];
+      if(it){
+        if(cell)it.matrixCell=cell; else delete it.matrixCell;
+        /* 배경 동기화가 이전 매트 값으로 되돌리지 못하게 변경 항목을 즉시 보호 저장합니다. */
+        try{if(window.sgNewItemRememberV922)window.sgNewItemRememberV922(it);}catch(_r948){}
+      }
     }else if(el.dataset.n!=null){
       var pl2=sgPlan(); pl2.tgtMeta=pl2.tgtMeta||{};
       var m2=pl2.tgtMeta[el.dataset.n]||(pl2.tgtMeta[el.dataset.n]={});
       if(cell)m2.mxCell=cell; else delete m2.mxCell;
     }
-    sgSave(); sgRe(); }); });
+    el.style.borderColor=cell?'#60a5fa':'#e2e8f0';
+    el.style.background=cell?'#eff6ff':'#fff';
+    el.style.fontWeight=cell?'800':'400';
+    sgSave(); try{sgAmtCommitV909();}catch(_c948){} sgRe(true); }); });
   $$('.sgTgtMon').forEach(function(el){ el.addEventListener('change',function(){
     var n=el.dataset.n; pl.tgtMeta=pl.tgtMeta||{}; var m=pl.tgtMeta[n]||(pl.tgtMeta[n]={});
     m.mon=Math.min(12,Math.max(1,+el.value||sgNextMon())); sgSave(); sgRe(); }); });
