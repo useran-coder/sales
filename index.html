@@ -30606,10 +30606,11 @@ function sgWaterfall(A){
   var existingPlan=keepCustTarget>0?keepCustTarget:(baseVal+includedPlan);
   /* v963 : 상단 기존업체 카드도 이 막대와 완전히 같은 금액을 사용합니다. */
   A._sgExistingPlanV963=existingPlan;
-  /* 최종 계획은 기준매출과 전략 증감을 사용하며, 기존업체 표시막대 크기와 분리합니다. */
-  /* 연간 목표표 자동 연동 상태에서는 업체·제품 목표표의 확정 연간합계가 최종 계획합계입니다.
-     ② 추진현황 금액은 그 합계의 구성·근거로 표시하며 다시 별도 합산하지 않습니다. */
-  end=autoOn?goal:(baseVal+planTot); gap=goal-end; A._sgPlanEndV949=end;
+  /* v964 : 계획합계는 목표선의 금액을 그대로 복사하지 않고 화면에 보이는 독립 구성만 합산합니다.
+     계획합계 = 기존업체 + 신규·경쟁사업체 - 거래축소예상 + 신규제품 + 신규사업.
+     성장예상업체·기존제품·성장예상제품은 기존업체 매출에 포함된 참고막대이므로 중복 합산하지 않습니다. */
+  end=existingPlan+newCustPlan+cutPlan+newProdPlan+newBizPlan;
+  gap=goal-end; A._sgPlanEndV949=end;
   /* v735 : 🏢 신규업체 · 🧪 신규제품 막대에 «전년에 없고 올해 매출이 있는» 실적도 포함합니다.
      그만큼 기존업체 막대에서 빼므로 계획 합계는 그대로입니다.
      (신규업체가 산 신규제품은 신규업체 쪽에만 넣어 이중 계상하지 않습니다) */
@@ -32128,9 +32129,6 @@ function sgKpis(A){
   var lossAmt=Math.abs(A.brk.dnC+A.brk.lostC);
   var cutBal=(A.creditCutCust||[]).reduce(function(a,o){return a+(+o.balance||0);},0);
   var planEnd=(A._sgPlanEndV949!=null)?(+A._sgPlanEndV949||0):(A.cyTot+exp);
-  /* v963 : 전망률도 워터폴 마지막 «계획합계»와 같은 금액을 분자로 사용합니다.
-     종전 72.2%는 별도 산식(A.cyTot+확률가중 전략기대)을 사용해 워터폴과 불일치했습니다. */
-  var outlookRate=goal?(planEnd/goal*100):null;
   var ps=sgPipelineStatsV950(goalCtx.plan), pc=function(k){return ps[k]||{t:(SG_TMAP[k]||{}).t||k,n:0,a:0,e:0};};
   var psTxt=function(k){var x=pc(k);return '목표 '+sgWon(Math.abs(x.a))+'원 · 기대 '+sgWon(Math.abs(x.e))+'원';};
   return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:11px">'
@@ -32140,9 +32138,9 @@ function sgKpis(A){
     /* 기존업체는 추진현황에 직접 등록한 건수만이 아니라 워터폴의 기존업체 전체 모수와 금액을 표시합니다. */
     +m(pc('keepCust').t,A.keepCust.length+'개사','목표 '+sgWon(keepCardAmt)+'원 · 워터폴 기존업체와 연동','#475569','keepCust')
     +m(pc('newProd').t,pc('newProd').n+'종',psTxt('newProd'),'#0d9488','', 'newProd')
+    +m(pc('growthProd').t,pc('growthProd').n+'종',psTxt('growthProd'),'#0d9488','', 'growth')
     +m(pc('risk').t,pc('risk').n+'개사',psTxt('risk'),'#dc2626','declineAll')
     +m(pc('creditCut').t,pc('creditCut').n+'개사',psTxt('creditCut'),'#b45309','', 'creditCut')
-    +m(goalCtx.year+'년 목표 달성 전망',(outlookRate!=null?outlookRate.toFixed(1):'-')+'%',fcTargetPlanLabel()+' · 목표 '+sgShort(goal)+' · 계획합계 '+sgShort(planEnd),(goal&&planEnd>=goal)?'#15803d':'#d97706')
     +'</div>';
 }
 
