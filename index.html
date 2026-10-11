@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v915</title>
-<script>window.APP_BUILD='v915';</script>
+<title>동방파스텍 매출 분석 도구 v916</title>
+<script>window.APP_BUILD='v916';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -1992,6 +1992,16 @@ body.fpopen #fpSum{display:block}
 #gsSyncDet > summary .mk-bmore{border-color:#d9f3ef !important}
 </style>
 <style id="v903-hide-monbtn">#result #fcCustMonBtn{visibility:hidden}#result #fcCustMonBtn.v903-ready{visibility:visible}</style>
+<style id="v916-sqfind">
+#result .sq-find{display:inline-flex;align-items:center;gap:0;height:34px;width:min(420px,34vw);border:1px solid #cbd5e1;border-radius:9px;background:#fff;overflow:hidden}
+#result .sq-find:focus-within{border-color:#94a3b8;box-shadow:0 0 0 3px rgba(100,116,139,.10)}
+#result .sq-find>input#searchBox{flex:1;min-width:0!important;height:100%;border:0!important;outline:0;background:transparent;padding:0 12px!important;margin:0!important;font-family:inherit;font-size:13px;border-radius:0!important;box-shadow:none!important}
+#result .sq-find>input#searchBox::placeholder{color:#94a3b8}
+#result .sq-find>.sq-bigo{display:flex;align-items:center;justify-content:center;height:100%;padding:0 11px;border:0;border-left:1px solid #e2e8f0;background:#f8fafc;color:#b45309;font-family:inherit;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}
+#result .sq-find>.sq-bigo.on{background:#b45309;color:#fff;border-left-color:#b45309}
+#result .sq-find>.sq-go{display:flex;align-items:center;justify-content:center;width:40px;height:100%;padding:0;border:0;border-left:1px solid #e2e8f0;background:#f8fafc;color:#64748b;cursor:pointer}
+#result .sq-find>.sq-go svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+</style>
 <style id="v913-sales-font">#result table.sales-search-13,#result table.sales-search-13 th,#result table.sales-search-13 td{font-size:13px!important}#result table.sales-search-13 .sub2{font-size:11px!important}</style>
 </head>
 <body>
@@ -2010,7 +2020,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v915</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v916</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -3453,6 +3463,13 @@ function runHeaderSalesSearchV912(){
   const q=inp?inp.value.trim():'';
   if(!q){ if(inp)inp.focus(); return; }
   if(!CUR.length){ alert('먼저 매출 파일을 불러오세요.'); return; }
+  /* v916 : 검색 전 화면을 기억해 두었다가 «✕ 검색 닫기»에서 그대로 되돌립니다. */
+  try{
+    if(!state._salesBackV916||state.act!=='__sales__'){
+      state._salesBackV916={act:state.act,sortKey:state.sortKey,sortDir:state.sortDir,_search:state._search,chipVal:state.chipVal,
+        drill:(window.__FC_DRILL_V901||'')};
+    }
+  }catch(_b916){}
   state._salesQV914=q;
   salesSearchRenderV914();
 }
@@ -3530,8 +3547,10 @@ function salesSearchRenderV914(){
     +Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'"'+(mon===i+1?' selected':'')+'>'+(i+1)+'월</option>').join('')
     +'</select>'
     +'<span style="flex:1"></span>'
-    +'<span id="sqFindSlotV915" style="display:inline-flex;align-items:center;gap:6px"></span>'
-    +'<button type="button" class="btn'+(_bigoOnV915?'':' ghost')+'" id="sqBigoV915" title="켜면 «비고(원본)»까지 함께 찾습니다." style="font-size:12px;padding:5px 12px'+(_bigoOnV915?';background:#b45309;color:#fff;border-color:#b45309':';color:#b45309;border-color:#fed7aa;background:#fffbeb')+';font-weight:800">비고포함'+(_bigoOnV915?' ✓':'')+'</button>'
+    +'<span class="sq-find" id="sqFindSlotV915">'
+      +'<button type="button" class="sq-bigo'+(_bigoOnV915?' on':'')+'" id="sqBigoV915" title="켜면 «비고(원본)»까지 함께 찾습니다.">비고포함'+(_bigoOnV915?' ✓':'')+'</button>'
+      +'<button type="button" class="sq-go" id="sqGoV915" title="찾기" aria-label="표 안에서 찾기"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg></button>'
+    +'</span>'
     +'<button type="button" class="btn ghost" id="sqCloseV914" style="font-size:12px;padding:5px 12px">✕ 검색 닫기</button></div>';
   setHeaderSearchMode(false);
   state.sortKey=null;
@@ -3550,10 +3569,23 @@ function salesSearchRenderV914(){
          $('#result').querySelectorAll('.cmYearBtn').forEach(function(b){ b.addEventListener('click',function(){ state._salesYrV914=+b.dataset.y; state._salesMonV914=0; state._salesKeepV914=1; salesSearchRenderV914(); }); });
          $('#result').querySelectorAll('.cmMetBtn').forEach(function(b){ b.addEventListener('click',function(){ state._salesMetV914=(b.dataset.m==='qty')?'qty':'amt'; state._salesKeepV914=1; salesSearchRenderV914(); }); });
          var cb=document.getElementById('sqCloseV914');
-         if(cb)cb.addEventListener('click',function(){ state._salesKeepV914=0; salesTopHideV914(false); state.act='rank-cust'; state._search=''; runAct(); });
+         if(cb)cb.addEventListener('click',function(){
+           state._salesKeepV914=0; salesTopHideV914(false);
+           var bk=state._salesBackV916||null; state._salesBackV916=null;
+           state._search=''; state.chipVal=null;
+           try{
+             if(bk&&bk.drill&&typeof fcDrillCust==='function'){ state.act='forecast'; fcDrillCust(bk.drill); return; }
+           }catch(_d){}
+           if(bk&&bk.act){ state.act=bk.act; state.sortKey=bk.sortKey; state.sortDir=bk.sortDir; state.chipVal=bk.chipVal; }
+           else state.act='rank-cust';
+           try{ if(state.act==='home'||!state.act){ var hb=document.getElementById('homeBtn'); if(hb){hb.click();return;} } }catch(_h){}
+           runAct();
+         });
          /* v915 : 표 검색칸을 «✕ 검색 닫기» 왼쪽으로 옮깁니다. */
          var sb=document.getElementById('searchBox'), slot=document.getElementById('sqFindSlotV915');
-         if(sb&&slot){ slot.appendChild(sb); sb.style.margin='0'; sb.style.minWidth='260px'; }
+         if(sb&&slot){ slot.insertBefore(sb,slot.firstChild); }
+         var go=document.getElementById('sqGoV915');
+         if(go)go.addEventListener('click',function(){ var i=document.getElementById('searchBox'); if(i){ i.focus(); i.dispatchEvent(new Event('input',{bubbles:true})); } });
          if(sb){ sb.placeholder=(state._salesBigoV915?'표 안에서 찾기 (품번·거래처·품명·규격·비고)':'표 안에서 찾기 (품번·거래처·품명·규격)'); }
          var bg=document.getElementById('sqBigoV915');
          if(bg)bg.addEventListener('click',function(){ state._salesBigoV915=!state._salesBigoV915; state._salesKeepV914=1; salesSearchRenderV914(); });
