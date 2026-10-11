@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v906</title>
-<script>window.APP_BUILD='v906';</script>
+<title>동방파스텍 매출 분석 도구 v907</title>
+<script>window.APP_BUILD='v907';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2008,7 +2008,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v906</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v907</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -3603,15 +3603,20 @@ function trendTopV760(label,rows,keyPrefix,opt){
     var _tgOnly=!!(_tgY&&_tgY>_dataMax);       /* 실적이 없는 «목표 전용» 연도 */
     if(_tgY&&yrs.indexOf(_tgY)<0)yrs.unshift(_tgY);
     yrs.sort(function(a,b){return b-a;});
+    /* v907 : 위에서 고른 «목표 연도»가 바뀌면 이 그래프도 그 연도로 맞춥니다. */
+    if(String(st._tgMode||'')!==String(_tgY||'')){ st._tgMode=String(_tgY||''); st.y=_tgOnly?_tgY:(_dataMax||yrs[0]); }
     var yr=(yrs.indexOf(+st.y)>=0)?+st.y:(opt.year&&yrs.indexOf(+opt.year)>=0?+opt.year:(_dataMax||yrs[0]));
     st.y=yr;
     var met=(st.m==='qty')?'qty':'amt';
     var _tgtOpt={targetYear:_tgY,targetOnlyYear:_tgOnly};
     try{
       /* 목표 막대는 «그 연도의 목표»가 있을 때만 — 즉 보고 있는 연도가 목표 연도일 때만 그립니다. */
+      _tgtOpt.targetAvail=true;                      /* v907 : 버튼은 어느 연도에서나 보이게 */
       if(opt.target&&Array.isArray(opt.target)&&_tgY&&+yr===_tgY){
-        _tgtOpt.target=opt.target; _tgtOpt.targetAvail=true;
+        _tgtOpt.target=opt.target;
         _tgtOpt.targetOn=(st.tgt===undefined?true:!!st.tgt);   /* 기본은 «보이기» */
+      }else{
+        _tgtOpt.targetNone=true;                     /* 이 연도는 저장된 월 목표가 없음 */
       }
     }catch(_t902){}
     return custMonthChartV665(label,yr,rs,yrs,Object.assign({metric:met,metricToggle:true},_tgtOpt))
@@ -9085,7 +9090,14 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
     return '<button type="button" class="btn'+(on?'':' ghost')+' cmYearBtn" data-y="'+y2+'" style="'+st2.slice(1)+'">'+lab+'</button>';
   }).join('');
   /* v906 : 목표액 보이기/숨기기 버튼 (막대가 그려질 수 있는 연도에서만 표시) */
-  var tb=opt.targetAvail?('<button type="button" class="btn ghost cmTgtBtn" title="그 해 월 목표 막대를 켜거나 끕니다." style="font-size:11.5px;padding:4px 11px;margin-left:6px;color:#b45309;border-color:#fed7aa;background:#fffbeb;font-weight:800">'+(opt.targetOn?'🎯 목표액 숨기기':'🎯 목표액 보기')+'</button>'):'';
+  var tb='';
+  if(opt.targetAvail){
+    if(opt.targetNone){
+      tb='<span class="cmTgtOff" title="이 연도는 저장된 월 목표가 없습니다. 위 «목표 연도»에서 그 해를 고르면 목표가 표시됩니다." style="display:inline-block;font-size:11.5px;padding:4px 11px;margin-left:6px;border:1px solid #e2e8f0;border-radius:8px;color:#94a3b8;background:#f8fafc;font-weight:800">🎯 목표액 없음</span>';
+    }else{
+      tb='<button type="button" class="btn ghost cmTgtBtn" title="그 해 월 목표 막대를 켜거나 끕니다." style="font-size:11.5px;padding:4px 11px;margin-left:6px;color:#b45309;border-color:#fed7aa;background:#fffbeb;font-weight:800">'+(opt.targetOn?'🎯 목표액 숨기기':'🎯 목표액 보기')+'</button>';
+    }
+  }
   var nonPct=allAmt>0?(nonAmt/allAmt*100):0;
   /* v708 : 금액 / 수량 전환 버튼 */
   var mb=opt.metricToggle?('<span class="seg cmMetSeg" style="margin-left:6px">'+
@@ -40146,7 +40158,13 @@ document.addEventListener('click',function(){ setTimeout(move,120); setTimeout(m
   try{
     if(typeof window.fcDrillCust==='function'&&!window.fcDrillCust.__v901){
       var o=window.fcDrillCust;
-      var w=function(c){ try{ window.__FC_DRILL_V901=String(c||''); clearTimeout(window.__FC_DRILL_TM_V903); }catch(e){} return o.apply(this,arguments); };
+      var w=function(c){
+        try{ window.__FC_DRILL_V901=String(c||''); clearTimeout(window.__FC_DRILL_TM_V903); }catch(e){}
+        var r=o.apply(this,arguments);
+        /* v907 : 제품·규격별 목표 화면은 «맨 위»부터 보이게 합니다. */
+        try{ setTimeout(function(){ try{ window.scrollTo({top:0,left:0,behavior:'auto'}); }catch(e2){} },0); }catch(e3){}
+        return r;
+      };
       w.__v901=true; window.fcDrillCust=w;
     }
     /* v903 : forecast() 가 어디서 불리든(배경 동기화·% 저장 등) 드릴 화면을 보고 있었다면 되돌립니다.
