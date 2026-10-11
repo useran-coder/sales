@@ -30651,12 +30651,19 @@ function sgWaterfall(A){
     return a+(v!=null&&isFinite(v)?Math.max(0,+v):Math.max(0,+o.cy||0));
   },0);
   var existingPlan=keepCustTarget>0?keepCustTarget:(baseVal+includedPlan);
-  /* v963 : 상단 기존업체 카드도 이 막대와 완전히 같은 금액을 사용합니다. */
-  A._sgExistingPlanV963=existingPlan;
   /* v964 : 계획합계는 목표선의 금액을 그대로 복사하지 않고 화면에 보이는 독립 구성만 합산합니다.
      계획합계 = 기존업체 + 신규·경쟁사업체 - 거래축소예상 + 신규제품 + 신규사업.
      성장예상업체·기존제품·성장예상제품은 기존업체 매출에 포함된 참고막대이므로 중복 합산하지 않습니다. */
   end=existingPlan+newCustPlan+cutPlan+newProdPlan+newBizPlan;
+  /* v968 : 매출목표 자동 연동에서는 월별 목표에는 포함됐지만 업체별 목표표에 아직 배분되지 않은
+     잔액을 기존업체 목표에 포함합니다. 이 잔액을 빼면 목표액과 계획합계 사이에 근거 없는
+     '부족' 금액이 생기므로, 독립 전략 항목을 제외한 나머지를 기존업체로 정확히 맞춥니다. */
+  if(autoOn&&goal>0){
+    existingPlan=Math.max(0,goal-newCustPlan-cutPlan-newProdPlan-newBizPlan);
+    end=existingPlan+newCustPlan+cutPlan+newProdPlan+newBizPlan;
+  }
+  /* 상단 기존업체 카드도 최종 보정된 워터폴 막대와 완전히 같은 금액을 사용합니다. */
+  A._sgExistingPlanV963=existingPlan;
   gap=goal-end; A._sgPlanEndV949=end;
   /* v735 : 🏢 신규업체 · 🧪 신규제품 막대에 «전년에 없고 올해 매출이 있는» 실적도 포함합니다.
      그만큼 기존업체 막대에서 빼므로 계획 합계는 그대로입니다.
