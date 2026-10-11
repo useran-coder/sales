@@ -33661,6 +33661,7 @@ function sgBind(A){
         if(cell)it.matrixCell=cell; else delete it.matrixCell;
         /* 배경 동기화가 이전 매트 값으로 되돌리지 못하게 변경 항목을 즉시 보호 저장합니다. */
         try{if(window.sgNewItemRememberV922)window.sgNewItemRememberV922(it);}catch(_r948){}
+        try{if(window.sgMatrixRememberV969)window.sgMatrixRememberV969(it,cell);}catch(_r969){}
       }
     }else if(el.dataset.n!=null){
       var pl2=sgPlan(); pl2.tgtMeta=pl2.tgtMeta||{};
@@ -33672,7 +33673,7 @@ function sgBind(A){
     el.style.fontWeight=cell?'800':'400';
     /* 매트 선택마다 대용량 서버 커밋을 기다리지 않습니다. 연도 보관함과 로컬 저장을 먼저 끝내 즉시 반영합니다. */
     try{if(window.fcSyncYearStoresV718)window.fcSyncYearStoresV718();}catch(_y949){}
-    sgSave(); sgRe(true); }); });
+    sgSave(); try{sgAmtCommitV909();}catch(_c969){} sgRe(true); }); });
   $$('.sgTgtMon').forEach(function(el){ el.addEventListener('change',function(){
     var n=el.dataset.n; pl.tgtMeta=pl.tgtMeta||{}; var m=pl.tgtMeta[n]||(pl.tgtMeta[n]={});
     m.mon=Math.min(12,Math.max(1,+el.value||sgNextMon())); sgSave(); sgRe(); }); });
@@ -41315,6 +41316,13 @@ window.sgNewItemRememberV922=function(it){
     o[String(it.id)]={t:Date.now(),it:JSON.parse(JSON.stringify(it))}; save(o);
   }catch(e){}
 };
+/* v969 : 매트 선택값은 행 존재 여부와 관계없이 최신값을 복원합니다.
+   서버의 이전 목록에 같은 ID가 이미 있으면 v922의 «누락 행 복원»만으로는 값이 되돌아갔습니다. */
+window.sgMatrixRememberV969=function(it,cell){
+  try{ if(!it||!it.id)return; var o=load(); prune(o),k=String(it.id),r=o[k]||{};
+    r.t=Date.now();r.it=JSON.parse(JSON.stringify(it));r.mx=String(cell||'');r.year=+it.year||0;r.plan=String(it.plan||'1');o[k]=r;save(o);
+  }catch(e){}
+};
 window.sgNewItemForgetV922=function(id){ try{ var o=load(); delete o[String(id)]; save(o); }catch(e){} };
 window.sgNewItemClearV922=function(){ try{ localStorage.removeItem(LS); console.log('[v922] 등록 보관 기록을 지웠습니다.'); }catch(e){} };
 function reinsert(){
@@ -41328,6 +41336,11 @@ function reinsert(){
     ks.forEach(function(k){
       var rec=o[k]; if(!rec||!rec.it)return;
       if(!have[k]){ arr.push(JSON.parse(JSON.stringify(rec.it))); ch=true; }
+      else if(Object.prototype.hasOwnProperty.call(rec,'mx')){
+        var cur=have[k],want=String(rec.mx||''),got=String(cur.matrixCell||'');
+        if(got!==want){ if(want)cur.matrixCell=want;else delete cur.matrixCell;
+          if(rec.year)cur.year=rec.year;if(rec.plan)cur.plan=rec.plan;ch=true; }
+      }
     });
     if(ch){
       console.log('[v922] 방금 등록한 전략 항목을 되살렸습니다.');
@@ -41367,7 +41380,7 @@ window.sgEditingV923=function(){
   try{
     var a=document.activeElement;
     if(a&&(a.tagName==='INPUT'||a.tagName==='SELECT'||a.tagName==='TEXTAREA')){
-      if(a.classList&&(a.classList.contains('sgE')||a.classList.contains('sgTgtName')||a.classList.contains('sgTgtProb')||a.classList.contains('sgTgtOwner')))return true;
+      if(a.classList&&(a.classList.contains('sgE')||a.classList.contains('sgTgtName')||a.classList.contains('sgTgtProb')||a.classList.contains('sgTgtOwner')||a.classList.contains('sgMxPickV867')))return true;
       if(a.id&&/^sgF/.test(a.id))return true;
     }
     return (Date.now()-last)<1200;   /* 방금 입력을 끝낸 직후에도 잠시 보호합니다 */
@@ -41376,7 +41389,7 @@ window.sgEditingV923=function(){
 document.addEventListener('input',function(e){
   try{
     var a=e.target; if(!a)return;
-    if((a.classList&&a.classList.contains('sgE'))||(a.id&&/^sgF/.test(a.id)))last=Date.now();
+    if((a.classList&&(a.classList.contains('sgE')||a.classList.contains('sgMxPickV867')))||(a.id&&/^sgF/.test(a.id)))last=Date.now();
   }catch(_e){}
 },true);
 })();
