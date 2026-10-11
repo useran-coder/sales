@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v939</title>
-<script>window.APP_BUILD='v939';</script>
+<title>동방파스텍 매출 분석 도구 v940</title>
+<script>window.APP_BUILD='v940';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2001,7 +2001,12 @@ body.fpopen #fpSum{display:block}
 <style id="v903-hide-monbtn">#result #fcCustMonBtn{visibility:hidden}#result #fcCustMonBtn.v903-ready{visibility:visible}
 /* v939 : 금액보기·수량 버튼이 제자리로 옮겨지기 전에 잠깐 보였다 사라지는 깜빡임을 막습니다. */
 #result .fc-month-modebar{visibility:hidden;height:0;margin:0!important;padding:0!important;overflow:hidden}
-#result .v901-metric #fcCustMonAmount,#result .v901-metric #fcCustMonQty{visibility:visible}</style>
+#result .v901-metric #fcCustMonAmount,#result .v901-metric #fcCustMonQty{visibility:visible}
+/* v940 : 📅 월별보기 버튼과 같은 크기 */
+#result .v901-metric>button{font-size:12px!important;padding:5px 12px!important;font-weight:800!important;
+  border-radius:8px!important;line-height:1.2!important;margin:0!important;white-space:nowrap}
+#result .v901-metric>button.on{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}
+#result .v901-metric>button:not(.on){color:#1d4ed8!important;border-color:#93c5fd!important;background:#eff6ff!important}</style>
 <style id="v916-sqfind">
 #result .sq-find{display:inline-flex;align-items:center;gap:0;height:34px;width:min(420px,34vw);border:1px solid #cbd5e1;border-radius:9px;background:#fff;overflow:hidden}
 #result .sq-find:focus-within{border-color:#94a3b8;box-shadow:0 0 0 3px rgba(100,116,139,.10)}
@@ -2030,7 +2035,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v939</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v940</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -40661,12 +40666,12 @@ function move(){
     if(mode){
       var a=document.getElementById('fcCustMonAmount'), q=document.getElementById('fcCustMonQty');
       if(a&&q&&a.parentNode!==b){
-        if(!b.querySelector('.v901-spacer')){
-          var sp=document.createElement('span'); sp.className='v901-spacer'; sp.style.cssText='flex:1 1 auto'; b.appendChild(sp);
-        }
+        /* v940 : 금액보기·수량을 📅 월별보기 «오른쪽»에 붙입니다. */
         var wrap=document.createElement('span');
-        wrap.className='v901-metric'; wrap.style.cssText='display:inline-flex;gap:6px;margin-left:auto';
-        wrap.appendChild(a); wrap.appendChild(q); b.appendChild(wrap);
+        wrap.className='v901-metric'; wrap.style.cssText='display:inline-flex;gap:6px;margin:0 6px 0 0';
+        wrap.appendChild(a); wrap.appendChild(q);
+        var ref=document.getElementById('fcCustMonBtn');
+        if(ref&&ref.parentNode===b)b.insertBefore(wrap,ref.nextSibling); else b.insertBefore(wrap,close);
         b.style.display='flex'; b.style.alignItems='center'; b.style.flexWrap='wrap'; b.style.gap='6px';
         /* 남은 안내문만 있는 빈 모드바는 숨깁니다 */
         var left=mode.textContent.replace(/\s/g,'');
