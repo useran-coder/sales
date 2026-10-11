@@ -29395,8 +29395,11 @@ function sgPrevAmtOfCustV918(cust){
 }
 /* v918 : 값을 현재 목표안 보관함에도 함께 적어, 다시 그릴 때 사라지지 않게 합니다. */
 function sgPutPlanValV918(mapName,key,val){
+  var targetYearV951=sgActiveYearV949(),targetPlanV951=sgActivePlan();
   var put=function(){
     try{
+      /* 지연 저장 중 목표연도/목표안이 바뀌면 다른 연도 화면에 값을 쓰지 않습니다. */
+      if(sgActiveYearV949()!==targetYearV951||sgActivePlan()!==targetPlanV951)return;
       state.fc[mapName]=state.fc[mapName]||{};
       state.fc[mapName][key]=val;
       ['1','2'].forEach(function(p){
@@ -29417,6 +29420,8 @@ function sgPutPlanValV918(mapName,key,val){
 }
 function sgSyncDirectTargetV857(it,A,clear){
   if(!it||!state.fc)return false;
+  /* 전략은 등록된 목표연도에서만 목표표와 연동합니다. */
+  if(+(it.year==null?2027:it.year)!==sgActiveYearV949())return false;
   var amt=Math.max(0,Math.round(+it.amount||0)),changed=false;
   if(['newCust','growthCust','keepCust'].indexOf(it.type)>=0&&String(it.cust||'').trim()&&!String(it.prod||'').trim()){
     var pc918=sgPrevAmtOfCustV918(String(it.cust||'').trim());
@@ -29496,6 +29501,20 @@ function sgSyncDirectTargetV857(it,A,clear){
 /* v858 : 과거 버전에서 목표표 연결 없이 저장된 신규업체·신규제품 직접전략도 목표자료로 승격합니다. */
 function sgEnsureDirectTargetsV858(A,items){
   var changed=false;
+  /* 이전 버전에서 다른 목표연도의 신규업체 연동값이 현재 연도에 복제된 경우만 정리합니다.
+     같은 업체가 현재 연도 전략에도 있거나 금액이 다르면 사용자의 별도 입력으로 보고 보존합니다. */
+  try{
+    var activeYearV951=sgActiveYearV949(),activePlanV951=sgActivePlan(),currentKeysV951={};
+    (items||[]).forEach(function(x){var k=String((x&&x.cust)||'').trim();if(k)currentKeysV951[k]=1;});
+    (sgPlan().items||[]).forEach(function(x){
+      if(!x||String(x.plan||'1')!==activePlanV951||+(x.year==null?2027:x.year)===activeYearV951)return;
+      if(x.type!=='newCust'||!x.targetNewCustV853)return;
+      var k=String(x.targetNewCustKeyV857||x.cust||x.title||'').trim(),m=state.fc.newCusts||{};
+      if(k&&!currentKeysV951[k]&&Object.prototype.hasOwnProperty.call(m,k)&&(+m[k]||0)===(+x.amount||0)){
+        delete m[k]; changed=true;
+      }
+    });
+  }catch(_yearCleanV951){}
   (items||[]).forEach(function(it){
     if(!it||it.off||+it.amount<=0)return;
     var valid=(['newCust','growthCust','keepCust'].indexOf(it.type)>=0&&String(it.cust||'').trim()&&!String(it.prod||'').trim())
@@ -30530,7 +30549,14 @@ function sgWaterfall(A){
   /* v660 : 신규제품도 신규업체처럼 계획 합계에 별도로 더합니다.
      기존업체 막대에서 그만큼 빼고 독립 막대로 세우므로 계획 합계는 그대로입니다. */
   var newProdPlan=+(valMap.newProd&&valMap.newProd.v)||0;
-  var includedPlan=planTot-newCustPlan-newBizPlan-cutPlan-newProdPlan,existingPlan=baseVal+includedPlan;
+  var includedPlan=planTot-newCustPlan-newBizPlan-cutPlan-newProdPlan;
+  /* 기존업체 막대는 추진현황 등록액이 아니라 실제 양년 거래업체의 현재 매출을 기준으로 표시합니다. */
+  var keepCustActual=(A.keepCust||[]).reduce(function(a,o){return a+(+o.cy||0);},0);
+  var existingPlan=keepCustActual>0?keepCustActual:(baseVal+includedPlan);
+  /* 최종 계획은 기준매출과 전략 증감을 사용하며, 기존업체 표시막대 크기와 분리합니다. */
+  /* 연간 목표표 자동 연동 상태에서는 업체·제품 목표표의 확정 연간합계가 최종 계획합계입니다.
+     ② 추진현황 금액은 그 합계의 구성·근거로 표시하며 다시 별도 합산하지 않습니다. */
+  end=autoOn?goal:(baseVal+planTot); gap=goal-end; A._sgPlanEndV949=end;
   /* v735 : 🏢 신규업체 · 🧪 신규제품 막대에 «전년에 없고 올해 매출이 있는» 실적도 포함합니다.
      그만큼 기존업체 막대에서 빼므로 계획 합계는 그대로입니다.
      (신규업체가 산 신규제품은 신규업체 쪽에만 넣어 이중 계상하지 않습니다) */
@@ -30566,7 +30592,11 @@ function sgWaterfall(A){
   }catch(_v735){}
   // 추진현황과 워터폴은 같은 전략 기대매출 합계를 사용한다.
   // 과거/올해 매출액으로 다시 치환하면 성장예상업체처럼 금액이 어긋난다.
-  var infoAmount=function(k){var o=valMap[k]||{};return +o.v||0;};
+  var infoAmount=function(k){
+    /* 기존제품은 실제 양년 판매제품 매출, 나머지 분류는 ② 추진현황 기대매출입니다. */
+    if(k==='keepProd')return sgGraphCategoryAmount(A,k,planItems,useProb,0);
+    var o=valMap[k]||{};return +o.v||0;
+  };
   var selected=pl.waterfallSelectedKey||'';if(selected==='actual'||selected==='keepCust')selected='actualKeep';
   /* v890 : 항목명 아래의 사용하지 않는 SVG 여백을 줄여 «금액 출처»를 그래프에 가깝게 붙입니다. */
   var W=980,H=286,L=64,R=106,T=30,B=30, iw=W-L-R, ih=H-T-B;
