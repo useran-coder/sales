@@ -13328,7 +13328,10 @@ function forecast(){
   /* v678 : '올해 연매출 목표'도 그래프가 그린 값(확정월까지 실적 + 이후월 목표)으로 맞춥니다.
      → 주간보고 목표수정액 합계와 원 단위까지 같아집니다. */
   let olhaeTarget=annualSummary.annualTarget;
-  try{ const _cutV678=(typeof fcCutoffMonth==='function')?fcCutoffMonth():lastAct; let _sumV678=0;
+  try{ const _nextV967=(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode());
+    const _cutV678=_nextV967?0:((typeof fcCutoffMonth==='function')?fcCutoffMonth():lastAct); let _sumV678=0;
+    /* 다음 목표연도에는 아직 실적이 없으므로 1~12월 목표 전액을 합산합니다.
+       기준연도의 확정월(예: 9월)을 다음 해에 적용하면 1~9월이 0원이 되는 오류가 발생합니다. */
     for(let m=1;m<=12;m++)_sumV678+=(m<=_cutV678?(+actV[m]||0):(+tgtV[m]||0));
     if(_sumV678>0)olhaeTarget=_sumV678;
   }catch(_e){}
@@ -29232,7 +29235,7 @@ function sgSalesGoalAmountV966(A){
   try{
     var year=sgActiveYearV949(),plan=sgActivePlan(),snap=window.FC_ANNUAL_TARGET_V966;
     if(snap&&+snap.year===+year&&String(snap.plan||'1')===String(plan)&&+snap.value>0)return +snap.value;
-    var C=window.FC_CHART_V677,cut=(typeof fcCutoffMonth==='function'?fcCutoffMonth():0),total=0;
+    var C=window.FC_CHART_V677,cut=(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode())?0:(typeof fcCutoffMonth==='function'?fcCutoffMonth():0),total=0;
     if(C&&+C.CY===+year&&String(C.plan||'1')===String(plan)&&C.act&&C.tgt){
       for(var m=1;m<=12;m++)total+=(m<=cut?(+C.act[m]||0):(+C.tgt[m]||0));
       if(total>0)return Math.round(total);
