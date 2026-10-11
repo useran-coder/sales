@@ -29123,6 +29123,16 @@ function sgStageFromProbV856(pct){
 function sgTypeSign(k){return (SG_TMAP[k]&&SG_TMAP[k].sign===-1)?-1:1;}
 function sgEffAmountV613(it){try{return sgItemAmountV613(it,sgAnnualTargetMapsV613());}catch(_e){return Math.max(0,+((it&&it.amount)||0));}}
 function sgSignedAmount(it){return sgEffAmountV613(it)*sgTypeSign(it.type);}
+/* ② 추진현황을 그래프·카드가 함께 사용하는 단일 분류 집계입니다. */
+function sgPipelineStatsV950(plan){
+  var out={}; SG_TYPES.forEach(function(t){out[t.k]={k:t.k,t:t.t,ic:t.ic,c:t.c,n:0,a:0};});
+  sgPlanItems(plan).forEach(function(it){
+    if(!it||it.off||!out[it.type])return;
+    out[it.type].n++;
+    out[it.type].a+=sgSignedAmount(it);
+  });
+  return out;
+}
 
 /* 수동 등록 목록 정의 : 데이터에 아직 없는 업체·제품·사업 */
 var SG_MAN={
@@ -30497,9 +30507,12 @@ function sgWaterfall(A){
     planItems.forEach(function(it){if(it.off)return;var a=sgSignedAmount(it),p0=(it.prob==null?(SG_SMAP[it.stage]||{p:50}).p:+it.prob);sums[it.type]=(sums[it.type]||0)+a;probSums[it.type]=(probSums[it.type]||0)+a*(p0/100);});
     vals=SG_TYPES.map(function(t){return{k:t.k,t:t.t,c:t.c,ic:t.ic,v:useProb?probSums[t.k]:sums[t.k],creditCut:t.k==='creditCut'};});
   }
+  /* A 워터폴의 각 분류 막대는 ② 추진현황의 같은 분류 «목표/영향금액 합계»와 정확히 일치시킵니다. */
+  var pipeStatsV950=sgPipelineStatsV950(goalCtx.plan);
+  vals=SG_TYPES.map(function(t){var x=pipeStatsV950[t.k]||{n:0,a:0};return{k:t.k,t:t.t,c:t.c,ic:t.ic,v:+x.a||0,autoV:0,pipeV:+x.a||0,pipeCount:+x.n||0,linkedCount:0,creditCut:t.k==='creditCut'};});
   /* 자동 거래축소 예상액과 수동 파이프라인 거래축소를 한 항목으로 합쳐 중복 막대를 방지합니다. */
   var cutVal=vals.filter(function(o){return o.k==='creditCut';})[0];
-  if(cutVal){var autoCut=-Math.max(0,+A.creditCutImpact||0);cutVal.v+=autoCut;if(autoOn)cutVal.autoV=(cutVal.autoV||0)+autoCut;}
+  /* 자동 추정치는 ② 표에 없는 값이므로 그래프 분류금액에 더하지 않습니다. */
   var planTot=vals.reduce(function(a,o){return a+o.v;},0);
   var end=baseVal+planTot, gap=goal-end;
   /* 카드와 그래프 목표표시에 동일한 계획 합계 금액을 사용합니다. */
@@ -30518,7 +30531,7 @@ function sgWaterfall(A){
      (신규업체가 산 신규제품은 신규업체 쪽에만 넣어 이중 계상하지 않습니다) */
   var newActC=0,newActP=0;
   try{
-    if(autoOn){
+    if(autoOn&&false){
       var _last=(bd&&bd.lastAct)||0;
       if(_last>0){
         var ncSet={},npSet={};
@@ -31965,14 +31978,15 @@ function sgKpis(A){
   var lossAmt=Math.abs(A.brk.dnC+A.brk.lostC);
   var cutBal=(A.creditCutCust||[]).reduce(function(a,o){return a+(+o.balance||0);},0);
   var planEnd=(A._sgPlanEndV949!=null)?(+A._sgPlanEndV949||0):(A.cyTot+exp);
+  var ps=sgPipelineStatsV950(goalCtx.plan), pc=function(k){return ps[k]||{t:(SG_TMAP[k]||{}).t||k,n:0,a:0};};
   return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:11px">'
     +m(goalCtx.year+'년 매출예상',sgShort(planEnd)+'원','계획 합계 · '+A.PY+'년 '+sgShort(A.pyTot),'#1e3a5f','all2026')
-    +m('신규업체',A.newCust.length+'개사',sgShort(newAmt)+'원 · 매출기여 '+(A.cyTot?(newAmt/A.cyTot*100).toFixed(1):'0')+'%','#1d4ed8','newCust')
-    +m(((SG_TMAP.growthCust||{}).t||'성장업체'),A.growCust.length+'개사',(sgFutureModeV810()?'참고 — 올해 증가 업체 · 증가액 ':'전년 대비 증가액 ')+sgShort(growCustAmt)+'원','#16a34a','growthCust')
-    +m('기존업체',A.keepCust.length+'개사','양년 연속 거래 · 올해 '+sgShort(keepCustAmt)+'원','#475569','keepCust')
-    +m('신규제품',A.newProd.length+'종',sgShort(A.newProd.reduce(function(a,o){return a+o.cy;},0))+'원','#0d9488','', 'newProd')
-    +m('전체 감소·이탈',sgShort(lossAmt)+'원','시장보정 위험 '+A.riskCust.length+'개사 · 관찰 '+A.watchCust.length+'개사 · 경기기준 '+sgPct(A.marketDecline),'#dc2626','declineAll')
-    +m((sgFutureModeV810()?'거래축소예상 검토':'거래축소 검토'),(A.creditCutCust||[]).length+'개사','회수위험 미수 '+sgShort(cutBal)+'원','#b45309','', 'creditCut')
+    +m(pc('newCust').t,pc('newCust').n+'개사',sgWon(Math.abs(pc('newCust').a))+'원 · ② 추진현황','#1d4ed8','newCust')
+    +m(pc('growthCust').t,pc('growthCust').n+'개사',sgWon(Math.abs(pc('growthCust').a))+'원 · ② 추진현황','#16a34a','growthCust')
+    +m(pc('keepCust').t,pc('keepCust').n+'개사',sgWon(Math.abs(pc('keepCust').a))+'원 · ② 추진현황','#475569','keepCust')
+    +m(pc('newProd').t,pc('newProd').n+'종',sgWon(Math.abs(pc('newProd').a))+'원 · ② 추진현황','#0d9488','', 'newProd')
+    +m(pc('risk').t,pc('risk').n+'개사',sgWon(Math.abs(pc('risk').a))+'원 · ② 추진현황','#dc2626','declineAll')
+    +m(pc('creditCut').t,pc('creditCut').n+'개사',sgWon(Math.abs(pc('creditCut').a))+'원 · ② 추진현황','#b45309','', 'creditCut')
     +m(goalCtx.year+'년 목표 달성 전망',(goal?((A.cyTot+exp)/goal*100).toFixed(1):'-')+'%',fcTargetPlanLabel()+' · 목표 '+sgShort(goal)+' · 전략 기대 '+sgShort(exp),(goal&&A.cyTot+exp>=goal)?'#15803d':'#d97706')
     +'</div>';
 }
