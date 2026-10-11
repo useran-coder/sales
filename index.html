@@ -29721,6 +29721,29 @@ function sgSynthRowsV713(){
     return out.length?{rows:out,PY:dCY,CY:dCY+1}:null;
   }catch(e){ return null; }
 }
+/* v963 : 목표전략을 먼저 열어도 매출목표 화면과 같은 계산 자료를 즉시 준비합니다.
+   예전에는 forecast() 화면을 한 번 방문해야 state._fc가 만들어져 첫 화면만 이전 값이 보였습니다. */
+function sgEnsureForecastSnapshotV963(){
+  try{
+    if(typeof fcYearsV712!=='function'||typeof forecast!=='function'||typeof state==='undefined')return;
+    var y=fcYearsV712(),f=state._fc;
+    if(f&&+f.PY===+y.PY&&+f.CY===+y.CY&&f.fcCustProdMon&&f.cyMonCust)return;
+    if(window.__FC_BOOT_BLOCK_V860){
+      clearTimeout(window.__sgFcReadyTimerV963);
+      window.__sgFcReadyTimerV963=setTimeout(function(){try{sgLastAnalysis=null;sgLastAnalysisRows=null;sgRender();}catch(_e){}},450);
+      return;
+    }
+    var nativeRender=renderCustom,nativeWindowRender=window.renderCustom,oldAct=state.act;
+    try{
+      var silent=function(){};
+      renderCustom=silent;window.renderCustom=silent;
+      forecast();
+    }finally{
+      renderCustom=nativeRender;window.renderCustom=nativeWindowRender||nativeRender;state.act=oldAct;
+    }
+    sgTargetMapsCacheV613=null;
+  }catch(_v963){}
+}
 function sgAnalyze(){
   try{ if(typeof sgApplyTypeNamesV810==='function')sgApplyTypeNamesV810(); }catch(_e){}
   var rows=(typeof CUR!=='undefined'&&CUR)?CUR.slice():[];
@@ -30581,6 +30604,8 @@ function sgWaterfall(A){
     return a+(v!=null&&isFinite(v)?Math.max(0,+v):Math.max(0,+o.cy||0));
   },0);
   var existingPlan=keepCustTarget>0?keepCustTarget:(baseVal+includedPlan);
+  /* v963 : 상단 기존업체 카드도 이 막대와 완전히 같은 금액을 사용합니다. */
+  A._sgExistingPlanV963=existingPlan;
   /* 최종 계획은 기준매출과 전략 증감을 사용하며, 기존업체 표시막대 크기와 분리합니다. */
   /* 연간 목표표 자동 연동 상태에서는 업체·제품 목표표의 확정 연간합계가 최종 계획합계입니다.
      ② 추진현황 금액은 그 합계의 구성·근거로 표시하며 다시 별도 합산하지 않습니다. */
@@ -31614,10 +31639,22 @@ function sgBridge(A){
       var ba=fcBaseAgg(yrs.PY,yrs.CY),prevMap=new Map(),tm=sgAnnualTargetMapsV613(),meta={};
       (A.custs||[]).forEach(function(o){meta[sgCrossNorm(o.name)]=o;});
       for(var mm=1;mm<=12;mm++)(ba.pyMonCust[mm]||new Map()).forEach(function(v,n){prevMap.set(n,(prevMap.get(n)||0)+(+v||0));});
-      var names=new Map();prevMap.forEach(function(v,n){names.set(n,1);});if(tm&&tm.cust)tm.cust.forEach(function(v,n){names.set(n,1);});
+      /* v962 : 다음 연도 목표의 신규업체는 두 군데에 저장될 수 있습니다.
+         ① 업체별 목표표의 업체추가(state.fc.newCusts), ② 추진현황의 신규·경쟁사업체.
+         목표 집계 맵만 읽으면 화면 갱신 시점/직접등록 방식에 따라 이들이 빠져 신규업체가 0으로
+         보였으므로, 모든 경로를 정규화한 업체명으로 합치고 같은 업체는 한 번만 반영합니다. */
+      var norm=function(n){return sgTargetNormV613(n);},prevByNorm=new Map(),targetByNorm=new Map(),displayByNorm=new Map();
+      prevMap.forEach(function(v,n){var k=norm(n);if(!k)return;prevByNorm.set(k,(prevByNorm.get(k)||0)+(+v||0));if(!displayByNorm.has(k))displayByNorm.set(k,n);});
+      if(tm&&tm.cust)tm.cust.forEach(function(v,n){var k=norm(n);if(!k)return;targetByNorm.set(k,(targetByNorm.get(k)||0)+(+v||0));displayByNorm.set(k,n);});
+      var mergeNew=function(n,v){var k=norm(n),amt=Math.max(0,+v||0);if(!k||!amt)return;
+        /* 목표 계산 맵에 이미 같은 업체가 있으면 더하지 않고 더 큰 명시 목표를 채택합니다. */
+        targetByNorm.set(k,Math.max(+targetByNorm.get(k)||0,amt));displayByNorm.set(k,String(n||'').trim());};
+      try{sgTargetNewCustsV663().forEach(function(o){mergeNew(o.name,o.amt);});}catch(_v962a){}
+      try{sgPlanItems().forEach(function(it){if(it&&it.type==='newCust'&&!it.off){mergeNew(it.cust||it.title,sgEffAmountV613(it));}});}catch(_v962b){}
+      var names=new Map();prevByNorm.forEach(function(v,k){names.set(k,1);});targetByNorm.forEach(function(v,k){names.set(k,1);});
       var nc=[],up=[],dn=[],lost=[],targetSum=0;
-      names.forEach(function(_,name){
-        var py=+prevMap.get(name)||0,cy=(tm&&tm.cust&&tm.cust.has(name))?(+tm.cust.get(name)||0):0,d=cy-py;
+      names.forEach(function(_,key){
+        var name=displayByNorm.get(key)||key,py=+prevByNorm.get(key)||0,cy=+targetByNorm.get(key)||0,d=cy-py;
         targetSum+=cy;
         var mo=meta[sgCrossNorm(name)]||{},row={name:name,label:name,py:py,cy:cy,diff:d,
           gRaw:py?d/py*100:null,growth:py?d/py*100:null,nProd:+mo.nProd||0,nMon:+mo.nMon||0};
@@ -31699,11 +31736,11 @@ function sgBridge(A){
     lost:{label:'거래중단',amountLabel:'감소액',rows:A.lostCust.map(function(c){return companyRow(c,-c.py);})}
   };
   var explainRows=[
-    {k:'newCust',l:'신규업체',v:b.newC,n:A.newCust.length,u:'개사',d:'전년 매출이 없고 올해 처음 발생한 거래처 매출입니다.',c:topItems(A.newCust,function(o){return o.cy;},function(o){return o.name;}),p:productsForCustomers(A.newCust)},
+    {k:'newCust',l:'신규업체',v:b.newC,n:A.newCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출예상액이 없고 2027년 목표가 등록된 신규·경쟁사업체입니다.':'전년 매출이 없고 올해 처음 발생한 거래처 매출입니다.',c:topItems(A.newCust,function(o){return o.cy;},function(o){return o.name;}),p:productsForCustomers(A.newCust)},
     {k:'newProd',l:'신규제품(참고)',v:b.newP,n:A.newProd.length,u:'종',d:'매출 증가(＋) 항목이나 고객 증감과 중복되어 누적합에서는 제외합니다.',c:newProdCompanies,p:topItems(A.newProd,function(o){return o.cy;},function(o){return o.label;})},
-    {k:'up',l:'기존 증가',v:b.upC,n:A.upCust.length,u:'개사',d:'양년 모두 거래하며 올해 매출이 증가한 거래처 매출입니다.',c:topItems(A.upCust,function(o){return o.diff;},function(o){return o.name;}),p:topItems(A.keepProd.filter(function(p){return p.diff>0;}),function(o){return o.diff;},function(o){return o.label;})},
-    {k:'down',l:'기존 감소',v:b.dnC,n:A.dnCust.length,u:'개사',d:'양년 모두 거래하지만 올해 매출이 감소한 거래처 매출입니다.',c:topItems(A.dnCust,function(o){return o.diff;},function(o){return o.name;}),p:topItems(A.keepProd.filter(function(p){return p.diff<0;}),function(o){return o.diff;},function(o){return o.label;})},
-    {k:'lost',l:'거래중단',v:b.lostC,n:A.lostCust.length,u:'개사',d:'전년 매출이 있었지만 올해 매출이 끊긴 거래처 매출입니다.',c:topItems(A.lostCust,function(o){return -o.py;},function(o){return o.name;}),p:topItems(lostProd,function(o){return -o.py;},function(o){return o.label;})}
+    {k:'up',l:'기존 증가',v:b.upC,n:A.upCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출예상액보다 2027년 업체 목표가 증가한 기존 거래처입니다.':'양년 모두 거래하며 올해 매출이 증가한 거래처 매출입니다.',c:topItems(A.upCust,function(o){return o.diff;},function(o){return o.name;}),p:topItems(A.keepProd.filter(function(p){return p.diff>0;}),function(o){return o.diff;},function(o){return o.label;})},
+    {k:'down',l:'기존 감소',v:b.dnC,n:A.dnCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출예상액보다 2027년 업체 목표가 감소한 기존 거래처입니다.':'양년 모두 거래하지만 올해 매출이 감소한 거래처 매출입니다.',c:topItems(A.dnCust,function(o){return o.diff;},function(o){return o.name;}),p:topItems(A.keepProd.filter(function(p){return p.diff<0;}),function(o){return o.diff;},function(o){return o.label;})},
+    {k:'lost',l:'거래중단',v:b.lostC,n:A.lostCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출예상액은 있으나 2027년 업체 목표가 없는 거래처입니다.':'전년 매출이 있었지만 올해 매출이 끊긴 거래처 매출입니다.',c:topItems(A.lostCust,function(o){return -o.py;},function(o){return o.name;}),p:topItems(lostProd,function(o){return -o.py;},function(o){return o.label;})}
   ].map(function(x){
     var neg=x.v<0;
     return '<tr class="sg-bridge-row" data-key="'+x.k+'" tabindex="0" role="button" aria-expanded="false" style="border-bottom:1px solid #e2e8f0"><td style="padding:7px 8px;text-align:left;font-weight:800;color:'+(neg?'#dc2626':'#1e3a5f')+'"><span class="sg-bridge-arrow">▸</span>'+x.l+'</td><td style="padding:7px 8px;text-align:right;font-weight:900;color:'+(neg?'#dc2626':'#16a34a')+'">'+(neg?'−':'＋')+sgShort(Math.abs(x.v))+'</td><td style="padding:7px 8px;text-align:center;color:#475569;white-space:nowrap">'+x.n+x.u+'</td><td style="padding:7px 8px;text-align:left;color:#64748b;line-height:1.45">'+x.d+'</td></tr>';
@@ -32087,20 +32124,25 @@ function sgKpis(A){
   var newAmt=A.newCust.reduce(function(a,o){return a+o.cy;},0);
   var growCustAmt=A.growCust.reduce(function(a,o){return a+Math.max(0,+o.diff||0);},0);
   var keepCustAmt=A.keepCust.reduce(function(a,o){return a+(+o.cy||0);},0);
+  var keepCardAmt=(A._sgExistingPlanV963!=null)?Math.max(0,+A._sgExistingPlanV963||0):keepCustAmt;
   var lossAmt=Math.abs(A.brk.dnC+A.brk.lostC);
   var cutBal=(A.creditCutCust||[]).reduce(function(a,o){return a+(+o.balance||0);},0);
   var planEnd=(A._sgPlanEndV949!=null)?(+A._sgPlanEndV949||0):(A.cyTot+exp);
+  /* v963 : 전망률도 워터폴 마지막 «계획합계»와 같은 금액을 분자로 사용합니다.
+     종전 72.2%는 별도 산식(A.cyTot+확률가중 전략기대)을 사용해 워터폴과 불일치했습니다. */
+  var outlookRate=goal?(planEnd/goal*100):null;
   var ps=sgPipelineStatsV950(goalCtx.plan), pc=function(k){return ps[k]||{t:(SG_TMAP[k]||{}).t||k,n:0,a:0,e:0};};
   var psTxt=function(k){var x=pc(k);return '목표 '+sgWon(Math.abs(x.a))+'원 · 기대 '+sgWon(Math.abs(x.e))+'원';};
   return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:11px">'
     +m(goalCtx.year+'년 매출예상',sgShort(planEnd)+'원','계획 합계 · '+A.PY+'년 '+sgShort(A.pyTot),'#1e3a5f','all2026')
     +m(pc('newCust').t,pc('newCust').n+'개사',psTxt('newCust'),'#1d4ed8','newCust')
     +m(pc('growthCust').t,pc('growthCust').n+'개사',psTxt('growthCust'),'#16a34a','growthCust')
-    +m(pc('keepCust').t,pc('keepCust').n+'개사',psTxt('keepCust'),'#475569','keepCust')
+    /* 기존업체는 추진현황에 직접 등록한 건수만이 아니라 워터폴의 기존업체 전체 모수와 금액을 표시합니다. */
+    +m(pc('keepCust').t,A.keepCust.length+'개사','목표 '+sgWon(keepCardAmt)+'원 · 워터폴 기존업체와 연동','#475569','keepCust')
     +m(pc('newProd').t,pc('newProd').n+'종',psTxt('newProd'),'#0d9488','', 'newProd')
     +m(pc('risk').t,pc('risk').n+'개사',psTxt('risk'),'#dc2626','declineAll')
     +m(pc('creditCut').t,pc('creditCut').n+'개사',psTxt('creditCut'),'#b45309','', 'creditCut')
-    +m(goalCtx.year+'년 목표 달성 전망',(goal?((A.cyTot+exp)/goal*100).toFixed(1):'-')+'%',fcTargetPlanLabel()+' · 목표 '+sgShort(goal)+' · 전략 기대 '+sgShort(exp),(goal&&A.cyTot+exp>=goal)?'#15803d':'#d97706')
+    +m(goalCtx.year+'년 목표 달성 전망',(outlookRate!=null?outlookRate.toFixed(1):'-')+'%',fcTargetPlanLabel()+' · 목표 '+sgShort(goal)+' · 계획합계 '+sgShort(planEnd),(goal&&planEnd>=goal)?'#15803d':'#d97706')
     +'</div>';
 }
 
@@ -32611,6 +32653,8 @@ function sgRender(){
      매출 목표 페이지 내용을 전략 화면으로 덮어써서 화면이 먹통이 됩니다.
      현재 보고 있는 페이지가 전략일 때만 그립니다. */
   if(typeof state!=='undefined'&&state.act!=='strategy')return;
+  /* v963 : 매출목표 페이지 방문 여부와 관계없이 동일한 목표 계산 스냅샷을 먼저 만듭니다. */
+  try{sgEnsureForecastSnapshotV963();}catch(_v963){}
   var A;
   try{
     if(window.__sgFastRender&&sgLastAnalysis&&sgLastAnalysisRows===CUR)A=sgLastAnalysis;
