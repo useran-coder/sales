@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v914</title>
-<script>window.APP_BUILD='v914';</script>
+<title>동방파스텍 매출 분석 도구 v915</title>
+<script>window.APP_BUILD='v915';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2010,7 +2010,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v914</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v915</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -3468,6 +3468,7 @@ function salesTopHideV914(on){
 }
 function salesSearchRenderV914(){
   const q=String(state._salesQV914||'').trim(); if(!q)return;
+  const _bigoOnV915=!!state._salesBigoV915;
   const toks=q.split(/\s+/).filter(Boolean).map(t=>String(t).replace(/\s+/g,'').toLowerCase());
   const hay=r=>[r.cust,r.code,r.name,r.spec,r.bigo].map(v=>String(v||'')).join(' ').replace(/\s+/g,'').toLowerCase();
   const hit=(CUR||[]).filter(r=>{ const h=hay(r); return toks.every(t=>h.indexOf(t)>=0); });
@@ -3493,10 +3494,9 @@ function salesSearchRenderV914(){
     .map((r,i)=>{
       const o={key:r.code||('row'+i),d:r.d,ym:(r.d?(r.d.getMonth()+1):0),cust:r.cust||'',code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',
         qty:+r.qty||0,price:(typeof unitPrice==='function'?unitPrice(r):0),amt:amtOf(r),bigo:r.bigo||''};
-      /* 표 위 검색이 «순위»를 뺀 모든 열에서 되도록, 숫자는 콤마 있는 형태까지 함께 넣습니다. */
-      o.label=[o.cust,o.code,o.name,o.spec,o.bigo].join(' ');
-      o._search=[fmtD(o.d),o.ym+'월',o.cust,o.code,o.name,o.spec,o.bigo,
-        o.qty,won(o.qty),Math.round(o.price),won(Math.round(o.price)),Math.round(o.amt),won(Math.round(o.amt))].join(' ');
+      /* v915 : 기본 검색 범위는 «품번·거래처·품명·규격». 「비고포함」을 켜면 비고까지 찾습니다. */
+      o.label=[o.cust,o.code,o.name,o.spec].join(' ');
+      o._search=_bigoOnV915?String(o.bigo||''):'';
       return o;
     });
   const tot=arr.reduce((a,o)=>a+o.amt,0), totQ=arr.reduce((a,o)=>a+o.qty,0);
@@ -3529,8 +3529,9 @@ function salesSearchRenderV914(){
     +'<option value="0"'+(!mon?' selected':'')+'>전체월</option>'
     +Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'"'+(mon===i+1?' selected':'')+'>'+(i+1)+'월</option>').join('')
     +'</select>'
-    +'<span class="sub2">그래프의 점·월 이름을 눌러도 그 달만 볼 수 있습니다. 같은 달을 다시 누르면 전체월로 돌아갑니다.</span>'
     +'<span style="flex:1"></span>'
+    +'<span id="sqFindSlotV915" style="display:inline-flex;align-items:center;gap:6px"></span>'
+    +'<button type="button" class="btn'+(_bigoOnV915?'':' ghost')+'" id="sqBigoV915" title="켜면 «비고(원본)»까지 함께 찾습니다." style="font-size:12px;padding:5px 12px'+(_bigoOnV915?';background:#b45309;color:#fff;border-color:#b45309':';color:#b45309;border-color:#fed7aa;background:#fffbeb')+';font-weight:800">비고포함'+(_bigoOnV915?' ✓':'')+'</button>'
     +'<button type="button" class="btn ghost" id="sqCloseV914" style="font-size:12px;padding:5px 12px">✕ 검색 닫기</button></div>';
   setHeaderSearchMode(false);
   state.sortKey=null;
@@ -3550,8 +3551,12 @@ function salesSearchRenderV914(){
          $('#result').querySelectorAll('.cmMetBtn').forEach(function(b){ b.addEventListener('click',function(){ state._salesMetV914=(b.dataset.m==='qty')?'qty':'amt'; state._salesKeepV914=1; salesSearchRenderV914(); }); });
          var cb=document.getElementById('sqCloseV914');
          if(cb)cb.addEventListener('click',function(){ state._salesKeepV914=0; salesTopHideV914(false); state.act='rank-cust'; state._search=''; runAct(); });
-         var sb=document.getElementById('searchBox');
-         if(sb){ sb.placeholder='표 안에서 다시 찾기 (일자·거래처·품번·품명·규격·수량·단가·금액·비고)'; }
+         /* v915 : 표 검색칸을 «✕ 검색 닫기» 왼쪽으로 옮깁니다. */
+         var sb=document.getElementById('searchBox'), slot=document.getElementById('sqFindSlotV915');
+         if(sb&&slot){ slot.appendChild(sb); sb.style.margin='0'; sb.style.minWidth='260px'; }
+         if(sb){ sb.placeholder=(state._salesBigoV915?'표 안에서 찾기 (품번·거래처·품명·규격·비고)':'표 안에서 찾기 (품번·거래처·품명·규격)'); }
+         var bg=document.getElementById('sqBigoV915');
+         if(bg)bg.addEventListener('click',function(){ state._salesBigoV915=!state._salesBigoV915; state._salesKeepV914=1; salesSearchRenderV914(); });
        }catch(e){}
      }});
 }
