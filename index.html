@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v919</title>
-<script>window.APP_BUILD='v919';</script>
+<title>동방파스텍 매출 분석 도구 v921</title>
+<script>window.APP_BUILD='v921';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2020,7 +2020,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v919</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v921</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -29206,20 +29206,48 @@ function sgDirectProductTargetV857(label,A,hint){
 function sgFindRealProdV918(label){
   try{
     var raw=String(label||'').trim(); if(!raw)return null;
-    var nz=function(v){ return String(v||'').replace(/\s+/g,'').toLowerCase(); };
-    var want=nz(raw), parts=raw.split('·').map(function(x){return x.trim();});
+    var nz=function(v){ return String(v||'').replace(/[\s·]/g,'').toLowerCase(); };
+    var want=nz(raw), parts=raw.split(/[·│|]/).map(function(x){return x.trim();});
     var wName=nz(parts[0]||''), wSpec=nz(parts.slice(1).join('·'));
-    var hit=null, py=0, best=null;
+    /* v921 : 품번·품명·규격을 모두 보고, 꼭 맞는 것 → 부분일치 순으로 찾습니다.
+              같은 후보가 여럿이면 매출이 가장 큰 쪽을 씁니다. */
+    var cand={};
     (typeof CUR!=='undefined'?CUR:[]).forEach(function(r){
       if(!r)return;
-      var nm=nz(r.name), sp=nz(r.spec), both=nz(String(r.name||'')+'·'+String(r.spec||''));
-      var ok=(both===want)||(wSpec&&nm===wName&&sp===wSpec)||(!wSpec&&nm===want);
-      if(!ok)return;
+      var cd=nz(r.code), nm=nz(r.name), sp=nz(r.spec);
+      var both=nz(String(r.name||'')+String(r.spec||'')), cboth=nz(String(r.code||'')+String(r.spec||''));
+      var sc=0;
+      if(both===want||cboth===want)sc=100;
+      else if(wSpec&&(nm===wName||cd===wName)&&sp===wSpec)sc=95;
+      else if(!wSpec&&(nm===want||cd===want))sc=90;
+      else if(wSpec&&(nm===wName||cd===wName)&&sp&&(sp.indexOf(wSpec)===0||wSpec.indexOf(sp)===0))sc=80;
+      else if(!wSpec&&nm&&(nm.indexOf(want)===0||want.indexOf(nm)===0))sc=60;
+      else if(both&&(both.indexOf(want)>=0||want.indexOf(both)>=0))sc=50;
+      if(!sc)return;
       var k=(r.code||'(미상)')+'│'+(r.spec||'');
-      if(!best)best={key:k,code:r.code||'',name:r.name||'',spec:r.spec||''};
+      var c=cand[k]||(cand[k]={key:k,code:r.code||'',name:r.name||'',spec:r.spec||'',sc:0,amt:0});
+      if(sc>c.sc)c.sc=sc;
+      try{ c.amt+=amtOf(r)||0; }catch(_e){}
     });
-    return best;
+    var best=null;
+    Object.keys(cand).forEach(function(k){
+      var c=cand[k];
+      if(!best||c.sc>best.sc||(c.sc===best.sc&&c.amt>best.amt))best=c;
+    });
+    return best?{key:best.key,code:best.code,name:best.name,spec:best.spec}:null;
   }catch(e){ return null; }
+}
+/* v921 : 전년 매출이 0이어도 올해 매출이 있으면 그 제품의 «추가%» 로 넣습니다. */
+function sgBaseAmtOfProdV921(key){
+  try{
+    var py=sgPrevAmtOfProdV918(key); if(py>0)return py;
+    var ys=(typeof dataYears==='function')?dataYears():[], CY=ys.length?ys[ys.length-1]:0, sum=0;
+    (typeof CUR!=='undefined'?CUR:[]).forEach(function(r){
+      if(!r||+r.y!==CY)return;
+      if(((r.code||'(미상)')+'│'+(r.spec||''))===key)sum+=amtOf(r);
+    });
+    return sum;
+  }catch(e){ return 0; }
 }
 function sgPrevAmtOfProdV918(key){
   try{
@@ -29297,7 +29325,7 @@ function sgSyncDirectTargetV857(it,A,clear){
   if(['newProd','growthProd','keepProd'].indexOf(it.type)>=0&&String(it.prod||'').trim()){
     var real918=sgFindRealProdV918(it.prod||it.title);
     if(real918){
-      var prev918=sgPrevAmtOfProdV918(real918.key);
+      var prev918=sgBaseAmtOfProdV921(real918.key);
       if(prev918>0){
         state.fc.prodAddPct=state.fc.prodAddPct||{};
         state.fc.newProds=state.fc.newProds||{};
@@ -30771,7 +30799,7 @@ function sgPipeline(A){
       stage:m.stage||sgStageFromProbV856(p),prob:p,mon:Math.min(12,Math.max(1,+m.mon||sgNextMon())),owner:String(m.owner||''),off:false,targetTableAuto:true};
   });
   var typeOpts=SG_TYPES.map(function(t){return '<option value="'+t.k+'"'+(t.k===formTypeV854?' selected':'')+'>'+t.ic+' '+t.t+'</option>';}).join('');
-  var stageOpts=sgStageOptions(formTypeV854,'lead');
+  var stageOpts=sgStageOptions(formTypeV854,(window.__sgFormStageV921||'lead'));   /* v921 : 고른 단계 유지 */
   var custList=A.custs.slice().sort(function(a,b){return b.cy-a.cy;}).slice(0,600).map(function(o){return '<option value="'+sgEsc(o.name)+'">';}).join('');
   var prodList=A.prods.slice().sort(function(a,b){return b.cy-a.cy;}).slice(0,600).map(function(o){return '<option value="'+sgEsc(o.label)+'">';}).join('');
 
@@ -30874,7 +30902,9 @@ function sgPipeline(A){
     view.forEach(function(it){
       var T=SG_TMAP[it.type]||SG_TMAP.newCust;
       var p=(it.prob==null?(SG_SMAP[it.stage]||{p:50}).p:+it.prob);
-      var stageV856=(it.prob==null?(it.stage||sgStageFromProbV856(p)):sgStageFromProbV856(p));
+      /* v921 : 고른 단계를 그대로 씁니다. 전에는 확률에서 단계를 역산해, 확률이 같거나 배경동기화로
+           옛 확률이 돌아오면 고른 단계가 이전 값으로 되돌아갔습니다. */
+      var stageV856=(it.stage||sgStageFromProbV856(p));
       if(it.stage!==stageV856)it.stage=stageV856;
       /* v613 : 연간 목표표의 올해목표액과 연동된 금액을 사용합니다. */
       var linked=sgLinkedTargetV613(it,tmaps),linkOn=(linked!=null&&it.amountLink!==false);
@@ -40570,87 +40600,157 @@ document.addEventListener('click',function(){ setTimeout(move,120); setTimeout(m
 })();
 })();
 </script>
-<script id="v919-prod-table-extras">
-/* ══════════════════════════════════════════════════════════════
-   v919 · 📦 제품(규격)별 매출 목표
-   ① 검색칸에 글자를 치는 «즉시» 표의 줄을 걸러 빠르게 보여 줍니다(Enter는 기존대로 전체 재계산).
-   ② 합계 아래줄에 «조정% 평균»을 표시합니다.
-   ══════════════════════════════════════════════════════════════ */
+<script id="v920-prod-table-extras">
 (function(){
 'use strict';
-function table(){
-  try{
-    var t=document.querySelector('#result table.fc-prod-annual-table');
-    return t||null;
-  }catch(e){ return null; }
+function table(){ try{ return document.querySelector('#result table.fc-prod-annual-table')||null; }catch(e){ return null; } }
+var tm=null, composing=false, lastQ=null, avgDirty=true;
+
+/* 행 텍스트를 한 번만 만들어 둡니다(innerText 는 매번 레이아웃을 다시 계산해 느립니다). */
+function hay(tr){
+  var h=tr.__v920h;
+  if(h!=null&&tr.__v920v===tr.childElementCount)return h;
+  var buf=[],cs=tr.children;
+  for(var i=0;i<cs.length;i++){
+    var td=cs[i];
+    var t=td.textContent||'';
+    var inp=td.querySelector&&td.querySelector('input[type="text"],input:not([type])');
+    if(inp&&inp.value)t+=' '+inp.value;
+    buf.push(t);
+  }
+  h=buf.join(' ').toLowerCase().replace(/\s+/g,' ');
+  tr.__v920h=h; tr.__v920v=tr.childElementCount;
+  return h;
 }
-/* ① 즉시 거르기 */
-var tm=null;
+function filterNow(q){
+  var t=table(); if(!t)return;
+  var body=t.tBodies&&t.tBodies[0]; if(!body)return;
+  var toks=String(q||'').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  var rows=body.rows, hide=[], show=[], shown=0;
+  /* ① 읽기 단계 : 스타일을 건드리지 않고 판정만 합니다 */
+  for(var i=0;i<rows.length;i++){
+    var tr=rows[i];
+    if(tr.classList&&(tr.classList.contains('total-row')||tr.classList.contains('v919-avg')||tr.classList.contains('v920-avg')))continue;
+    var ok=true;
+    if(toks.length){ var h=hay(tr); for(var k=0;k<toks.length;k++){ if(h.indexOf(toks[k])<0){ok=false;break;} } }
+    if(ok){show.push(tr);shown++;}else hide.push(tr);
+  }
+  /* ② 쓰기 단계 : 한꺼번에 적용합니다 */
+  for(var a=0;a<hide.length;a++)if(hide[a].style.display!=='none')hide[a].style.display='none';
+  for(var b=0;b<show.length;b++)if(show[b].style.display==='none')show[b].style.display='';
+  var hd=document.querySelector('#result .fc-prod-unified-search');
+  if(hd){
+    var tag=hd.querySelector('.v919-cnt');
+    if(!tag){ tag=document.createElement('span'); tag.className='v919-cnt'; tag.style.cssText='margin-left:7px;font-size:11px;font-weight:800;color:#1d4ed8'; hd.appendChild(tag); }
+    tag.textContent=toks.length?('표시 '+shown.toLocaleString('ko-KR')+'줄'):'';
+  }
+  avgDirty=true; avg();
+}
+function schedule(el){
+  if(composing)return;            /* 한글 조합 중에는 돌리지 않습니다 */
+  clearTimeout(tm);
+  tm=setTimeout(function(){
+    var q=String(el.value||'');
+    if(q===lastQ)return; lastQ=q;
+    filterNow(q);
+  },160);
+}
+document.addEventListener('compositionstart',function(e){ if(e.target&&e.target.id==='fcProdSearch'){composing=true;clearTimeout(tm);} },true);
+document.addEventListener('compositionend',function(e){ if(e.target&&e.target.id==='fcProdSearch'){composing=false;schedule(e.target);} },true);
 document.addEventListener('input',function(e){
   try{
     var el=e.target; if(!el||el.id!=='fcProdSearch')return;
-    clearTimeout(tm);
-    tm=setTimeout(function(){
-      var t=table(); if(!t)return;
-      var q=String(el.value||'').trim().toLowerCase();
-      var toks=q.split(/\s+/).filter(Boolean);
-      var body=t.tBodies&&t.tBodies[0]; if(!body)return;
-      var shown=0;
-      Array.prototype.forEach.call(body.rows,function(tr){
-        if(tr.classList&&tr.classList.contains('total-row'))return;
-        if(!toks.length){ tr.style.display=''; shown++; return; }
-        var txt=(tr.innerText||'').toLowerCase().replace(/\s+/g,' ');
-        var ok=toks.every(function(x){ return txt.indexOf(x)>=0; });
-        tr.style.display=ok?'':'none'; if(ok)shown++;
-      });
-      var h=document.querySelector('#result .fc-prod-unified-search');
-      if(h){
-        var tag=h.querySelector('.v919-cnt');
-        if(!tag){ tag=document.createElement('span'); tag.className='v919-cnt'; tag.style.cssText='margin-left:7px;font-size:11px;font-weight:800;color:#1d4ed8'; h.appendChild(tag); }
-        tag.textContent=toks.length?('표시 '+shown.toLocaleString('ko-KR')+'줄'):'';
-      }
-      avg();
-    },90);
+    if(e.isComposing||composing)return;
+    schedule(el);
   }catch(err){}
 },true);
+document.addEventListener('input',function(e){
+  var el=e.target; if(el&&el.classList&&el.classList.contains('fcpov'))avgDirty=true;
+},true);
+
 /* ② 조정% 평균 */
 function avg(){
   try{
+    if(!avgDirty)return;
     var t=table(); if(!t)return;
     var body=t.tBodies&&t.tBodies[0]; if(!body)return;
-    var tot=null;
-    Array.prototype.forEach.call(body.rows,function(tr){ if(tr.classList&&tr.classList.contains('total-row'))tot=tr; });
+    var tot=null,rows=body.rows;
+    for(var i=0;i<rows.length;i++)if(rows[i].classList&&rows[i].classList.contains('total-row'))tot=rows[i];
     if(!tot)return;
+    avgDirty=false;
     var sum=0,n=0;
-    Array.prototype.forEach.call(body.rows,function(tr){
-      if(tr===tot||tr.style.display==='none')return;
-      var inp=tr.querySelector('input.fcpov'); if(!inp)return;
+    for(var r=0;r<rows.length;r++){
+      var tr=rows[r];
+      if(tr===tot||tr.style.display==='none')continue;
+      if(tr.classList&&(tr.classList.contains('v919-avg')||tr.classList.contains('v920-avg')))continue;
+      var inp=tr.querySelector('input.fcpov'); if(!inp)continue;
       var v=String(inp.value||'').trim(); if(v==='')v=String(inp.placeholder||'').replace(/[+\s%]/g,'');
-      if(v===''||isNaN(+v))return;
+      if(v===''||isNaN(+v))continue;
       sum+=+v; n++;
-    });
+    }
     var row=body.querySelector('tr.v919-avg');
     if(!n){ if(row)row.remove(); return; }
     if(!row){
       row=document.createElement('tr'); row.className='v919-avg';
-      var cells=tot.children.length;
-      var html='';
-      for(var i=0;i<cells;i++)html+='<td></td>';
+      var cells=tot.children.length,html='';
+      for(var j=0;j<cells;j++)html+='<td></td>';
       row.innerHTML=html;
       row.style.cssText='background:#f8fafc;font-size:12px';
       tot.parentNode.insertBefore(row,tot.nextSibling);
     }
-    /* 조정% 열 위치를 머리글에서 찾습니다 */
     var idx=-1, ths=t.tHead?t.tHead.rows[t.tHead.rows.length-1].cells:[];
-    for(var j=0;j<ths.length;j++){ if((ths[j].innerText||'').replace(/\s/g,'').indexOf('조정%')===0){ idx=j; break; } }
-    Array.prototype.forEach.call(row.children,function(td){ td.textContent=''; td.style.textAlign=''; });
+    for(var c=0;c<ths.length;c++){ if((ths[c].textContent||'').replace(/\s/g,'').indexOf('조정%')===0){ idx=c; break; } }
+    for(var d=0;d<row.children.length;d++){ row.children[d].textContent=''; row.children[d].style.textAlign=''; }
     if(row.children[1]){ row.children[1].textContent='조정% 평균'; row.children[1].style.cssText='text-align:left;color:#64748b;font-weight:800'; }
     var av=Math.round(sum/n*100)/100;
     var cell=(idx>=0&&row.children[idx])?row.children[idx]:row.children[row.children.length-1];
     if(cell){ cell.textContent=(av>0?'+':'')+av.toFixed(1)+'%'; cell.style.cssText='text-align:center;font-weight:800;color:'+(av>0?'#15803d':(av<0?'#dc2626':'#334155')); }
   }catch(e){}
 }
-setInterval(avg,1500);
+setInterval(function(){ avgDirty=true; avg(); },3000);
+})();
+</script>
+<script id="v921-stage-sticky">
+(function(){
+'use strict';
+/* 등록폼에서 고른 단계를 기억해, 다시 그려도 ①로 돌아가지 않게 합니다. */
+document.addEventListener('change',function(e){
+  try{
+    var el=e.target; if(!el)return;
+    if(el.id==='sgFStage'){ window.__sgFormStageV921=el.value; return; }
+    if(el.id==='sgFType'){ return; }
+  }catch(_e){}
+},true);
+/* 등록 직후에는 ①로 되돌립니다(새 건 입력이므로). */
+document.addEventListener('click',function(e){
+  try{ var b=e.target&&e.target.closest&&e.target.closest('#sgAdd'); if(b)setTimeout(function(){ window.__sgFormStageV921=''; },0); }catch(_e){}
+},true);
+/* 줄 단위 단계 선택이 다시 그리기로 되돌아가면 1.5초간 다시 적용합니다. */
+var pick={};
+document.addEventListener('change',function(e){
+  try{
+    var el=e.target;
+    if(!el||el.tagName!=='SELECT'||el.getAttribute('data-f')!=='stage')return;
+    var id=el.getAttribute('data-id'); if(!id)return;
+    pick[id]={v:el.value,t:Date.now()};
+  }catch(_e){}
+},true);
+setInterval(function(){
+  try{
+    var n=Date.now(),ks=Object.keys(pick); if(!ks.length)return;
+    ks.forEach(function(id){
+      var r=pick[id];
+      if(!r||n-r.t>1500){ delete pick[id]; return; }
+      var sel=document.querySelector('select[data-f="stage"][data-id="'+id.replace(/"/g,'\\"')+'"]');
+      if(sel&&sel.value!==r.v&&document.activeElement!==sel)sel.value=r.v;
+      try{
+        if(typeof state!=='undefined'&&state&&state.strategyPlan&&Array.isArray(state.strategyPlan.items)){
+          state.strategyPlan.items.forEach(function(it){ if(it&&String(it.id)===String(id)&&it.stage!==r.v)it.stage=r.v; });
+        }
+      }catch(_e2){}
+    });
+  }catch(_e){}
+},200);
 })();
 </script>
 </body>
