@@ -2706,6 +2706,31 @@ function fcApplyYearContext(act){
     try{ _fcBaseAggCache=null; window.FC_CHART_V677=null; }catch(_e){}
   }catch(_e){}
 }
+/* v965 : 매출목표 페이지 최초 진입 시 현재 연도 목표안을 다시 활성화합니다.
+   targetYear와 _ctxYear가 이미 같으면 fcApplyYearContext()가 조기 종료되어,
+   연도 보관함의 최신 2027 값이 live 계산값에 적용되지 않는 경우가 있었습니다. */
+function fcRefreshCurrentYearOnEntryV965(){
+  try{
+    const f=state.fc;if(!f)return false;
+    const y=String(fcTargetYear()),st=fcYearStore()[y];
+    if(st&&st.targetPlans){
+      f.targetPlans=fcPlanClone(st.targetPlans);
+      f.activePlan=st.activePlan==='2'?'2':'1';
+      f._targetPlanLoaded=null;
+      f._ctxYear=y;
+      fcEnsureTargetPlans();
+    }else{
+      f._ctxYear=y;
+      fcEnsureTargetPlans();
+      fcSaveYearPlan(y);
+    }
+    /* 이전 연도/이전 목표안으로 만들어진 계산 결과를 재사용하지 않습니다. */
+    try{_fcBaseAggCache=null;}catch(_e){}
+    try{state._fc=null;}catch(_e2){}
+    try{window.FC_CHART_V677=null;window.FC_ANNUAL_TARGET_V966=null;}catch(_e3){}
+    return true;
+  }catch(_e){return false;}
+}
 /* 기준연도(=데이터 최종연도) 목표안에서 확정월·월별 목표%를 읽어옵니다 */
 function fcBaseYearPlan(){ const v=String((state.fc||{}).baseYearPlan||''); return v==='2'?'2':(v==='1'?'1':''); }
 function fcBasePlanV712(){
@@ -7664,7 +7689,10 @@ function salesQtyAnalysis(){
 function chromeFor(act){ const onH=(act==='home'); const s=document.getElementById('summary'); if(s)s.style.display=onH?'':'none'; const st=document.getElementById('sumTop'); if(st)st.style.display=onH?'':'none'; const pricePage=(act==='price'||act==='pricemake'); const sp=document.getElementById('setPanel'); if(sp)sp.style.display=(['minv','rawinv','forecast','trend','safety','disposal','retain','last-prod','last-cust','pareto','trend2','pdelta','qty-sales','kv-churn','cust-delta','compete','doorframe','compare','cmgr','price','pricemake','weekly1','weekly2','weekly3','market-con','market-fd','market-steel'].indexOf(act)>=0)?'none':''; const mf=document.getElementById('mgrFilterBar'); if(mf)mf.style.display=pricePage?'none':''; }
 function runAct(){ const a=state.act,enteringAct=state._lastAct!==a; if(!a) return;
   if(enteringAct){ try{ if(typeof fcOrderUnlockV802==='function')fcOrderUnlockV802(); }catch(_e){} }
-  try{ if(typeof fcApplyYearContext==='function')fcApplyYearContext(a); }catch(_e){} const _mkPage=(a==='market-con'||a==='market-fd'||a==='market-steel'||a==='minv'||a==='rawinv'); if(!_mkPage&&!CUR.length) return; state._inDrill=false; state._syncDeferred=false; try{chromeFor(a);}catch(_){}
+  try{ if(typeof fcApplyYearContext==='function')fcApplyYearContext(a); }catch(_e){}
+  /* v965 : 2026을 눌렀다가 다시 2027을 누르는 수동 새로고침을 페이지 진입 때 자동 수행합니다. */
+  if(a==='forecast'&&enteringAct){try{if(typeof fcRefreshCurrentYearOnEntryV965==='function')fcRefreshCurrentYearOnEntryV965();}catch(_e){}}
+  const _mkPage=(a==='market-con'||a==='market-fd'||a==='market-steel'||a==='minv'||a==='rawinv'); if(!_mkPage&&!CUR.length) return; state._inDrill=false; state._syncDeferred=false; try{chromeFor(a);}catch(_){}
   if(state._lastAct!==a){ try{foldFilters();}catch(_){} }
   if(!state._backing){ if(state._lastAct && state._lastAct!==a){ state.navHist=state.navHist||[]; if(state.navHist[state.navHist.length-1]!==state._lastAct)state.navHist.push(state._lastAct); if(state.navHist.length>60)state.navHist.shift(); } } state._lastAct=a; state._backing=false;
   try{ if(typeof bepHeadMoveV792==='function')setTimeout(bepHeadMoveV792,0); }catch(_e){}
@@ -13304,6 +13332,8 @@ function forecast(){
     for(let m=1;m<=12;m++)_sumV678+=(m<=_cutV678?(+actV[m]||0):(+tgtV[m]||0));
     if(_sumV678>0)olhaeTarget=_sumV678;
   }catch(_e){}
+  /* v966 : 목표전략이 별도 계산식을 쓰지 않고 이 화면의 최종 표시 금액을 재사용합니다. */
+  try{window.FC_ANNUAL_TARGET_V966={year:+CY,plan:String((state.fc&&state.fc.activePlan)||'1'),value:Math.round(+olhaeTarget||0),at:Date.now()};}catch(_v966){}
   const projPct=pyAnnual?(olhaeTarget-pyAnnual)/pyAnnual*100:0;
   // 고철업체 중 '제외'되지 않은 업체의 당해연도 매출은 거래처외 매출포함항목 합계에 포함
   /* v768 : 다음 연도(2027) 목표를 세울 때 «기준연도(2026) 화면»을 숨긴 채 한 번 더 계산하는데,
@@ -29197,6 +29227,20 @@ function sgPlanItems(plan){
   /* 구버전의 연도 없는 전략은 2027 자료로 간주해 2026 화면에 섞이지 않게 합니다. */
   return sgPlan().items.filter(function(it){return String(it.plan||'1')===plan&&+(it.year==null?2027:it.year)===year;});
 }
+/* v966 : 매출 목표 화면에 표시되는 최종 연간 목표액을 목표전략의 단일 기준으로 사용합니다. */
+function sgSalesGoalAmountV966(A){
+  try{
+    var year=sgActiveYearV949(),plan=sgActivePlan(),snap=window.FC_ANNUAL_TARGET_V966;
+    if(snap&&+snap.year===+year&&String(snap.plan||'1')===String(plan)&&+snap.value>0)return +snap.value;
+    var C=window.FC_CHART_V677,cut=(typeof fcCutoffMonth==='function'?fcCutoffMonth():0),total=0;
+    if(C&&+C.CY===+year&&String(C.plan||'1')===String(plan)&&C.act&&C.tgt){
+      for(var m=1;m<=12;m++)total+=(m<=cut?(+C.act[m]||0):(+C.tgt[m]||0));
+      if(total>0)return Math.round(total);
+    }
+  }catch(_v966){}
+  try{return Math.round(+((fcAnnualTargetSummary()||{}).annualTarget)||0);}catch(_v966b){}
+  return +(A&&A.annualTarget)||0;
+}
 function sgGoalContext(A){
   var pl=sgPlan(),plan=sgActivePlan();
   if(!pl.goals||typeof pl.goals!=='object')pl.goals={};
@@ -29214,9 +29258,8 @@ function sgGoalContext(A){
   var linked=year===A.CY;
   if(linked)pl.goalLinked=true;
   var bucket=pl.goals[String(year)]||{},stored=+bucket[plan]||0;
-  /* 매출목표 페이지와 동일한 연간 요약값을 사용합니다. */
-  var fallback=0;
-  try{fallback=+((fcAnnualTargetSummary()||{}).annualTarget)||0;}catch(_sum954){}
+  /* 매출목표 페이지에 실제 표시되는 최종 연간 목표액을 그대로 사용합니다. */
+  var fallback=sgSalesGoalAmountV966(A);
   if(!(fallback>0))fallback=A.annualTarget||Math.round(A.cyTot*1.1);
   return {year:year,plan:plan,linked:linked,stored:stored,value:linked?fallback:(stored||fallback)};
 }
@@ -29726,8 +29769,8 @@ function sgSynthRowsV713(){
 function sgEnsureForecastSnapshotV963(){
   try{
     if(typeof fcYearsV712!=='function'||typeof forecast!=='function'||typeof state==='undefined')return;
-    var y=fcYearsV712(),f=state._fc;
-    if(f&&+f.PY===+y.PY&&+f.CY===+y.CY&&f.fcCustProdMon&&f.cyMonCust)return;
+    var y=fcYearsV712(),f=state._fc,snap=window.FC_ANNUAL_TARGET_V966;
+    if(f&&+f.PY===+y.PY&&+f.CY===+y.CY&&f.fcCustProdMon&&f.cyMonCust&&snap&&+snap.year===+y.CY&&String(snap.plan||'1')===String(sgActivePlan()))return;
     if(window.__FC_BOOT_BLOCK_V860){
       clearTimeout(window.__sgFcReadyTimerV963);
       window.__sgFcReadyTimerV963=setTimeout(function(){try{sgLastAnalysis=null;sgLastAnalysisRows=null;sgRender();}catch(_e){}},450);
@@ -30571,7 +30614,8 @@ function sgWaterfall(A){
       var a=sgSignedAmount(it),p0=(it.prob==null?(SG_SMAP[it.stage]||{p:50}).p:+it.prob),v=useProb?a*(p0/100):a;
       pipe[it.type]=(pipe[it.type]||0)+v;pipeCount[it.type]=(pipeCount[it.type]||0)+1;pipelineExtra+=v;
     });
-    baseVal=bd.actual;goal=bd.target||goal;
+    /* v966 : 분해표의 중간 target이 매출목표 페이지의 최종 목표액을 덮어쓰지 않게 합니다. */
+    baseVal=bd.actual;
     vals=SG_TYPES.map(function(t){var autoV=av[t.k]||0,pipeV=pipe[t.k]||0;return{k:t.k,t:t.t,c:t.c,ic:t.ic,v:autoV+pipeV,autoV:autoV,pipeV:pipeV,pipeCount:pipeCount[t.k]||0,linkedCount:linkedCount[t.k]||0,creditCut:t.k==='creditCut'};});
   }else{
     var sums={},probSums={};SG_TYPES.forEach(function(t){sums[t.k]=0;probSums[t.k]=0;});
@@ -32132,7 +32176,7 @@ function sgKpis(A){
   var ps=sgPipelineStatsV950(goalCtx.plan), pc=function(k){return ps[k]||{t:(SG_TMAP[k]||{}).t||k,n:0,a:0,e:0};};
   var psTxt=function(k){var x=pc(k);return '목표 '+sgWon(Math.abs(x.a))+'원 · 기대 '+sgWon(Math.abs(x.e))+'원';};
   return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:11px">'
-    +m(goalCtx.year+'년 매출예상',sgShort(planEnd)+'원','계획 합계 · '+A.PY+'년 '+sgShort(A.pyTot),'#1e3a5f','all2026')
+    +m(goalCtx.year+'년 매출액',sgShort(goal)+'원','전년매출 · '+A.PY+'년 '+sgShort(A.pyTot),'#1e3a5f','all2026')
     +m(pc('newCust').t,pc('newCust').n+'개사',psTxt('newCust'),'#1d4ed8','newCust')
     +m(pc('growthCust').t,pc('growthCust').n+'개사',psTxt('growthCust'),'#16a34a','growthCust')
     /* 기존업체는 추진현황에 직접 등록한 건수만이 아니라 워터폴의 기존업체 전체 모수와 금액을 표시합니다. */
