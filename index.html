@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v931</title>
-<script>window.APP_BUILD='v931';</script>
+<title>동방파스텍 매출 분석 도구 v932</title>
+<script>window.APP_BUILD='v932';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2027,7 +2027,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v931</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v932</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -13991,7 +13991,7 @@ function forecast(){
         state.fc[TABF[curTab]]=ed.innerHTML;
         /* v789 : 지금 보고 있는 목표 연도 보관함에도 같이 저장합니다 */
         try{ if(typeof fcNotesSyncYearV789==='function')fcNotesSyncYearV789(); }catch(_y){} };
-      const setBtn=(b,on)=>{ if(!b)return; b.style.background=on?'#fde047':'#ffffff'; b.style.color=on?'#713f12':'#b45309'; b.style.borderColor=on?'#eab308':'#fde68a'; };
+      const setBtn=(b,on)=>{ if(!b)return; b.style.background=on?'#fde047':'#ffffff'; b.style.color=on?'#713f12':'#b45309'; b.style.borderColor=on?'#eab308':'#fde68a'; try{ b.classList.toggle('v932on',!!on); }catch(_e){} };
       /* v789 : 이 주요사항이 «어느 목표 연도»의 것인지 제목에 표시합니다 */
       try{ const yl=document.getElementById('fcNotesYrV789');
         if(yl)yl.textContent=((typeof fcTargetYear==='function')?fcTargetYear():'')+'년 '; }catch(_y){}
@@ -41024,13 +41024,90 @@ function say(){ if(!window.__v929Said){ window.__v929Said=1;
 var t0=Date.now();
 var tm=setInterval(function(){
   try{
-    if(done()||Date.now()-t0>300000){ clearInterval(tm); return; }
+    if(done()){ clearInterval(tm); return; }
     run(false);
   }catch(e){}
 },1500);
 /* 수동 명령 */
 window.pdSeed2026V929=function(){ var n=viaUI(); if(!n)n=viaState(); mark(); console.log('[v929] 채운 칸 '+n+'개'); return n; };
 window.pdSeed2026ResetV929=function(){ try{ localStorage.removeItem(FLAG); console.log('[v929] 다시 채울 수 있습니다. PD 사업부 임가공비 표를 여세요.'); }catch(e){} };
+})();
+</script>
+<style id="v932-goal-tools-ui">
+/* ══ v932 · 목표설정 메뉴 ══ */
+#fcGoalToolsMenuV892{justify-content:flex-end!important;gap:6px!important}
+/* 선택된 버튼이 보이도록 (메뉴 CSS 의 !important 를 이깁니다) */
+#fcGoalToolsMenuV892 .fcntab.v932on,
+#fcGoalToolsMenuV892 #fcNotesToggle.v932on,
+#fcGoalToolsMenuV892 button.v932on,
+#fcGoalToolsMenuV892 .gt-sub-open-v873{
+  background:#1e3a5f!important;color:#fff!important;border-color:#1e3a5f!important;
+  box-shadow:0 1px 3px rgba(30,58,95,.3)!important}
+/* 마우스를 올리면 색이 바뀝니다 */
+#fcGoalToolsMenuV892 button:hover:not(.v932on):not(.gt-sub-open-v873),
+#fcGoalToolsMenuV892 .fcntab:hover:not(.v932on){
+  background:#e2e8f0!important;border-color:#94a3b8!important;color:#0f172a!important;cursor:pointer}
+#fcGoalToolsMenuV892 button.v932on:hover,
+#fcGoalToolsMenuV892 .gt-sub-open-v873:hover{background:#2c5282!important}
+/* 👥 사업부 인원 ↔ 📝 주요사항 사이 구분선 */
+#fcGoalToolsMenuV892 .v932sep{display:inline-block;width:1px;height:20px;background:#cbd5e1;margin:0 4px;flex:0 0 auto}
+
+/* ══ v932 · 입력칸 모양 통일 ══ */
+#fcMonthlyTargetPanel input,#fcWorkdayPanelV854 input,
+#bepHeadHostV792 input,#bepHeadBoxV792 input,
+#result input.pdin,
+#result .fc-cust-month-pct,#result .fc-prod-month-pct,
+#result input.fcmemo,#result input.fcpmemo{
+  box-sizing:border-box!important;height:27px!important;padding:3px 8px!important;
+  border:1px solid #e2e8f0!important;border-radius:7px!important;background:#fff!important;
+  font-family:inherit!important;font-size:12px!important;font-weight:400!important;
+  font-style:normal!important;color:#1f2937!important;line-height:1.2!important;
+  box-shadow:none!important;outline:none}
+#result .fc-cust-month-pct,#result .fc-prod-month-pct,
+#fcMonthlyTargetPanel input,#result input.pdin{text-align:right!important}
+#result input.fcmemo,#result input.fcpmemo{text-align:left!important}
+#fcMonthlyTargetPanel input:focus,#fcWorkdayPanelV854 input:focus,
+#bepHeadHostV792 input:focus,#bepHeadBoxV792 input:focus,
+#result input.pdin:focus,
+#result .fc-cust-month-pct:focus,#result .fc-prod-month-pct:focus,
+#result input.fcmemo:focus,#result input.fcpmemo:focus{
+  border-color:#94a3b8!important;box-shadow:0 0 0 2px rgba(148,163,184,.25)!important}
+#result input.pdin.pd-neg{color:#dc2626!important;font-weight:700!important}
+#result .fc-cust-month-pct::placeholder,#result .fc-prod-month-pct::placeholder,
+#result input.fcmemo::placeholder,#result input.fcpmemo::placeholder{
+  color:#b6c0cc!important;font-style:normal!important;font-weight:400!important}
+</style>
+<script id="v932-goal-tools-script">
+(function(){
+'use strict';
+function sep(){
+  try{
+    var m=document.getElementById('fcGoalToolsMenuV892'); if(!m)return;
+    var nt=document.getElementById('fcNotesToggle'); if(!nt||nt.parentElement!==m)return;
+    var prev=nt.previousElementSibling;
+    if(prev&&prev.classList&&prev.classList.contains('v932sep'))return;
+    var d=document.createElement('span'); d.className='v932sep'; d.setAttribute('aria-hidden','true');
+    m.insertBefore(d,nt);
+  }catch(e){}
+}
+function paint(){
+  try{
+    var m=document.getElementById('fcGoalToolsMenuV892'); if(!m)return;
+    var wrap=document.getElementById('fcNotesWrap');
+    var open=!!(wrap&&wrap.style.display&&wrap.style.display!=='none');
+    var cur='';
+    try{ cur=(state&&state.fc&&state.fc.notesTab)||'main'; }catch(e){}
+    var tog=document.getElementById('fcNotesToggle');
+    if(tog)tog.classList.toggle('v932on',open&&cur==='main');
+    m.querySelectorAll('.fcntab').forEach(function(b){
+      b.classList.toggle('v932on',open&&b.dataset.t===cur);
+    });
+  }catch(e){}
+}
+document.addEventListener('click',function(e){
+  try{ if(e.target&&e.target.closest&&e.target.closest('#fcGoalToolsMenuV892'))setTimeout(paint,40); }catch(_e){}
+},true);
+setInterval(function(){ sep(); paint(); },700);
 })();
 </script>
 </body>
