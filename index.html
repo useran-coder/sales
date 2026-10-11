@@ -807,6 +807,9 @@ header .appver,header .appuser{margin-left:8px!important}
 #fcGoalToolsMenuV892 .fcntab.on,#fcGoalToolsMenuV892 .btn.on,#fcGoalToolsMenuV892 .gt-sub-open-v873{
   background:#1e3a5f!important;color:#fff!important;border-color:#1e3a5f!important}
 #fcGoalToolsMenuV892>span{font-size:12px;color:#64748b}
+/* v952 : 주요사항 편집기는 우측 정렬 메뉴의 남은 폭이 아니라 한 줄 전체를 사용합니다. */
+#fcGoalToolsMenuV892 #fcNotesWrap{flex:1 0 100%!important;width:100%!important;max-width:none!important;
+  margin-left:0!important;margin-right:0!important;box-sizing:border-box!important}
 /* 서브 패널은 메뉴 밖에 붙으므로 테두리만 옅게 */
 #fcWorkdayPanelV854{border:1px solid var(--line)!important;background:#fff!important}
 header .hdr-user{margin-left:0!important}
@@ -13610,8 +13613,7 @@ function forecast(){
       try{
         var vis=function(el){ return !!(el&&el.offsetParent!==null); };
         var pair=[['fcMonthlyTargetToggle','fcMonthlyTargetPanel'],
-                  ['fcWorkdayToggleV854','fcWorkdayPanelV854'],
-                  ['fcNotesToggle','fcNotesWrap']];
+                  ['fcWorkdayToggleV854','fcWorkdayPanelV854']];
         pair.forEach(function(x){
           var b=document.getElementById(x[0]),pn=document.getElementById(x[1]);
           if(b)b.classList.toggle('gt-sub-open-v873',vis(pn));
@@ -14020,7 +14022,10 @@ function forecast(){
       /* v789 : 이 주요사항이 «어느 목표 연도»의 것인지 제목에 표시합니다 */
       try{ const yl=document.getElementById('fcNotesYrV789');
         if(yl)yl.textContent=((typeof fcTargetYear==='function')?fcTargetYear():'')+'년 '; }catch(_y){}
-      const markTabs=()=>{ setBtn(tog,curTab==='main'); document.querySelectorAll('#result .fcntab').forEach(b=>setBtn(b,b.dataset.t===curTab)); };
+      const markTabs=()=>{ setBtn(tog,curTab==='main');
+        /* 팀 탭에서는 상위 «매출목표 주요사항» 버튼의 열림 강조도 제거합니다. */
+        if(tog&&curTab!=='main')tog.classList.remove('gt-sub-open-v873','v932on','on');
+        document.querySelectorAll('#result .fcntab').forEach(b=>setBtn(b,b.dataset.t===curTab)); };
       loadTab(curTab); markTabs(); showBy();
       const openWrap=()=>{ if(wrap.style.display==='none'){ wrap.style.display='block'; tog.textContent='📝 매출목표 주요사항 ▴'; } };
       const switchTab=t=>{ commit(); saveSettings(); curTab=t; state.fc.notesTab=t; loadTab(t); openWrap(); markTabs(); showBy(); ed.focus(); };
@@ -30492,9 +30497,30 @@ function sgWaterfall(A){
     planItems.forEach(function(it){if(it.off)return;var a=sgSignedAmount(it),p0=(it.prob==null?(SG_SMAP[it.stage]||{p:50}).p:+it.prob);sums[it.type]=(sums[it.type]||0)+a;probSums[it.type]=(probSums[it.type]||0)+a*(p0/100);});
     vals=SG_TYPES.map(function(t){return{k:t.k,t:t.t,c:t.c,ic:t.ic,v:useProb?probSums[t.k]:sums[t.k],creditCut:t.k==='creditCut'};});
   }
-  /* 자동 거래축소 예상액과 수동 파이프라인 거래축소를 한 항목으로 합쳐 중복 막대를 방지합니다. */
-  var cutVal=vals.filter(function(o){return o.k==='creditCut';})[0];
-  if(cutVal){var autoCut=-Math.max(0,+A.creditCutImpact||0);cutVal.v+=autoCut;if(autoOn)cutVal.autoV=(cutVal.autoV||0)+autoCut;}
+  /* v952 : A 워터폴의 9개 제목은 ② 영업전략 추진현황의 같은 구분과 1:1로 집계합니다.
+     목표표 자동 신규업체 행도 ②에 보이는 값과 동일하게 신규·경쟁사업체 합계에 포함합니다. */
+  var wfSums={},wfCnt={};SG_TYPES.forEach(function(t){wfSums[t.k]=0;wfCnt[t.k]=0;});
+  var wfNames={};
+  planItems.forEach(function(it){
+    if(!it||it.off)return;
+    var a=sgSignedAmount(it),p=(it.prob==null?(SG_SMAP[it.stage]||{p:50}).p:+it.prob);
+    wfSums[it.type]=(wfSums[it.type]||0)+(useProb?a*Math.max(0,Math.min(100,p))/100:a);
+    wfCnt[it.type]=(wfCnt[it.type]||0)+1;
+    var nm=String(it.cust||it.title||'').trim().toLowerCase();if(nm)wfNames[nm]=1;
+  });
+  try{
+    var meta=(goalCtx.plan&&goalCtx.plan.tgtMeta)||pl.tgtMeta||{},actMap={};
+    (A.custs||[]).forEach(function(x){actMap[String(x.name||'').trim()]=+x.cy||0;});
+    ((typeof sgTargetNewCustsV663==='function')?sgTargetNewCustsV663():[]).forEach(function(o){
+      var n=String(o.name||'').trim();if(wfNames[n.toLowerCase()])return;
+      var m=meta[n]||{},act=+actMap[n]||0,hasAct=(act>0&&+o.amt>0);
+      var p=(m.prob==null?(hasAct?Math.max(0,Math.min(100,Math.round(act/(+o.amt||1)*100))):100):+m.prob);
+      wfSums.newCust+=(useProb?((hasAct&&m.prob==null)?act:(+o.amt||0)*Math.max(0,Math.min(100,p))/100):(+o.amt||0));
+      wfCnt.newCust++;
+    });
+  }catch(_wf952){}
+  vals=SG_TYPES.map(function(t){return{k:t.k,t:t.t,c:t.c,ic:t.ic,v:wfSums[t.k]||0,pipeV:wfSums[t.k]||0,pipeCount:wfCnt[t.k]||0,linkedCount:0,autoV:0,creditCut:t.k==='creditCut'};});
+  pipelineExtra=vals.reduce(function(a,o){return a+(+o.v||0);},0);
   var planTot=vals.reduce(function(a,o){return a+o.v;},0);
   var end=baseVal+planTot, gap=goal-end;
 
@@ -32953,7 +32979,7 @@ function sgBind(A){
     if(!o[D.cols[0].f]){ alert(D.cols[0].l+'을(를) 입력하세요.'); return; }
     sgMan(kind).unshift(o);
     try{ if(typeof logEdit==='function')logEdit('영업전략',D.t+' 등록: '+o[D.cols[0].f]); }catch(_e){}
-    sgSave(); sgRe(); }); });
+    try{sgAmtCommitV909();}catch(_c952){sgSave();} sgRe(); }); });
   $$('.sgManE').forEach(function(el){ el.addEventListener('change',function(){
     var kind=el.dataset.k, id=el.dataset.id, f=el.dataset.f;
     var D=SG_MAN[kind], col=D.cols.filter(function(c){return c.f===f;})[0];
@@ -33357,16 +33383,17 @@ function sgBind(A){
   var sgSaveTextEdit=function(el,immediate){
     var it=sgPickV923(el.dataset.id); if(!it)return;
     it[el.dataset.f]=el.value;
+    try{if(window.sgEditRememberV952)window.sgEditRememberV952(it);}catch(_v952){}
     if(it.targetDirectV857&&((it.type==='newCust'&&['cust','title'].indexOf(el.dataset.f)>=0)||(it.type==='newProd'&&['prod','title'].indexOf(el.dataset.f)>=0)))sgSyncDirectTargetV857(it,A,false);
     clearTimeout(sgTextSaveTimer);
-    var commit=function(){if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();sgSave();};
+    var commit=function(){if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();try{sgAmtCommitV909();}catch(_c){sgSave();}};
     if(immediate)commit();else sgTextSaveTimer=setTimeout(commit,220);
   };
   /* v806 : 목표표 등록 신규업체 행 — 단계·확률 수정, 실제 업체명 교체 */
   $$('.sgTgtStage').forEach(function(el){ el.addEventListener('change',function(){
     var n=el.dataset.n; pl.tgtMeta=pl.tgtMeta||{}; var m=pl.tgtMeta[n]||(pl.tgtMeta[n]={});
     m.stage=el.value; m.prob=(SG_SMAP[el.value]||{p:100}).p;
-    sgSave(); sgRe(); }); });
+    try{sgAmtCommitV909();}catch(_c952){sgSave();} sgRe(); }); });
   $$('.sgTgtProb').forEach(function(el){ el.addEventListener('change',function(){
     var n=el.dataset.n; pl.tgtMeta=pl.tgtMeta||{}; var m=pl.tgtMeta[n]||(pl.tgtMeta[n]={});
     m.prob=Math.max(0,Math.min(100,sgNum(el.value)));
@@ -33377,13 +33404,13 @@ function sgBind(A){
     var cell=sgMxIdByNoV867(el.value);
     if(el.dataset.id!=null&&el.dataset.id!==''){
       var it=sgPlan().items.filter(function(x){return String(x.id)===String(el.dataset.id);})[0];
-      if(it){ if(cell)it.matrixCell=cell; else delete it.matrixCell; }
+      if(it){ if(cell)it.matrixCell=cell; else delete it.matrixCell; try{if(window.sgEditRememberV952)window.sgEditRememberV952(it);}catch(_v952){} }
     }else if(el.dataset.n!=null){
       var pl2=sgPlan(); pl2.tgtMeta=pl2.tgtMeta||{};
       var m2=pl2.tgtMeta[el.dataset.n]||(pl2.tgtMeta[el.dataset.n]={});
       if(cell)m2.mxCell=cell; else delete m2.mxCell;
     }
-    sgSave(); sgRe(); }); });
+    try{sgAmtCommitV909();}catch(_c952){sgSave();} sgRe(); }); });
   $$('.sgTgtMon').forEach(function(el){ el.addEventListener('change',function(){
     var n=el.dataset.n; pl.tgtMeta=pl.tgtMeta||{}; var m=pl.tgtMeta[n]||(pl.tgtMeta[n]={});
     m.mon=Math.min(12,Math.max(1,+el.value||sgNextMon())); sgSave(); sgRe(); }); });
@@ -33451,6 +33478,7 @@ function sgBind(A){
       else if(f==='mon')it.mon=+v||1;
       else if(f==='stage'){ it.stage=v; it.prob=(SG_SMAP[v]||{p:50}).p; }
       else it[f]=v;
+      try{if(window.sgEditRememberV952)window.sgEditRememberV952(it);}catch(_v952){}
       if(f==='prob'||f==='stage')sgSyncItemAnnualAdd(it,A,false);
       if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
       /* v917 : 단계·확률·시작월은 «한 번에» 반영되도록 즉시 저장·커밋하고 빠른 재렌더를 씁니다.
@@ -41254,7 +41282,7 @@ function paint(){
     var cur='';
     try{ cur=(state&&state.fc&&state.fc.notesTab)||'main'; }catch(e){}
     var tog=document.getElementById('fcNotesToggle');
-    if(tog)tog.classList.toggle('v932on',open&&cur==='main');
+    if(tog){tog.classList.toggle('v932on',open&&cur==='main');if(cur!=='main')tog.classList.remove('gt-sub-open-v873','on');}
     m.querySelectorAll('.fcntab').forEach(function(b){
       b.classList.toggle('v932on',open&&b.dataset.t===cur);
     });
@@ -41579,6 +41607,42 @@ document.addEventListener('click',function(e){
     }
   }catch(_e){}
 },true);
+})();
+</script>
+<script id="v952-strategy-edit-guard">
+(function(){
+'use strict';
+/* 영업전략의 제품명·비고·매트·단계·시작월 등 행 전체를 최근 로컬 편집본으로 보호합니다. */
+var KEY='SG_EDIT_LOCAL_V952',TTL=30*60*1000;
+function ctx(){try{return String((typeof fcTargetYear==='function'?fcTargetYear():'')||'')+'|'+String((state.fc&&state.fc.activePlan)||'1');}catch(e){return '|1';}}
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){return {};}}
+function save(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+function prune(o){var n=Date.now(),ch=false;Object.keys(o).forEach(function(k){if(!o[k]||!o[k].t||n-o[k].t>TTL){delete o[k];ch=true;}});if(ch)save(o);}
+window.sgEditRememberV952=function(it){
+  try{if(!it||!it.id)return;var o=load();prune(o);o[ctx()+'|'+String(it.id)]={t:Date.now(),v:JSON.parse(JSON.stringify(it))};save(o);}catch(e){}
+};
+function apply(){
+  try{
+    if(window.sgEditingV923&&window.sgEditingV923())return false;
+    var o=load();prune(o);if(typeof state==='undefined'||!state.strategyPlan||!Array.isArray(state.strategyPlan.items))return false;
+    var pre=ctx()+'|',ch=false;
+    state.strategyPlan.items.forEach(function(it){
+      if(!it||!it.id)return;var r=o[pre+String(it.id)];if(!r||!r.v)return;
+      ['type','title','note','cust','prod','amount','amountLink','stage','prob','mon','owner','matrixCell','off'].forEach(function(k){
+        if(Object.prototype.hasOwnProperty.call(r.v,k)&&JSON.stringify(it[k])!==JSON.stringify(r.v[k])){it[k]=r.v[k];ch=true;}
+      });
+    });
+    if(ch){try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();}catch(_e){}try{if(typeof saveSettings==='function')saveSettings();}catch(_e2){}}
+    return ch;
+  }catch(e){return false;}
+}
+window.sgEditReapplyV952=apply;
+document.addEventListener('change',function(e){
+  try{var el=e.target;if(!el||!el.dataset||!el.dataset.id)return;if(!(el.classList&&el.classList.contains('sgE'))&&!el.classList.contains('sgMxPickV867'))return;
+    var id=String(el.dataset.id),it=(state.strategyPlan.items||[]).filter(function(x){return x&&String(x.id)===id;})[0];if(it)setTimeout(function(){window.sgEditRememberV952(it);},0);
+  }catch(_e){}
+},true);
+setInterval(apply,900);
 })();
 </script>
 </body>
