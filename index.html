@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v904</title>
-<script>window.APP_BUILD='v904';</script>
+<title>동방파스텍 매출 분석 도구 v905</title>
+<script>window.APP_BUILD='v905';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2008,7 +2008,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v904</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v905</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -3618,7 +3618,8 @@ function bindTrendTopV760(keyPrefix,rerun){
     state._tt=state._tt||{}; var st=state._tt[keyPrefix]||(state._tt[keyPrefix]={});
     root.querySelectorAll('.ttCloseV760[data-k="'+keyPrefix+'"]').forEach(function(b){ b.addEventListener('click',function(){ st.off=1; rerun(); }); });
     root.querySelectorAll('.ttOpenV760[data-k="'+keyPrefix+'"]').forEach(function(b){ b.addEventListener('click',function(){ st.off=0; rerun(); }); });
-    root.querySelectorAll('.cmYearBtn').forEach(function(b){ b.addEventListener('click',function(){ st.y=+b.dataset.y; rerun(); }); });
+    /* v905 : 연도 버튼을 누르면 🎯 목표 보기를 끄고 그 연도를 선택합니다(세 버튼이 하나만 켜집니다). */
+    root.querySelectorAll('.cmYearBtn').forEach(function(b){ b.addEventListener('click',function(){ st.tgt=false; st.y=+b.dataset.y; rerun(); }); });
     root.querySelectorAll('.cmMetBtn').forEach(function(b){ b.addEventListener('click',function(){ st.m=b.dataset.m==='qty'?'qty':'amt'; rerun(); }); });
     root.querySelectorAll('.cmTgtBtn').forEach(function(b){ b.addEventListener('click',function(){ st.tgt=!st.tgt; rerun(); }); });
   }catch(_e){}
@@ -40126,14 +40127,27 @@ document.addEventListener('click',function(){ setTimeout(move,120); setTimeout(m
     /* v903 : forecast() 가 어디서 불리든(배경 동기화·% 저장 등) 드릴 화면을 보고 있었다면 되돌립니다.
        「← 목록으로」로 나갈 때만 표시를 지웁니다. */
     document.addEventListener('click',function(e){
-      try{ var t=e.target&&e.target.closest?e.target.closest('#backBtn'):null; if(t)window.__FC_DRILL_V901=''; }catch(_e){}
+      try{
+        var el=e.target&&e.target.closest?e.target:null; if(!el||!el.closest)return;
+        /* 「← 목록으로」 또는 상단/좌측 메뉴로 나가면 드릴 표시를 지웁니다 */
+        if(el.closest('#backBtn')||el.closest('.tm-item')||el.closest('.tm-top')||el.closest('.tm-direct')||el.closest('#homeBtn')){
+          window.__FC_DRILL_V901=''; clearTimeout(window.__FC_DRILL_TM_V903);
+        }
+      }catch(_e){}
     },true);
+    /* ══ v905 · 복원은 «매출 목표 화면을 보고 있을 때»만 합니다. ══
+       예전에는 다른 메뉴에 있어도 forecast() 가 불리면 드릴 화면으로 끌려왔습니다. */
     var restore=function(){
       try{
         clearTimeout(window.__FC_DRILL_TM_V903);
         var c=window.__FC_DRILL_V901; if(!c)return;
+        if(typeof state==='undefined'||!state||state.act!=='forecast'){ window.__FC_DRILL_V901=''; return; }
         window.__FC_DRILL_TM_V903=setTimeout(function(){
-          try{ if(window.__FC_DRILL_V901&&typeof window.fcDrillCust==='function')window.fcDrillCust(window.__FC_DRILL_V901); }catch(e){}
+          try{
+            if(!window.__FC_DRILL_V901)return;
+            if(typeof state==='undefined'||!state||state.act!=='forecast'){ window.__FC_DRILL_V901=''; return; }
+            if(typeof window.fcDrillCust==='function')window.fcDrillCust(window.__FC_DRILL_V901);
+          }catch(e){}
         },70);
       }catch(e){}
     };
@@ -40150,6 +40164,7 @@ document.addEventListener('click',function(){ setTimeout(move,120); setTimeout(m
       var or=window.runAct;
       var wr=function(){
         try{
+          if(state&&state.act!=='forecast'){ window.__FC_DRILL_V901=''; clearTimeout(window.__FC_DRILL_TM_V903); }
           if(state&&state.act==='forecast'&&window.__FC_DRILL_V901&&typeof window.fcDrillCust==='function'){
             var c=window.__FC_DRILL_V901;
             var r=or.apply(this,arguments);
