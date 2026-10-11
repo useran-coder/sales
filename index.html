@@ -41851,5 +41851,107 @@ document.addEventListener('click',function(e){
 },true);
 })();
 </script>
+<script id="v970-cross-pc-goal-sync">
+(function(){
+'use strict';
+/* v970 · 매출 목표 / 월별 실적·목표 / 매출 목표전략 공용 동기화
+   - 업무 데이터가 로컬 저장에만 머물던 경로도 서버 저장을 예약합니다.
+   - 세 화면에 들어오면 다른 PC의 최신 자료를 먼저 확인합니다.
+   - 검색어·열림 상태처럼 개인 화면 상태는 전송 판단에서 제외합니다. */
+var PAGE={forecast:1,trend:1,strategy:1}, ready=false, saveTimer=0, pullTimer=0,
+    lastSig='', lastPull=0, lastPageAct='', pulling=false, pushing=false;
+function configured(){
+  try{return !!(state&&state.gsync&&String(state.gsync.url||'').trim()&&String(state.gsync.key||'').trim());}
+  catch(e){return false;}
+}
+function editing(){
+  try{
+    if(typeof v801Typing==='function'&&v801Typing())return true;
+    if(typeof window.v867TextEditing==='function'&&window.v867TextEditing())return true;
+    if(typeof window.__selOpenV845==='function'&&window.__selOpenV845())return true;
+    var a=document.activeElement;
+    return !!(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'||a.isContentEditable));
+  }catch(e){return false;}
+}
+function cp(v){try{return JSON.parse(JSON.stringify(v==null?null:v));}catch(e){return null;}}
+function businessState(){
+  try{
+    if(typeof window.fcSyncYearStoresV718==='function')window.fcSyncYearStoresV718();
+    var f=state.fc||{};
+    return {
+      yearPlans:f.yearPlans||{}, yearMisc:state.fcYearMisc||{}, pdYears:state.pdYears||{},
+      targetYear:f.targetYear||0, baseYearPlan:f.baseYearPlan||'', baseYearCut:f.baseYearCut,
+      workdays:state.workdays||{}, monthIssue:state.monthIssue||{}, monthIssueAt:state.monthIssueAt||{},
+      strategy:state.strategyPlan||{}, tomb:state.strategyActionTombstones||{}, restoreAt:+state.strategyActionRestoreAt||0,
+      scrap:state.scrapVendors||[], scrapOff:state.scrapVendorOff||{},
+      reset:f.resetLedgerV841||{}, manual:f.manualStoreV881||state.fcManualStoreV881||{}
+    };
+  }catch(e){return {};}
+}
+function sig(){try{return JSON.stringify(businessState());}catch(e){return '';}}
+function queuePush(label){
+  if(!ready||!PAGE[state.act]||!configured()||pulling)return;
+  var s=sig(); if(!s||s===lastSig)return; lastSig=s;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(function run(){
+    if(!configured()||pulling)return;
+    if(editing()||(typeof _gsBusy!=='undefined'&&_gsBusy)||(typeof _gsApplying!=='undefined'&&_gsApplying)){
+      saveTimer=setTimeout(run,650);return;
+    }
+    /* 목표표의 '수정 중' 값은 기존 확정 저장 버튼 정책을 지킵니다. */
+    try{if(typeof fcManualIsDirtyV881==='function'&&fcManualIsDirtyV881())return;}catch(e){}
+    if(typeof gsSave!=='function')return;
+    pushing=true;
+    Promise.resolve(gsSave(true)).catch(function(e){try{console.warn('[v970] 공용 저장 실패',e);}catch(x){}})
+      .finally(function(){pushing=false;lastSig=sig();});
+  },500);
+}
+/* 기존 로컬 저장 호출을 감시해 실제 업무값이 바뀐 경우에만 공용 저장합니다. */
+try{
+  var oldSave=window.saveSettings;
+  if(typeof oldSave==='function'&&!oldSave.__v970){
+    var save=async function(){var r=await oldSave.apply(this,arguments);queuePush('업무자료');return r;};
+    save.__v970=true;window.saveSettings=save;try{saveSettings=save;}catch(e){}
+  }
+}catch(e){}
+function pull(force){
+  if(!ready||!configured()||pulling||pushing||editing()||!PAGE[state.act]||document.hidden)return;
+  if(!force&&Date.now()-lastPull<60000)return;
+  if((typeof _gsBusy!=='undefined'&&_gsBusy)||(typeof _gsPendingPush!=='undefined'&&_gsPendingPush))return;
+  if(typeof gsLoad!=='function')return;
+  pulling=true;lastPull=Date.now();
+  Promise.resolve(gsLoad(true)).catch(function(e){try{console.warn('[v970] 최신자료 확인 실패',e);}catch(x){}})
+    .finally(function(){pulling=false;lastSig=sig();});
+}
+/* 메뉴 진입 시 2026↔2027을 다시 눌러야 하던 수동 갱신을 없앱니다. */
+try{
+  var oldRun=window.runAct;
+  if(typeof oldRun==='function'&&!oldRun.__v970){
+    var run=function(){var r=oldRun.apply(this,arguments),after=state&&state.act,entered=PAGE[after]&&after!==lastPageAct;
+      lastPageAct=after||'';if(entered)setTimeout(function(){pull(true);},120);return r;};
+    run.__v970=true;window.runAct=run;try{runAct=run;}catch(e){}
+  }
+}catch(e){}
+/* 후속 패치가 추가돼도 세 화면의 핵심 보관함은 전송목록에서 빠지지 않게 합니다. */
+try{
+  var oldFields=window.gsFields;
+  if(typeof oldFields==='function'&&!oldFields.__v970){
+    var fields=function(){var rows=oldFields.apply(this,arguments),req=[
+      ['fcYearMisc',state,'fcYearMisc'],['pdYears',state,'pdYears'],
+      ['strategyPlan',state,'strategyPlan'],['strategyActionTombstones',state,'strategyActionTombstones'],
+      ['strategyActionRestoreAt',state,'strategyActionRestoreAt'],['monthIssue',state,'monthIssue'],
+      ['monthIssueAt',state,'monthIssueAt'],['workdays',state,'workdays']
+    ];req.forEach(function(x){if(!rows.some(function(r){return r[0]===x[0];}))rows.push(x);});return rows;};
+    fields.__v970=true;window.gsFields=fields;try{gsFields=fields;}catch(e){}
+  }
+}catch(e){}
+function boot(){lastSig=sig();ready=true;if(PAGE[state.act])setTimeout(function(){pull(true);},250);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,2600);},{once:true});
+else setTimeout(boot,2600);
+pullTimer=setInterval(function(){pull(false);},75000);
+window.addEventListener('focus',function(){if(PAGE[state.act])setTimeout(function(){pull(false);},200);});
+window.goalCrossPcSyncV970={push:function(){lastSig='';queuePush('수동점검');},pull:function(){pull(true);},snapshot:function(){return cp(businessState());}};
+})();
+</script>
 </body>
 </html>
