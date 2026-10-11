@@ -30910,7 +30910,15 @@ function sgPipeline(A){
   /* v664 : 목표표에 「업체추가」로 넣었지만 ②에는 아직 등록되지 않은 신규업체를 표에 함께 보여 줍니다. */
   var _tgtNC=(typeof sgTargetNewCustsV663==='function')?sgTargetNewCustsV663():[];
   var _regNames={}; items.forEach(function(it){ var nm=String(it.cust||it.title||'').trim().toLowerCase(); if(nm)_regNames[nm]=1; });
-  var tgtRows=_tgtNC.filter(function(o){ return !_regNames[String(o.name||'').trim().toLowerCase()]; });
+  /* 전년 또는 올해 거래 이력이 있는 업체는 목표표에 금액이 있어도 ②의 자동 «신규업체/목표표» 행으로 만들지 않습니다. */
+  var _salesNames={}; (A.custs||[]).forEach(function(o){
+    var nm=String(o.name||'').trim().toLowerCase();
+    if(nm&&((+o.py||0)>0||(+o.cy||0)>0))_salesNames[nm]=1;
+  });
+  var tgtRows=_tgtNC.filter(function(o){
+    var nm=String(o.name||'').trim().toLowerCase();
+    return !_regNames[nm]&&!_salesNames[nm];
+  });
   var tgtShow=(filt==='all'||filt==='newCust')?tgtRows:[];
   /* 목표표에서 자동 생성된 신규업체도 진행단계·월별 기대매출 계산에 포함합니다. */
   pl.tgtMeta=pl.tgtMeta||{};
