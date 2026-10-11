@@ -30247,8 +30247,15 @@ function sgWaterfallCompanyPanel(A,key,planItems,useProb,basis,selectedAmount,au
       if(hit.reasons.indexOf(tag)<0)hit.reasons.push(tag);
     });
   }catch(_e893){}
-  rows.sort(function(a,b){return (b.strategy+b.cy)-(a.strategy+a.cy);});
-  var title=key==='actualKeep'?(A.CY+'년 기존업체 목록'):key==='actual'?(A.CY+'년 실적 업체목록'):((type?type.ic+' '+type.t:key)+(isProd?' 구매업체 목록':' 업체·대상 목록'));
+  var _panelGoal=sgGoalContext(A),_actualYear=+(A._listBaseCY||A.CY),_futurePanel=(+_panelGoal.year>_actualYear),_leftYear=_futurePanel?_actualYear:A.PY,_rightYear=_futurePanel?_panelGoal.year:A.CY;
+  var _targetMaps=null;try{_targetMaps=sgAnnualTargetMapsV613();}catch(_tm){}
+  rows.forEach(function(o){
+    o._left=_futurePanel?(+o.cy||0):(+o.py||0);
+    var tv=_futurePanel&&_targetMaps?sgTargetCustAmountV613(_targetMaps,o.name):null;
+    o._right=_futurePanel&&tv!=null&&isFinite(tv)?Math.max(0,+tv):(_futurePanel?(o._left+(+o.strategy||0)):(+o.cy||0));
+  });
+  rows.sort(function(a,b){return (+b._right||0)-(+a._right||0)||(+b.strategy||0)-(+a.strategy||0);});
+  var title=key==='actualKeep'?(_rightYear+'년 기존업체 목록'):key==='actual'?(_rightYear+'년 실적 업체목록'):((type?type.ic+' '+type.t:key)+(isProd?' 구매업체 목록':' 업체·대상 목록'));
   var scopeNote=key==='actualKeep'
     ? '<b>기존업체 막대</b>는 '+A.CY+'년 누적 실적에 성장업체·거래처위험 회복·제품전략처럼 별도 합산하지 않는 포함 계획을 묶은 기준금액입니다. 아래 표는 현재 매출이 있는 업체와 기존거래 유지·확대 계획을 보여줍니다.'
     : key==='actual'
@@ -30256,10 +30263,9 @@ function sgWaterfallCompanyPanel(A,key,planItems,useProb,basis,selectedAmount,au
     : key==='keepCust'
       ? '<b>기존업체</b>는 '+A.PY+'년과 '+A.CY+'년 모두 매출이 있는 업체이며, <b>'+A.CY+'년 실적에 포함되는 부분집합</b>입니다.'
       : '';
-  var totalCy=rows.reduce(function(a,o){return a+o.cy;},0),totalStrategy=rows.reduce(function(a,o){return a+o.strategy;},0);
-  var _panelGoal=sgGoalContext(A),_futurePanel=(+_panelGoal.year>A.CY),_leftYear=_futurePanel?A.CY:A.PY,_rightYear=_futurePanel?_panelGoal.year:A.CY;
+  var totalCy=rows.reduce(function(a,o){return a+(+o._right||0);},0),totalStrategy=rows.reduce(function(a,o){return a+o.strategy;},0);
   var body=rows.slice(0,300).map(function(o,i){
-    var leftVal=_futurePanel?(+o.cy||0):(+o.py||0),rightVal=_futurePanel?(leftVal+(+o.strategy||0)):(+o.cy||0);
+    var leftVal=+o._left||0,rightVal=+o._right||0;
     var diff=rightVal-leftVal,pct=leftVal?diff/leftVal*100:null,detail=o.products.length?(o.products.slice(0,4).join(' · ')+(o.products.length>4?' 외 '+(o.products.length-4)+'종':'')):o.reasons.join(' · ');return '<tr>'
     +'<td style="text-align:center">'+(i+1)+'</td><td style="text-align:left!important;font-weight:800;color:#1e3a5f" title="'+sgEsc(o.name)+'">'+sgEsc(o.name)+'</td>'
     +'<td style="text-align:right">'+(leftVal?sgWon(leftVal):'-')+'</td><td style="text-align:right">'+(rightVal?sgWon(rightVal):'-')+'</td>'
@@ -30267,7 +30273,7 @@ function sgWaterfallCompanyPanel(A,key,planItems,useProb,basis,selectedAmount,au
     +'<td style="text-align:center;color:'+(pct!=null&&pct<0?'#dc2626':'#15803d')+'">'+(pct==null?'-':sgPct(pct))+'</td>'
     +'<td style="text-align:left!important" title="'+sgEsc(detail)+'">'+sgEsc(detail||'-')+'</td>'
     +'<td style="text-align:right;color:#7c3aed;font-weight:800">'+(o.strategy?sgWon(o.strategy):'-')+'</td></tr>';}).join('');
-  return '<div class="sg-wf-company-panel"><div class="sg-wf-company-head"><b>'+title+' · '+rows.length+'개사</b><span style="display:inline-flex;align-items:center;gap:8px">'+(isProd?'선택제품 매출 ':'올해 매출 ')+sgShort(totalCy)+(totalStrategy?' · 전략 기대 '+sgShort(totalStrategy):'')+'<button type="button" class="sgWfDetailCloseV858 btn ghost" style="padding:2px 8px;font-size:10.5px" title="상세목록을 닫고 그래프 선택을 해제합니다">× 닫기</button></span></div>'
+  return '<div class="sg-wf-company-panel"><div class="sg-wf-company-head"><b>'+title+' · '+rows.length+'개사</b><span style="display:inline-flex;align-items:center;gap:8px">'+(isProd?'선택제품 매출 ':(_futurePanel?_rightYear+'년 목표 ':'올해 매출 '))+sgShort(totalCy)+(totalStrategy?' · 전략 기대 '+sgShort(totalStrategy):'')+'<button type="button" class="sgWfDetailCloseV858 btn ghost" style="padding:2px 8px;font-size:10.5px" title="상세목록을 닫고 그래프 선택을 해제합니다">× 닫기</button></span></div>'
     +(scopeNote?'<div style="padding:7px 10px;border-bottom:1px solid #dbeafe;background:#f8fbff;color:#475569;font-size:10.5px;line-height:1.5">'+scopeNote+'</div>':'')
     +(rows.length?'<div class="sg-wf-company-scroll"><table class="sg-wf-company-table"><thead><tr><th style="width:42px">NO</th><th style="width:190px;text-align:left!important">업체명·대상</th><th style="width:105px">'+_leftYear+'년'+(isProd?' 선택제품':'')+'</th><th style="width:105px">'+_rightYear+'년'+(isProd?' 선택제품':'')+'</th><th style="width:105px">증감</th><th style="width:72px">증감률</th><th>관련 제품·선정 근거</th><th style="width:110px">전략 기대금액</th></tr></thead><tbody>'+body+'</tbody></table></div>':'<div style="padding:20px;text-align:center;color:#64748b;font-size:12px">연결 업체 없음 · ② 영업전략 추진현황에서 거래처 등록</div>')+'</div>';
 }
@@ -30550,9 +30556,13 @@ function sgWaterfall(A){
      기존업체 막대에서 그만큼 빼고 독립 막대로 세우므로 계획 합계는 그대로입니다. */
   var newProdPlan=+(valMap.newProd&&valMap.newProd.v)||0;
   var includedPlan=planTot-newCustPlan-newBizPlan-cutPlan-newProdPlan;
-  /* 기존업체 막대는 추진현황 등록액이 아니라 실제 양년 거래업체의 현재 매출을 기준으로 표시합니다. */
-  var keepCustActual=(A.keepCust||[]).reduce(function(a,o){return a+(+o.cy||0);},0);
-  var existingPlan=keepCustActual>0?keepCustActual:(baseVal+includedPlan);
+  /* 기존업체 막대는 업체별 매출 목표표에 계산된 목표금액을 합산합니다. */
+  var targetMapsV953=null;try{targetMapsV953=sgAnnualTargetMapsV613();}catch(_tm953){}
+  var keepCustTarget=(A.keepCust||[]).reduce(function(a,o){
+    var v=targetMapsV953?sgTargetCustAmountV613(targetMapsV953,o.name||o.label):null;
+    return a+(v!=null&&isFinite(v)?Math.max(0,+v):Math.max(0,+o.cy||0));
+  },0);
+  var existingPlan=keepCustTarget>0?keepCustTarget:(baseVal+includedPlan);
   /* 최종 계획은 기준매출과 전략 증감을 사용하며, 기존업체 표시막대 크기와 분리합니다. */
   /* 연간 목표표 자동 연동 상태에서는 업체·제품 목표표의 확정 연간합계가 최종 계획합계입니다.
      ② 추진현황 금액은 그 합계의 구성·근거로 표시하며 다시 별도 합산하지 않습니다. */
@@ -30593,21 +30603,25 @@ function sgWaterfall(A){
   // 추진현황과 워터폴은 같은 전략 기대매출 합계를 사용한다.
   // 과거/올해 매출액으로 다시 치환하면 성장예상업체처럼 금액이 어긋난다.
   var infoAmount=function(k){
-    /* 기존제품은 실제 양년 판매제품 매출, 나머지 분류는 ② 추진현황 기대매출입니다. */
-    if(k==='keepProd')return sgGraphCategoryAmount(A,k,planItems,useProb,0);
+    /* 기존제품은 제품별 매출 목표표 금액, 나머지 분류는 ② 추진현황 기대매출입니다. */
+    if(k==='keepProd')return (A.keepProd||[]).reduce(function(a,p){
+      var v=targetMapsV953?sgTargetProdAmountV613(targetMapsV953,p.key||p.label||p.name):null;
+      return a+(v!=null&&isFinite(v)?Math.max(0,+v):Math.max(0,+p.cy||0));
+    },0);
     var o=valMap[k]||{};return +o.v||0;
   };
   var selected=pl.waterfallSelectedKey||'';if(selected==='actual'||selected==='keepCust')selected='actualKeep';
+  var actualBaseYearV952=+(A._listBaseCY||A.CY)||2026;
   /* v890 : 항목명 아래의 사용하지 않는 SVG 여백을 줄여 «금액 출처»를 그래프에 가깝게 붙입니다. */
   var W=980,H=286,L=64,R=106,T=30,B=30, iw=W-L-R, ih=H-T-B;
   var step=function(k,type,v,sub){var o=valMap[k]||SG_TMAP[k]||{};return{k:k,lab:(o.ic||'')+' '+(o.t||''),v:v,type:type,c:o.c||'#64748b',sub:sub||'',creditCut:k==='creditCut',autoV:o.autoV||0,pipeV:o.pipeV||0,pipeCount:o.pipeCount||0,linkedCount:o.linkedCount||0};};
   var steps=[
-    {k:'actualKeep',lab:'기존업체',v:existingPlan,type:'base',c:'#1e3a5f',sub:'계획 기준'},
+    {k:'actualKeep',lab:'기존업체',v:existingPlan,type:'base',c:'#1e3a5f',sub:goalCtx.year+'년 목표'},
     step('newCust','delta',newCustPlan,newActC>0?'올해 실적+목표':'계획 증가'),
     step('growthCust','info',infoAmount('growthCust'),'기존업체 포함'),
     step('risk','info',infoAmount('risk'),'기존업체 포함'),
     step('creditCut','delta',cutPlan,'계획 차감'),
-    step('keepProd','info',infoAmount('keepProd'),'기존매출 포함'),
+    step('keepProd','info',infoAmount('keepProd'),goalCtx.year+'년 목표'),
     step('newProd','delta',newProdPlan,newActP>0?'올해 실적+목표':'계획 증가'),
     step('growthProd','info',infoAmount('growthProd'),'업체매출 포함'),
     step('newBiz','delta',newBizPlan,'계획 증가'),
@@ -33246,7 +33260,9 @@ function sgBind(A){
              (typ==='keepCust')?(A.keepCust||[]):(typ==='keepProd')?(A.keepProd||[]):[];
       rl.forEach(function(o){ rec[nameOf(o)]=1; });
     }catch(_e){}
-    var have={}; (pl.items||[]).forEach(function(it){ if(it.type!==typ)return;
+    /* 현재 목표연도·목표안의 항목만 선택 상태로 봅니다.
+       다른 연도에 같은 제품이 있으면 선택 반영이 막히던 문제를 방지합니다. */
+    var have={}; sgPlanItems(sgActivePlan()).forEach(function(it){ if(it.type!==typ)return;
       var k=String((dim==='prod'?it.prod:it.cust)||'').trim(); if(k)have[k]=it.id; });
 
     var d=document.createElement('div'); d.id='sgPickBoxV809';
