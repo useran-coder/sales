@@ -29538,6 +29538,8 @@ function sgShort(v){ v=Math.round(+v||0); var s=v<0?'-':''; v=Math.abs(v);
   if(v>=1e8)return s+(v/1e8).toFixed(v>=1e9?0:1)+'억';
   if(v>=1e4)return s+Math.round(v/1e4).toLocaleString()+'만';
   return s+v.toLocaleString(); }
+/* 연간 전략금액을 시작월부터 12월까지 균등 배분한 월 금액 표시 */
+function sgMonthShortV949(v,mon){ var m=Math.min(12,Math.max(1,+mon||1)); return '월 '+sgShort((+v||0)/(13-m)); }
 /* 목표선 금액은 95.0억처럼 억 단위를 항상 소수점 한 자리까지 표시합니다. */
 function sgGoalShort(v){v=+v||0;var s=v<0?'-':'';v=Math.abs(v);return v>=1e8?s+(v/1e8).toFixed(1)+'억':sgShort((s==='-'?-1:1)*v);}
 function sgPct(v){ return (v==null||!isFinite(v))?'-':((v>=0?'+':'')+v.toFixed(1)+'%'); }
@@ -31010,10 +31012,10 @@ function sgPipeline(A){
         /* v911 : 구분 이름은 칩 목록과 같은 «신규·경쟁사업체»를 씁니다(이름을 바꾸면 함께 따라갑니다). */
         +'<td style="padding:6px 5px;text-align:left"><span class="sgGoV935" data-gocust="'+sgEsc(mk)+'" data-goprod="" title="클릭하면 매출 목표의 월별보기로 이동합니다" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:11px;cursor:pointer;background:#dbeafe;color:#1e40af;font-size:11px;font-weight:900">'+sgEsc(((SG_TMAP&&SG_TMAP.newCust)?((SG_TMAP.newCust.ic||'\ud83c\udfe2')+' '+(SG_TMAP.newCust.t||'신규·경쟁사업체')):'\ud83c\udfe2 신규·경쟁사업체'))+'</span></td>'
         +'<td style="padding:6px 2px;text-align:center">'+sgMxSelectV867('data-n',mk,String(meta.mxCell||''))+'</td>'
-        +'<td style="padding:6px 5px;text-align:left"><input class="sgTgtName sgSuggestInput" data-suggest-kind="cust" autocomplete="off" data-n="'+sgEsc(mk)+'" value="'+sgEsc(mk)+'" title="실제 매출이 생겨 업체명이 다르면 실제 거래처명을 골라 바꾸세요. 출고자료에 있는 업체면 «실제 매출처 연결»로, 없으면 이름만 바뀝니다." style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;font-weight:800;border-color:#bfdbfe;background:#fff;text-align:left"></td>'
+        +'<td style="padding:6px 5px;text-align:left"><input class="sgTgtName sgSuggestInput" data-suggest-kind="cust" autocomplete="off" data-n="'+sgEsc(mk)+'" value="'+sgEsc(mk)+'" title="실제 매출이 생겨 업체명이 다르면 실제 거래처명을 골라 바꾸세요. 출고자료에 있는 업체면 «실제 매출처 연결»로, 없으면 이름만 바뀝니다." style="'+SGI+'width:100%;min-width:0;box-sizing:border-box;font-weight:400;border-color:#bfdbfe;background:#fff;text-align:left"></td>'
         +'<td style="padding:6px 5px;text-align:left;color:#94a3b8">-</td>'
         +'<td style="padding:6px 5px;text-align:left;color:#1d4ed8;font-weight:400">목표표 등록(업체추가)'+actTag+'</td>'
-        +'<td style="padding:6px 5px;text-align:right;font-weight:900;color:#1d4ed8">'+sgWon(o.amt)+'</td>'
+        +'<td style="padding:6px 5px;text-align:right;font-weight:900;color:#1d4ed8">'+sgWon(o.amt)+'<div class="sub2" style="margin-top:2px;font-size:9px;color:#64748b;font-weight:700;white-space:nowrap">'+sgMonthShortV949(o.amt,(+meta.mon||sgNextMon()))+'</div></td>'
         +'<td style="padding:6px 2px;text-align:center;white-space:nowrap"><select class="sgTgtStage" data-n="'+sgEsc(mk)+'" style="'+SGI+'width:146px;max-width:146px;border-color:#e2e8f0">'+sgStageOptions('newCust',st,pr)+'</select></td>'
         +'<td style="padding:6px 5px;text-align:center"><input class="sgTgtProb" data-n="'+sgEsc(mk)+'" value="'+pr+'" style="'+SGI+'width:40px;text-align:center;border-color:#e2e8f0;margin-left:10px"> %</td>'
         +'<td style="padding:6px 5px;text-align:right;font-weight:800;color:'+(hasAct?'#0d9488':'#1d4ed8')+'">'+sgWon(exp2)+(hasAct?'<div class="sub2" style="color:#0d9488;font-weight:700">실적기준</div>':'')+'</td>'
@@ -31048,7 +31050,8 @@ function sgPipeline(A){
           +'<input class="sgE" data-id="'+it.id+'" data-f="amount" value="'+sgWon(a)+'" '+(linkOn?'readonly title="연간 목표표의 올해목표액과 연동 중입니다. 🔗을 눌러 직접입력으로 바꿀 수 있습니다."':'title="직접 입력한 금액입니다."')+' style="'+SGI+'width:119px;text-align:right;border-color:'+(linkOn?'#93c5fd':'#e2e8f0')+';background:'+(linkOn?'#eff6ff':'#fff')+';font-weight:800">'
           +(linked!=null?'<div style="margin-top:2px;display:flex;align-items:center;justify-content:flex-end;gap:4px">'
              +'<button class="sgAmtLink btn ghost" data-id="'+it.id+'" data-on="'+(linkOn?'1':'0')+'" title="'+(linkOn?'직접입력으로 전환':'연간 목표표 올해목표액과 다시 연동')+'" style="font-size:9.5px;padding:1px 6px;'+(linkOn?'background:#dbeafe;color:#1d4ed8;border-color:#93c5fd':'')+'">'+(linkOn?'🔗 목표연동':'✎ 직접입력')+'</button>'
-             +'<span class="sub2" style="font-size:9px;color:'+(linkOn?'#94a3b8':'#b45309')+';white-space:nowrap;font-weight:'+(linkOn?'400':'800')+'">목표 '+sgShort(linkOn?linked:(+it.amount||0))+'</span></div>':'')
+             +'<span class="sub2" style="font-size:9px;color:'+(linkOn?'#94a3b8':'#b45309')+';white-space:nowrap;font-weight:'+(linkOn?'400':'800')+'">'+sgMonthShortV949(a,(+it.mon||1))+'</span></div>'
+             :'<div class="sub2" style="margin-top:2px;text-align:right;font-size:9px;color:#64748b;font-weight:700;white-space:nowrap">'+sgMonthShortV949(a,(+it.mon||1))+'</div>')
           +'</td>'
         +'<td style="padding:5px 2px;text-align:center;white-space:nowrap"><select class="sgE" data-id="'+it.id+'" data-f="stage" style="'+SGI+'width:146px;max-width:146px;border-color:#e2e8f0">'
           +SG_STAGES.map(function(s){var shownPct=stageV856===s[0]?p:s[2];return '<option value="'+s[0]+'"'+(stageV856===s[0]?' selected':'')+'>'+sgStageLabel(it.type,s[0])+' ('+shownPct+'%)</option>';}).join('')+'</select></td>'
