@@ -37899,6 +37899,7 @@ enforce();
 function closeNotes(){
   var w=document.getElementById('fcNotesWrap');if(w)w.style.display='none';
   var b=document.getElementById('fcNotesToggle');if(b)b.innerHTML='📝 <span id="fcNotesYrV789"></span>매출목표 주요사항 ▾';
+  var ys=document.getElementById('fcNotesYrV789');if(ys)try{ys.textContent=fcTargetYear()+'년 ';}catch(_e){}
 }
 function closeHead(){
   try{if(typeof state!=='undefined'&&state.fc)state.fc._bepHeadTab='';}catch(_e){}
@@ -42247,7 +42248,7 @@ try{
   if(!cust||html.indexOf('ar-detail-months')<0)return html;
   var cash=Array.from({length:12},function(){return[];}),bill=Array.from({length:12},function(){return[];});
   (state.ar.receipts||[]).forEach(function(r){
-   var d=String(r.date||'');if(arCust(r.cust)!==cust||+d.slice(0,4)!==model.year)return;
+   var d=String(r.date||'');if(arCust(r.cust)!==arCust(cust)||+d.slice(0,4)!==model.year)return;
    var m=+d.slice(5,7)-1;if(m<0||m>11)return;
    var label=d.slice(5,10).replace('-','/');
    var dst=arMethod(r)==='받을어음'?bill[m]:cash[m];if(label&&dst.indexOf(label)<0)dst.push(label);
@@ -42259,12 +42260,59 @@ try{
     var mt=(tds[0].textContent||'').match(/(\d+)월/);if(!mt)return;var i=+mt[1]-1;
     [[3,cash[i]],[4,bill[i]]].forEach(function(pair){
      if(!pair[1]||!pair[1].length)return;
-     var s=document.createElement('span');s.className='ar-dm-receipt-date';s.textContent='수금일 '+pair[1].join(', ');pair[0]<tds.length&&tds[pair[0]].appendChild(s);
+     var s=document.createElement('span');s.className='ar-dm-receipt-date';s.textContent='입금일 '+pair[1].join(', ');pair[0]<tds.length&&tds[pair[0]].appendChild(s);
     });
    });
    return box.innerHTML;
   }catch(e){return html;}
  };
+})();
+</script>
+<style id="v950-goal-tools-layout">
+/* v950 · 제목/설명은 첫 줄, 목표설정 버튼들은 둘째 줄, 선택 패널은 셋째 줄 */
+#result .fc-title-tools-v949{
+ display:grid!important;grid-template-columns:max-content max-content minmax(0,1fr)!important;
+ grid-template-rows:auto auto!important;column-gap:8px!important;row-gap:7px!important;width:100%!important}
+#result .fc-title-tools-v949>.title{grid-column:1;grid-row:1;align-self:center}
+#result .fc-title-tools-v949>#fcGoalToolsToggleV892{grid-column:2;grid-row:1;align-self:center}
+#result .fc-title-tools-v949>.meta{grid-column:3;grid-row:1;margin-left:0!important;align-self:center;text-align:right}
+#result .fc-title-tools-v949>#fcGoalToolsMenuV892{
+ grid-column:1/-1;grid-row:2;width:100%;box-sizing:border-box;justify-content:flex-start!important;
+ padding:6px 0 2px;border-top:1px solid var(--line)}
+#fcGoalPanelStageV950{width:100%;box-sizing:border-box;margin:0 0 8px}
+#fcGoalPanelStageV950>#fcNotesWrap,#fcGoalPanelStageV950>#bepHeadHostV792,
+#fcGoalPanelStageV950>#fcMonthlyTargetPanel,#fcGoalPanelStageV950>#fcWorkdayPanelV854{
+ width:100%!important;max-width:none!important;box-sizing:border-box!important;margin:7px 0 0!important}
+#fcGoalPanelsHostV949:empty{display:none!important}
+@media(max-width:900px){
+ #result .fc-title-tools-v949{grid-template-columns:max-content max-content!important}
+ #result .fc-title-tools-v949>.meta{grid-column:1/-1;grid-row:2;text-align:left}
+ #result .fc-title-tools-v949>#fcGoalToolsMenuV892{grid-row:3}
+}
+</style>
+<script id="v950-goal-tools-layout-script">
+;(function(){
+ 'use strict';
+ function place(){
+  try{
+   var root=document.getElementById('result'),head=root&&root.querySelector('.fc-title-tools-v949');if(!head)return;
+   var stage=document.getElementById('fcGoalPanelStageV950');
+   if(!stage){stage=document.createElement('div');stage.id='fcGoalPanelStageV950';head.insertAdjacentElement('afterend',stage);}
+   ['fcMonthlyTargetPanel','fcWorkdayPanelV854','bepHeadHostV792','fcNotesWrap'].forEach(function(id){
+    var el=document.getElementById(id);if(el&&el.parentElement!==stage)stage.appendChild(el);
+   });
+   var ys=document.getElementById('fcNotesYrV789');
+   if(ys&&!String(ys.textContent||'').trim())try{ys.textContent=fcTargetYear()+'년 ';}catch(_e){}
+   var old=document.getElementById('fcGoalPanelsHostV949');if(old&&!old.children.length)old.style.display='none';
+  }catch(e){}
+ }
+ document.addEventListener('click',function(e){
+  var t=e.target&&e.target.closest&&e.target.closest('#fcGoalToolsToggleV892,#fcGoalToolsMenuV892 button');
+  if(t)queueMicrotask(place);
+ },false);
+ var root=document.getElementById('result');
+ if(root)new MutationObserver(place).observe(root,{childList:true,subtree:true});
+ place();
 })();
 </script>
 </html>
