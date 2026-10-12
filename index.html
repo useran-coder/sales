@@ -3805,7 +3805,7 @@ function trendTopV760(label,rows,keyPrefix,opt){
     if(!rs.length)return '';
     state._tt=state._tt||{};
     var st=state._tt[keyPrefix]||(state._tt[keyPrefix]={});
-    if(st.off)return '<div class="ctrlbar" style="margin:0 0 8px"><button type="button" class="btn ghost ttOpenV760" data-k="'+esc(keyPrefix)+'" style="font-size:12px;padding:4px 12px;background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;font-weight:800">📈 추이 보기</button></div>';
+    if(st.off)return '<div class="ctrlbar" style="margin:0 0 8px">'+(opt.toolbarPrefix||'')+'<button type="button" class="btn ghost ttOpenV760" data-k="'+esc(keyPrefix)+'" style="font-size:12px;padding:4px 12px;background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;font-weight:800">📈 추이 보기</button>'+(opt.toolbarSuffix||'')+'</div>';
     var yrs=[...new Set(rs.map(function(r){return r.d.getFullYear();}))].sort(function(a,b){return b-a;});
     /* ══ v906 · 목표 연도(예: 2027)를 연도 버튼에 함께 넣습니다. ══ */
     var _tgY=+(opt.targetYear||0), _dataMax=yrs.length?Math.max.apply(null,yrs):0;
@@ -3829,8 +3829,8 @@ function trendTopV760(label,rows,keyPrefix,opt){
       }
     }catch(_t902){}
     return custMonthChartV665(label,yr,rs,yrs,Object.assign({metric:met,metricToggle:true},_tgtOpt))
-      +'<div class="ctrlbar" style="margin:-4px 0 8px"><button type="button" class="btn ghost ttCloseV760" data-k="'+esc(keyPrefix)+'" style="font-size:12px;padding:4px 12px">✕ 추이 닫기</button>'
-      +(opt.hint?'<span class="sub2">'+esc(opt.hint)+'</span>':'')+'</div>';
+      +'<div class="ctrlbar" style="margin:-4px 0 8px">'+(opt.toolbarPrefix||'')+'<button type="button" class="btn ghost ttCloseV760" data-k="'+esc(keyPrefix)+'" style="font-size:12px;padding:4px 12px">✕ 추이 닫기</button>'
+      +(opt.hint?'<span class="sub2">'+esc(opt.hint)+'</span>':'')+(opt.toolbarSuffix||'')+'</div>';
   }catch(_e){ return ''; }
 }
 function bindTrendTopV760(keyPrefix,rerun){
@@ -13600,13 +13600,13 @@ function forecast(){
     +' style="margin-left:10px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;padding:2px 10px;border-radius:999px;border:1px solid '+(_hideTgtV813?'#f59e0b':'#e2e8f0')+';background:'+(_hideTgtV813?'#fffbeb':'#fff')+';color:'+(_hideTgtV813?'#b45309':'#475569')+';font-weight:700">'
     +'<input type="checkbox" id="fcHideActTgt" '+(_hideTgtV813?'checked':'')+' style="cursor:pointer">확정월 목표 숨김'+(lastAct>0?('<span style="font-weight:600;color:#94a3b8">(1~'+lastAct+'월)</span>'):'')+'</label>';
 /* v716 : 조작 영역을 제목 «아래 줄»로 내립니다 */
-  const html=`<div class="rhead"><span class="title">매출 목표 (${CY})</span><span class="meta">${fcTargetPlanLabel()} · 연매출 목표 기준: 실적 ${fcCutLabel()} + 목표 ${fcFutLabel()} · 그래프 실제 실적 ${actualLastMonth>0?('1~'+actualLastMonth+'월'):'없음'} · 단위: 백만원</span></div>
+  const html=`<div class="rhead fc-title-tools-v949"><span class="title">매출 목표 (${CY})</span><button type="button" id="fcGoalToolsToggleV892" class="btn ghost gt-btn-v873" title="목표 설정 메뉴" aria-expanded="false">목표설정 <span class="gt-car-v873">▾</span></button><span id="fcGoalToolsMenuV892" class="fc-title-menu-v949"></span><span class="meta">${fcTargetPlanLabel()} · 연매출 목표 기준: 실적 ${fcCutLabel()} + 목표 ${fcFutLabel()} · 그래프 실제 실적 ${actualLastMonth>0?('1~'+actualLastMonth+'월'):'없음'} · 단위: 백만원</span></div>
     <div class="fckpi fc-forecast-kpi-sticky-v889"><div class="kpi"><div class="lab">전년 연매출(${PY})</div><div class="val">${won(pyAnnual)}<small> 원</small></div></div>
       <div class="kpi"><div class="lab">올해 연매출 목표(${CY})</div><div class="val">${won(olhaeTarget)}<small> 원</small></div><div class="sub2" style="margin-top:2px">실적(${fcCutLabel()}) <b>${won(annualSummary.actualPeriodTotal)}</b> + 목표(${fcFutLabel()}) <b>${won(annualSummary.futurePeriodTarget)}</b></div></div>
       ${outsideCardHTML}
       <div class="kpi"><div class="lab">전년比</div><div class="val" style="color:${projPct>=0?'var(--green)':'var(--red)'}">${projPct>=0?'+':''}${projPct.toFixed(1)}<small>%</small></div></div>
       <div class="kpi"><div class="lab">1인당 월 목표매출 <small>(${rLab}·${perMonths}개월)</small></div><div class="val">${won(fcPerCapMon)}<small> 원/월</small></div></div></div>
-  <div class="fc-ctlbar fc-forecast-ctl-sticky-v889">${fcYearSelectorHTML()}<button type="button" id="fcGoalToolsToggleV892" class="btn ghost gt-btn-v873" title="목표 설정 메뉴" aria-expanded="false">목표설정 <span class="gt-car-v873">▾</span></button>${fcTargetPlanSelectorHTML('fcTargetPlanSel')}${fcCutoffSelectorHTML()}</div>
+  <div class="fc-ctlbar fc-forecast-ctl-sticky-v889">${fcYearSelectorHTML()}${fcTargetPlanSelectorHTML('fcTargetPlanSel')}${fcCutoffSelectorHTML()}</div>
     ${legendPY(PY,CY,'fcShowPY',state.fc.showPY).replace(/<\/div>\s*$/,_hideTgtBoxV813+'<span class="fc-legend-target" title="매출 목표 화면의 연매출 목표와 같은 금액입니다." style="margin-left:6px;padding:2px 10px;border-radius:999px;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;font-weight:800">🎯 '+CY+'년 목표액 '+won(Math.round(olhaeTarget))+'원</span>'+_yoyBadgeV812+'</div>')}
     ${annualPanelHTML(PY,CY,olhaeTarget,tgt)}
     <div class="chartbox">${chart}</div>
@@ -13658,23 +13658,23 @@ function forecast(){
     if(fcCutoffMonth()===0)document.querySelectorAll('#result th').forEach(th=>{if(th.textContent.includes('실적(1~0월)'))th.innerHTML=th.innerHTML.replace('실적(1~0월)','실적(없음)');});
     const mtJump=document.getElementById('fcMonthlyTargetToggle');
     const goalToolsToggle=document.getElementById('fcGoalToolsToggleV892');
-    const goalToolsMenu=mtJump&&mtJump.parentElement;
-    const goalCtl=document.querySelector('#result .fc-ctlbar');
-    if(goalToolsMenu&&goalCtl){
-      goalToolsMenu.id='fcGoalToolsMenuV892';
+    const goalPanelsHost=mtJump&&mtJump.parentElement;
+    if(goalPanelsHost)goalPanelsHost.id='fcGoalPanelsHostV949';
+    const goalToolsMenu=document.getElementById('fcGoalToolsMenuV892');
+    if(goalToolsMenu&&goalPanelsHost){
+      Array.from(goalPanelsHost.children).forEach(function(el){
+        if(el.id!=='fcNotesWrap')goalToolsMenu.appendChild(el);
+      });
       /* v873 : 화면이 다시 그려져도 열림/닫힘이 유지되게 상태로 기억합니다. */
       try{
         var _gtOpen=!!(state.fc&&state.fc.goalToolsOpen);
-        setTimeout(function(){
-          var mm=document.getElementById('fcGoalToolsMenuV892'),tt=document.getElementById('fcGoalToolsToggleV892');
-          if(mm)mm.style.display=_gtOpen?'flex':'none';
-          if(tt){ tt.classList.toggle('is-on',_gtOpen); tt.setAttribute('aria-expanded',_gtOpen?'true':'false');
-                  var cc=tt.querySelector('.gt-car-v873'); if(cc)cc.textContent=_gtOpen?'\u25b4':'\u25be'; }
-          if(_gtOpen)try{gtSyncSubV873();}catch(_x){}
-        },0);
+        var mm=document.getElementById('fcGoalToolsMenuV892'),tt=document.getElementById('fcGoalToolsToggleV892');
+        if(mm)mm.style.display=_gtOpen?'inline-flex':'none';
+        if(tt){ tt.classList.toggle('is-on',_gtOpen); tt.setAttribute('aria-expanded',_gtOpen?'true':'false');
+                var gtCarV949=tt.querySelector('.gt-car-v873'); if(gtCarV949)gtCarV949.textContent=_gtOpen?'\u25b4':'\u25be'; }
       }catch(_e){}
-      goalToolsMenu.style.cssText='display:none;margin:6px 0 8px;padding:6px 0 2px;border:none;border-top:1px solid var(--line);background:none;box-shadow:none';
-      goalCtl.insertAdjacentElement('afterend',goalToolsMenu);
+      goalToolsMenu.style.display=_gtOpen?'inline-flex':'none';
+      goalPanelsHost.style.marginTop='0';
     }
     /* v873 : 서브 버튼의 «열림» 표시를 실제 패널 상태에 맞춰 칠합니다. */
     function gtSyncSubV873(){
@@ -13698,7 +13698,7 @@ function forecast(){
         if(!t)return;
         var m=document.getElementById('fcGoalToolsMenuV892'); if(!m)return;
         var open=(getComputedStyle(m).display==='none');
-        m.style.display=open?'flex':'none';
+        m.style.display=open?'inline-flex':'none';
         try{ state.fc.goalToolsOpen=open; if(typeof v796SaveSoon==='function')v796SaveSoon(); }catch(_s){}
         t.setAttribute('aria-expanded',open?'true':'false');
         t.classList.toggle('is-on',open);
@@ -13732,14 +13732,14 @@ function forecast(){
     const wdJump=document.createElement('button');
     wdJump.id='fcWorkdayToggleV854'; wdJump.type='button'; wdJump.className='btn ghost';
     wdJump.style.cssText='font-size:13px;font-weight:800;margin-right:6px;background:#fff;color:#0f766e;border-color:#99f6e4';
-    const wdHost=mtJump&&mtJump.parentElement;
+    const wdHost=goalToolsMenu;
     if(wdHost){
       wdHost.insertBefore(wdJump,mtJump.nextSibling);
       const wdPanel=document.createElement('div'); wdPanel.id='fcWorkdayPanelV854';
       const wdInputs=fcMonths.map(m=>{ const ym=`${CY}-${String(m).padStart(2,'0')}`; return `<span style="display:inline-flex;align-items:center;gap:3px"><span class="sub2">${m}월</span><input type="number" class="fc-wdm-v854" data-m="${m}" value="${workdaysFor(ym)}" min="0" step="1" style="width:58px;min-width:58px;box-sizing:border-box;padding:5px 7px;text-align:center;font-size:12px;font-weight:700"></span>`; }).join('');
       wdPanel.style.cssText=`display:${state.fc.workdayOpen?'block':'none'};margin-top:8px;border:1px solid #99f6e4;border-radius:10px;padding:11px 13px;background:#f0fdfa`;
       wdPanel.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><b style="font-size:12px;color:#0f766e">조업일수 (${CY}년·월별)</b>${wdInputs}<button class="btn ghost" id="fcWdResetV854" style="font-size:11px;padding:3px 8px;color:var(--red);border-color:#f3c0c0">기본값</button><span class="sub2">회사 휴무에 맞춰 직접 수정 · 그래프 반영·저장</span></div>`;
-      wdHost.insertAdjacentElement('afterend',wdPanel);
+      (goalPanelsHost||wdHost).insertAdjacentElement('afterend',wdPanel);
       const wdLabel=()=>{wdJump.textContent='📅 조업일수 '+(state.fc.workdayOpen?'▾':'▸');wdJump.style.background=state.fc.workdayOpen?'#0f766e':'#fff';wdJump.style.color=state.fc.workdayOpen?'#fff':'#0f766e';}; wdLabel();
       wdJump.addEventListener('click',()=>{ state.fc.workdayOpen=!state.fc.workdayOpen; wdPanel.style.display=state.fc.workdayOpen?'block':'none'; wdLabel(); });
       wdPanel.querySelectorAll('.fc-wdm-v854').forEach(inp=>{ inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur();}}); inp.addEventListener('change',async e=>{ const ym=`${CY}-${String(+e.target.dataset.m).padStart(2,'0')}`,v=e.target.value.trim(); if(v==='')delete state.workdays[ym]; else state.workdays[ym]=Math.max(0,parseInt(v,10)||0); if(typeof logEdit==='function')logEdit('조업일수',ym+' 조업일수 변경'); await saveSettings(); const sy=window.scrollY; fcFastForecast(); requestAnimationFrame(()=>window.scrollTo(0,sy)); }); });
@@ -19488,12 +19488,11 @@ try{
         return `<tr><td class="rank">${i+1}</td><td class="l"><b>${esc(o.name)}</b><div class="sub2" style="font-size:11px;color:#64748b;margin-top:2px">${esc(o.code||'-')}</div></td><td class="l">${esc(o.spec||'(규격없음)')}</td>${cells}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(o.total,metric)}</b><div class="sub2" style="font-size:10px;color:#94a3b8;font-weight:400">전체% ${o.baseAdjust===''?'자동':esc(o.baseAdjust)+'%'}</div></td></tr>`;
       }).join('')||`<tr><td colspan="16" style="text-align:center;color:#94a3b8;padding:14px">표시할 월별 목표가 없습니다.</td></tr>`;
       const totalRow=monthlyRows.length?`<tr class="total-row"><td></td><td class="l">합 계</td><td></td>${Array.from({length:12},(_,k)=>`<td><b class="fc-month-value ${metric}">${fcMonthlyValue(monthTotals[k+1],metric)}</b></td>`).join('')}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(grand,metric)}</b></td></tr>`:'';
-      const modebar=`<div class="fc-month-modebar"><button class="btn ghost ${metric==='amount'?'on':''}" id="fcCustMonAmount" type="button">금액보기</button><button class="btn ghost ${metric==='qty'?'on':''}" id="fcCustMonQty" type="button">수량</button></div>`;
-      bodyHtml=`${modebar}<div class="tablewrap" style="max-height:1120px"><table class="fc-month-target-table ${metric==='amount'?'amount-view':'qty-view'}"><thead><tr><th>순위</th><th class="l">품명</th><th class="l">규격</th>${Array.from({length:12},(_,k)=>`<th>${k+1}월<div style="font-size:11px;color:#94a3b8">${k+1<=f.lastAct?'확정실적':'조정%'}</div></th>`).join('')}<th>합계<div style="font-size:11px;color:#94a3b8">전체%</div></th></tr></thead><tbody>${mrows}${totalRow}</tbody></table></div>
+      bodyHtml=`<div class="tablewrap" style="max-height:1120px"><table class="fc-month-target-table ${metric==='amount'?'amount-view':'qty-view'}"><thead><tr><th>순위</th><th class="l">품명</th><th class="l">규격</th>${Array.from({length:12},(_,k)=>`<th>${k+1}월<div style="font-size:11px;color:#94a3b8">${k+1<=f.lastAct?'확정실적':'조정%'}</div></th>`).join('')}<th>합계<div style="font-size:11px;color:#94a3b8">전체%</div></th></tr></thead><tbody>${mrows}${totalRow}</tbody></table></div>
       <div class="note">${esc(c)}의 제품·규격별 <b>1~12월 ${metric==='amount'?'목표금액':'목표수량'}</b>입니다. 1~${f.lastAct}월은 확정실적이라 수정되지 않으며, 이후 월은 제품의 <b>전체 목표%</b>를 먼저 반영한 값에 월별 조정%를 추가 적용합니다. 월 조정 시 금액과 수량이 같은 비율로 함께 변경됩니다.</div>`;
     }else{
       const rows=arr.map((o,i)=>`<tr><td class="rank">${i+1}</td><td class="l">${esc(o.code)}</td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>${disp(o.prev)}</td><td>${disp(o.proj)}</td><td><input class="fccpov${o.cpov!==''?' edited':''}" data-pk="${esc(o.pk)}" value="${esc(o.cpov)}" placeholder="목표%" style="width:56px;text-align:right;font-size:13px;padding:3px;border:1px solid var(--line);border-radius:5px;font-family:inherit" onclick="event.stopPropagation()"></td><td>${diffSpan(o.diff)}</td><td>${pctSpan(o.pct)}</td><td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.cq))}</td></tr>`).join('');
-      bodyHtml=`<div class="fc-month-modebar"><button class="btn ghost ${fcMonthlyMetric()==='amount'?'on':''}" id="fcCustMonAmount" type="button">금액보기</button><button class="btn ghost ${fcMonthlyMetric()==='qty'?'on':''}" id="fcCustMonQty" type="button">수량</button></div><div class="tablewrap" style="max-height:1120px"><table class="fcd-prod-fit"><colgroup><col style="width:4%"><col style="width:11%"><col style="width:14%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:8%"><col style="width:9%"><col style="width:6%"><col style="width:7%"><col style="width:7%"></colgroup><thead><tr><th>순위</th><th class="l fcds" data-sk="code">품번${_ar('code')}</th><th class="l fcds" data-sk="name">품명${_ar('name')}</th><th class="l fcds" data-sk="spec">규격${_ar('spec')}</th><th class="fcds" data-sk="prev">전년매출(${f.PY})${_ar('prev')}</th><th class="fcds" data-sk="proj">올해목표${_ar('proj')}</th><th>목표%<div style="font-size:8px;color:#94a3b8;font-weight:400">전년比</div></th><th class="fcds" data-sk="diff">증감액${_ar('diff')}</th><th class="fcds" data-sk="pct">증감%${_ar('pct')}</th><th class="fcds" data-sk="pq">전년수량${_ar('pq')}</th><th class="fcds" data-sk="cq">목표수량${_ar('cq')}</th></tr></thead><tbody>${rows}</tbody></table></div><div class="note">${fcRangeLabel()} 기준, ${esc(c)}의 제품·규격별 전년 대비 목표 증감입니다.</div>`;
+      bodyHtml=`<div class="tablewrap" style="max-height:1120px"><table class="fcd-prod-fit"><colgroup><col style="width:4%"><col style="width:11%"><col style="width:14%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:8%"><col style="width:9%"><col style="width:6%"><col style="width:7%"><col style="width:7%"></colgroup><thead><tr><th>순위</th><th class="l fcds" data-sk="code">품번${_ar('code')}</th><th class="l fcds" data-sk="name">품명${_ar('name')}</th><th class="l fcds" data-sk="spec">규격${_ar('spec')}</th><th class="fcds" data-sk="prev">전년매출(${f.PY})${_ar('prev')}</th><th class="fcds" data-sk="proj">올해목표${_ar('proj')}</th><th>목표%<div style="font-size:8px;color:#94a3b8;font-weight:400">전년比</div></th><th class="fcds" data-sk="diff">증감액${_ar('diff')}</th><th class="fcds" data-sk="pct">증감%${_ar('pct')}</th><th class="fcds" data-sk="pq">전년수량${_ar('pq')}</th><th class="fcds" data-sk="cq">목표수량${_ar('cq')}</th></tr></thead><tbody>${rows}</tbody></table></div><div class="note">${fcRangeLabel()} 기준, ${esc(c)}의 제품·규격별 전년 대비 목표 증감입니다.</div>`;
     }
     const metricText=monOn?(fcMonthlyMetric()==='amount'?' · 월별 목표금액':' · 월별 목표수량'):'';
     /* v760 : 업체를 고르면(월별보기 포함) 표 위에 그 업체의 월별 매출 추이를 표시합니다 */
@@ -19522,8 +19521,11 @@ try{
         _tgtLabV902='🎯 '+_ty+'년 목표'; window.__FC_TGT_YEAR_V906=_ty;
       }
     }catch(_e902){}
-    const _ttTopC=trendTopV760(c,(typeof CUR!=='undefined'?CUR:[]).filter(r=>r&&r.cust===c),_ttKeyC,{hint:'',target:_tgtArrV902,targetLabel:_tgtLabV902,targetYear:(typeof fcTargetYear==='function'?fcTargetYear():0)});
-    const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← 목록으로</button><span class="title">${esc(c)} ▸ 제품·규격별 목표</span><span class="meta">${fcRangeLabel()} · 전년 ${won(tp)} → 목표 ${won(tj)}${metricText}</span>${monBtn}<span class="spacer"></span><button class="btn ghost" id="fcdCsv">엑셀 내보내기</button></div>${_ttTopC}${bodyHtml}`;
+    const _metricBtns=`<button class="btn ghost ${fcMonthlyMetric()==='amount'?'on':''}" id="fcCustMonAmount" type="button">금액보기</button><button class="btn ghost ${fcMonthlyMetric()==='qty'?'on':''}" id="fcCustMonQty" type="button">수량</button>`;
+    const _toolLeft=`<span class="v944-left">${monBtn}${_metricBtns}</span>`;
+    const _toolRight=`<span id="fcdToolRowV943"><span id="fcdSearchWrapV939"><b style="font-size:12px;color:#334155">표 검색</b><input type="search" id="fcdQV939" autocomplete="off" spellcheck="false" placeholder="품번 · 품명 · 규격 (띄어쓰기로 여러 개)"><button type="button" class="btn ghost" id="fcdQClearV939">✕ 지우기</button><button class="btn ghost" id="fcdCsv">엑셀 내보내기</button></span></span>`;
+    const _ttTopC=trendTopV760(c,(typeof CUR!=='undefined'?CUR:[]).filter(r=>r&&r.cust===c),_ttKeyC,{hint:'',target:_tgtArrV902,targetLabel:_tgtLabV902,targetYear:(typeof fcTargetYear==='function'?fcTargetYear():0),toolbarPrefix:_toolLeft,toolbarSuffix:_toolRight});
+    const html=`<div class="rhead"><button class="btn ghost" id="backBtn">← 목록으로</button><span class="title">${esc(c)} ▸ 제품·규격별 목표</span><span class="meta">${fcRangeLabel()} · 전년 ${won(tp)} → 목표 ${won(tj)}${metricText}</span></div>${_ttTopC}${bodyHtml}`;
     renderCustom(html,()=>{
       bindTrendTopV760(_ttKeyC,()=>fcDrillCust(c));
       $('#backBtn').addEventListener('click',forecast);
@@ -41049,6 +41051,9 @@ function bar(){
 function move(){
   try{
     var b=bar(); if(!b)return;
+    /* v948: 최신 화면은 버튼을 처음부터 최종 위치에 생성합니다.
+       이전 후처리가 다시 DOM을 옮기면 첫 화면이 흔들리므로 그대로 둡니다. */
+    if(b.querySelector(':scope > .v944-left')&&b.querySelector(':scope > #fcdToolRowV943'))return;
     var close=b.querySelector('.ttCloseV760')||b.querySelector('.ttOpenV760'); if(!close)return;
     /* ══ v944 · 왼쪽 버튼들을 «하나의 고정 묶음»에 담습니다. ══ */
     var L=b.querySelector(':scope > .v944-left')||b.querySelector('.v944-left');
@@ -42219,4 +42224,47 @@ try{
 })();
 </script>
 </body>
+<style id="v949-goal-title-and-receipt-date">
+/* v949 · 목표설정은 제목 바로 오른쪽에 고정하고 선택 메뉴도 같은 줄에 표시 */
+#result .fc-title-tools-v949{display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:wrap!important}
+#result .fc-title-tools-v949>.title{flex:0 0 auto}
+#result .fc-title-tools-v949>.meta{margin-left:auto;min-width:260px}
+#result .fc-title-menu-v949{display:none;align-items:center;justify-content:flex-start!important;gap:6px!important;flex-wrap:wrap}
+#result #fcGoalPanelsHostV949,#result #fcNotesWrap{box-sizing:border-box;width:100%!important;max-width:none!important}
+#result #fcNotesWrap{clear:both;align-self:stretch}
+#result #fcNotesEd{box-sizing:border-box;width:100%!important;max-width:none!important;min-height:280px!important}
+#result #fcMonthlyTargetPanel,#result #fcWorkdayPanelV854{box-sizing:border-box;width:100%!important;max-width:none!important;flex:1 0 100%}
+.ar-dm-receipt-date{display:block;margin-top:3px;color:#64748b;font-size:10px;font-weight:600;line-height:1.25;white-space:normal}
+@media(max-width:900px){#result .fc-title-tools-v949>.meta{margin-left:0;flex-basis:100%}}
+</style>
+<script id="v949-receipt-dates">
+/* v949 · 업체 상세 월별표의 현금/어음 금액 아래 실제 수금일 표시 */
+;(function(){
+ if(typeof arDetail!=='function')return;
+ var base=arDetail;
+ arDetail=function(model){
+  var html=base(model),cust=(state&&state.ar&&state.ar.selectedCust)||'';
+  if(!cust||html.indexOf('ar-detail-months')<0)return html;
+  var cash=Array.from({length:12},function(){return[];}),bill=Array.from({length:12},function(){return[];});
+  (state.ar.receipts||[]).forEach(function(r){
+   var d=String(r.date||'');if(arCust(r.cust)!==cust||+d.slice(0,4)!==model.year)return;
+   var m=+d.slice(5,7)-1;if(m<0||m>11)return;
+   var label=d.slice(5,10).replace('-','/');
+   var dst=arMethod(r)==='받을어음'?bill[m]:cash[m];if(label&&dst.indexOf(label)<0)dst.push(label);
+  });
+  try{
+   var box=document.createElement('div');box.innerHTML=html;
+   box.querySelectorAll('.ar-detail-months tbody tr').forEach(function(tr){
+    var tds=tr.children;if(tds.length<5)return;
+    var mt=(tds[0].textContent||'').match(/(\d+)월/);if(!mt)return;var i=+mt[1]-1;
+    [[3,cash[i]],[4,bill[i]]].forEach(function(pair){
+     if(!pair[1]||!pair[1].length)return;
+     var s=document.createElement('span');s.className='ar-dm-receipt-date';s.textContent='수금일 '+pair[1].join(', ');pair[0]<tds.length&&tds[pair[0]].appendChild(s);
+    });
+   });
+   return box.innerHTML;
+  }catch(e){return html;}
+ };
+})();
+</script>
 </html>
