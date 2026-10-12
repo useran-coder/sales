@@ -3299,7 +3299,7 @@ function bepHeadMoveV792(){
         if(id==='fcHeadTabV837')b.innerHTML='<span aria-hidden="true" style="margin-right:3px">👥</span> 사업부 인원';
         b.onclick=function(e){e.preventDefault();var sy=window.scrollY||0;state.fc._bepHeadTab=state.fc._bepHeadTab===key?'':key;try{saveSettings();}catch(_e){}bepHeadMoveV792();requestAnimationFrame(function(){window.scrollTo(0,sy);});};
       };
-      makeTab('fcBepTabV837','📊 BEP(손익분기점)','bep');
+      makeTab('fcBepTabV837','📊 BEP (손익분기점)','bep');
       makeTab('fcHeadTabV837','👥 사업부 인원','head');
       var host=document.getElementById('bepHeadHostV792');
       if(!host){
@@ -41585,9 +41585,7 @@ function paint(){
     });
   }catch(e){}
 }
-document.addEventListener('click',function(e){
-  try{ if(e.target&&e.target.closest&&e.target.closest('#fcGoalToolsMenuV892'))setTimeout(paint,40); }catch(_e){}
-},true);
+/* v954에서 모든 목표설정 버튼의 선택 색상을 한 번에 관리합니다. */
 /* v951: 주기적으로 버튼 클래스를 다시 칠하면 글자 폭이 순간 변해 흔들려 보입니다.
    버튼 클릭 때만 갱신하고, 최초 화면은 렌더 직후 배치 코드에서 한 번 맞춥니다. */
 sep(); paint();
@@ -42402,6 +42400,58 @@ try{
   if(ms.some(function(m){return m.addedNodes&&m.addedNodes.length;}))queue();
  }).observe(root,{childList:true,subtree:true});
  stable();
+})();
+</script>
+<style id="v954-goal-active-state">
+/* v954 · 모든 목표설정 버튼의 기본/선택 색상을 한 규칙으로 통일 */
+#result #fcGoalToolsMenuV892 button,
+#result #fcGoalToolsMenuV892 .btn,
+#result #fcGoalToolsMenuV892 .fcntab,
+#result #fcGoalToolsMenuV892 #fcNotesToggle,
+#result #fcGoalToolsMenuV892 #fcNotesToggle.v932on,
+#result #fcGoalToolsMenuV892 #fcNotesToggle.gt-sub-open-v873{
+ background:#fff!important;color:#334155!important;border-color:var(--line)!important;
+ box-shadow:none!important;animation:none!important;transition:none!important}
+#result #fcGoalToolsMenuV892 button.v954-active,
+#result #fcGoalToolsMenuV892 .btn.v954-active,
+#result #fcGoalToolsMenuV892 .fcntab.v954-active,
+#result #fcGoalToolsMenuV892 #fcNotesToggle.v954-active{
+ background:#1e3a5f!important;color:#fff!important;border-color:#1e3a5f!important;
+ box-shadow:0 1px 3px rgba(30,58,95,.28)!important}
+#result #fcGoalToolsMenuV892 button:not(.v954-active):hover{
+ background:#f1f5f9!important;color:#0f172a!important;border-color:#94a3b8!important}
+</style>
+<script id="v954-goal-active-state-script">
+;(function(){
+ 'use strict';
+ var scheduled=false;
+ function visible(el){return !!(el&&getComputedStyle(el).display!=='none');}
+ function sync(){
+  scheduled=false;
+  var menu=document.getElementById('fcGoalToolsMenuV892');if(!menu)return;
+  menu.querySelectorAll('button').forEach(function(b){b.classList.remove('v954-active');});
+  var active=null;
+  var mp=document.getElementById('fcMonthlyTargetPanel'),wp=document.getElementById('fcWorkdayPanelV854');
+  var nw=document.getElementById('fcNotesWrap');
+  if(visible(mp))active=document.getElementById('fcMonthlyTargetToggle');
+  else if(visible(wp))active=document.getElementById('fcWorkdayToggleV854');
+  else{
+   var bt='';try{bt=(state&&state.fc&&state.fc._bepHeadTab)||'';}catch(_e){}
+   if(bt==='bep')active=document.getElementById('fcBepTabV837');
+   else if(bt==='head')active=document.getElementById('fcHeadTabV837');
+   else if(visible(nw)){
+    var nt='main';try{nt=(state&&state.fc&&state.fc.notesTab)||'main';}catch(_e2){}
+    active=nt==='main'?document.getElementById('fcNotesToggle'):menu.querySelector('.fcntab[data-t="'+nt+'"]');
+   }
+  }
+  if(active)active.classList.add('v954-active');
+ }
+ function schedule(){if(scheduled)return;scheduled=true;queueMicrotask(function(){requestAnimationFrame(sync);});}
+ document.addEventListener('click',function(e){
+  if(e.target&&e.target.closest&&e.target.closest('#fcGoalToolsToggleV892,#fcGoalToolsMenuV892 button'))schedule();
+ },false);
+ window.addEventListener('resize',schedule,{passive:true});
+ sync();
 })();
 </script>
 </html>
