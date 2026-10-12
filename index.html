@@ -14087,16 +14087,16 @@ function forecast(){
         state.fc[TABF[curTab]]=ed.innerHTML;
         /* v789 : 지금 보고 있는 목표 연도 보관함에도 같이 저장합니다 */
         try{ if(typeof fcNotesSyncYearV789==='function')fcNotesSyncYearV789(); }catch(_y){} };
-      const setBtn=(b,on)=>{ if(!b)return; b.style.background=on?'#fde047':'#ffffff'; b.style.color=on?'#713f12':'#b45309'; b.style.borderColor=on?'#eab308':'#fde68a'; try{ b.classList.toggle('v932on',!!on); }catch(_e){} };
+      const setBtn=(b,on)=>{ if(!b)return; const isMain=b.id==='fcNotesToggle'; b.style.background=isMain?'#ffffff':(on?'#1e3a5f':'#ffffff'); b.style.color=isMain?'#334155':(on?'#ffffff':'#334155'); b.style.borderColor=isMain?'var(--line)':(on?'#1e3a5f':'var(--line)'); try{ b.classList.toggle('v932on',!isMain&&!!on); }catch(_e){} };
       /* v789 : 이 주요사항이 «어느 목표 연도»의 것인지 제목에 표시합니다 */
       try{ const yl=document.getElementById('fcNotesYrV789');
         if(yl)yl.textContent=((typeof fcTargetYear==='function')?fcTargetYear():'')+'년 '; }catch(_y){}
       const markTabs=()=>{ setBtn(tog,curTab==='main'); document.querySelectorAll('#result .fcntab').forEach(b=>setBtn(b,b.dataset.t===curTab)); };
       loadTab(curTab); markTabs(); showBy();
-      const openWrap=()=>{ if(wrap.style.display==='none'){ wrap.style.display='block'; tog.textContent='📝 매출목표 주요사항 ▴'; } };
+      const openWrap=()=>{ if(wrap.style.display==='none'){ wrap.style.display='block'; tog.textContent='📝 목표 주요사항 ▴'; } };
       const switchTab=t=>{ commit(); saveSettings(); curTab=t; state.fc.notesTab=t; loadTab(t); openWrap(); markTabs(); showBy(); ed.focus(); };
-      tog&&tog.addEventListener('click',()=>{ if(curTab!=='main'){ switchTab('main'); return; } const open=wrap.style.display!=='none'; wrap.style.display=open?'none':'block'; tog.textContent='📝 매출목표 주요사항 '+(open?'▾':'▴'); if(!open)ed.focus(); markTabs(); });
-      $('#result').querySelectorAll('.fcntab').forEach(b=>b.addEventListener('click',()=>{ if(curTab===b.dataset.t && wrap.style.display!=='none'){ commit(); saveSettings(); wrap.style.display='none'; tog.textContent='📝 매출목표 주요사항 ▾'; markTabs(); return; } switchTab(b.dataset.t); }));
+      tog&&tog.addEventListener('click',()=>{ if(curTab!=='main'){ switchTab('main'); return; } const open=wrap.style.display!=='none'; wrap.style.display=open?'none':'block'; tog.textContent='📝 목표 주요사항 '+(open?'▾':'▴'); if(!open)ed.focus(); markTabs(); });
+      $('#result').querySelectorAll('.fcntab').forEach(b=>b.addEventListener('click',()=>{ if(curTab===b.dataset.t && wrap.style.display!=='none'){ commit(); saveSettings(); wrap.style.display='none'; tog.textContent='📝 목표 주요사항 ▾'; markTabs(); return; } switchTab(b.dataset.t); }));
       let _st; const save=()=>{ clearTimeout(_st); _st=setTimeout(()=>{ touchMeta(); commit(); saveSettings(); showBy(); },500); };
       { const sv=document.getElementById('fcNotesSaveBtn'); sv&&sv.addEventListener('click',()=>{ touchMeta(); commit(); saveSettings(); showBy(); if(state.gsync&&state.gsync.url){ gsSave(false); } else { const st=$('#gsStatus'); if(st){st.style.color='#0f766e';st.textContent='메모 저장됨(로컬). 공유하려면 구글 동기화 URL을 입력하세요.';} } }); }
       ed.addEventListener('input',save); ed.addEventListener('blur',()=>{ touchMeta(); commit(); saveSettings(); showBy(); });
@@ -37898,8 +37898,7 @@ enforce();
 'use strict';
 function closeNotes(){
   var w=document.getElementById('fcNotesWrap');if(w)w.style.display='none';
-  var b=document.getElementById('fcNotesToggle');if(b)b.innerHTML='📝 <span id="fcNotesYrV789"></span>매출목표 주요사항 ▾';
-  var ys=document.getElementById('fcNotesYrV789');if(ys)try{ys.textContent=fcTargetYear()+'년 ';}catch(_e){}
+  var b=document.getElementById('fcNotesToggle');if(b)b.textContent='📝 목표 주요사항 ▾';
 }
 function closeHead(){
   try{if(typeof state!=='undefined'&&state.fc)state.fc._bepHeadTab='';}catch(_e){}
@@ -42363,6 +42362,46 @@ try{
  window.addEventListener('resize',function(){
   var m=document.getElementById('fcGoalToolsMenuV892');if(m&&getComputedStyle(m).display!=='none')align();
  },{passive:true});
+})();
+</script>
+<style id="v953-goal-notes-stable">
+/* v953 · 주요사항 대표 버튼은 다른 기본 버튼과 같은 색으로 고정 */
+#result #fcGoalToolsMenuV892 #fcNotesToggle,
+#result #fcGoalToolsMenuV892 #fcNotesToggle.v932on,
+#result #fcGoalToolsMenuV892 #fcNotesToggle.gt-sub-open-v873{
+ background:#fff!important;color:#334155!important;border-color:var(--line)!important;box-shadow:none!important}
+#result #fcGoalToolsMenuV892 #fcNotesToggle:hover{
+ background:#f1f5f9!important;color:#0f172a!important;border-color:#94a3b8!important}
+</style>
+<script id="v953-goal-notes-stable-script">
+;(function(){
+ 'use strict';
+ var lastHead=null,pending=false;
+ function label(){
+  var b=document.getElementById('fcNotesToggle'),w=document.getElementById('fcNotesWrap');if(!b)return;
+  var open=!!(w&&w.style.display!=='none');
+  var wanted='📝 목표 주요사항 '+(open?'▴':'▾');
+  if(b.textContent!==wanted)b.textContent=wanted;
+ }
+ function stable(){
+  pending=false;
+  var head=document.querySelector('#result .fc-title-tools-v949'),btn=document.getElementById('fcGoalToolsToggleV892'),menu=document.getElementById('fcGoalToolsMenuV892');
+  if(head&&btn&&menu&&head!==lastHead){
+   lastHead=head;
+   var left=btn.offsetLeft+btn.offsetWidth+8;
+   menu.style.left=left+'px';
+   menu.style.maxWidth=Math.max(260,head.clientWidth-left-4)+'px';
+  }
+  label();
+ }
+ function queue(){if(pending)return;pending=true;queueMicrotask(stable);}
+ document.addEventListener('click',function(e){
+  if(e.target&&e.target.closest&&e.target.closest('#fcGoalToolsToggleV892,#fcGoalToolsMenuV892 button'))queue();
+ },false);
+ var root=document.getElementById('result');if(root)new MutationObserver(function(ms){
+  if(ms.some(function(m){return m.addedNodes&&m.addedNodes.length;}))queue();
+ }).observe(root,{childList:true,subtree:true});
+ stable();
 })();
 </script>
 </html>
