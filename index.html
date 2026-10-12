@@ -41589,7 +41589,9 @@ function paint(){
 document.addEventListener('click',function(e){
   try{ if(e.target&&e.target.closest&&e.target.closest('#fcGoalToolsMenuV892'))setTimeout(paint,40); }catch(_e){}
 },true);
-setInterval(function(){ sep(); paint(); },700);
+/* v951: 주기적으로 버튼 클래스를 다시 칠하면 글자 폭이 순간 변해 흔들려 보입니다.
+   버튼 클릭 때만 갱신하고, 최초 화면은 렌더 직후 배치 코드에서 한 번 맞춥니다. */
+sep(); paint();
 })();
 </script>
 <style id="v933-cpl-head">
@@ -42313,6 +42315,53 @@ try{
  var root=document.getElementById('result');
  if(root)new MutationObserver(place).observe(root,{childList:true,subtree:true});
  place();
+})();
+</script>
+<style id="v951-goal-tools-popover">
+/* v951 · 메뉴는 목표설정 바로 오른쪽에서 설명 글자 위에 표시하고 문구를 밀지 않습니다. */
+#result .fc-title-tools-v949{
+ position:relative!important;display:flex!important;align-items:center!important;flex-wrap:nowrap!important;
+ gap:8px!important;min-height:34px!important;width:100%!important;overflow:visible!important}
+#result .fc-title-tools-v949>.title,#result .fc-title-tools-v949>#fcGoalToolsToggleV892{flex:0 0 auto!important}
+#result .fc-title-tools-v949>.meta{
+ flex:1 1 auto!important;min-width:0!important;margin-left:0!important;text-align:right!important;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#result .fc-title-tools-v949>#fcGoalToolsMenuV892{
+ position:absolute!important;top:50%!important;transform:translateY(-50%)!important;z-index:40!important;
+ width:max-content!important;max-width:calc(100% - 220px)!important;box-sizing:border-box!important;
+ align-items:center!important;justify-content:flex-start!important;flex-wrap:nowrap!important;gap:6px!important;
+ padding:5px 8px!important;border:1px solid #dbe3ee!important;border-radius:10px!important;
+ background:rgba(255,255,255,.98)!important;box-shadow:0 4px 14px rgba(15,23,42,.12)!important;
+ overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important}
+#result .fc-title-tools-v949>#fcGoalToolsMenuV892>*{flex:0 0 auto!important}
+#fcGoalPanelStageV950{position:relative;z-index:1;clear:both;width:100%!important}
+@media(max-width:900px){
+ #result .fc-title-tools-v949>.meta{display:none!important}
+ #result .fc-title-tools-v949>#fcGoalToolsMenuV892{max-width:calc(100% - 150px)!important}
+}
+</style>
+<script id="v951-goal-tools-popover-script">
+;(function(){
+ 'use strict';
+ function align(){
+  try{
+   var head=document.querySelector('#result .fc-title-tools-v949'),btn=document.getElementById('fcGoalToolsToggleV892'),menu=document.getElementById('fcGoalToolsMenuV892');
+   if(!head||!btn||!menu)return;
+   var left=btn.offsetLeft+btn.offsetWidth+8;
+   menu.style.left=left+'px';
+   menu.style.maxWidth=Math.max(260,head.clientWidth-left-4)+'px';
+   var ys=document.getElementById('fcNotesYrV789');if(ys&&!String(ys.textContent||'').trim())try{ys.textContent=fcTargetYear()+'년 ';}catch(_e){}
+  }catch(e){}
+ }
+ document.addEventListener('click',function(e){
+  var t=e.target&&e.target.closest&&e.target.closest('#fcGoalToolsToggleV892,#fcGoalToolsMenuV892 button');
+  if(t){align();requestAnimationFrame(align);}
+ },false);
+ window.addEventListener('resize',align,{passive:true});
+ var root=document.getElementById('result');if(root)new MutationObserver(function(ms){
+  if(ms.some(function(m){return m.addedNodes&&m.addedNodes.length;}))requestAnimationFrame(align);
+ }).observe(root,{childList:true,subtree:true});
+ align();
 })();
 </script>
 </html>
