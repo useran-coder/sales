@@ -13600,7 +13600,7 @@ function forecast(){
     +' style="margin-left:10px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;padding:2px 10px;border-radius:999px;border:1px solid '+(_hideTgtV813?'#f59e0b':'#e2e8f0')+';background:'+(_hideTgtV813?'#fffbeb':'#fff')+';color:'+(_hideTgtV813?'#b45309':'#475569')+';font-weight:700">'
     +'<input type="checkbox" id="fcHideActTgt" '+(_hideTgtV813?'checked':'')+' style="cursor:pointer">확정월 목표 숨김'+(lastAct>0?('<span style="font-weight:600;color:#94a3b8">(1~'+lastAct+'월)</span>'):'')+'</label>';
 /* v716 : 조작 영역을 제목 «아래 줄»로 내립니다 */
-  const html=`<div class="rhead fc-title-tools-v949"><span class="title">매출 목표 (${CY})</span><button type="button" id="fcGoalToolsToggleV892" class="btn ghost gt-btn-v873" title="목표 설정 메뉴" aria-expanded="false">목표설정 <span class="gt-car-v873">▾</span></button><span id="fcGoalToolsMenuV892" class="fc-title-menu-v949"></span><span class="meta">${fcTargetPlanLabel()} · 연매출 목표 기준: 실적 ${fcCutLabel()} + 목표 ${fcFutLabel()} · 그래프 실제 실적 ${actualLastMonth>0?('1~'+actualLastMonth+'월'):'없음'} · 단위: 백만원</span></div>
+  const html=`<div class="rhead fc-title-tools-v949"><span class="title">매출 목표 (${CY})</span><span class="fc-goal-anchor-v955"><button type="button" id="fcGoalToolsToggleV892" class="btn ghost gt-btn-v873" title="목표 설정 메뉴" aria-expanded="false">목표설정 <span class="gt-car-v873">▾</span></button><span id="fcGoalToolsMenuV892" class="fc-title-menu-v949"></span></span><span class="meta">${fcTargetPlanLabel()} · 연매출 목표 기준: 실적 ${fcCutLabel()} + 목표 ${fcFutLabel()} · 그래프 실제 실적 ${actualLastMonth>0?('1~'+actualLastMonth+'월'):'없음'} · 단위: 백만원</span></div>
     <div class="fckpi fc-forecast-kpi-sticky-v889"><div class="kpi"><div class="lab">전년 연매출(${PY})</div><div class="val">${won(pyAnnual)}<small> 원</small></div></div>
       <div class="kpi"><div class="lab">올해 연매출 목표(${CY})</div><div class="val">${won(olhaeTarget)}<small> 원</small></div><div class="sub2" style="margin-top:2px">실적(${fcCutLabel()}) <b>${won(annualSummary.actualPeriodTotal)}</b> + 목표(${fcFutLabel()}) <b>${won(annualSummary.futurePeriodTarget)}</b></div></div>
       ${outsideCardHTML}
@@ -42454,4 +42454,29 @@ try{
  sync();
 })();
 </script>
+<style id="v955-goal-anchor-layout">
+/* v955 · 좌표 후계산 없이 목표설정 버튼을 기준으로 메뉴 위치를 처음부터 고정 */
+#result .fc-title-tools-v949{
+ position:relative!important;display:flex!important;align-items:center!important;flex-wrap:nowrap!important;
+ gap:8px!important;min-height:34px!important;width:100%!important;overflow:visible!important}
+#result .fc-title-tools-v949>.title{flex:0 0 auto!important}
+#result .fc-title-tools-v949>.fc-goal-anchor-v955{
+ position:relative!important;display:inline-flex!important;align-items:center!important;flex:0 0 auto!important}
+#result .fc-goal-anchor-v955>#fcGoalToolsToggleV892{position:relative!important;z-index:42!important;flex:0 0 auto!important}
+#result .fc-title-tools-v949>.meta{
+ flex:1 1 auto!important;min-width:0!important;margin:0!important;text-align:left!important;
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+#result .fc-goal-anchor-v955>#fcGoalToolsMenuV892{
+ position:absolute!important;left:calc(100% + 8px)!important;top:50%!important;transform:translateY(-50%)!important;
+ z-index:41!important;width:max-content!important;max-width:calc(100vw - 330px)!important;
+ display:none;align-items:center!important;justify-content:flex-start!important;flex-wrap:nowrap!important;gap:6px!important;
+ box-sizing:border-box!important;padding:5px 8px!important;border:1px solid #dbe3ee!important;border-radius:10px!important;
+ background:rgba(255,255,255,.99)!important;box-shadow:0 4px 14px rgba(15,23,42,.12)!important;
+ overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important}
+#result .fc-goal-anchor-v955>#fcGoalToolsMenuV892>*{flex:0 0 auto!important}
+@media(max-width:900px){
+ #result .fc-title-tools-v949>.meta{display:none!important}
+ #result .fc-goal-anchor-v955>#fcGoalToolsMenuV892{max-width:calc(100vw - 190px)!important}
+}
+</style>
 </html>
