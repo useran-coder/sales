@@ -35847,7 +35847,15 @@ function build2026Plan2(){
   var dm=fcDataYearMax(), f=state.fc||{}, st=(f.yearPlans||{})[String(dm)]||{};
   /* v853 : 기준연도를 현재 보고 있을 때는 보관본보다 지금 화면의 최신 목표안을 우선합니다. */
   var plans=(fcTargetYear()===dm&&f.targetPlans)?f.targetPlans:st.targetPlans;
-  if(!plans)plans=f.targetPlans;
+  /* v972 : 다음 연도 화면에서 기준연도 보관본이 아직 준비되지 않았을 때
+     현재(다음 연도)의 목표안을 기준연도 목표안으로 대신 쓰면 안 됩니다.
+     그 대체 때문에 2027 신규 배분/② 추진현황이 2026년 10~12월에 먼저 더해지고,
+     다시 2027 조정%가 적용되어 목표가 이중 확대됐습니다. 기준연도 화면일 때만
+     live 목표안을 허용하고, 다음 연도에서는 반드시 기준연도 보관본만 사용합니다. */
+  if(!plans){
+    if(fcTargetYear()===dm)plans=f.targetPlans;
+    else return null;
+  }
   /* v738 : 기준 목표안(1안/2안) 선택을 따릅니다 */
   /* ══ v878 · 기준 목표안을 화면 표시와 똑같이 고릅니다. ══
      화면(기준 2026년 목표안)은 «직접 고른 값 → 없으면 기준연도의 현재 목표안»을 보여 주는데,
@@ -42061,6 +42069,87 @@ window.fcRestoreAuditV971=function(it){
   var out={year:it&&it.y,plan:it&&it.p,match:true,diff:[]};if(!it||!it.d)return out;
   Object.keys(it.d).forEach(function(k){if(!same(state.fc&&state.fc[k],it.d[k])){out.match=false;out.diff.push(k);}});return out;
 };
+})();
+</script>
+<script id="v972-strategy-base-and-pd-active-year-isolation">
+(function(){
+'use strict';
+/* v972
+   ① 다음 연도 전략값은 그 연도의 목표안에만 기록합니다.
+   ② PD 임가공비 live 객체가 화면의 목표연도와 다르면 저장 전에 올바른 연도 슬롯을
+      먼저 불러옵니다. 따라서 입력/초기화가 다른 연도 슬롯을 덮지 않습니다. */
+function cp(v){try{return JSON.parse(JSON.stringify(v==null?{}:v));}catch(e){return{};}}
+function obj(v){return!!v&&typeof v==='object'&&!Array.isArray(v);}
+function activeYear(){try{return String(fcTargetYear()||'');}catch(e){return String(state&&state.fc&&state.fc._ctxYear||'');}}
+function pdBlank(y,src){
+  src=obj(src)?src:{};
+  return {labor:{},process:{},indirect:{},useLabor:src.useLabor!==false,useProcess:src.useProcess!==false,
+    useIndirect:src.useIndirect!==false,actual:{},estimate:!!src.estimate,_syncV866:{year:String(y),at:Date.now()}};
+}
+function pdYearOf(p){try{return String(p&&p._syncV866&&p._syncV866.year||'');}catch(e){return'';}}
+function bindPd(y){
+  try{
+    y=String(y||activeYear());if(!y)return false;
+    state.pdYears=obj(state.pdYears)?state.pdYears:{};
+    var live=obj(state.pd)?state.pd:{},ly=pdYearOf(live);
+    /* live 값은 그 값 자체가 표시하던 연도에만 되돌려 놓습니다. 화면의 새 연도에 저장하지 않습니다. */
+    if(ly&&ly!==y)state.pdYears[ly]=cp(live);
+    if(ly!==y){
+      state.pd=state.pdYears[y]?cp(state.pdYears[y]):pdBlank(y,live);
+      if(!obj(state.pd._syncV866))state.pd._syncV866={};
+      state.pd._syncV866.year=y;
+      state.pdYears[y]=cp(state.pd);
+      return true;
+    }
+    if(!obj(live._syncV866))live._syncV866={};live._syncV866.year=y;
+    state.pdYears[y]=cp(live);return false;
+  }catch(e){return false;}
+}
+window.pdBindActiveYearV972=bindPd;
+
+/* 월별 목표 화면을 그리기 전에 PD 객체를 반드시 선택 연도에 맞춥니다. */
+try{
+  var oldTrend=window.monthlyTrend;
+  if(typeof oldTrend==='function'&&!oldTrend.__pdYearV972){
+    var trend=function(){bindPd(activeYear());return oldTrend.apply(this,arguments);};
+    trend.__pdYearV972=true;window.monthlyTrend=trend;try{monthlyTrend=trend;}catch(e){}
+  }
+}catch(e){}
+
+/* 연도 전환 직후에도 대상 연도 PD를 즉시 활성화합니다. */
+try{
+  var oldSwitch=window.fcSwitchYear;
+  if(typeof oldSwitch==='function'&&!oldSwitch.__pdYearV972){
+    var sw=function(y){var r=oldSwitch.apply(this,arguments);bindPd(String(y||activeYear()));return r;};
+    sw.__pdYearV972=true;window.fcSwitchYear=sw;try{fcSwitchYear=sw;}catch(e){}
+  }
+}catch(e){}
+
+/* 저장 동기화는 현재 화면 연도 하나만 갱신합니다. */
+try{
+  var oldSync=window.fcSyncYearStoresV718;
+  if(typeof oldSync==='function'&&!oldSync.__pdYearV972){
+    var sync=function(){var y=activeYear();bindPd(y);var before=cp(state.pdYears||{}),r=oldSync.apply(this,arguments);
+      state.pdYears=obj(state.pdYears)?state.pdYears:{};
+      Object.keys(before).forEach(function(k){if(k!==y)state.pdYears[k]=before[k];});
+      if(y){state.pdYears[y]=cp(state.pd);if(obj(state.pdYears[y]._syncV866))state.pdYears[y]._syncV866.year=y;}
+      return r;};
+    sync.__pdYearV972=true;window.fcSyncYearStoresV718=sync;try{fcSyncYearStoresV718=sync;}catch(e){}
+  }
+}catch(e){}
+
+/* 초기화 버튼은 누른 시점의 화면 연도만 비웁니다. */
+try{
+  var oldReset=window.pdResetYearV866;
+  if(typeof oldReset==='function'&&!oldReset.__pdYearV972){
+    var reset=function(y){y=String(y||activeYear());bindPd(y);var keep=cp(state.pdYears||{}),r=oldReset.apply(this,arguments);
+      state.pdYears=obj(state.pdYears)?state.pdYears:{};
+      Object.keys(keep).forEach(function(k){if(k!==y)state.pdYears[k]=keep[k];});
+      if(y){state.pdYears[y]=cp(state.pd);if(obj(state.pdYears[y]._syncV866))state.pdYears[y]._syncV866.year=y;}
+      return r;};
+    reset.__pdYearV972=true;window.pdResetYearV866=reset;try{pdResetYearV866=reset;}catch(e){}
+  }
+}catch(e){}
 })();
 </script>
 </body>
