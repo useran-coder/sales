@@ -3512,6 +3512,7 @@ function runHeaderSalesSearchV912(){
     }
   }catch(_b916){}
   state._salesQV914=q;
+  state._salesNameV948='';
   salesSearchRenderV914();
 }
 /* 검색 결과 화면에서는 파일정보 줄과 요약 카드를 감춥니다(다른 화면으로 가면 되돌아옵니다). */
@@ -3546,7 +3547,10 @@ function salesSearchRenderV914(){
   const yr=state._salesYrV914;
   let mon=+state._salesMonV914; if(!(mon>=1&&mon<=12))mon=0;
   const yearRows=hit.filter(r=>r.d&&r.d.getFullYear()===yr);
-  const rows=yearRows.filter(r=>!mon||(r.d.getMonth()+1)===mon);
+  const productNames=[...new Set(yearRows.map(r=>String(r.name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
+  let selectedName=String(state._salesNameV948||'');
+  if(selectedName&&productNames.indexOf(selectedName)<0){ selectedName=''; state._salesNameV948=''; }
+  const rows=yearRows.filter(r=>(!mon||(r.d.getMonth()+1)===mon)&&(!selectedName||String(r.name||'').trim()===selectedName));
   const custs=[...new Set(rows.map(r=>r.cust).filter(Boolean))];
   const arr=rows.slice().sort((a,b)=>(+b.d)-(+a.d)||String(a.cust||'').localeCompare(String(b.cust||''),'ko'))
     .map((r,i)=>{
@@ -3578,6 +3582,11 @@ function salesSearchRenderV914(){
       chart=custMonthChartV665('💰 '+q+' 검색결과',yr,yearRows,yrs,{metric:met,metricToggle:true,monthPick:true,selectedMonth:mon||0});
     }
   }catch(e){}
+  const productFilter='<div class="sq-product-filter-v948" style="display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;padding:9px 12px;margin:0 0 8px;border:1px solid #dbeafe;border-radius:10px;background:#f8fbff">'
+    +'<b style="font-size:12px;color:#1e3a5f;line-height:28px;white-space:nowrap">📦 검색 품명</b>'
+    +'<button type="button" class="sqNameV948" data-name="" style="border:1px solid '+(!selectedName?'#2563eb':'#cbd5e1')+';background:'+(!selectedName?'#2563eb':'#fff')+';color:'+(!selectedName?'#fff':'#475569')+';border-radius:999px;padding:5px 11px;font:800 12px/1.25 inherit;cursor:pointer">전체 ('+won(productNames.length)+')</button>'
+    +productNames.map(n=>'<button type="button" class="sqNameV948" data-name="'+esc(n)+'" title="'+esc(n)+' 제품만 표에 표시" style="border:1px solid '+(selectedName===n?'#7c3aed':'#cbd5e1')+';background:'+(selectedName===n?'#7c3aed':'#fff')+';color:'+(selectedName===n?'#fff':'#334155')+';border-radius:999px;padding:5px 11px;font:800 12px/1.25 inherit;cursor:pointer">'+esc(n)+'</button>').join('')
+    +'</div>';
   const ctrl='<div class="ctrlbar" style="flex-wrap:wrap;gap:6px">'
     +'<b style="font-size:12px">연도</b>'
     +yrs.map(y2=>'<button type="button" class="btn'+(y2===yr?'':' ghost')+' sqYearV914" data-y="'+y2+'" style="font-size:12px;padding:5px 12px'+(y2===yr?';background:#1e3a5f;color:#fff;border-color:#1e3a5f':'')+'">'+y2+'년</button>').join('')
@@ -3599,7 +3608,7 @@ function salesSearchRenderV914(){
     '«'+esc(q)+'» 포함 '+won(arr.length)+'건 · 거래처 '+won(custs.length)+'개 · 수량 '+won(totQ)+' · 금액 '+disp(tot)+' '+unitLabel()+' · '+yr+'년'+(mon?(' '+mon+'월'):' 전체월'),
     arr, cols, 'd',
     '업체명·품번·품명·규격·비고에서 적어 넣은 낱말이 <b>모두 포함된</b> 출고 행입니다. 표 위 검색칸은 <b>순위를 뺀 모든 열</b>(일자·월·거래처·품번·품명·규격·수량·단가·금액·비고)을 찾습니다.',
-    {total:{label:'합 계',amt:tot},tableClass:'sales-search-13',controlsHtml:chart+ctrl,
+    {total:{label:'합 계',amt:tot},tableClass:'sales-search-13',controlsHtml:chart+productFilter+ctrl,
      onMount:function(){
        try{
          salesTopHideV914(true);
@@ -3609,6 +3618,7 @@ function salesSearchRenderV914(){
          $('#result').querySelectorAll('.cmMonthPick').forEach(function(g){ g.addEventListener('click',function(){ var m=+g.dataset.month||0; state._salesMonV914=(+state._salesMonV914===m)?0:m; state._salesKeepV914=1; salesSearchRenderV914(); }); });
          $('#result').querySelectorAll('.cmYearBtn').forEach(function(b){ b.addEventListener('click',function(){ state._salesYrV914=+b.dataset.y; state._salesMonV914=0; state._salesKeepV914=1; salesSearchRenderV914(); }); });
          $('#result').querySelectorAll('.cmMetBtn').forEach(function(b){ b.addEventListener('click',function(){ state._salesMetV914=(b.dataset.m==='qty')?'qty':'amt'; state._salesKeepV914=1; salesSearchRenderV914(); }); });
+         $('#result').querySelectorAll('.sqNameV948').forEach(function(b){ b.addEventListener('click',function(){ state._salesNameV948=String(b.dataset.name||''); state._salesKeepV914=1; salesSearchRenderV914(); }); });
          var cb=document.getElementById('sqCloseV914');
          if(cb)cb.addEventListener('click',function(){
            state._salesKeepV914=0; salesTopHideV914(false);
@@ -42080,7 +42090,7 @@ window.fcRestoreAuditV971=function(it){
 #result .trend-main-table-v973 td span{font-size:13px!important}
 /* PD 임가공비 입력값은 13px, 구분열의 월·실적·목표 표시는 11px */
 #result #pdPanelV853 input.pdin{font-size:13px!important}
-#result #pdPanelV853 td.pd-kind-v973,
+#result #pdPanelV853 td.pd-kind-v973{font-size:14px!important}
 #result #pdPanelV853 td.pd-kind-v973 label,
 #result #pdPanelV853 td.pd-kind-v973 span,
 #result #pdPanelV853 td.pd-kind-v973 .tag{font-size:11px!important}
