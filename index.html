@@ -23233,9 +23233,10 @@ async function dsDelOne(ym){
 /* ── 받기 ── */
 /* v476 : '동일'한 달은 건드리지 않고 «다름 · 받을 것»인 달만 내려받는다.
    내 PC에만 있는 달(서버에 없는 달)도 그대로 남긴다. */
-async function dsPull(){
+async function dsPull(options){
+ var silent=!!(options&&options.silent);
  var mf=await dsFreshManifest(); var rm=(mf&&mf.months)||{}; var keys=Object.keys(rm).sort();
- if(!keys.length){ dsSet('서버에 공유된 매출자료가 없습니다.','#dc2626'); return; }
+ if(!keys.length){ dsSet('서버에 공유된 매출자료가 없습니다.','#dc2626'); return false; }
  var local=dsLocalMonths();
  var same=[],need=[];
  keys.forEach(function(ym){
@@ -23250,15 +23251,15 @@ async function dsPull(){
  if(!need.length){
    dsRender();
    dsSet('모든 달이 서버 자료와 같습니다 — 받을 것이 없습니다. (동일 '+same.length+'개 월)','#0f766e');
-   return;
+   return true;
  }
  var needRows=need.reduce(function(a,k){return a+Number((rm[k]||{}).rows||0);},0);
  var onlyMine=Object.keys(local).filter(function(ym){ return !rm[ym]; });
- if(!await dsAsk('상태가 «다름 · 받을 것»인 달만 받습니다.\n\n  · 받을 달 '+need.length+'개 : '+need.join(', ')+
+ if(!silent&&!await dsAsk('상태가 «다름 · 받을 것»인 달만 받습니다.\n\n  · 받을 달 '+need.length+'개 : '+need.join(', ')+
    '\n  · 총 '+needRows.toLocaleString()+'행'+
    (same.length?('\n  · 그대로 두는 달(동일) '+same.length+'개 : '+same.join(', ')):'')+
    (onlyMine.length?('\n  · 내 PC에만 있는 달(유지) '+onlyMine.length+'개 : '+onlyMine.join(', ')):'')+
-   '\n\n받는 달의 내 PC 자료만 서버 자료로 교체되고, 나머지 달은 그대로 둡니다.\n(담당자·신용등급·목표 등 설정값도 그대로입니다.)\n\n진행할까요?'))return;
+   '\n\n받는 달의 내 PC 자료만 서버 자료로 교체되고, 나머지 달은 그대로 둡니다.\n(담당자·신용등급·목표 등 설정값도 그대로입니다.)\n\n진행할까요?'))return false;
  try{
   var got=[],recv=0;
   for(var i=0;i<need.length;i++){
@@ -23282,7 +23283,8 @@ async function dsPull(){
   datasets=kept.concat(got); RAWMEM={}; DS.lastPull=new Date().toISOString(); await dsPersist();
   try{ afterDataChanged(); }catch(_e){ rebuildCUR(); await persist(); }
   dsRender(); dsSet('받기 완료 — 받은 달 '+need.length+'개 · '+recv.toLocaleString()+'행'+(same.length?(' · 동일해서 건너뛴 달 '+same.length+'개'):'')+(onlyMine.length?(' · 내 PC에만 있는 달 '+onlyMine.length+'개 유지'):''),'#0f766e');
- }catch(e){ dsSet('오류: '+(e.message||e),'#dc2626'); }
+  return true;
+ }catch(e){ dsSet('오류: '+(e.message||e),'#dc2626'); return false; }
 }
 
 /* v440: 새 컴퓨터/새 브라우저는 로그인 직후 서버의 최신 설정과 매출 원본을 자동 적용합니다.
@@ -23343,7 +23345,9 @@ window.salesInitialSync=function(){
   clearTimeout(_dsInitialTimer);_dsInitialTimer=setTimeout(async function(){
     /* 설정(제품구분·품목군·판매수량 계산기준)을 먼저 받은 뒤 동일한 매출 원본으로 계산합니다. */
     try{if(typeof gsLoad==='function')await gsLoad(true);}catch(_e){}
-    try{await dsAutoPullLatest();}catch(_e2){}
+    /* v973 : 태블릿에 예전 로컬 파일이 남아 있어도 서버와 다른 월은 자동 교체합니다.
+       서버에 없는 태블릿 전용 월은 dsPull의 기존 정책대로 그대로 보존합니다. */
+    try{await dsPull({silent:true,source:'initial'});}catch(_e2){}
     try{ if(typeof window.fileConsistencyCheckV869==='function')await window.fileConsistencyCheckV869(); }catch(_e3){}
     try{ if(typeof window.mvSyncAutoV870==='function')await window.mvSyncAutoV870(); }catch(_e4){}
   },650);
