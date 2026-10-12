@@ -13683,7 +13683,8 @@ function forecast(){
       <span class="sub2">기존 제품 선택 시 <b>단가=평균단가 자동</b>(수정가능) · 거래처 입력/선택 + 수량·단가 → <b>업체·제품 목표 동시 연동</b>.</span></div>
     <!-- v917 : 안내문 삭제 -->
     <div class="tablewrap ${state.fc.showExcl?'fcshowexcl':''} ${state.fc.issP?'fcissue-p':''}" style="max-height:1120px"><table class="fc-prod-annual-table${_pQty?' fcqv':''}"><thead><tr><th>순위</th><th class="l fcsort" data-sk="code">품번${fcArrow('code')}</th><th class="l fcsort" data-sk="name">품명${fcArrow('name')}</th><th class="l fcsort" data-sk="spec">규격${fcArrow('spec')}</th><th class="fcsort" data-sk="prev">${_pQty?'전년수량':'전년매출'}${fcArrow('prev')}</th><th class="fcsort" data-sk="ytd">${_pQty?'실적수량':'실적'}(1~${lastAct}월)${fcArrow('ytd')}</th><th class="fcsort" data-sk="proj">${_pQty?'올해목표수량':'올해목표'}${fcArrow('proj')}</th><th class="fcsort" data-sk="diff">${_pQty?'증감수량':'증감액'}${fcArrow('diff')}</th><th class="fcsort" data-sk="${_pQty?'addQty':'addAmt'}" title="조정%·추가%·월별 %로 늘거나 줄어든 금액(수량)입니다. 기준은 전년 미래월 실적에 월별 목표%만 적용한 기본 목표입니다.">${_pQty?'추가증감수':'추가증감액'}${fcArrow(_pQty?'addQty':'addAmt')}</th><th class="fcsort" data-sk="pct">증감%${fcArrow('pct')}</th><th title="② 영업전략 추진현황 반영분 ÷ 전년 (표시 전용)">조정%<div style="font-size:10px;color:#1d4ed8;font-weight:700">전략</div></th><th title="월별보기 %조정 반영분 ÷ 전년 (표시 전용)">추가%<div style="font-size:10px;color:#7c3aed;font-weight:700">월조정</div></th><th class="fcsort" data-sk="pq">전년수량${fcArrow('pq')}</th><th class="fcsort" data-sk="cq">올해목표수량${fcArrow('cq')}</th><th class="l">메모(조정·추가% 이슈)</th></tr></thead><tbody>${prodRows}<tr class="total-row"><td></td><td class="l">합 계</td><td></td><td></td>${_pQty?`<td>${won(Math.round(prodArr.reduce((a,o)=>a+(o.pq||0),0)))}</td><td>${won(Math.round(prodArr.reduce((a,o)=>a+(o.ytdQ||0),0)))}</td><td>${won(Math.round(prodArr.reduce((a,o)=>a+(o.cq||0),0)))}</td><td>${_qspan(prodArr.reduce((a,o)=>a+((o.cq||0)-(o.pq||0)),0))}</td>`:`<td>${disp(pTotPrev)}</td><td>${disp(prodArr.reduce((a,o)=>a+(o.ytd||0),0))}</td><td>${disp(pTotProj)}</td><td>${diffSpan(prodArr.reduce((a,o)=>a+fcStratProdV926(o.pk),0))}</td>`}<td>${(()=>{const v=Math.round(prodArr.reduce((a,o)=>a+(_pQty?(o.addQty||0):((o.addAmt||0)-fcStratProdV926(o.pk))),0));return v?`<b style="color:${v>=0?'var(--green)':'var(--red)'}">${v>=0?'+':''}${_pQty?won(v):disp(v)}</b>`:'';})()}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></div>`}`;
-  renderCustom(html,()=>{
+  /* 주요사항 버튼은 최초 표시부터 최종 문구를 사용하여 폭 변화와 깜빡임을 막습니다. */
+  renderCustom(html.replace('📝 <span id="fcNotesYrV789"></span>매출목표 주요사항 ▾','📝 목표 주요사항 ▾'),()=>{
     setGlobalBar(false); bindFcCutoffSelector(fcFastForecast);
     if(fcCutoffMonth()===0)document.querySelectorAll('#result th').forEach(th=>{if(th.textContent.includes('실적(1~0월)'))th.innerHTML=th.innerHTML.replace('실적(1~0월)','실적(없음)');});
     const mtJump=document.getElementById('fcMonthlyTargetToggle');
@@ -14118,9 +14119,7 @@ function forecast(){
         /* v789 : 지금 보고 있는 목표 연도 보관함에도 같이 저장합니다 */
         try{ if(typeof fcNotesSyncYearV789==='function')fcNotesSyncYearV789(); }catch(_y){} };
       const setBtn=(b,on)=>{ if(!b)return; const isMain=b.id==='fcNotesToggle'; b.style.background=isMain?'#ffffff':(on?'#1e3a5f':'#ffffff'); b.style.color=isMain?'#334155':(on?'#ffffff':'#334155'); b.style.borderColor=isMain?'var(--line)':(on?'#1e3a5f':'var(--line)'); try{ b.classList.toggle('v932on',!isMain&&!!on); }catch(_e){} };
-      /* v789 : 이 주요사항이 «어느 목표 연도»의 것인지 제목에 표시합니다 */
-      try{ const yl=document.getElementById('fcNotesYrV789');
-        if(yl)yl.textContent=((typeof fcTargetYear==='function')?fcTargetYear():'')+'년 '; }catch(_y){}
+      /* 버튼명은 연도와 무관하게 고정합니다. 연도는 화면 제목에서 표시합니다. */
       const markTabs=()=>{ setBtn(tog,curTab==='main'); document.querySelectorAll('#result .fcntab').forEach(b=>setBtn(b,b.dataset.t===curTab)); };
       loadTab(curTab); markTabs(); showBy();
       const openWrap=()=>{ if(wrap.style.display==='none'){ wrap.style.display='block'; tog.textContent='📝 목표 주요사항 ▴'; } };
@@ -42341,8 +42340,6 @@ try{
    ['fcMonthlyTargetPanel','fcWorkdayPanelV854','bepHeadHostV792','fcNotesWrap'].forEach(function(id){
     var el=document.getElementById(id);if(el&&el.parentElement!==stage)stage.appendChild(el);
    });
-   var ys=document.getElementById('fcNotesYrV789');
-   if(ys&&!String(ys.textContent||'').trim())try{ys.textContent=fcTargetYear()+'년 ';}catch(_e){}
    var old=document.getElementById('fcGoalPanelsHostV949');if(old&&!old.children.length)old.style.display='none';
   }catch(e){}
  }
@@ -42391,7 +42388,6 @@ try{
    var left=btn.offsetLeft+btn.offsetWidth+8;
    menu.style.left=left+'px';
    menu.style.maxWidth=Math.max(260,head.clientWidth-left-4)+'px';
-   var ys=document.getElementById('fcNotesYrV789');if(ys&&!String(ys.textContent||'').trim())try{ys.textContent=fcTargetYear()+'년 ';}catch(_e){}
   }catch(e){}
  }
  document.addEventListener('click',function(e){
