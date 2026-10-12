@@ -11679,7 +11679,7 @@ function svgGrouped(series,h,refLine,subLabels){ h=h||320; const W=940;
       g+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${Math.max(0,bh).toFixed(1)}" fill="${col}" ${dash?'stroke="#d97706" stroke-dasharray="3 2" stroke-width="1"':''} rx="2"/>`;
       if(bh>12)g+=`<text x="${(x+(bw-2)/2).toFixed(1)}" y="${(y-3).toFixed(1)}" font-size="8" text-anchor="middle" fill="#555">${fmtM(v)}</text>`; });
     g+=`<text x="${(gx+groupW/2).toFixed(1)}" y="${(h-padB+16).toFixed(1)}" font-size="11" text-anchor="middle" fill="#555">${mo}월</text>`;
-    if(subLabels && subLabels[mo]!=null && subLabels[mo]!==''){ g+=`<text x="${(gx+groupW/2).toFixed(1)}" y="${(h-padB+30).toFixed(1)}" font-size="7" text-anchor="middle" fill="#0d9488">${subLabels[mo]}일</text>`; } }
+    if(subLabels && subLabels[mo]!=null && subLabels[mo]!==''){ const _wd=+subLabels[mo]||0; g+=`<text x="${(gx+groupW/2).toFixed(1)}" y="${(h-padB+30).toFixed(1)}" font-size="7" text-anchor="middle" fill="${_wd<=20?'#dc2626':'#0d9488'}" font-weight="${_wd<=20?'800':'700'}">${subLabels[mo]}일</text>`; } }
   refs.forEach(rf=>{ if(!(rf.value>0))return; const ly=ys(rf.value); const col=rf.color||'#dc2626'; const txt=rf.label||'';
     g+=`<line x1="${padL}" y1="${ly.toFixed(1)}" x2="${W-padR}" y2="${ly.toFixed(1)}" stroke="${col}" stroke-width="0.8" stroke-dasharray="4 4" opacity="0.85"/>`;
     const lblW=txt.length*7.6+12, ry=rf.dock?7:Math.max(padT+1,ly-13); const lx=(rf.dock==='left'||(!rf.dock&&rf.align==='left'))?padL:(W-padR-lblW);
@@ -12258,8 +12258,8 @@ function pdPanelHTML(cyRaw,lastAct,tgtArr){
     const sum=Lv+Pv+Iv; tL+=L;tP+=P;tI+=I;tSum+=sum;
     const isFut=_pdNextYear||m>lastAct; const saleRef = isFut ? Math.max(0,(tgtArr?tgtArr[m]:0)-(fcPdInAnnualTarget()?pdMonth(m):0)) : (cyRaw[m]||0); const ratio=saleRef>0?(sum/saleRef*100):null;
     const estM = (_pdNextYear||m>fcCutoffMonth()) && !isAct && pd.estimate;
-    const inp=(cat,val,w)=>`<input type="text" inputmode="${cat==='indirect'?'text':'numeric'}" class="pdin${val<0?' pd-neg':''}" data-cat="${cat}" data-m="${m}" value="${fmtIn(val)}" placeholder="${estM?fmtIn(pdAvg(cat)):'0'}" title="${cat==='indirect'?'인력 지원 시 +, 인력 지원받을 시 - 금액 입력':'금액 입력'}" style="width:${w}px;text-align:right;font-size:12px${val<0?';color:#dc2626;font-weight:700':''}${estM&&!val?';color:#9333ea;font-style:italic':''}">`;
-    body+=`<tr><td class="l">${m}월 ${m>fcCutoffMonth()?`<label style="font-size:10px;font-weight:400;color:#475569;cursor:pointer"><input type="checkbox" class="pdact" data-m="${m}" ${isAct?'checked':''}> 실적</label> <span class="tag ${isAct?'a':'f'}" style="font-size:9px">${isAct?'실적':'목표'}</span>`:`<span class="tag a" style="font-size:9px">실적</span>`}</td>`
+    const inp=(cat,val,w)=>`<input type="text" inputmode="${cat==='indirect'?'text':'numeric'}" class="pdin${val<0?' pd-neg':''}" data-cat="${cat}" data-m="${m}" value="${fmtIn(val)}" placeholder="${estM?fmtIn(pdAvg(cat)):'0'}" title="${cat==='indirect'?'인력 지원 시 +, 인력 지원받을 시 - 금액 입력':'금액 입력'}" style="width:${w}px;text-align:right;font-size:13px${val<0?';color:#dc2626;font-weight:700':''}${estM&&!val?';color:#9333ea;font-style:italic':''}">`;
+    body+=`<tr><td class="l pd-kind-v973">${m}월 ${m>fcCutoffMonth()?`<label style="font-size:11px;font-weight:400;color:#475569;cursor:pointer"><input type="checkbox" class="pdact" data-m="${m}" ${isAct?'checked':''}> 실적</label> <span class="tag ${isAct?'a':'f'}" style="font-size:11px">${isAct?'실적':'목표'}</span>`:`<span class="tag a" style="font-size:11px">실적</span>`}</td>`
       +`<td style="text-align:right">${inp('labor',L,108)}</td>`
       +`<td style="text-align:right">${inp('process',P,108)}</td>`
       +`<td style="text-align:right">${inp('indirect',I,100)}</td>`
@@ -12415,9 +12415,8 @@ function monthlyTrend(){
     <div class="ctrlbar" style="flex-wrap:wrap;gap:7px;margin-top:8px"><button id="scrapToggle" type="button" class="btn ghost" style="font-size:13px;font-weight:800;${state.trend&&state.trend.scrapOpen?'background:#0369a1;color:#fff;border-color:#0369a1':'color:#0369a1;border-color:#7dd3fc'}">♻️ 고철업체 등록·관리 ${state.trend&&state.trend.scrapOpen?'▾':'▸'}</button><button id="pdToggle" type="button" class="btn ghost" style="font-size:13px;font-weight:800;${state.trend&&state.trend.pdOpen?'background:#d97706;color:#fff;border-color:#d97706':'color:#b45309;border-color:#fdba74'}">🏭 PD 사업부 임가공비 ${state.trend&&state.trend.pdOpen?'▾':'▸'}</button><span class="sub2">선택한 항목만 아래에 표시됩니다.</span></div>
     ${scrapPanelHTML()}
     ${pdPanelHTML(cyRaw,lastAct,tgt)}
-    <div class="note" style="margin:10px 0 4px">아래 표 적용 현황: ${bulkNote} · 빨간 수평선 = 올해 목표 1~12월 <b>월평균 ${won(tgtAvg)}원</b> · 실제 실적은 <b>1~${actualLastMonth}월</b>까지 그래프·표·목표달성률에 표시 · 연매출 목표 금액은 <b>${fcCutLabel()} 실적 + ${fcFutLabel()} 목표</b>로 고정 · 💡 <b>실적 월 클릭</b> 시 그 달 거래처별 매출</div>
     <div style="font-size:14px;font-weight:900;color:#1e3a5f;margin:10px 2px 6px">${CY}년 목표 및 실적</div>
-    <div class="tablewrap" style="margin-top:4px"><table><thead><tr><th class="l">월</th><th>전년(${PY})</th><th>올해목표</th><th>증감액</th><th>증%</th><th>실적(${CY})</th><th>증감액</th><th title="실적 vs 전년 동월(합계=동기간)">전년比</th><th style="min-width:128px" title="월 실적 ÷ 월 목표">목표대비 달성</th><th>목표달성</th></tr></thead><tbody>${rows}${tot}</tbody></table></div>
+    <div class="tablewrap" style="margin-top:4px"><table class="trend-main-table-v973"><thead><tr><th class="l">월</th><th>전년(${PY})</th><th>올해목표</th><th>증감액</th><th>증감%</th><th>실적(${CY})</th><th>증감액</th><th title="실적 vs 전년 동월(합계=동기간)">전년比</th><th style="min-width:128px" title="월 실적 ÷ 월 목표">목표대비 달성</th><th>목표달성</th></tr></thead><tbody>${rows}${tot}</tbody></table></div>
     <div class="note">목표 %는 1~12월 모두 입력 가능하며, 그래프(목표 막대·평균선)·표·<b>매출 목표</b> 메뉴에 자동 반영·저장됩니다. <b>고철업체·고철 품목 매출은 원매출의 80%</b>로 모든 실적·목표에 반영됩니다. 전년 막대는 체크박스로 표시/숨김.</div>`;
   renderCustom(html,()=>{
     if(typeof setGlobalBar==='function')setGlobalBar(false);
@@ -42071,6 +42070,24 @@ window.fcRestoreAuditV971=function(it){
 };
 })();
 </script>
+<style id="v973-monthly-trend-typography-and-stable-toggle">
+/* 2027년 목표 및 실적 표: 헤더와 내용 모두 13px */
+#result .trend-main-table-v973,
+#result .trend-main-table-v973 th,
+#result .trend-main-table-v973 td,
+#result .trend-main-table-v973 td b,
+#result .trend-main-table-v973 td span{font-size:13px!important}
+/* PD 임가공비 입력값은 13px, 구분열의 월·실적·목표 표시는 11px */
+#result #pdPanelV853 input.pdin{font-size:13px!important}
+#result #pdPanelV853 td.pd-kind-v973,
+#result #pdPanelV853 td.pd-kind-v973 label,
+#result #pdPanelV853 td.pd-kind-v973 span,
+#result #pdPanelV853 td.pd-kind-v973 .tag{font-size:11px!important}
+/* 월별보기 버튼을 숨겼다가 다시 표시하던 단계와 시각 효과를 제거해 깜박임 방지 */
+#result #fcCustMonBtn,
+#result #fcCustMonBtn.v903-ready{visibility:visible!important;opacity:1!important;transition:none!important;animation:none!important}
+#result .v944-left{min-height:30px}
+</style>
 <script id="v972-strategy-base-and-pd-active-year-isolation">
 (function(){
 'use strict';
