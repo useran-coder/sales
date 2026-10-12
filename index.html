@@ -3830,7 +3830,7 @@ function trendTopV760(label,rows,keyPrefix,opt){
     }catch(_t902){}
     return custMonthChartV665(label,yr,rs,yrs,Object.assign({metric:met,metricToggle:true},_tgtOpt))
       +'<div class="ctrlbar" style="margin:-4px 0 8px"><button type="button" class="btn ghost ttCloseV760" data-k="'+esc(keyPrefix)+'" style="font-size:12px;padding:4px 12px">✕ 추이 닫기</button>'
-      +'<span class="sub2">'+esc(opt.hint||'연도·금액/수량 버튼으로 바꿔 볼 수 있습니다.')+'</span></div>';
+      +(opt.hint?'<span class="sub2">'+esc(opt.hint)+'</span>':'')+'</div>';
   }catch(_e){ return ''; }
 }
 function bindTrendTopV760(keyPrefix,rerun){
@@ -8759,7 +8759,7 @@ function trendChart(){
     const _ttK='t2cust:'+_c;
     const _rerun=()=>_t2CustDrill(row);
     custProdDrill(_c, CURF.filter(r=>r.cust===_key), ()=>trendChart(), null, false, false, {
-      topHtml:()=>trendTopV760(_c,(CUR||[]).filter(r=>r.cust===_key),_ttK,{hint:'연도·금액/수량 버튼으로 바꿔 볼 수 있습니다. 표는 아래에서 봅니다.'}),
+      topHtml:()=>trendTopV760(_c,(CUR||[]).filter(r=>r.cust===_key),_ttK,{hint:'표는 아래에서 봅니다.'}),
       onMount:()=>bindTrendTopV760(_ttK,_rerun)
     });
   };
@@ -41007,7 +41007,7 @@ setInterval(function(){
 function bar(){
   try{
     var close=document.querySelector('#result .ttCloseV760')||document.querySelector('#result .ttOpenV760');
-    return close?close.parentNode:null;
+    return close&&close.closest?close.closest('.ctrlbar'):null;
   }catch(e){ return null; }
 }
 function move(){
@@ -41048,19 +41048,16 @@ function fallbackShow(){
 function tools(){
   try{
     var b=bar(); if(!b)return;
-    /* v943 : 검색 도구는 «자기 줄»에 둡니다. 같은 줄에 두면 폭에 따라
-       추이 보기/닫기 버튼이 밀려 자리가 움직이는 것처럼 보였습니다. */
+    /* v948 : 검색 도구는 같은 수평 도구줄의 오른쪽에 고정합니다. */
     var row=document.getElementById('fcdToolRowV943');
     if(!row){
-      row=document.createElement('div');
+      row=document.createElement('span');
       row.id='fcdToolRowV943';
       row.innerHTML='<span id="fcdSearchWrapV939"><b style="font-size:12px;color:#334155">표 검색</b>'
         +'<input type="search" id="fcdQV939" autocomplete="off" spellcheck="false" placeholder="품번 · 품명 · 규격 (띄어쓰기로 여러 개)">'
         +'<button type="button" class="btn ghost" id="fcdQClearV939">\u2715 지우기</button></span>';
     }
-    if(row.parentNode!==b.parentNode||row.previousElementSibling!==b){
-      b.insertAdjacentElement('afterend',row);
-    }
+    if(row.parentNode!==b)b.appendChild(row);
     var slot=document.getElementById('fcdSearchWrapV939');
     var csv=document.getElementById('fcdCsv');
     if(slot&&csv&&csv.parentNode!==slot)slot.appendChild(csv);
@@ -41093,9 +41090,7 @@ try{
       requestAnimationFrame(function(){ window.__v939R=0; all(); }); }).observe(r,{childList:true,subtree:true});
   }
 }catch(e){}
-setInterval(all,700);
 setTimeout(all,0); setTimeout(all,60); setTimeout(all,260);
-document.addEventListener('click',function(){ setTimeout(all,0); setTimeout(all,120); setTimeout(all,500); },true);
 
 /* ③ 드릴 화면 지키기 — 배경 동기화 등으로 화면을 다시 그릴 때 본표로 튀지 않게 합니다. */
 (function(){
@@ -41787,7 +41782,7 @@ document.addEventListener('click',function(e){
 <style id="v941-drill-bar">
 /* 추이 보기/닫기 버튼이 좌우로 밀리지 않게 순서를 고정합니다 */
 #result .ctrlbar .v944-left{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto}
-#result .ctrlbar .v944-left>#fcCustMonBtn{min-width:134px;justify-content:center}
+#result .ctrlbar .v944-left>#fcCustMonBtn{width:auto!important;min-width:0!important;justify-content:center}
 #result .ctrlbar .v944-left>button{font-size:12px!important;padding:5px 12px!important;font-weight:800!important;
   border-radius:8px!important;line-height:1.2!important;margin:0!important;white-space:nowrap}
 #result .ctrlbar .v944-left>#fcCustMonAmount.on,#result .ctrlbar .v944-left>#fcCustMonQty.on{
@@ -41799,7 +41794,7 @@ document.addEventListener('click',function(e){
 #result table.fc-month-target-table th,#result table.fc-month-target-table td{font-size:13px!important}
 #result table.fcd-prod-fit th .sub2,#result table.fcd-prod-fit td .sub2,
 #result table.fc-month-target-table th div,#result table.fc-month-target-table td .sub2{font-size:11px!important}
-#result #fcdToolRowV943{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin:0 0 8px}
+#result #fcdToolRowV943{display:inline-flex;justify-content:flex-end;align-items:center;gap:6px;margin-left:auto;flex:0 0 auto}
 #result .ctrlbar #fcdSearchWrapV939{margin-left:auto!important}
 #result #fcdSearchWrapV939{display:inline-flex;align-items:center;gap:6px}
 /* ══ v942 · 한 줄로 고정 ══
@@ -41810,6 +41805,9 @@ document.addEventListener('click',function(e){
 #result .ctrlbar .ttCloseV760,#result .ctrlbar .ttOpenV760{flex:0 0 auto}
 #result #fcdToolRowV943 #fcdQV939{width:clamp(180px,26vw,330px);min-width:0}
 #result .ctrlbar:has(#fcCustMonBtn){justify-content:flex-start}
+/* v948 : 업체 상세 도구를 왼쪽 보기 버튼 / 오른쪽 검색·지우기·엑셀로 한 줄 고정 */
+#result .ctrlbar:has(#fcCustMonBtn)>#fcdToolRowV943{margin-left:auto!important}
+#result .ctrlbar:has(#fcCustMonBtn) #fcdSearchWrapV939{margin-left:0!important}
 </style>
 <script id="v946-strategy-form-sticky">
 (function(){
