@@ -42516,4 +42516,114 @@ try{
  #result .fc-goal-anchor-v955>#fcGoalToolsMenuV892{max-width:calc(100vw - 190px)!important}
 }
 </style>
+<style id="v956-stable-targets-style">
+.fc-actual-sales-v956{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:4px 9px;border:1px solid #93c5fd;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:800;white-space:nowrap}
+.fc-cutoff-actual-v956{display:inline-flex;align-items:center;margin-left:8px;padding:3px 8px;border:1px solid #bae6fd;border-radius:8px;background:#f0f9ff;color:#0369a1;font-size:11.5px;font-weight:800;white-space:nowrap}
+</style>
+<script id="v956-stable-targets-and-live-actuals">
+(function(){
+'use strict';
+var KEY='fcStableTargetsV956',SEED_TAG='v882-xlsx-2026-p1';
+function cp(v){try{return JSON.parse(JSON.stringify(v));}catch(_e){return null;}}
+function plain(v){return !!v&&typeof v==='object'&&!Array.isArray(v);}
+function nowYear(){try{return +(typeof fcTargetYear==='function'?fcTargetYear():0)||0;}catch(_e){return 0;}}
+function plan(){try{return state.fc&&state.fc.activePlan==='2'?'2':'1';}catch(_e){return'1';}}
+function money(v){try{return (Math.round(+v||0)).toLocaleString('ko-KR')+'원';}catch(_e){return String(Math.round(+v||0))+'원';}}
+function salesRows(){try{return typeof MF==='function'?(MF()||[]):(typeof CUR!=='undefined'?(CUR||[]):[]);}catch(_e){return[];}}
+function actualTotal(y,through){var n=0;salesRows().forEach(function(r){try{if(+r.y!==+y)return;var m=typeof monthOf==='function'?monthOf(r):+String(r.ym||'').slice(5,7);if(through!=null&&m>through)return;n+=(typeof amtOf==='function'?amtOf(r):(+r.total||0));}catch(_e){}});return Math.round(n);}
+
+/* 과거 버전의 PC별 1회성 강제 복구가 사용자 저장값을 다시 덮지 못하게 합니다. */
+function blockLegacySeeds(){
+  try{state.fc=state.fc||{};state.fc._resetV727='2027-clean-v727';state.fc._daehanRestoreV893=state.fc._daehanRestoreV893||Date.now();}catch(_e){}
+  try{if(typeof idbSet==='function')idbSet(SEED_TAG,SEED_TAG);}catch(_e){}
+}
+blockLegacySeeds();
+
+async function readLocal(){
+  var a=null,b=null;try{if(typeof idbGet==='function')a=await idbGet(KEY);}catch(_e){}
+  try{b=JSON.parse(localStorage.getItem(KEY)||'null');}catch(_e){}
+  if(a&&b)return (+a.updatedAt||0)>=(+b.updatedAt||0)?a:b;return a||b;
+}
+function applySnapshot(s,rerender){
+  try{
+    if(!s||!plain(s.yearPlans)||!state.fc)return false;
+    state.fc.yearPlans=cp(s.yearPlans)||{};
+    var y=String(nowYear()||state.fc._ctxYear||''),ys=state.fc.yearPlans[y];
+    if(ys&&plain(ys.targetPlans)){
+      state.fc.targetPlans=cp(ys.targetPlans);state.fc.activePlan=ys.activePlan==='2'?'2':'1';
+      if(typeof fcApplyTargetPlan==='function')fcApplyTargetPlan(state.fc.targetPlans[state.fc.activePlan]||{});
+      state.fc._targetPlanLoaded=state.fc.activePlan;state.fc._ctxYear=y;
+      if(typeof fcEnsureTargetPlans==='function')fcEnsureTargetPlans();
+    }
+    state.fcStableTargetsV956=cp(s);window.fcStableTargetsV956=cp(s);
+    if(rerender&&state.act==='forecast'&&typeof forecast==='function')forecast();
+    return true;
+  }catch(_e){return false;}
+}
+async function commit(reason,push){
+  try{
+    if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
+    if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(nowYear());
+    if(typeof fcSyncYearStoresV718==='function')fcSyncYearStoresV718();
+    var snap={updatedAt:Date.now(),reason:String(reason||'직접 저장'),year:nowYear(),plan:plan(),yearPlans:cp(state.fc.yearPlans)||{}};
+    state.fcStableTargetsV956=snap;window.fcStableTargetsV956=snap;
+    try{localStorage.setItem(KEY,JSON.stringify(snap));}catch(_e){}
+    try{if(typeof idbSet==='function')await idbSet(KEY,snap);}catch(_e){}
+    try{if(typeof saveSettings==='function')await saveSettings();}catch(_e){}
+    if(push!==false)try{if(typeof gsSave==='function'&&state.gsync&&state.gsync.url&&state.gsync.key)await gsSave(true);}catch(_e){}
+    return true;
+  }catch(_e){return false;}
+}
+window.fcCommitStableTargetsV956=commit;
+
+/* 연도별 확정본도 기존 PC간 동기화 데이터에 포함합니다. */
+if(typeof gsFields==='function'&&!gsFields.__v956){
+  var oldFields=gsFields;
+  var newFields=function(){var rows=oldFields.apply(this,arguments)||[];if(!rows.some(function(r){return r[0]==='fcStableTargetsV956';}))rows.push(['fcStableTargetsV956',window,'fcStableTargetsV956']);return rows;};
+  newFields.__v956=true;gsFields=window.gsFields=newFields;
+}
+if(typeof gsMerge==='function'&&!gsMerge.__v956){
+  var oldMerge=gsMerge;
+  var newMerge=function(d){var r=oldMerge.apply(this,arguments);setTimeout(async function(){var local=await readLocal(),remote=(d&&d.fcStableTargetsV956)||state.fcStableTargetsV956,best=(remote&&(!local||(+remote.updatedAt||0)>(+local.updatedAt||0)))?remote:local;if(best)applySnapshot(best,true);},0);return r;};
+  newMerge.__v956=true;gsMerge=window.gsMerge=newMerge;
+}
+
+/* 엑셀 불러오기가 끝난 직후 그 상태를 최종 확정본으로 저장합니다. */
+if(typeof importXLSX==='function'&&!importXLSX.__v956){
+  var oldImport=importXLSX;
+  var newImport=function(cb){return oldImport.call(this,function(rows){var r=cb(rows);Promise.resolve(r).finally(function(){setTimeout(function(){commit('엑셀 불러오기',true);},0);});return r;});};
+  newImport.__v956=true;importXLSX=window.importXLSX=newImport;
+}
+
+/* 직접 저장 버튼은 기존 저장이 끝난 뒤 연도별 확정본까지 즉시 보관·동기화합니다. */
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest&&e.target.closest('button');if(!b)return;
+  var t=String(b.textContent||'').replace(/\s+/g,' ').trim();
+  if(t.indexOf('조정% 저장하기')>=0)setTimeout(function(){commit('조정% 저장하기',true);},250);
+},true);
+
+function paintForecastActuals(){
+  try{
+    if(state.act!=='forecast')return;var y=nowYear(),cut=typeof fcCutoffMonth==='function'?fcCutoffMonth():0;
+    var fixed=actualTotal(y,cut),current=actualTotal(y,null);
+    var ctl=document.querySelector('#result .fc-cutoff-ctl');
+    if(ctl){var x=ctl.querySelector('.fc-cutoff-actual-v956');if(!x){x=document.createElement('span');x.className='fc-cutoff-actual-v956';ctl.appendChild(x);}x.textContent='확정매출 '+money(fixed);x.title=(cut?('1~'+cut+'월'):'확정월 없음')+' 입력 매출 합계';}
+    var nodes=document.querySelectorAll('#result span,#result div');var host=null;
+    for(var i=0;i<nodes.length;i++){var tx=String(nodes[i].textContent||'').replace(/\s+/g,' ').trim();if(tx.indexOf('🎯 '+y+'년 목표액')===0&&nodes[i].children.length<8){host=nodes[i];break;}}
+    if(host){var z=host.querySelector('.fc-actual-sales-v956');if(!z){z=document.createElement('span');z.className='fc-actual-sales-v956';host.appendChild(z);}z.textContent='현재 입력매출 '+money(current);z.title=y+'년 현재까지 입력된 매출 합계';}
+  }catch(_e){}
+}
+if(typeof forecast==='function'&&!forecast.__v956){var oldForecast=forecast;var newForecast=function(){var r=oldForecast.apply(this,arguments);setTimeout(paintForecastActuals,0);return r;};newForecast.__v956=true;forecast=window.forecast=newForecast;}
+
+/* 메인 연매출 막대는 확정월이 아니라 실제로 입력된 모든 월의 매출을 사용합니다. */
+if(typeof homeAnnualBar==='function'&&!homeAnnualBar.__v956){
+  var oldBar=homeAnnualBar;
+  var newBar=function(actual,target,pct,y){var live=actualTotal(y,null),rate=(+target||0)>0?live/(+target)*100:0;return oldBar.call(this,live,target,rate,y);};
+  newBar.__v956=true;homeAnnualBar=window.homeAnnualBar=newBar;
+}
+
+async function boot(){blockLegacySeeds();var s=await readLocal();if(s)applySnapshot(s,false);setTimeout(function(){blockLegacySeeds();paintForecastActuals();},3000);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
 </html>
