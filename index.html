@@ -42324,7 +42324,7 @@ try{
  gap:8px!important;min-height:34px!important;width:100%!important;overflow:visible!important}
 #result .fc-title-tools-v949>.title,#result .fc-title-tools-v949>#fcGoalToolsToggleV892{flex:0 0 auto!important}
 #result .fc-title-tools-v949>.meta{
- flex:1 1 auto!important;min-width:0!important;margin-left:0!important;text-align:right!important;
+ flex:1 1 auto!important;min-width:0!important;margin-left:0!important;text-align:left!important;
  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #result .fc-title-tools-v949>#fcGoalToolsMenuV892{
  position:absolute!important;top:50%!important;transform:translateY(-50%)!important;z-index:40!important;
@@ -42334,6 +42334,9 @@ try{
  background:rgba(255,255,255,.98)!important;box-shadow:0 4px 14px rgba(15,23,42,.12)!important;
  overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important}
 #result .fc-title-tools-v949>#fcGoalToolsMenuV892>*{flex:0 0 auto!important}
+#result .fc-title-tools-v949>#fcGoalToolsMenuV892,
+#result .fc-title-tools-v949>#fcGoalToolsMenuV892 button{
+ pointer-events:auto!important;animation:none!important;transition:none!important}
 #fcGoalPanelStageV950{position:relative;z-index:1;clear:both;width:100%!important}
 @media(max-width:900px){
  #result .fc-title-tools-v949>.meta{display:none!important}
@@ -42354,14 +42357,12 @@ try{
   }catch(e){}
  }
  document.addEventListener('click',function(e){
-  var t=e.target&&e.target.closest&&e.target.closest('#fcGoalToolsToggleV892,#fcGoalToolsMenuV892 button');
-  if(t){align();requestAnimationFrame(align);}
+  var t=e.target&&e.target.closest&&e.target.closest('#fcGoalToolsToggleV892');
+  if(t)align();
  },false);
- window.addEventListener('resize',align,{passive:true});
- var root=document.getElementById('result');if(root)new MutationObserver(function(ms){
-  if(ms.some(function(m){return m.addedNodes&&m.addedNodes.length;}))requestAnimationFrame(align);
- }).observe(root,{childList:true,subtree:true});
- align();
+ window.addEventListener('resize',function(){
+  var m=document.getElementById('fcGoalToolsMenuV892');if(m&&getComputedStyle(m).display!=='none')align();
+ },{passive:true});
 })();
 </script>
 </html>
