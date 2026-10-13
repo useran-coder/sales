@@ -4382,7 +4382,7 @@ function wrModel(){
   weekRows.forEach(r=>{ const k=(r.name||'(미상)')+'│'+(r.code||'')+'│'+(r.spec||''); let o=pm.get(k); if(!o){o={key:k,name:r.name||'(미상)',code:r.code||'',spec:r.spec||'',qty:0,amt:0,cust:new Map()};pm.set(k,o);} o.qty+=(+r.qty||0);o.amt+=amtOf(r);o.cust.set(r.cust,(o.cust.get(r.cust)||0)+amtOf(r)); });
   prevRows.forEach(r=>{const k=(r.name||'(미상)')+'│'+(r.code||'')+'│'+(r.spec||'');prevMap.set(k,(prevMap.get(k)||0)+amtOf(r));});
   const products=[...pm.values()].map(o=>{const prevAmt=prevMap.get(o.key)||0,diff=o.amt-prevAmt,pct=prevAmt?diff/prevAmt*100:(o.amt>0?null:0),cat=mixCatOf({code:o.code,name:o.name,spec:o.spec});return{...o,cat,prevAmt,diff,pct};}).sort((a,b)=>b.amt-a.amt||a.name.localeCompare(b.name,'ko'));
-  return {...s,rangeStart,rangeEnd,asOf,plan,annualRows,custRows:shown,allCustRows:rows,registeredNewRows,custRankInfo:custPick,products,rankLabel:custPick.label,weekStart,weekEnd,prevStart,prevEnd,weekTotal:products.reduce((a,v)=>a+v.amt,0),weekQty:products.reduce((a,v)=>a+v.qty,0),prevWeekTotal:[...prevMap.values()].reduce((a,v)=>a+v,0)};
+  return {...s,rangeStart,rangeEnd,asOf,plan,planLabel:_wrPlanLabel,annualRows,custRows:shown,allCustRows:rows,registeredNewRows,custRankInfo:custPick,products,rankLabel:custPick.label,weekStart,weekEnd,prevStart,prevEnd,weekTotal:products.reduce((a,v)=>a+v.amt,0),weekQty:products.reduce((a,v)=>a+v.qty,0),prevWeekTotal:[...prevMap.values()].reduce((a,v)=>a+v,0)};
 }
 function wrHeader(model,page){
   const {y,m,w,range}=model, ys=model.years.map(v=>`<option value="${v}" ${v===y?'selected':''}>${v}년</option>`).join('');
@@ -4776,6 +4776,9 @@ function wrP1VisibleRows(model){
 }
 function wrPage1(model){
   const today=wrTodayDate(),currentMonthNo=+model.y===today.getFullYear()?today.getMonth()+1:0,currentWeekIdx=model.ranges.findIndex(r=>today>=r.sDate&&today<=r.eDate);
+  // 목표안 이름은 wrModel 내부의 지역 변수가 아니라 모델을 통해 전달받아야 한다.
+  // 이전 코드는 여기서 존재하지 않는 _wrPlanLabel을 참조해 weekly1 전체 렌더링을 중단시켰다.
+  const wrPlanLabel=model.planLabel||('목표 '+((state.fc&&state.fc.activePlan)==='2'?'2':'1')+'안');
   const selWeekIdx=(model.periodMode==='week'&&!model.isCustom)?(model.w-1):-1;
   const wkColCls=(idx)=>idx===selWeekIdx?'wr-sel-week':(selWeekIdx<0&&idx===currentWeekIdx?'wr-current-date':'');
   const pdJump="event.stopPropagation();state.act='trend';state.trend.pdOpen=true;runAct();setTimeout(function(){var e=document.getElementById('pdToggle');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});},150);";
@@ -4783,7 +4786,7 @@ function wrPage1(model){
     const asPct=(i===3)||r.isPct;
     const lab=r.pdLink?`<b class="wr-pd-link" onclick="${pdJump}" title="🏭 PD 사업부 임가공비로 이동">${r.label} ▸</b>`:`<b>${r.label}</b>`;
     const rowCls=[r.pdRatio?'wr-pd-ratio':'',r.label==='매출실적'?'wr-annual-actual':''].filter(Boolean).join(' ');
-    return `<tr class="${rowCls}"><td>${lab}</td><td class="wr-total-col">${asPct?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${[(r.label===_wrPlanLabel&&mi<fcCutoffMonth())||(r.label==='매출실적'&&mi<fcCutoffMonth())?'wr-fixed-actual':'',mi+1===currentMonthNo?'wr-current-date':''].filter(Boolean).join(' ')}">${asPct?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`;
+    return `<tr class="${rowCls}"><td>${lab}</td><td class="wr-total-col">${asPct?wrPct(r.total):wrCell(r.total)}</td>${r.vals.slice(1).map((v,mi)=>`<td class="${[(r.label===wrPlanLabel&&mi<fcCutoffMonth())||(r.label==='매출실적'&&mi<fcCutoffMonth())?'wr-fixed-actual':'',mi+1===currentMonthNo?'wr-current-date':''].filter(Boolean).join(' ')}">${asPct?wrPct(v):wrCell(v)}</td>`).join('')}</tr>`;
   }).join('');
   const rangeCount=Math.max(1,model.ranges.length),memoWidth=model.periodMode==='month'?'28.18%':model.periodMode==='year'?'12.18%':model.periodMode==='week'?'12.18%':'20.18%',memoPct=parseFloat(memoWidth),rangeWidth=Math.max(.8,(100-63.22-memoPct)/rangeCount).toFixed(2)+'%';
   const wkHead=model.ranges.map((r,idx)=>`<th class="wr-sortable ${wkColCls(idx)}" data-sort-col="${8+idx}" data-sort-type="num" style="width:${rangeWidth}" title="클릭하여 정렬">${model.isCustom?wrDateText(r.sDate).slice(5):r.n+'주'}<br><span style="font-weight:500">(${model.isCustom?wrDateText(r.sDate).slice(5)+'~'+wrDateText(r.eDate).slice(5):r.s+'~'+r.e})</span><span class="wr-sort-arrow">↕</span></th>`).join('');
