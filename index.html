@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v970</title>
-<script>window.APP_BUILD='v970';</script>
+<title>동방파스텍 매출 분석 도구 v971</title>
+<script>window.APP_BUILD='v971';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2051,7 +2051,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v970</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v971</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -15302,6 +15302,9 @@ var APP_VERSION='v874';
     }
   }
   window.gsAutoPush=gsAutoPush=function(){
+    /* v971 : 상태바 목표액 계산 등 «내부 작업» 중에는 서버 저장을 보내지 않습니다
+       (연도 전환이 저장을 반복 호출해 동기화가 끝없이 돌던 문제). */
+    if(window.__SB_NO_PUSH_V971)return;
     if(internalPersist||_gsApplying)return;
     if(!state.gsync||!state.gsync.auto||!state.gsync.url||!state.gsync.key)return;
     if(!sessionServerReady){
@@ -42868,21 +42871,75 @@ function calcAll(force){
   }catch(e){ running=false; prog(null); }
 }
 window.sbCalcAllV968=function(){ calcAll(true); };
-/* 자료가 준비되면 한 번, 그 뒤에는 입력이 바뀐 경우에만 */
+/* ══ v971 · 배경 자동 선계산을 없앴습니다. ══
+   연도를 전환하며 계산하면 (1) 전환마다 설정 저장이 일어나 동기화가 끝없이 돌고
+   (2) 화면이 쓰는 캐시가 준비되지 않아 금액이 화면과 달라졌습니다.
+   이제는 «화면이 실제로 계산한 값»만 기록하고, 두 해를 한 번에 맞추고 싶을 때는
+   하부바의 «목표액 새로고침» 버튼으로 화면 계산 경로를 그대로 한 번 돌립니다. */
+function addBtn(){
+  try{
+    var bar=document.getElementById('sbV967'); if(!bar)return;
+    if(document.getElementById('sbReloadV971'))return;
+    var b=document.createElement('button');
+    b.id='sbReloadV971'; b.type='button'; b.title='올해·내년 목표액을 화면과 같은 방식으로 다시 계산합니다';
+    b.textContent='↻ 목표액 새로고침';
+    b.style.cssText='flex:0 0 auto;margin-left:10px;font-family:inherit;font-size:11.5px;font-weight:800;'
+      +'padding:4px 10px;border-radius:7px;border:1px solid #1e3a5f;background:#16263f;color:#93c5fd;cursor:pointer';
+    b.addEventListener('mouseenter',function(){ b.style.background='#1e3a5f'; });
+    b.addEventListener('mouseleave',function(){ b.style.background='#16263f'; });
+    b.addEventListener('click',function(){ fullCalc(); });
+    bar.appendChild(b);
+  }catch(e){}
+}
+function fullCalc(){
+  try{
+    if(running||!ready())return;
+    running=true;
+    window.__SB_NO_PUSH_V971=true;          /* 계산 동안 서버 저장 차단 */
+    var cy=0; try{ cy=+fcDataYearMax(); }catch(e){}
+    var ny=cy+1, orig=0; try{ orig=+fcTargetYear(); }catch(e){}
+    var steps=[], done=0;
+    if(yearHasPlan(cy)||orig===cy)steps.push(cy);
+    if(yearHasPlan(ny))steps.push(ny);
+    if(orig&&steps.indexOf(orig)<0)steps.push(orig);
+    if(!steps.length){ running=false; window.__SB_NO_PUSH_V971=false; return; }
+    prog(5,'목표액 계산');
+    var run=function(){
+      if(done>=steps.length){
+        try{ if(orig&&+fcTargetYear()!==orig&&typeof fcSwitchYear==='function'){ fcSwitchYear(orig); if(typeof forecast==='function')forecast(); } }catch(e){}
+        try{ localStorage.setItem(CK,JSON.stringify({sig:sig(),ts:Date.now()})); }catch(e){}
+        running=false; window.__SB_NO_PUSH_V971=false;
+        prog(null);
+        try{ if(window.sbPaintV967)window.sbPaintV967(); }catch(e){}
+        return;
+      }
+      var y=steps[done++];
+      prog(Math.round(done/(steps.length+1)*100),'목표액 계산');
+      setTimeout(function(){
+        try{
+          if(+fcTargetYear()!==+y&&typeof fcSwitchYear==='function')fcSwitchYear(y);
+          /* 화면과 «같은 경로»로 계산합니다 — forecast() 가 캐시를 만들고
+             그 안에서 fcAnnualTargetSummary() 가 호출되며 값이 기록됩니다. */
+          if(typeof forecast==='function')forecast();
+        }catch(e){}
+        setTimeout(run,120);
+      },60);
+    };
+    run();
+  }catch(e){ running=false; window.__SB_NO_PUSH_V971=false; prog(null); }
+}
+window.sbCalcAllV968=fullCalc;
+window.sbFullCalcV971=fullCalc;
 var tries=0;
 var t=setInterval(function(){
   if(++tries>200){ clearInterval(t); return; }
+  addBtn();
   if(!ready())return;
   clearInterval(t);
-  calcAll(false);
-  /* 입력 변경 감시 — 20초마다 시그니처만 비교(계산은 바뀐 경우에만) */
-  setInterval(function(){
-    try{
-      var cache=null; try{ cache=JSON.parse(localStorage.getItem(CK)||'null'); }catch(e){}
-      if(!cache||cache.sig!==sig())calcAll(false);
-    }catch(e){}
-  },20000);
+  prog(null);
+  try{ if(window.sbPaintV967)window.sbPaintV967(); }catch(e){}
 },500);
+setInterval(addBtn,1500);
 })();
 </script>
 <style id="v970-statusbar3">
