@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v969</title>
-<script>window.APP_BUILD='v969';</script>
+<title>동방파스텍 매출 분석 도구 v970</title>
+<script>window.APP_BUILD='v970';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2051,7 +2051,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v969</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v970</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -42602,6 +42602,8 @@ function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}')||{}; }ca
 function save(o){ try{ localStorage.setItem(LS,JSON.stringify(o)); }catch(e){} }
 window.sbStoreV967=function(year,target,actual,lastAct){
   try{
+    /* v970 : 연도 전환 중의 중간값이 잘못 기록되던 문제 — 선계산 중에는 자동 기록을 막습니다. */
+    if(window.__SB_CALC_BUSY_V970)return;
     var y=String(+year||0); if(!y||y==='0')return;
     var o=load(), plan='1';
     try{ plan=String((state.fc&&state.fc.activePlan)||'1'); }catch(e){}
@@ -42643,6 +42645,10 @@ function paint(){
       g1.classList.add('sb-ind'); g2.classList.add('sb-ind');
       document.getElementById('sbP1V967').textContent='';
       document.getElementById('sbP2V967').textContent='';
+      try{
+        var lp=Math.min(95,Math.round(((Date.now()-(window.__SB_T0_V970||(window.__SB_T0_V970=Date.now())))/1000)*12));
+        if(window.sbInPctV970){ window.sbInPctV970('sbG1V967',lp+'%'); window.sbInPctV970('sbG2V967',lp+'%'); }
+      }catch(e){}
       if(note)note.innerHTML='<span class="sb-load">⏳ 매출자료 불러오는 중…</span>';
       return;
     }
@@ -42690,7 +42696,7 @@ function paint(){
       if(!b&&ny)miss.push(ny+'년');
       note.innerHTML=miss.length
         ? '<span class="sb-dim">🎯 목표·추이 화면을 한 번 열면 '+miss.join('·')+' 목표액이 채워집니다</span>'
-        : '<span class="sb-dim">🎯 매출 목표 기준 · 잔여 '+eok(Math.max(0,(a?a.t-a.a:0)))+'</span>';
+        : '';
     }
   }catch(e){}
 }
@@ -42788,7 +42794,7 @@ function prog(pct,msg){
     var bar=document.getElementById('sbV967'); if(!bar)return;
     var sl=slot(); if(!sl)return;
     var n=document.getElementById('sbCalcV968');
-    if(pct==null){ if(n)n.remove(); return; }
+    if(pct==null){ if(n)n.remove(); try{ ['sbG1V967','sbG2V967'].forEach(function(id){ if(window.sbInPctV970)window.sbInPctV970(id,''); }); }catch(e){} return; }
     if(!n){ n=document.createElement('span'); n.id='sbCalcV968'; n.className='sb-prog'; sl.insertBefore(n,sl.firstChild); }
     n.textContent='⏳ '+(msg||'목표액 계산')+' '+Math.round(pct)+'%';
     ['sbG1V967','sbG2V967'].forEach(function(id){
@@ -42796,6 +42802,7 @@ function prog(pct,msg){
       g.classList.remove('sb-ind');
       g.firstElementChild.style.width=Math.max(0,Math.min(100,pct)).toFixed(0)+'%';
       g.firstElementChild.style.background='#60a5fa';
+      if(window.sbInPctV970)window.sbInPctV970(id,Math.round(pct)+'%');
     });
   }catch(e){}
 }
@@ -42818,18 +42825,38 @@ function calcAll(force){
     prog(8,'목표액 계산');
     setTimeout(function(){
       try{
+        /* v970 : 계산 결과를 «그 연도로 전환이 끝난 뒤» 명시적으로 기록합니다. */
+        window.__SB_CALC_BUSY_V970=true;
+        var got={};
+        var grab=function(y){
+          try{
+            if(+fcTargetYear()!==+y)return;              /* 전환이 안 됐으면 기록하지 않습니다 */
+            var r=fcAnnualTargetSummary();
+            if(!r)return;
+            got[String(y)]={t:Math.round(+r.annualTarget||0),a:Math.round(+r.actualPeriodTotal||0),
+              m:+r.lastAct||0,p:String((state.fc&&state.fc.activePlan)||'1')};
+          }catch(e){}
+        };
         /* ① 기준연도 */
-        if(orig!==cy&&yearHasPlan(cy)&&typeof fcSwitchYear==='function'){ try{ window._fcSilentV678=true; fcSwitchYear(cy); }catch(e){} }
-        prog(35,'목표액 계산');
-        try{ fcAnnualTargetSummary(); }catch(e){}
+        try{ window._fcSilentV678=true; }catch(e){}
+        if(orig!==cy&&yearHasPlan(cy)&&typeof fcSwitchYear==='function'){ try{ fcSwitchYear(cy); }catch(e){} }
+        prog(35,'목표액 계산'); grab(cy);
         prog(62,'목표액 계산');
         /* ② 다음해 — 이미 만들어 둔 목표안이 있을 때만 (없으면 건드리지 않습니다) */
         if(yearHasPlan(ny)&&typeof fcSwitchYear==='function'){
-          try{ fcSwitchYear(ny); fcAnnualTargetSummary(); }catch(e){}
+          try{ fcSwitchYear(ny); }catch(e){}
+          grab(ny);
         }
         prog(88,'목표액 계산');
         /* ③ 원래 연도로 되돌리기 */
         try{ if(typeof fcSwitchYear==='function'&&orig&&+fcTargetYear()!==orig)fcSwitchYear(orig); }catch(e){}
+        /* ④ 모아 둔 값을 한 번에 저장 */
+        try{
+          var cur=null; try{ cur=JSON.parse(localStorage.getItem('SB_YEAR_TOTALS_V967')||'{}')||{}; }catch(e){ cur={}; }
+          Object.keys(got).forEach(function(k){ got[k].ts=Date.now(); cur[k]=got[k]; });
+          localStorage.setItem('SB_YEAR_TOTALS_V967',JSON.stringify(cur));
+        }catch(e){}
+        window.__SB_CALC_BUSY_V970=false;
       }finally{
         try{ window._fcSilentV678=false; }catch(e){}
         try{ localStorage.setItem(CK,JSON.stringify({sig:sig(),ts:Date.now()})); }catch(e){}
@@ -42856,6 +42883,58 @@ var t=setInterval(function(){
     }catch(e){}
   },20000);
 },500);
+})();
+</script>
+<style id="v970-statusbar3">
+/* ══ v970 · 막대 안 로딩% · 챗봇 아이콘 겹침 방지 ══ */
+#sbV967 .sb-gauge{position:relative}
+#sbV967 .sb-gauge .sb-inpct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:9.5px;font-weight:900;color:#fff;text-shadow:0 1px 2px rgba(15,23,42,.8);letter-spacing:-.2px;pointer-events:none}
+#sbV967 .sb-gauge{height:14px}
+/* 오른쪽 아래 떠 있는 위젯(사내 챗봇 등)을 상태바 위로 올립니다 */
+#chatbot-launcher,#chat-launcher,#chatLauncher,.chat-launcher,.chatbot-launcher,
+#channel-talk,#ch-plugin,#launcher,#hubspot-messages-iframe-container,
+#intercom-container,.intercom-lightweight-app,#tawkchat-container,#crisp-chatbox,
+#zsiq_float,#chat-widget-container,#fb-root>div,.fixed-bottom-right{
+  bottom:62px!important}
+iframe[title*="chat" i],iframe[title*="채팅" i],iframe[id*="chat" i],iframe[class*="chat" i]{bottom:62px!important}
+</style>
+<script id="v970-statusbar3-script">
+(function(){
+'use strict';
+/* 막대 안에 진행률(%)을 글자로 겹쳐 보여 줍니다. */
+function setIn(id,txt){
+  try{
+    var g=document.getElementById(id); if(!g)return;
+    var t=g.querySelector('.sb-inpct');
+    if(txt==null||txt===''){ if(t)t.remove(); return; }
+    if(!t){ t=document.createElement('span'); t.className='sb-inpct'; g.appendChild(t); }
+    if(t.textContent!==txt)t.textContent=txt;
+  }catch(e){}
+}
+window.sbInPctV970=setIn;
+/* 아래쪽 떠 있는 위젯이 상태바와 겹치면 위로 올립니다(동적 삽입 대응) */
+function lift(){
+  try{
+    var bar=document.getElementById('sbV967'); if(!bar)return;
+    var h=bar.offsetHeight||46;
+    var all=document.body?document.body.children:[];
+    Array.prototype.forEach.call(all,function(el){
+      if(!el||el===bar||el.id==='sbV967')return;
+      var st;
+      try{ st=getComputedStyle(el); }catch(e){ return; }
+      if(st.position!=='fixed')return;
+      var b=parseFloat(st.bottom);
+      if(!isFinite(b)||b>=h+8)return;
+      var r=el.getBoundingClientRect();
+      if(r.width>window.innerWidth*0.6)return;          /* 전체폭 바는 제외 */
+      if(r.right<window.innerWidth*0.45)return;         /* 오른쪽 아래 위젯만 */
+      if(el.dataset.v970!=='1'){ el.dataset.v970='1'; el.style.setProperty('bottom',(h+16)+'px','important'); }
+    });
+  }catch(e){}
+}
+setInterval(lift,1200);
+document.addEventListener('DOMContentLoaded',lift);
 })();
 </script>
 </html>
