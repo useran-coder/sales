@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v967</title>
-<script>window.APP_BUILD='v967';</script>
+<title>동방파스텍 매출 분석 도구 v969</title>
+<script>window.APP_BUILD='v969';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2051,7 +2051,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v967</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v969</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -14397,7 +14397,16 @@ async function gsTest(){ const u=(state.gsync&&state.gsync.url)||'', k=(state.gs
   if(!hasData){ if(st){st.style.color='#b45309';st.textContent='④ 연결은 되지만 구버전 .gs 입니다. 새 .gs로 교체 후 \'새 버전\'으로 재배포해야 메모·전체설정이 동기화됩니다.';} return; }
   const notes=(data.fcNotesHtml||data.fcNotesSales||data.fcNotesTech)?'있음':'없음'; const empty=(ck(data.mgrOverride)===0&&ck(data.clsOverride)===0&&ck(data.fcCustMemo)===0&&notes==='없음');
   if(st){ st.style.color=empty?'#b45309':'#0f766e'; st.textContent=(empty?'✓ 연결 성공 — 다만 시트가 비어 있음(보내는 쪽에서 ⬆ 저장 필요)':'✓ 연결 성공! 시트 데이터 — 담당자 '+ck(data.mgrOverride)+'·분류 '+ck(data.clsOverride)+'·메모 '+(ck(data.fcCustMemo)+ck(data.fcProdMemo))+'·주요사항 '+notes); } }
-function gsStartPoll(){ if(_gsPollT)clearInterval(_gsPollT); _gsPollT=setInterval(()=>{ if(!state.gsync||!state.gsync.auto||!state.gsync.url)return; if(_gsBusy||_gsPendingPush)return; if(document.hidden)return; const a=document.activeElement; if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable))return; gsLoad(true); }, 180000); }
+function gsStartPoll(){ if(_gsPollT)clearInterval(_gsPollT); _gsPollT=setInterval(()=>{ if(!state.gsync||!state.gsync.auto||!state.gsync.url)return; if(_gsBusy||_gsPendingPush)return; if(document.hidden)return; const a=document.activeElement; if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable))return;
+  /* ══ v968 · 같은 자료를 거듭 읽지 않습니다. ══
+     배경 불러오기는 세션당 1회만 실제로 동작하므로(내부 가드), 그 뒤에는 요청 자체를 만들지 않습니다.
+     그래도 10분이 지나면 한 번만 다시 확인합니다. */
+  try{
+    var last=+(window.__GS_LAST_PULL_V968||0);
+    if(window.__GS_PULLED_V968&&(Date.now()-last)<600000)return;
+    window.__GS_PULLED_V968=true; window.__GS_LAST_PULL_V968=Date.now();
+  }catch(_e968){}
+  gsLoad(true); }, 180000); }
 
 
 /* 영업팀 실적보고 > 1. 목표대비 달성의 '실적' 행과 동일한 월매출 집계입니다. */
@@ -42690,6 +42699,163 @@ function boot(){ build(); paint(); }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
 else boot();
 setInterval(paint,2000);
+})();
+</script>
+<style id="v968-statusbar2">
+/* ══ v968 · 동기화 표시를 하부 요약바 안으로 ══ */
+#sg652Fixed{position:static!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
+  margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;
+  max-width:none!important;width:auto!important;z-index:auto!important}
+#sbV967 #sbSyncSlotV968{display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;margin-left:auto}
+#sbV967 #sbSyncSlotV968:empty{display:none}
+#sbV967 #sg652Fixed *{font-size:11.5px!important;color:#cbd5e1!important;white-space:nowrap}
+#sbV967 #sg652Fixed{display:inline-flex!important;align-items:center;gap:8px}
+/* 떠 있는 창은 보이지 않게 */
+#sg652Fixed{display:none!important}
+#sbV967 .sb-prog{color:#fcd34d;font-weight:800}
+</style>
+<script id="v968-statusbar2-script">
+(function(){
+'use strict';
+var SLOT='sbSyncSlotV968';
+function slot(){
+  var bar=document.getElementById('sbV967'); if(!bar)return null;
+  var sl=document.getElementById(SLOT);
+  if(!sl){ sl=document.createElement('span'); sl.id=SLOT; }
+  if(sl.parentNode!==bar)bar.appendChild(sl);
+  return sl;
+}
+/* 동기화 상태를 가로채 바 안에 «한 줄»로 보여 줍니다(떠 있는 창은 숨김). */
+var SY={on:false,kind:'',label:'',sub:'',pct:0,ch:''};
+var CHN={gs:'설정·미수 동기화',ds:'매출자료 공유',mv:'월 재고현황 공유'};
+function hook(){
+  try{
+    var SG=window.SG652; if(!SG||SG.__v968)return;
+    ['show','set','step','done','fail'].forEach(function(k){
+      var o=SG[k]; if(typeof o!=='function')return;
+      SG[k]=function(){
+        var r=o.apply(this,arguments);
+        try{
+          var a=arguments;
+          if(k==='show'){ SY={on:true,kind:a[0]||'down',label:a[1]||'',sub:a[2]||'',pct:3,ch:a[3]||''}; }
+          else if(k==='set'){ if(a[0]!=null)SY.pct=Math.max(SY.pct,Math.min(99,+a[0]||0)); if(a[1]!=null)SY.sub=a[1]; if(a[2])SY.ch=a[2]; SY.on=true; }
+          else if(k==='step'){ SY.on=true; if(SY.kind==='ok'||SY.kind==='err')SY.kind='down'; if(a[0]!=null)SY.pct=Math.min(99,+a[0]||0); if(a[1])SY.label=a[1]; if(a[2]!=null)SY.sub=a[2]; if(a[3])SY.ch=a[3]; }
+          else if(k==='done'){ SY.on=true;SY.kind='ok';SY.pct=100;SY.label='완료'; if(a[0]!=null)SY.sub=a[0]; if(a[1])SY.ch=a[1];
+            setTimeout(function(){ SY.on=false; draw(); },2600); }
+          else if(k==='fail'){ SY.on=true;SY.kind='err';SY.pct=100;SY.label='실패'; if(a[0]!=null)SY.sub=a[0]; if(a[1])SY.ch=a[1];
+            setTimeout(function(){ SY.on=false; draw(); },4200); }
+          draw();
+        }catch(_e){}
+        return r;
+      };
+    });
+    SG.__v968=true;
+  }catch(e){}
+}
+function draw(){
+  try{
+    var sl=slot(); if(!sl)return;
+    var n=document.getElementById('sbSyncV968');
+    if(!SY.on){ if(n)n.remove(); return; }
+    if(!n){ n=document.createElement('span'); n.id='sbSyncV968'; n.className='sb-grp'; sl.appendChild(n); }
+    var ic=SY.kind==='up'?'⬆':SY.kind==='ok'?'✅':SY.kind==='err'?'⚠':'⬇';
+    var col=SY.kind==='err'?'#fca5a5':(SY.kind==='ok'?'#86efac':'#93c5fd');
+    n.innerHTML='<span style="color:'+col+';font-weight:800">'+ic+' '+((CHN[SY.ch]||'동기화'))+' · '+String(SY.label||'')+'</span>'
+      +'<span class="sb-gauge" style="width:120px"><span style="width:'+Math.max(2,Math.min(100,SY.pct))+'%;background:'+col+'"></span></span>'
+      +'<span class="sb-pct" style="color:'+col+';min-width:40px">'+Math.round(SY.pct)+'%</span>'
+      +(SY.sub?('<span class="sb-lab">'+String(SY.sub)+'</span>'):'');
+  }catch(e){}
+}
+function move(){
+  try{
+    hook();
+    var fx=document.getElementById('sg652Fixed');
+    if(fx&&fx.parentNode===document.body)fx.style.display='none';
+    draw();
+  }catch(e){}
+}
+setInterval(move,600);
+document.addEventListener('DOMContentLoaded',move);
+move();
+
+/* ══ v968 · 첫 로딩 때 올해·내년 목표액을 한 번에 계산해 둡니다. ══
+   · 계산 입력(목표안·조정값·확정월·자료 건수)이 바뀌었을 때만 다시 계산합니다.
+   · 같은 입력이면 어느 PC에서나 같은 값이 나옵니다(입력값이 공유 설정이므로). */
+var CK='SB_CALC_V968';
+function sig(){ try{ return (typeof fcTargetSigV678==='function')?fcTargetSigV678():''; }catch(e){ return ''; } }
+function prog(pct,msg){
+  try{
+    var bar=document.getElementById('sbV967'); if(!bar)return;
+    var sl=slot(); if(!sl)return;
+    var n=document.getElementById('sbCalcV968');
+    if(pct==null){ if(n)n.remove(); return; }
+    if(!n){ n=document.createElement('span'); n.id='sbCalcV968'; n.className='sb-prog'; sl.insertBefore(n,sl.firstChild); }
+    n.textContent='⏳ '+(msg||'목표액 계산')+' '+Math.round(pct)+'%';
+    ['sbG1V967','sbG2V967'].forEach(function(id){
+      var g=document.getElementById(id); if(!g||!g.firstElementChild)return;
+      g.classList.remove('sb-ind');
+      g.firstElementChild.style.width=Math.max(0,Math.min(100,pct)).toFixed(0)+'%';
+      g.firstElementChild.style.background='#60a5fa';
+    });
+  }catch(e){}
+}
+function ready(){ try{ return (typeof CUR!=='undefined')&&CUR&&CUR.length>0&&typeof fcAnnualTargetSummary==='function'; }catch(e){ return false; } }
+function yearHasPlan(y){
+  try{ var st=(typeof fcYearStore==='function')?fcYearStore():null; return !!(st&&st[String(y)]&&st[String(y)].targetPlans); }catch(e){ return false; }
+}
+var running=false;
+function calcAll(force){
+  try{
+    if(running||!ready())return;
+    var sg=sig(); if(!sg)return;
+    var cache=null; try{ cache=JSON.parse(localStorage.getItem(CK)||'null'); }catch(e){}
+    if(!force&&cache&&cache.sig===sg){ prog(null); if(window.sbPaintV967)window.sbPaintV967(); return; }
+    running=true;
+    var cy=0; try{ cy=+fcDataYearMax(); }catch(e){}
+    if(!cy)return;
+    var ny=cy+1, orig=0;
+    try{ orig=+fcTargetYear(); }catch(e){}
+    prog(8,'목표액 계산');
+    setTimeout(function(){
+      try{
+        /* ① 기준연도 */
+        if(orig!==cy&&yearHasPlan(cy)&&typeof fcSwitchYear==='function'){ try{ window._fcSilentV678=true; fcSwitchYear(cy); }catch(e){} }
+        prog(35,'목표액 계산');
+        try{ fcAnnualTargetSummary(); }catch(e){}
+        prog(62,'목표액 계산');
+        /* ② 다음해 — 이미 만들어 둔 목표안이 있을 때만 (없으면 건드리지 않습니다) */
+        if(yearHasPlan(ny)&&typeof fcSwitchYear==='function'){
+          try{ fcSwitchYear(ny); fcAnnualTargetSummary(); }catch(e){}
+        }
+        prog(88,'목표액 계산');
+        /* ③ 원래 연도로 되돌리기 */
+        try{ if(typeof fcSwitchYear==='function'&&orig&&+fcTargetYear()!==orig)fcSwitchYear(orig); }catch(e){}
+      }finally{
+        try{ window._fcSilentV678=false; }catch(e){}
+        try{ localStorage.setItem(CK,JSON.stringify({sig:sig(),ts:Date.now()})); }catch(e){}
+        running=false;
+        prog(null);
+        try{ if(window.sbPaintV967)window.sbPaintV967(); }catch(e){}
+      }
+    },60);
+  }catch(e){ running=false; prog(null); }
+}
+window.sbCalcAllV968=function(){ calcAll(true); };
+/* 자료가 준비되면 한 번, 그 뒤에는 입력이 바뀐 경우에만 */
+var tries=0;
+var t=setInterval(function(){
+  if(++tries>200){ clearInterval(t); return; }
+  if(!ready())return;
+  clearInterval(t);
+  calcAll(false);
+  /* 입력 변경 감시 — 20초마다 시그니처만 비교(계산은 바뀐 경우에만) */
+  setInterval(function(){
+    try{
+      var cache=null; try{ cache=JSON.parse(localStorage.getItem(CK)||'null'); }catch(e){}
+      if(!cache||cache.sig!==sig())calcAll(false);
+    }catch(e){}
+  },20000);
+},500);
 })();
 </script>
 </html>
