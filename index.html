@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v971</title>
-<script>window.APP_BUILD='v971';</script>
+<title>동방파스텍 매출 분석 도구 v972</title>
+<script>window.APP_BUILD='v972';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2051,7 +2051,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v971</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v972</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -12212,8 +12212,7 @@ function fcAnnualTargetSummary(plan){
   const futurePeriodTarget=futureTargetRaw+extras.newCustAnnual+extras.lineCustTotal+pdFuture;
   const remainingTarget=futurePeriodTarget;
   const annualTarget=actualPeriodTotal+futurePeriodTarget;
-  /* v967 : 하부 요약바에서 쓰도록 연도별 목표액·실적을 보관합니다. */
-  try{ if(window.sbStoreV967)window.sbStoreV967(fcTargetYear(),annualTarget,actualPeriodTotal,lastAct); }catch(_sb967){}
+  /* v972 : 이 값은 화면 최종 표시액(olhaeTarget)과 다를 수 있어 상태바에 쓰지 않습니다. */
   return {annualTarget,lastAct,actualAllRaw,actualEligibleRaw,actualExcludedRaw,actualPeriodTotal,futureTargetRaw,futurePeriodTarget,remainingTarget,newCustAnnual:extras.newCustAnnual,lineCustTotal:extras.lineCustTotal,pdActual,pdFuture,pdYearNet:extras.pdYearNet};
 }
 
@@ -13424,7 +13423,17 @@ function forecast(){
     if(_sumV678>0)olhaeTarget=_sumV678;
   }catch(_e){}
   /* v966 : 목표전략이 별도 계산식을 쓰지 않고 이 화면의 최종 표시 금액을 재사용합니다. */
-  try{window.FC_ANNUAL_TARGET_V966={year:+CY,plan:String((state.fc&&state.fc.activePlan)||'1'),value:Math.round(+olhaeTarget||0),at:Date.now()};}catch(_v966){}
+  try{
+    /* v972 : 하부 상태바가 «화면과 똑같은 금액»을 쓰도록 실적·확정월도 함께 넘깁니다. */
+    var _actV972=0, _cutV972=0;
+    try{
+      var _nx972=(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode());
+      _cutV972=_nx972?0:((typeof fcCutoffMonth==='function')?fcCutoffMonth():lastAct);
+      for(var _m972=1;_m972<=_cutV972;_m972++)_actV972+=(+actV[_m972]||0);
+    }catch(_e972){}
+    window.FC_ANNUAL_TARGET_V966={year:+CY,plan:String((state.fc&&state.fc.activePlan)||'1'),
+      value:Math.round(+olhaeTarget||0),actual:Math.round(_actV972),cut:_cutV972,at:Date.now()};
+  }catch(_v966){}
   const projPct=pyAnnual?(olhaeTarget-pyAnnual)/pyAnnual*100:0;
   // 고철업체 중 '제외'되지 않은 업체의 당해연도 매출은 거래처외 매출포함항목 합계에 포함
   /* v768 : 다음 연도(2027) 목표를 세울 때 «기준연도(2026) 화면»을 숨긴 채 한 번 더 계산하는데,
@@ -42638,9 +42647,25 @@ function build(){
   return d;
 }
 function ready(){ try{ return (typeof CUR!=='undefined')&&CUR&&CUR.length>0; }catch(e){ return false; } }
+/* ══ v972 · 화면이 표시 중인 금액을 그대로 가져옵니다. ══ */
+function pullScreen(){
+  try{
+    var v=window.FC_ANNUAL_TARGET_V966;
+    if(!v||!v.year||!(+v.value>0))return;
+    var o=load(), y=String(+v.year);
+    var rec={t:Math.round(+v.value||0),a:Math.round(+v.actual||0),m:+v.cut||0,p:String(v.plan||'1'),ts:Date.now()};
+    var old=o[y];
+    if(old&&old.t===rec.t&&old.a===rec.a&&old.m===rec.m&&old.p===rec.p)return;
+    o[y]=rec; save(o);
+  }catch(e){}
+}
+function selYear(){
+  try{ return +((typeof fcTargetYear==='function')?fcTargetYear():0)||0; }catch(e){ return 0; }
+}
 function paint(){
   try{
     build();
+    pullScreen();
     var g1=document.getElementById('sbG1V967'), g2=document.getElementById('sbG2V967');
     var note=document.getElementById('sbNoteV967');
     if(!g1||!g2)return;
@@ -42656,11 +42681,13 @@ function paint(){
       return;
     }
     g1.classList.remove('sb-ind'); g2.classList.remove('sb-ind');
-    var o=load(), cy=0;
-    try{ cy=(typeof fcDataYearMax==='function')?+fcDataYearMax():0; }catch(e){}
+    var o=load();
+    /* v972 : «목표 연도»에서 고른 해만 보여 줍니다. */
+    var cy=selYear();
+    if(!cy){ try{ cy=+fcDataYearMax(); }catch(e){} }
     if(!cy){ try{ var ys=dataYears(); cy=+ys[ys.length-1]||0; }catch(e2){} }
-    var ny=cy?cy+1:0;
-    var a=o[String(cy)]||null, b=o[String(ny)]||null;
+    var ny=0;
+    var a=o[String(cy)]||null, b=null;
     document.getElementById('sbY1V967').textContent=cy?cy+'년':'—';
     if(a){
       var pct=a.t>0?(a.a/a.t*100):0;
@@ -42677,7 +42704,13 @@ function paint(){
       g1.firstElementChild.style.width='0%';
       document.getElementById('sbP1V967').textContent='';
     }
-    document.getElementById('sbY2V967').textContent=ny?ny+'년':'—';
+    try{
+      var hide=[document.getElementById('sbY2V967'),document.getElementById('sbT2V967'),
+                document.getElementById('sbG2V967'),document.getElementById('sbP2V967')];
+      hide.forEach(function(el){ if(el){ var g=el.closest('.sb-grp')||el; g.style.display='none'; } });
+      var sep=document.querySelector('#sbV967 .sb-sep'); if(sep)sep.style.display='none';
+    }catch(e){}
+    if(false)document.getElementById('sbY2V967').textContent=ny?ny+'년':'—';
     if(b&&b.t>0){
       document.getElementById('sbT2V967').textContent=won(b.t)+'원';
       var base=(a&&a.t>0)?a.t:b.t;
@@ -42694,11 +42727,8 @@ function paint(){
       document.getElementById('sbP2V967').textContent='';
     }
     if(note){
-      var miss=[];
-      if(!a&&cy)miss.push(cy+'년');
-      if(!b&&ny)miss.push(ny+'년');
-      note.innerHTML=miss.length
-        ? '<span class="sb-dim">🎯 목표·추이 화면을 한 번 열면 '+miss.join('·')+' 목표액이 채워집니다</span>'
+      note.innerHTML=(!a&&cy)
+        ? '<span class="sb-dim">🎯 매출 목표 화면을 한 번 열면 '+cy+'년 목표액이 채워집니다</span>'
         : '';
     }
   }catch(e){}
@@ -42876,13 +42906,13 @@ window.sbCalcAllV968=function(){ calcAll(true); };
    (2) 화면이 쓰는 캐시가 준비되지 않아 금액이 화면과 달라졌습니다.
    이제는 «화면이 실제로 계산한 값»만 기록하고, 두 해를 한 번에 맞추고 싶을 때는
    하부바의 «목표액 새로고침» 버튼으로 화면 계산 경로를 그대로 한 번 돌립니다. */
-function addBtn(){
+function addBtn(){ try{ var old=document.getElementById('sbReloadV971'); if(old&&old.parentNode)old.parentNode.removeChild(old); }catch(e){} return;
   try{
     var bar=document.getElementById('sbV967'); if(!bar)return;
     if(document.getElementById('sbReloadV971'))return;
     var b=document.createElement('button');
     b.id='sbReloadV971'; b.type='button'; b.title='올해·내년 목표액을 화면과 같은 방식으로 다시 계산합니다';
-    b.textContent='↻ 목표액 새로고침';
+    b.textContent='↻ 목표액 새로고침'; b.style.display='none';
     b.style.cssText='flex:0 0 auto;margin-left:10px;font-family:inherit;font-size:11.5px;font-weight:800;'
       +'padding:4px 10px;border-radius:7px;border:1px solid #1e3a5f;background:#16263f;color:#93c5fd;cursor:pointer';
     b.addEventListener('mouseenter',function(){ b.style.background='#1e3a5f'; });
