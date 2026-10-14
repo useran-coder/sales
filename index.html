@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v972</title>
-<script>window.APP_BUILD='v972';</script>
+<title>동방파스텍 매출 분석 도구 v973</title>
+<script>window.APP_BUILD='v973';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2051,7 +2051,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v972</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v973</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -38891,17 +38891,21 @@ function expo(which){
   var f=state.fc, F=state._fc||{}, yr=(typeof fcTargetYear==='function')?fcTargetYear():'';
   /* v858 : 월별보기를 켠 상태에서는 화면과 같은 1~12월 금액(또는 수량)을 저장합니다.
      뒤쪽에는 월별 조정%·메모도 함께 넣어 기존 불러오기/편집 자료로 계속 활용할 수 있습니다. */
-  if(which==='cust'&&f._custMonView&&F.cyMonCust&&F.fcCustMon){
-    var mh=['순위','거래처'].concat(MON).concat(['합계','거래처 제외','목표합산 제외']).concat(MON.map(function(m){return m+' 조정%';})).concat(['메모']);
+  /* v973 : 월별보기를 켜지 않아도 «복원 가능한 전체 형식»으로 내보냅니다.
+     (월 금액 + 연 조정%·추가% + 거래처 제외·목표합산 제외 + 메모) */
+  if(which==='cust'&&F.cyMonCust&&F.fcCustMon){
+    var mh=['순위','거래처'].concat(MON).concat(['합계','거래처 제외','목표합산 제외','조정%','추가%']).concat(MON.map(function(m){return m+' 조정%';})).concat(['메모']);
     var ma=[mh];
     (E.custArr||[]).forEach(function(o,i){
       var vals=MON.map(function(_,k){var m=k+1,map=m<=E.lastAct?F.cyMonCust[m]:F.fcCustMon[m];return Math.round((map&&map.get(o.c))||0);});
       var mp=(f.custMonthPct||{})[o.c]||{};
-      ma.push([i+1,o.c].concat(vals).concat([vals.reduce(function(a,b){return a+b;},0),o.excl?'Y':'',o.targetOnly?'Y':'']).concat(MON.map(function(_,k){var v=mp[k+1];return(v==null||v==='')?'':+v;})).concat([(f.custMemo||{})[o.c]||'']));
+      ma.push([i+1,o.c].concat(vals).concat([vals.reduce(function(a,b){return a+b;},0),o.excl?'Y':'',o.targetOnly?'Y':'',
+        ((f.override||{})[o.c]==null||(f.override||{})[o.c]==='')?'':+f.override[o.c],
+        ((f.addPct||{})[o.c]==null||(f.addPct||{})[o.c]==='')?'':+f.addPct[o.c]]).concat(MON.map(function(_,k){var v=mp[k+1];return(v==null||v==='')?'':+v;})).concat([(f.custMemo||{})[o.c]||'']));
     });
     dlXLSX('forecast_customer_monthly_'+yr+'.xlsx','거래처월별목표',ma);return;
   }
-  if(which==='prod'&&f._prodMonView&&F.cyMonProd&&F.fcProdMon){
+  if(which==='prod'&&F.cyMonProd&&F.fcProdMon){
     var qty=!!f._prodQtyView, ph=['순위','품번','품명','규격'].concat(MON).concat(['합계']).concat(MON.map(function(m){return m+' 조정%';})).concat(['메모']),pa=[ph];
     (E.prodArr||[]).forEach(function(o,i){
       var vals=MON.map(function(_,k){var m=k+1,map=m<=E.lastAct?F.cyMonProd[m]:F.fcProdMon[m],e=map&&map.get(o.pk);return Math.round(e?(qty?(e.qty||0):(e.amt||0)):0);});
@@ -38948,7 +38952,7 @@ function impo(which){
       /* 월별보기에서 내보낸 파일은 「1월 조정%」, 연간보기 파일은 「1월%」 형식입니다.
          두 형식을 모두 읽어 같은 파일을 저장했다가 다시 불러와도 월 조정값이 빠지지 않게 합니다. */
       var monIdx=MON.map(function(m){ var i=idx[m+' 조정%']; if(i==null)i=idx[m+'월 조정%']; if(i==null)i=idx[m+'%']; return (i==null)?-1:i; });
-      var f=state.fc, n={adj:0,add:0,memo:0,mon:0,miss:0}, names=[];
+      var f=state.fc, n={adj:0,add:0,memo:0,mon:0,miss:0,excl:0,texcl:0,amt:0}, names=[], want={};
       var needCust=(which==='cust');
       if(needCust&&idx['거래처']==null){ await uiConfirm('거래처 목표 엑셀이 아닙니다. (첫 줄에 «거래처» 칸이 있어야 합니다)'); return; }
       if(!needCust&&idx['품번']==null){ await uiConfirm('제품 목표 엑셀이 아닙니다. (첫 줄에 «품번» 칸이 있어야 합니다)'); return; }
@@ -38966,6 +38970,22 @@ function impo(which){
         var ov=hasOv?num(row[idx['조정%']]):'', ad=hasAd?num(row[idx['추가%']]):'', mm=idx['메모']!=null?S(row[idx['메모']]):'';
         if(needCust){
           f.override=f.override||{}; f.addPct=f.addPct||{}; f.custMemo=f.custMemo||{}; f.custMonthPct=f.custMonthPct||{};
+          /* v973 : 거래처 제외 · 목표합산 제외도 함께 복원합니다. */
+          try{
+            var yn=function(v){ return /^(y|yes|1|o|v|true|예)$/i.test(String(v==null?'':v).trim()); };
+            if(idx['거래처 제외']!=null){ f.exclCust=f.exclCust||{};
+              if(yn(row[idx['거래처 제외']]))f.exclCust[key]=true; else delete f.exclCust[key]; n.excl=(n.excl||0)+1; }
+            if(idx['목표합산 제외']!=null){ f.targetExclCust=f.targetExclCust||{};
+              if(yn(row[idx['목표합산 제외']]))f.targetExclCust[key]=true; else delete f.targetExclCust[key]; n.texcl=(n.texcl||0)+1; }
+          }catch(_x973){}
+          /* v973 : 월 금액을 모아 두었다가, 아래에서 월 조정%로 «역산»해 금액을 그대로 되살립니다. */
+          try{
+            var MI=MON.map(function(m){ var i2=idx[m]; return (i2==null)?-1:i2; });
+            if(MI.some(function(x){return x>=0;})){
+              want[key]=want[key]||{};
+              MI.forEach(function(ci,i2){ if(ci<0)return; var v=num(row[ci]); if(v!=='')want[key][i2+1]=+v; });
+            }
+          }catch(_w973){}
           if(hasOv){ if(ov===''){ if(f.override[key]!=null)delete f.override[key]; } else { f.override[key]=ov; n.adj++; } }
           if(hasAd){ if(ad===''){ if(f.addPct[key]!=null)delete f.addPct[key]; } else { f.addPct[key]=ad; n.add++; } }
           if(idx['메모']!=null){ if(mm){ f.custMemo[key]=mm; n.memo++; } else delete f.custMemo[key]; }
@@ -38989,7 +39009,46 @@ function impo(which){
       /* 수동 확정 저장소까지 함께 갱신해야 다음 동기화·재실행 때 불러온 값이 옛 확정본으로 되돌아가지 않습니다. */
       try{ if(typeof window.fcManualCommitV881==='function')await window.fcManualCommitV881(); else await saveSettings(); }catch(_v){ try{await saveSettings();}catch(_v2){} }
       try{ forecast(); }catch(_f){}
+      /* ══ v973 · 저장된 월 금액 그대로 되살리기(역산) ══
+         월 조정%를 넣고 → 다시 계산 → 차이만큼 보정, 3회 반복하면 원 단위까지 맞습니다. */
+      if(needCust&&Object.keys(want).length){
+        try{
+          if(typeof syncExcludedCustMaps==='function')syncExcludedCustMaps();
+          if(typeof syncTargetExcludedCustMap==='function')syncTargetExcludedCustMap();
+        }catch(_s973){}
+        var cut973=0; try{ cut973=(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode())?0:((typeof fcCutoffMonth==='function')?fcCutoffMonth():0); }catch(_c){}
+        for(var it973=0; it973<6; it973++){
+          var F973=state._fc||{}; if(!F973.fcCustMon)break;
+          var moved=0;
+          Object.keys(want).forEach(function(c){
+            var row973=want[c], mp973=f.custMonthPct[c]=f.custMonthPct[c]||{};
+            for(var m=cut973+1;m<=12;m++){
+              var A=+row973[m]; if(!isFinite(A))continue;
+              var map973=F973.fcCustMon[m]; if(!map973)continue;
+              var V=+(map973.get(c)||0);
+              var cur=mp973[m]; cur=(cur==null||cur==='')?0:+cur;
+              var nv;
+              if(V>0){ nv=((1+cur/100)*(A/V)-1)*100; }
+              else if(A>0){ nv=(cur||0)+100; }          /* 0원 달에 금액이 있으면 기준 평균으로 끌어올립니다 */
+              else { nv=-100; }
+              if(!isFinite(nv))continue;
+              nv=Math.max(-100,Math.min(1000000,Math.round(nv*100000)/100000));
+              if(Math.abs(nv-cur)>0.000005){ mp973[m]=nv; moved++; }
+            }
+            if(!Object.keys(mp973).length)delete f.custMonthPct[c];
+          });
+          n.amt=moved;
+          try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_e1){}
+          try{ forecast(); }catch(_e2){}
+          if(!moved)break;
+        }
+        try{ if(typeof fcSaveYearPlan==='function')fcSaveYearPlan((typeof fcTargetYear==='function')?fcTargetYear():''); }catch(_e3){}
+        try{ if(typeof window.fcManualCommitV881==='function')await window.fcManualCommitV881(); else await saveSettings(); }catch(_e4){ try{await saveSettings();}catch(_e5){} }
+        try{ forecast(); }catch(_e6){}
+      }
       await uiConfirm('엑셀을 불러왔습니다.<br><b>조정% '+n.adj+'건 · 추가% '+n.add+'건 · 월% '+n.mon+'칸 · 메모 '+n.memo+'건</b>'
+        +((n.excl||n.texcl)?('<br><span style="color:#0f766e">거래처 제외·목표합산 제외 '+(n.excl+n.texcl)+'칸 반영</span>'):'')
+        +(Object.keys(want).length?'<br><span style="color:#1d4ed8;font-weight:800">📘 저장된 월 금액을 그대로 복원했습니다(월 조정% 역산)</span>':'')
         +(window.__FC_LAST_MANUAL_SAVE_V885?('<br><span style="color:#15803d;font-weight:800">💾 직접 저장 #'+window.__FC_LAST_MANUAL_SAVE_V885.no+'로 적용·동기화했습니다.</span>'):'')
         +(n.miss?('<br><span style="color:#b45309">표에 없는 항목 '+n.miss+'건은 건너뜀'+(names.length?(' ('+names.join(', ')+' 등)'):'')+'</span>'):''));
     }catch(e){ try{ await uiConfirm('불러오기 중 오류: '+(e&&e.message||e)); }catch(_u){} }
