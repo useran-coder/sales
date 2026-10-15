@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v988</title>
-<script>window.APP_BUILD='v988';</script>
+<title>동방파스텍 매출 분석 도구 v989</title>
+<script>window.APP_BUILD='v989';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v988</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v989</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -13095,9 +13095,15 @@ function forecast(){
   const fcMonths=[]; for(let m=lastAct+1;m<=12;m++) if(pyMonTot[m]>0) fcMonths.push(m);
   const fcCustMon=M(), fcProdMon=M(), fcCustProdMon=M(), fcMonTot=Array(13).fill(0);
   for(const m of fcMonths){ const pct=state.fc.pct[m]!=null?state.fc.pct[m]:0; const f=1+pct/100; const target=pyMonTot[m]*f;
-    const cmap=pyMonCust[m]; let ovrSum=0, nonOvrPY=0;
-    cmap.forEach((py,c)=>{ const ov=state.fc.override[c]; if(ov!=null&&ov!=='') ovrSum+=py*(1+(+ov)/100); else nonOvrPY+=py; });
-    const factorNon=nonOvrPY>0?(target-ovrSum)/nonOvrPY:0;
+    const cmap=pyMonCust[m];
+    /* ══ v989 · 업체 조정%가 «다른 업체·다른 달»의 금액을 건드리던 문제 ══
+       예전에는 그 달의 회사 목표(전년 월합 × 월별 목표%)를 «고정»해 두고 업체끼리 나눠 가졌습니다.
+         factorNon = (그달 회사목표 − 조정% 넣은 업체 합) ÷ 나머지 업체 전년합
+       그래서 어느 한 업체의 조정%가 바뀌면 그 달 «모든 업체»의 금액이 함께 오르내렸고,
+       한 달만 고쳤는데 다른 달까지 움직이는 것처럼 보였습니다.
+       이제는 조정%를 넣지 않은 업체는 «월별 목표%»만 그대로 받습니다.
+       → 내가 손댄 업체·달만 바뀌고, 회사 월 목표는 그 증감분만큼 더해집니다. */
+    const factorNon=f;
     cmap.forEach((py,c)=>{ const ov=state.fc.override[c]; const cf=(ov!=null&&ov!=='')?(1+(+ov)/100):factorNon; const add=state.fc.addPct[c]; const af=1+((add!=null&&add!=='')?+add:0)/100;
       const cp=pyMonCustProd[m].get(c); if(cp){ const dst=new Map(); cp.forEach((pe,pk)=>{ const v={amt:pe.amt*cf*af,qty:pe.qty*cf*af}; dst.set(pk,v); }); fcCustProdMon[m].set(c,dst); } }); }
   /* 제품별 전체 목표%를 미래월에 먼저 배분한 뒤, 월별 조정%를 추가 적용합니다. */
