@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v989</title>
-<script>window.APP_BUILD='v989';</script>
+<title>동방파스텍 매출 분석 도구 v990</title>
+<script>window.APP_BUILD='v990';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v989</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v990</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -43369,6 +43369,67 @@ function warn(){
 }
 setInterval(function(){ stamp(); warn(); },2500);
 setTimeout(function(){ stamp(); warn(); },4000);
+})();
+</script>
+<script id="v990-change-audit">
+/* ═════ v990 · 「변동점검」 — 조정%를 고쳤을 때 «어느 업체·어느 달»이 바뀌었는지 그대로 보여 줍니다 ═════
+   사용법 : 월별보기에서 「🔍 변동점검」을 한 번 누르고(기준 저장) → 조정%를 고친 뒤 다시 누릅니다. */
+(function(){
+'use strict';
+var BASE=null;
+function grab(){
+  var o={}; try{
+    var F=state._fc||{};
+    for(var m=1;m<=12;m++){ var mp=F.fcCustMon&&F.fcCustMon[m]; if(!mp)continue;
+      mp.forEach(function(v,c){ (o[c]=o[c]||new Array(12).fill(0))[m-1]=Math.round(+v||0); }); }
+  }catch(e){}
+  return o;
+}
+function won(n){ try{ return Math.round(n).toLocaleString('en-US'); }catch(e){ return String(n); } }
+function report(){
+  var now=grab(), rows=[], keys={};
+  Object.keys(now).forEach(function(k){keys[k]=1;}); Object.keys(BASE||{}).forEach(function(k){keys[k]=1;});
+  Object.keys(keys).forEach(function(c){
+    var A=(BASE||{})[c]||new Array(12).fill(0), B=now[c]||new Array(12).fill(0), ms=[], sum=0;
+    for(var m=0;m<12;m++){ var d=B[m]-A[m]; if(d!==0){ ms.push((m+1)+'월 '+(d>0?'+':'')+won(d)); sum+=d; } }
+    if(ms.length)rows.push({c:c,n:ms.length,sum:sum,ms:ms});
+  });
+  rows.sort(function(x,y){ return Math.abs(y.sum)-Math.abs(x.sum); });
+  var html='<div style="font-size:12.5px;line-height:1.6;text-align:left">';
+  if(!rows.length)html+='<b style="color:#15803d">✔ 바뀐 금액이 없습니다.</b>';
+  else{
+    html+='<b>바뀐 거래처 '+rows.length+'개</b><div style="max-height:300px;overflow:auto;margin-top:7px">';
+    rows.slice(0,40).forEach(function(r){
+      html+='<div style="padding:4px 0;border-bottom:1px solid #eef2f7"><b>'+r.c+'</b> <span style="color:'+(r.sum>=0?'#15803d':'#dc2626')+';font-weight:800">'+(r.sum>0?'+':'')+won(r.sum)+'원</span> <span style="color:#64748b">('+r.n+'개월)</span><div style="color:#64748b;font-size:11px">'+r.ms.slice(0,12).join(' · ')+'</div></div>';
+    });
+    html+='</div>';
+    if(rows.length>40)html+='<div style="color:#64748b;font-size:11px;margin-top:5px">… 외 '+(rows.length-40)+'개</div>';
+  }
+  html+='</div>';
+  try{ uiConfirm(html); }catch(e){}
+  BASE=now;
+}
+function bind(){
+  try{
+    if(!state||state.act!=='forecast'||!(state.fc&&state.fc._custMonView))return;
+    var head=document.querySelector('#result h4.fch'); if(!head)return;
+    if(document.getElementById('v990AuditBtn'))return;
+    var b=document.createElement('button'); b.type='button'; b.id='v990AuditBtn'; b.className='btn ghost';
+    b.style.cssText='font-size:12px;padding:4px 10px;margin:0 7px 0 0;color:#be185d;border-color:#fbcfe8';
+    b.textContent='🔍 변동점검';
+    b.title='한 번 눌러 기준을 저장하고, 조정%를 고친 뒤 다시 누르면 어느 업체·어느 달 금액이 바뀌었는지 보여 줍니다.';
+    b.addEventListener('click',function(ev){ ev.preventDefault(); ev.stopPropagation();
+      if(!BASE){ BASE=grab(); b.style.background='#fce7f3';
+        try{ uiConfirm('기준을 저장했습니다. 조정%를 고치신 뒤 이 버튼을 다시 누르세요.'); }catch(e){}
+      } else report();
+    });
+    var first=head.querySelector('#fcCustMonBtn');
+    if(first&&first.parentNode===head)head.insertBefore(b,first.nextSibling); else head.appendChild(b);
+  }catch(e){}
+}
+setInterval(bind,900);
+if(document.readyState==='complete')setTimeout(bind,800);
+else window.addEventListener('load',function(){setTimeout(bind,800);},{once:true});
 })();
 </script>
 </html>
