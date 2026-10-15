@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v997</title>
-<script>window.APP_BUILD='v997';</script>
+<title>동방파스텍 매출 분석 도구 v998</title>
+<script>window.APP_BUILD='v998';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v997</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v998</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -43659,6 +43659,84 @@ document.addEventListener('click',function(e){
 },true);
 window.addEventListener('beforeunload',function(){ try{ if(DIRTY)flush(true); }catch(e){} });
 document.addEventListener('visibilitychange',function(){ try{ if(document.hidden&&DIRTY)flush(true); }catch(e){} });
+})();
+</script>
+<script id="v998-target-fingerprint">
+/* ═════ v998 · 「목표액 점검」 — 두 컴퓨터의 목표액이 왜 다른지 한 번에 찾습니다 ═════
+   목표액을 만드는 «입력값»을 모두 한 장으로 뽑아 줍니다.
+   두 PC에서 각각 눌러 결과를 비교하면 어느 값이 다른지 바로 보입니다. */
+(function(){
+'use strict';
+function W(n){ try{ return Math.round(+n||0).toLocaleString('en-US'); }catch(e){ return String(n); } }
+function cnt(o){ try{ return Object.keys(o||{}).length; }catch(e){ return 0; } }
+function sum(o){ try{ var t=0; Object.keys(o||{}).forEach(function(k){ var v=+o[k]; if(isFinite(v))t+=v; }); return t; }catch(e){ return 0; } }
+function sum2(o){ try{ var t=0,n=0; Object.keys(o||{}).forEach(function(k){ var r=o[k]; if(r&&typeof r==='object')Object.keys(r).forEach(function(m){ var v=+r[m]; if(isFinite(v)){t+=v;n++;} }); }); return {t:t,n:n}; }catch(e){ return {t:0,n:0}; } }
+function rows(y){ try{ var n=0,a=0; (CUR||[]).forEach(function(r){ if(+r.y===+y){ n++; a+=amtOf(r); } }); return n+'행 / '+W(a); }catch(e){ return '?'; } }
+function build(){
+  var f=state.fc||{}, L=[];
+  var y=''; try{ y=String(fcTargetYear()); }catch(e){}
+  var cut=''; try{ cut=String(fcCutoffMonth()); }catch(e){}
+  var tgt=window.FC_ANNUAL_TARGET_V966||{};
+  var ca=sum2(f.custMonthPct), pa=sum2(f.prodMonthPct), cm=sum2(f.custMonthAdd), pm=sum2(f.prodMonthAdd);
+  var pctArr=[]; for(var m=1;m<=12;m++){ var v=(f.pct||{})[m]; pctArr.push((v==null||v==='')?'-':(+v)); }
+  var ys=[]; try{ ys=dataYears(); }catch(e){}
+  L.push(['빌드', (window.APP_BUILD||'?')]);
+  L.push(['목표연도 / 목표안 / 확정월', y+' / '+(f.activePlan||'1')+'안 / '+cut+'월']);
+  L.push(['화면 연간 목표액', (tgt&&+tgt.value>0)?(W(tgt.value)+'원 ('+tgt.year+')'):'(매출 목표 화면을 먼저 여세요)']);
+  L.push(['확정월 목표 숨김', f.hideActTgt?'켜짐':'꺼짐']);
+  L.push(['월별 목표%(1~12월)', pctArr.join(', ')]);
+  L.push(['조정%(연)', cnt(f.override)+'건 · 합 '+W(sum(f.override))]);
+  L.push(['추가%(연)', cnt(f.addPct)+'건 · 합 '+W(sum(f.addPct))]);
+  L.push(['업체 월 조정%', ca.n+'칸 · 합 '+W(ca.t)]);
+  L.push(['제품 월 조정%', pa.n+'칸 · 합 '+W(pa.t)]);
+  L.push(['업체 월 전략금액', cm.n+'칸 · 합 '+W(cm.t)+'원']);
+  L.push(['제품 월 전략금액', pm.n+'칸 · 합 '+W(pm.t)+'원']);
+  L.push(['제품 조정%/추가%', cnt(f.prodOverride)+'건 / '+cnt(f.prodAddPct)+'건']);
+  L.push(['신규목표(업체)', cnt(f.newCusts)+'건 · 합 '+W(sum(f.newCusts))+'원']);
+  L.push(['신규목표(제품)', cnt(f.newProds)+'건']);
+  L.push(['거래처 제외', cnt(f.exclCust)+'개사 : '+Object.keys(f.exclCust||{}).slice(0,8).join(', ')]);
+  L.push(['목표합산 제외', cnt(f.targetExclCust)+'개사 : '+Object.keys(f.targetExclCust||{}).slice(0,8).join(', ')]);
+  L.push(['전략 건수', (((state.strategyPlan||{}).items)||[]).length+'건']);
+  L.push(['PD 임가공 포함', (typeof fcPdInAnnualTarget==='function'&&fcPdInAnnualTarget())?'포함':'미포함']);
+  L.push(['매출자료 연도', ys.join(', ')]);
+  ys.slice(-3).forEach(function(yy){ L.push(['매출자료 '+yy, rows(yy)]); });
+  L.push(['연도 보관함', Object.keys(f.yearPlans||{}).join(', ')]);
+  try{ var m2=(state.fcYearMisc||{})[y]||{};
+    L.push(['보관함('+y+') 제외', cnt(m2.exclCust)+' / 목표합산 '+cnt(m2.targetExclCust)]); }catch(e){}
+  try{ L.push(['마지막 동기화', (state.gsync&&state.gsync.lastSync)?new Date(state.gsync.lastSync).toLocaleString('ko-KR'):'기록 없음']); }catch(e){}
+  return L;
+}
+function show(){
+  var L=build();
+  var txt=L.map(function(r){ return r[0]+' : '+r[1]; }).join('\n');
+  var html='<div style="font-size:12px;line-height:1.65;text-align:left">'
+    +'<b style="font-size:13px">🔎 목표액 점검 — 두 컴퓨터에서 각각 눌러 비교하세요</b>'
+    +'<div style="max-height:360px;overflow:auto;margin-top:8px;border:1px solid #e2e8f0;border-radius:8px">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11.5px">'
+    +L.map(function(r,i){ return '<tr style="background:'+(i%2?'#f8fafc':'#fff')+'"><td style="padding:4px 8px;color:#475569;white-space:nowrap;border-bottom:1px solid #eef2f7">'+r[0]+'</td><td style="padding:4px 8px;font-weight:700;color:#1e3a5f;border-bottom:1px solid #eef2f7;word-break:break-all">'+String(r[1])+'</td></tr>'; }).join('')
+    +'</table></div>'
+    +'<div style="margin-top:8px;color:#64748b;font-size:11px">값이 다른 줄이 원인입니다. 두 PC의 결과를 캡처해 비교하세요.</div>'
+    +'</div>';
+  try{ navigator.clipboard&&navigator.clipboard.writeText(txt); }catch(e){}
+  try{ uiConfirm(html); }catch(e){ console.log(txt); }
+}
+window.fcTargetFingerprintV998=show;
+function bind(){
+  try{
+    if(!state||state.act!=='forecast')return;
+    if(document.getElementById('v998ChkBtn'))return;
+    var box=document.querySelector('.fc-reset-group-v804'); if(!box)return;
+    var b=document.createElement('button'); b.type='button'; b.id='v998ChkBtn'; b.className='btn ghost';
+    b.style.cssText='font-size:12px;padding:4px 10px;color:#b45309;border-color:#fcd34d;font-weight:800';
+    b.textContent='🔎 목표액 점검';
+    b.title='목표액을 만드는 입력값을 한 장으로 보여 줍니다. 두 컴퓨터에서 각각 눌러 비교하면 어느 값이 다른지 알 수 있습니다. (결과는 클립보드에도 복사됩니다)';
+    b.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); show(); });
+    box.insertBefore(b,box.firstChild);
+  }catch(e){}
+}
+setInterval(bind,900);
+if(document.readyState==='complete')setTimeout(bind,900);
+else window.addEventListener('load',function(){setTimeout(bind,900);},{once:true});
 })();
 </script>
 </html>
