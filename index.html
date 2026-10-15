@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v978</title>
-<script>window.APP_BUILD='v978';</script>
+<title>동방파스텍 매출 분석 도구 v979</title>
+<script>window.APP_BUILD='v979';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2051,7 +2051,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v978</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v979</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -29650,6 +29650,20 @@ function sgSyncDirectTargetV857(it,A,clear){
   /* 전략은 등록된 목표연도에서만 목표표와 연동합니다. */
   if(+(it.year==null?2027:it.year)!==sgActiveYearV949())return false;
   var amt=Math.max(0,Math.round(+it.amount||0)),changed=false;
+  /* ══ v979 · 목표표의 «증감액(전략)»은 ② 추진현황의 «기대매출»과 같아야 합니다. ══
+     기대매출 = 목표/영향금액 × 성공확률. (추진현황의 «성공확률 반영» 체크를 끄면 금액 그대로)
+     예전에는 금액 전액이 넘어가, 기대매출 4억인데 목표표에는 5억이 잡혔습니다.
+     신규업체·신규제품의 «신규목표» 금액은 직접 입력칸이므로 예전처럼 금액 그대로 둡니다. */
+  var expAmtV979=amt;
+  try{
+    var _pl979=(typeof sgPlan==='function')?sgPlan():(state.strategyPlan||{});
+    var _use979=!_pl979||_pl979.useProb!==false;
+    if(_use979){
+      var _p979=(it.prob==null?(((typeof SG_SMAP!=='undefined'&&SG_SMAP[it.stage])||{p:50}).p):+it.prob);
+      _p979=Math.max(0,Math.min(100,+_p979||0));
+      expAmtV979=Math.max(0,Math.round(amt*_p979/100));
+    }
+  }catch(_e979){}
   if(['newCust','growthCust','keepCust'].indexOf(it.type)>=0&&String(it.cust||'').trim()&&!String(it.prod||'').trim()){
     var pc918=sgPrevAmtOfCustV918(String(it.cust||'').trim());
     if(pc918>0){
@@ -29662,7 +29676,7 @@ function sgSyncDirectTargetV857(it,A,clear){
       else if(amt>0){
         /* v925 : 업체 전략도 «시작월~12월 균등 분산 금액»으로 넣습니다. */
         var cm925=Math.min(12,Math.max(1,+it.mon||1)), cn925=12-cm925+1;
-        var cper925=Math.round(amt/cn925), crow925={};
+        var cper925=Math.round(expAmtV979/cn925), crow925={};
         for(var cmm925=cm925;cmm925<=12;cmm925++)crow925[cmm925]=cper925;
         sgPutPlanValV918('custMonthAdd',ck918,crow925);
         if(state.fc.addPct[ck918]!=null&&state.fc.addPct[ck918]!=='')sgPutPlanValV918('addPct',ck918,'');
@@ -29703,7 +29717,7 @@ function sgSyncDirectTargetV857(it,A,clear){
         else if(amt>0){
           /* ══ v925 · 연 비율(추가%) 대신 «시작월~12월 균등 분산 금액»으로 넣습니다. ══ */
           var mon925=Math.min(12,Math.max(1,+it.mon||1)), n925=12-mon925+1;
-          var per925=Math.round(amt/n925), row925={};
+          var per925=Math.round(expAmtV979/n925), row925={};
           for(var mm925=mon925;mm925<=12;mm925++)row925[mm925]=per925;
           sgPutPlanValV918('prodMonthAdd',real918.key,row925);
           if(state.fc.prodAddPct[real918.key]!=null&&state.fc.prodAddPct[real918.key]!=='')sgPutPlanValV918('prodAddPct',real918.key,'');
@@ -33914,6 +33928,8 @@ function sgBind(A){
       else if(f==='stage'){ it.stage=v; it.prob=(SG_SMAP[v]||{p:50}).p; }
       else it[f]=v;
       if(f==='prob'||f==='stage')sgSyncItemAnnualAdd(it,A,false);
+      /* v979 : 확률·단계·시작월이 바뀌면 기대매출이 바뀌므로 목표표 연동도 바로 다시 계산합니다. */
+      if(f==='prob'||f==='stage'||f==='mon'){ try{ if(it.targetDirectV857)sgSyncDirectTargetV857(it,A,false); }catch(_s979){} }
       if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
       /* v917 : 단계·확률·시작월은 «한 번에» 반영되도록 즉시 저장·커밋하고 빠른 재렌더를 씁니다.
          또 10분간 이 PC 값을 지켜, 배경 동기화가 옛 값으로 되돌리지 못하게 합니다. */
