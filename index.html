@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1001</title>
-<script>window.APP_BUILD='v1001';</script>
+<title>동방파스텍 매출 분석 도구 v1002</title>
+<script>window.APP_BUILD='v1002';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1001</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1002</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -17558,9 +17558,17 @@ window.__matPriceApi={getDb:getDb,latest:function(k,y){return latest(getDb(),k,y
     pending=true;
     requestAnimationFrame(function(){requestAnimationFrame(applyScreenPx);});
   }
+  /* ══ v1002 · 그래프 글자가 «커졌다 작아지며 깜빡»이던 원인 ══
+     새로 그린 SVG 글자는 먼저 원래 크기(font-size="14")로 한 번 그려진 뒤,
+     두 프레임 뒤에야 화면 배율에 맞게 줄여졌습니다. 그 사이 한 프레임이 눈에 띄어
+     ① 워터폴 제목을 고를 때마다 글자가 커졌다 돌아오는 것처럼 보였습니다.
+     이제 DOM이 바뀐 «즉시»(그려지기 전에) 보정하고, 보정이 실패할 때만 예전 방식으로 미룹니다. */
   new MutationObserver(function(records){
     for(var i=0;i<records.length;i++){
-      if(records[i].addedNodes&&records[i].addedNodes.length){schedule();break;}
+      if(records[i].addedNodes&&records[i].addedNodes.length){
+        try{ applyScreenPx(); }catch(_e){ schedule(); }
+        break;
+      }
     }
   }).observe(document.documentElement,{childList:true,subtree:true});
   window.addEventListener('resize',schedule,{passive:true});
@@ -30781,6 +30789,12 @@ function sgUiGetV869(k,dflt){
   try{var v=sgPlan()[k];return (v==null||v==='')?(dflt||''):v;}catch(_e){return dflt||'';}
 }
 function sgUiSetV869(k,v){ SG_UI_LOCAL_V869[k]=v; try{sgPlan()[k]=v;}catch(_e){} }
+/* ══ v1002 · 선택만 바꿀 때는 저장·서버전송을 하지 않습니다 ══
+   ① 워터폴 제목이나 ② 추진현황 칩을 고르는 것은 «무엇을 볼지»일 뿐 자료가 바뀐 것이 아닌데,
+   예전에는 고를 때마다 saveSettings() → 서버 올리기가 일어나 상태바에
+   «설정·미수 동기화 · 서버로 보내는 중 …»이 끝없이 반복됐습니다.
+   이제 선택 상태는 이 화면 안에서만 기억합니다(계획 내용 변경은 종전대로 저장·전송). */
+function sgUiSetViewV1002(k,v){ try{ SG_UI_LOCAL_V869[k]=v; }catch(_e){} try{ sgPlan()[k]=v; }catch(_e2){} }
 /* 추진현황 줄에 매긴 번호를 고르는 선택칸 */
 function sgMxSelectV867(attrName,attrVal,cur){
   var cn=sgMxNoV867(cur),o='<option value="">-</option>',tips=[];
@@ -33238,18 +33252,18 @@ function sgBind(A){
   }); });
   $$('.strat-tab').forEach(function(b){ b.addEventListener('click',function(){ state.strategyTab=b.dataset.v; window.scrollTo(0,0); sgRender(); }); });
   $$('.sgStrategyTabCard').forEach(function(card){card.addEventListener('click',function(){
-    state.strategyTab=card.dataset.tab||'overview';window.scrollTo(0,0);sgSave();sgRe(true);
+    state.strategyTab=card.dataset.tab||'overview';window.scrollTo(0,0);sgRe(true);
   });});
   $$('.sgFilt').forEach(function(b){ b.addEventListener('click',function(){
     /* ══ v997 · 예전에는 ① 워터폴을 «옛 화면으로 되돌려 끼우는» 방식으로 깜빡임을 막았는데,
        그 때문에 ② 칩을 골라도 ① 제목이 선택되지 않았고 오히려 두 번 그려져 더 깜빡였습니다.
        이제는 되돌려 끼우지 않고 한 번만 그립니다. */
-    sgUiSetV869('filter',b.dataset.v);
+    sgUiSetViewV1002('filter',b.dataset.v);
     /* v995 : ② 칩을 고르면 ① 워터폴 그래프에서도 같은 항목이 선택되게 합니다. */
-    try{ sgUiSetV869('waterfallSelectedKey',b.dataset.v==='all'?'':b.dataset.v);
-         sgUiSetV869('matrixSelectedCell',''); }catch(_w995){}
+    try{ sgUiSetViewV1002('waterfallSelectedKey',b.dataset.v==='all'?'':b.dataset.v);
+         sgUiSetViewV1002('matrixSelectedCell',''); }catch(_w995){}
     if(b.dataset.v!=='all'&&SG_TMAP[b.dataset.v])pl.formTypeV854=b.dataset.v;
-    sgSave(); sgRe(true);
+    sgRe(true);
   }); });
 
   /* 한글 IME 조합이 끝난 뒤 검색을 반영해 자모 분리·입력 중 포커스 손실을 방지 */
@@ -33732,20 +33746,20 @@ function sgBind(A){
       var cell=el.dataset.matrixCell||'';
       var norm=function(v){return(v==='actual'||v==='keepCust')?'actualKeep':(v||'');};
       if(cell){
-        if(sgUiGetV869('matrixSelectedCell','')===cell){sgUiSetV869('matrixSelectedCell','');sgUiSetV869('waterfallSelectedKey','');}
-        else{sgUiSetV869('matrixSelectedCell',cell);sgUiSetV869('waterfallSelectedKey',k);}
-        sgSave();sgRe(sgUiGetV869('matrixSelectedCell','')?true:false);return;
+        if(sgUiGetV869('matrixSelectedCell','')===cell){sgUiSetViewV1002('matrixSelectedCell','');sgUiSetViewV1002('waterfallSelectedKey','');}
+        else{sgUiSetViewV1002('matrixSelectedCell',cell);sgUiSetViewV1002('waterfallSelectedKey',k);}
+        sgRe(sgUiGetV869('matrixSelectedCell','')?true:false);return;
       }
-      sgUiSetV869('matrixSelectedCell','');
+      sgUiSetViewV1002('matrixSelectedCell','');
       var cur=norm(sgUiGetV869('waterfallSelectedKey',''));
       var next=norm(k);
       var sel995=(cur&&cur===next)?'':k;
-      sgUiSetV869('waterfallSelectedKey',sel995);
+      sgUiSetViewV1002('waterfallSelectedKey',sel995);
       /* v995 : ① 워터폴에서 고른 항목을 ② 추진현황 칩에도 그대로 적용합니다. */
       try{ var f995=(sel995&&SG_TMAP[sel995])?sel995:'all';
-           sgUiSetV869('filter',f995);
+           sgUiSetViewV1002('filter',f995);
            if(f995!=='all')pl.formTypeV854=f995; }catch(_f995){}
-      sgSave();sgRe(sgUiGetV869('waterfallSelectedKey','')?true:false);
+      sgRe(sgUiGetV869('waterfallSelectedKey','')?true:false);
     };
     el.addEventListener('click',open);
     el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
@@ -33781,7 +33795,7 @@ function sgBind(A){
     },450);
   })();
   $$('.sgWfDetailCloseV858').forEach(function(b){b.addEventListener('click',function(e){
-    e.preventDefault();e.stopPropagation();sgUiSetV869('waterfallSelectedKey','');sgUiSetV869('matrixSelectedCell','');sgSave();sgRe(false);
+    e.preventDefault();e.stopPropagation();sgUiSetViewV1002('waterfallSelectedKey','');sgUiSetViewV1002('matrixSelectedCell','');sgRe(false);
   });});
 
   /* v825 : 3×3 매트릭스 셀별 기존데이터 연동·신규 목표 직접등록 */
