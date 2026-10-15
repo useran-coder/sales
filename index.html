@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v993</title>
-<script>window.APP_BUILD='v993';</script>
+<title>동방파스텍 매출 분석 도구 v994</title>
+<script>window.APP_BUILD='v994';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v993</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v994</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -43482,12 +43482,56 @@ function flush(now){
   if(now)run(); else saveT=setTimeout(run,700);
 }
 window.fcFlushMonthPctV992=function(){ flush(true); };
-/* ── 전체 재계산은 화면을 떠날 때만 ── */
-function settle(){
+/* ── 전체 재계산 : «화면이 움직이지 않게» 한 호출 안에서 끝냅니다 ──
+   v994 : 목표액 배지·그래프까지 함께 갱신되도록, 손을 멈추면 조용히 한 번 다시 계산합니다.
+   스크롤·표 가로위치·커서를 같은 작업 안에서 되돌리므로 중간 화면이 그려지지 않습니다. */
+var quietT=null;
+function quietFull(){
   if(!DIRTY)return; DIRTY=false;
-  try{ if(typeof state!=='undefined'&&state.act==='forecast'&&typeof forecast==='function')forecast(); }catch(e){}
+  try{
+    if(typeof state==='undefined'||state.act!=='forecast'||typeof forecast!=='function')return;
+    var sy=window.scrollY||document.documentElement.scrollTop||0, sx=window.scrollX||0;
+    var wraps=[].slice.call(document.querySelectorAll('#result .tablewrap')).map(function(w,i){return {k:w.id||('#'+i),t:w.scrollTop,l:w.scrollLeft};});
+    var a=document.activeElement, fk=null, sel=null;
+    try{ if(a&&a.matches&&a.matches(SEL)){ fk={c:a.dataset.c,m:a.dataset.m}; sel=[a.selectionStart,a.selectionEnd]; } }catch(e){}
+    var res=document.getElementById('result'), h=res?res.offsetHeight:0;
+    if(res&&h)res.style.minHeight=h+'px';
+    forecast();
+    /* 같은 작업 안에서 즉시 되돌립니다(그려지기 전이라 눈에 보이지 않습니다) */
+    try{ window.scrollTo(sx,sy); }catch(e){}
+    try{ [].slice.call(document.querySelectorAll('#result .tablewrap')).forEach(function(w,i){
+      var k=w.id||('#'+i), st=null; for(var j=0;j<wraps.length;j++)if(wraps[j].k===k){st=wraps[j];break;}
+      if(st){ w.scrollTop=st.t; w.scrollLeft=st.l; } }); }catch(e){}
+    if(fk){ try{
+      var n=[].slice.call(document.querySelectorAll(SEL)).filter(function(x){return x.dataset.c===fk.c&&x.dataset.m===fk.m;})[0];
+      if(n){ n.focus({preventScroll:true}); if(sel&&n.setSelectionRange)try{n.setSelectionRange(sel[0],sel[1]);}catch(e2){} }
+    }catch(e){} }
+    try{ window.scrollTo(sx,sy); }catch(e){}
+    if(res)setTimeout(function(){ try{ res.style.minHeight=''; }catch(e){} },300);
+  }catch(e){}
 }
+function scheduleQuiet(){ clearTimeout(quietT); quietT=setTimeout(quietFull,1100); }
+function settle(){ clearTimeout(quietT); quietFull(); }
 window.fcSettleMonthPctV992=settle;
+/* ── 목표액 배지·점검줄을 «바뀐 금액만큼» 즉시 고쳐 씁니다(그래프는 위 재계산에서 갱신) ── */
+function bumpTarget(delta){
+  if(!delta)return;
+  try{
+    var v=window.FC_ANNUAL_TARGET_V966;
+    if(v&&+v.value>0)v.value=Math.round(+v.value+delta);
+    var nv=v&&+v.value>0?+v.value:null;
+    var el=document.querySelector('.fc-legend-target');
+    if(el&&nv!=null){ el.textContent=el.textContent.replace(/[\d,]+원/,Math.round(nv).toLocaleString('en-US')+'원'); }
+    var sm=document.querySelector('#result summary');
+    if(sm&&/기준 대비 점검/.test(sm.textContent)){
+      var m=sm.textContent.match(/기준 합계 ([\d,]+)원/);
+      var base=m?+m[1].replace(/,/g,''):0;
+      if(base>0&&nv!=null){
+        sm.textContent='🔍 기준 대비 점검 — 기준 합계 '+base.toLocaleString('en-US')+'원 · 목표 합계 '+Math.round(nv).toLocaleString('en-US')+'원 · 차이 '+((nv-base>=0?'+':'')+Math.round(nv-base).toLocaleString('en-US'))+'원';
+      }
+    }
+  }catch(e){}
+}
 /* ── 고친 칸만 그 자리에서 ── */
 function patch(inp){
   try{
@@ -43499,7 +43543,8 @@ function patch(inp){
     if(pv!==''&&!isFinite(parseFloat(pv)))return false;
     var pct=(pv==='')?0:num(pv);
     var nv=Math.max(0,1+pct/100)*base;
-    try{ var F=state._fc||{}; if(F.fcCustMon&&F.fcCustMon[m])F.fcCustMon[m].set(c,nv); }catch(e){}
+    var _old=0;
+    try{ var F=state._fc||{}; if(F.fcCustMon&&F.fcCustMon[m]){ _old=+(F.fcCustMon[m].get(c)||0); F.fcCustMon[m].set(c,nv); } }catch(e){}
     var tr=inp.closest('tr'), td=inp.closest('td');
     if(!tr||!td)return false;
     var bEl=td.querySelector('b'); if(bEl)bEl.textContent=(nv>0?W(nv):'-');
@@ -43524,6 +43569,8 @@ function patch(inp){
       }
     }catch(e){}
     DIRTY=true;
+    bumpTarget(Math.round(nv)-Math.round(_old));
+    scheduleQuiet();
     return true;
   }catch(e){ return false; }
 }
