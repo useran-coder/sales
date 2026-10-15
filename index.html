@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1006</title>
-<script>window.APP_BUILD='v1006';</script>
+<title>동방파스텍 매출 분석 도구 v1007</title>
+<script>window.APP_BUILD='v1007';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1006</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1007</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -42851,39 +42851,77 @@ document.addEventListener('click',function(e){
   e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
   if(MENU)close(); else open(b);
 },true);
-/* ══ v1005 · 이미 박혀 버린 -100%를 한 번만 되돌립니다 ══
-   신규목표 업체인데 1~12월 월 조정%가 모두 -100%이면, 엑셀 불러오기 역산이
-   잘못 적어 넣은 값입니다(목표를 깎을 금액이 아예 없는 업체). 그 값만 지웁니다. */
+/* ══ v1007 · 엑셀 불러오기가 잘못 넣은 월 조정% -100%를 «뿌리까지» 지웁니다 ══
+   v1005에서는 화면용 값(state.fc.custMonthPct)만 지워, 연도 보관함·다른 목표안에 남은
+   -100%가 다시 올라오면서 안내창이 매번 뜨고 (주)광스틸도 그대로 0원이었습니다.
+   이제 ① 화면값 ② 목표안 1·2안 ③ 연도 보관함 전부에서 지우고, 안내는 한 번만 띄웁니다. */
 (function(){
-  var done=false,tries=0;
-  function repair(){
-    try{
-      if(done)return; if(typeof state==='undefined'||!state.fc)return;
-      tries++;
-      if(typeof fcNewTargetAmount!=='function')return;
-      var mp=state.fc.custMonthPct; if(!mp||typeof mp!=='object')return;
-      var fixed=[];
-      Object.keys(mp).forEach(function(c){
-        var o=mp[c]; if(!o||typeof o!=='object')return;
-        var all=true,n=0;
-        for(var m=1;m<=12;m++){ var v=o[m]; if(v==null||v===''){all=false;break;} if(+v!==-100){all=false;break;} n++; }
-        if(!all||n!==12)return;
-        var amt=0; try{ amt=+fcNewTargetAmount(c)||0; }catch(_e){}
-        if(!(amt>0))return;
-        delete mp[c]; fixed.push(c);
-      });
-      if(tries>=20)done=true;
-      if(fixed.length){
-        done=true;
-        try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_s){}
-        try{ if(typeof saveSettings==='function')saveSettings(); }catch(_s2){}
-        try{ if(typeof logEdit==='function')logEdit('매출 목표','월 조정% -100% 자동 복구 · '+fixed.join(', ')); }catch(_l){}
-        try{ if(typeof forecast==='function'&&state.act==='forecast')forecast(); }catch(_f){}
-        try{ if(typeof uiConfirm==='function')uiConfirm('엑셀 불러오기 때 잘못 들어간 월 조정% -100%를 지웠습니다 ('+fixed.length+'개사: '+fixed.join(', ')+'). 신규목표 금액이 다시 1~12월에 반영됩니다.'); }catch(_u){}
-      }
-    }catch(e){}
-  }
-  var iv=setInterval(function(){ repair(); if(done)clearInterval(iv); },3000);
+'use strict';
+var FLAG='v1007_m100_fix_done';
+var done=false,tries=0;
+function allMinus100(o){
+  if(!o||typeof o!=='object')return false;
+  for(var m=1;m<=12;m++){ var v=o[m]; if(v==null||v==='')return false; if(+v!==-100)return false; }
+  return true;
+}
+function scrub(map,targets){
+  var hit=0;
+  if(!map||typeof map!=='object')return 0;
+  targets.forEach(function(c){ if(map[c]&&allMinus100(map[c])){ delete map[c]; hit++; } });
+  return hit;
+}
+function eachPlan(fn){
+  try{
+    var f=state.fc||{};
+    ['1','2'].forEach(function(k){ var p=(f.targetPlans||{})[k]; if(p)fn(p); });
+    var ys=f.yearPlans||{};
+    Object.keys(ys).forEach(function(y){
+      var st=ys[y]||{}, tp=st.targetPlans||{};
+      Object.keys(tp).forEach(function(k){ if(tp[k])fn(tp[k]); });
+    });
+  }catch(_e){}
+}
+function repair(){
+  try{
+    if(done)return;
+    if(typeof state==='undefined'||!state.fc)return;
+    if(typeof fcNewTargetAmount!=='function')return;
+    tries++;
+    /* 대상 찾기 : 어디에든 «1~12월 전부 -100%»로 들어 있는 신규목표 업체 */
+    var cand={};
+    var add=function(map){ if(!map||typeof map!=='object')return;
+      Object.keys(map).forEach(function(c){ if(allMinus100(map[c]))cand[c]=1; }); };
+    add(state.fc.custMonthPct);
+    eachPlan(function(pl){ add(pl.custMonthPct); });
+    var targets=Object.keys(cand).filter(function(c){
+      var amt=0; try{ amt=+fcNewTargetAmount(c)||0; }catch(_e){}
+      return amt>0;
+    });
+    if(!targets.length){ if(tries>=25)done=true; return; }
+    var n=scrub(state.fc.custMonthPct,targets);
+    eachPlan(function(pl){ n+=scrub(pl.custMonthPct,targets); });
+    if(!n){ if(tries>=25)done=true; return; }
+    done=true;
+    /* 지운 결과를 목표안·연도 보관함·저장소에 모두 밀어 넣습니다 */
+    try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_a){}
+    eachPlan(function(pl){ scrub(pl.custMonthPct,targets); });
+    try{ if(typeof fcSaveYearPlan==='function')fcSaveYearPlan((typeof fcTargetYear==='function')?fcTargetYear():''); }catch(_b){}
+    eachPlan(function(pl){ scrub(pl.custMonthPct,targets); });
+    try{ if(typeof window.fcSyncYearStoresV718==='function')window.fcSyncYearStoresV718(); }catch(_c){}
+    try{ if(typeof window.fcManualCommitV881==='function')window.fcManualCommitV881();
+         else if(typeof saveSettings==='function')saveSettings(); }catch(_d){ try{saveSettings();}catch(_d2){} }
+    try{ if(typeof logEdit==='function')logEdit('매출 목표','월 조정% -100% 자동 복구 · '+targets.join(', ')); }catch(_e2){}
+    try{ if(typeof forecast==='function'&&state.act==='forecast')forecast(); }catch(_f){}
+    /* 안내는 이 컴퓨터에서 한 번만 */
+    var shown=false;
+    try{ shown=localStorage.getItem(FLAG)==='1'; }catch(_g){}
+    if(!shown){
+      try{ localStorage.setItem(FLAG,'1'); }catch(_h){}
+      try{ if(typeof uiConfirm==='function')uiConfirm('엑셀 불러오기 때 잘못 들어간 월 조정% -100%를 지웠습니다 ('+targets.length+'개사: '+targets.join(', ')+'). 신규목표 금액이 다시 1~12월에 반영됩니다. 이 안내는 다시 뜨지 않습니다.'); }catch(_i){}
+    }
+  }catch(e){}
+}
+var iv=setInterval(function(){ repair(); if(done)clearInterval(iv); },2500);
 })();
 window.addEventListener('scroll',close,true);
 window.addEventListener('resize',close);
