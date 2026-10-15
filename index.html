@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v998</title>
-<script>window.APP_BUILD='v998';</script>
+<title>동방파스텍 매출 분석 도구 v1000</title>
+<script>window.APP_BUILD='v1000';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v998</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1000</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -8642,7 +8642,13 @@ function homeDashboard(){
     if(_v976&&+_v976.year===+_CY&&+_v976.value>0)_annT=+_v976.value; }catch(e){}
   if(!(_annT>0)){ try{ const _m976=(state.fcYearMisc||{})[String(_CY)];
     if(_m976&&_m976.atChk974&&+_m976.atChk974.v>0)_annT=+_m976.atChk974.v; }catch(e){} }
-  if(!(_annT>0)){ try{_annT=fcAnnualTargetSummary().annualTarget||0;}catch(e){_annT=0;} }
+  /* v1000 : 매출 목표 화면이 «다음 연도(2027)» 모드일 때 그 화면이 계산한 기준연도(2026) 목표액 */
+  if(!(_annT>0)){ try{ const _b1000=window.FC_PY_ANNUAL_V1000;
+    if(_b1000&&+_b1000.year===+_CY&&+_b1000.value>0)_annT=+_b1000.value; }catch(e){} }
+  /* v1000 : 다음 연도 모드에서는 fcAnnualTargetSummary() 가 «2027년» 값을 주므로 쓰지 않습니다.
+     (이것이 메인에 2027 목표액 105억이 「2026년 목표1안」으로 찍히던 원인입니다) */
+  if(!(_annT>0)){ try{ const _nx1000=(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode());
+    if(!_nx1000)_annT=fcAnnualTargetSummary().annualTarget||0; }catch(e){_annT=0;} }
   _annT=Math.round(_annT);
   const _annPct=_annT>0?_annA/_annT*100:0;
   const dn=donutSVG(mqAmt,null,true,_annPct);
@@ -12741,7 +12747,10 @@ function fcFastForecast(){
   const wraps=[...document.querySelectorAll('#result .tablewrap')].map((w,i)=>({k:w.id||('#'+i),t:w.scrollTop,l:w.scrollLeft}));
   if(lockH)lock.style.minHeight=lockH+'px';
   const restore=()=>{try{window.scrollTo(0,sy);document.querySelectorAll('#result .tablewrap').forEach((w,i)=>{const k=w.id||('#'+i),s=wraps.find(x=>x.k===k);if(s){w.scrollTop=s.t;w.scrollLeft=s.l;}});const a=document.getElementById('fcMgrFilterBar');if(a&&anchorTop!=null){const d=a.getBoundingClientRect().top-anchorTop;if(Math.abs(d)>1)window.scrollBy(0,d);}}catch(_e){}};
-  const run=()=>{if(seq!==_fcFastRenderSeq)return;forecast();restore();requestAnimationFrame(()=>requestAnimationFrame(restore));[80,220,500].forEach(ms=>setTimeout(restore,ms));setTimeout(()=>{try{if(lock)lock.style.minHeight='';}catch(_e){}},650);};
+  const run=()=>{if(seq!==_fcFastRenderSeq)return;
+    /* ══ v999 · 홈 등 다른 화면으로 옮긴 뒤 늦게 실행돼 «매출 목표 화면»을 덮어쓰던 문제 ══ */
+    try{ if(typeof state!=='undefined'&&state.act!=='forecast')return; }catch(_e999){}
+    forecast();restore();requestAnimationFrame(()=>requestAnimationFrame(restore));[80,220,500].forEach(ms=>setTimeout(restore,ms));setTimeout(()=>{try{if(lock)lock.style.minHeight='';}catch(_e){}},650);};
   if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>requestAnimationFrame(run));
   else setTimeout(run,0);
 }
@@ -13484,6 +13493,9 @@ function forecast(){
     window.FC_ANNUAL_TARGET_V966={year:+CY,plan:String((state.fc&&state.fc.activePlan)||'1'),
       value:Math.round(+olhaeTarget||0),actual:Math.round(_actV972),cut:_cutV972,at:Date.now()};
   }catch(_v966){}
+  /* ══ v1000 · 메인 「연매출 대비 실적」이 엉뚱한 해의 목표액을 쓰던 문제 ══
+     2027년 목표 화면에서 계산한 «기준연도(2026) 연간 목표액»을 함께 내보냅니다. */
+  try{ window.FC_PY_ANNUAL_V1000={year:+PY,value:Math.round(+pyAnnual||0),at:Date.now()}; }catch(_e1000){}
   const projPct=pyAnnual?(olhaeTarget-pyAnnual)/pyAnnual*100:0;
   // 고철업체 중 '제외'되지 않은 업체의 당해연도 매출은 거래처외 매출포함항목 합계에 포함
   /* v768 : 다음 연도(2027) 목표를 세울 때 «기준연도(2026) 화면»을 숨긴 채 한 번 더 계산하는데,
@@ -43395,6 +43407,13 @@ function stamp(){
     var v=window.FC_ANNUAL_TARGET_V966; if(!v||!v.year||!(+v.value>0))return;
     var y=String(+v.year), val=Math.round(+v.value||0);
     state.fcYearMisc=state.fcYearMisc||{};
+    /* v1000 : 기준연도(전년) 목표액도 함께 기록해 다른 컴퓨터와 같은 값을 쓰게 합니다. */
+    try{ var b1000=window.FC_PY_ANNUAL_V1000;
+      if(b1000&&+b1000.year>0&&+b1000.value>0){
+        var by=String(+b1000.year), bm=state.fcYearMisc[by]=state.fcYearMisc[by]||{};
+        if(!bm.atChk974||bm.atChk974.v!==Math.round(+b1000.value))
+          bm.atChk974={v:Math.round(+b1000.value),at:Date.now(),dev:dev()};
+      } }catch(_b1000){}
     var m=state.fcYearMisc[y]=state.fcYearMisc[y]||{};
     var o=m.atChk974;
     if(o&&o.dev===dev()&&o.v===val)return;
@@ -43737,6 +43756,26 @@ function bind(){
 setInterval(bind,900);
 if(document.readyState==='complete')setTimeout(bind,900);
 else window.addEventListener('load',function(){setTimeout(bind,900);},{once:true});
+})();
+</script>
+<script id="v999-forecast-act-guard">
+/* ═════ v999 · 「홈을 눌렀는데 매출 목표 화면이 나오는」 문제 차단 ═════
+   매출 목표 화면에서 값을 고치면 잠시 뒤 다시 계산하는 처리가 여러 군데 걸려 있습니다.
+   그 사이에 홈·다른 메뉴로 옮기면, 늦게 도착한 재계산이 그 화면 자리에
+   매출 목표 화면을 그려 버려 두 화면이 섞여 보였습니다.
+   이제 «매출 목표 화면이 아닐 때»는 그리지 않고 조용히 넘어갑니다. */
+(function(){
+'use strict';
+try{
+  var o=window.forecast;
+  if(typeof o!=='function'||o.__v999)return;
+  var w=function(){
+    try{ if(typeof state!=='undefined'&&state.act&&state.act!=='forecast')return; }catch(e){}
+    return o.apply(this,arguments);
+  };
+  w.__v999=true;
+  window.forecast=w; try{ forecast=w; }catch(e){}
+}catch(e){}
 })();
 </script>
 </html>
