@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v986</title>
-<script>window.APP_BUILD='v986';</script>
+<title>동방파스텍 매출 분석 도구 v987</title>
+<script>window.APP_BUILD='v987';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v986</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v987</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -29556,6 +29556,20 @@ function sgRiskExclusions(){
   if(!p.riskExclusions||typeof p.riskExclusions!=='object')p.riskExclusions={};
   return p.riskExclusions;
 }
+/* v987 : 위험·관찰·양호를 사람이 직접 지정한 값입니다(자동 판정보다 우선). */
+function sgRiskManualV987(){
+  var p=sgPlan();
+  if(!p.riskManual||typeof p.riskManual!=='object')p.riskManual={};
+  return p.riskManual;
+}
+/* v987 : 「📋 업체별 매출 목표」에서 «거래처 제외»한 업체는 위험판정에서도 제외합니다. */
+function sgTargetExcludedV987(name){
+  try{
+    var n=String(name||'').trim(); if(!n)return false;
+    if(typeof fcIsExcludedCust==='function')return !!fcIsExcludedCust(n);
+    return !!((state.fc&&state.fc.exclCust)||{})[n];
+  }catch(_e){ return false; }
+}
 function sgQuickType(kind){return {newCust:'newCust',growthCust:'growthCust',keepCust:'keepCust',newProd:'newProd',risk:'risk',riskAll:'risk',riskWatch:'risk',marketDefend:'keepCust',growth:'growthProd',keepProd:'keepProd',creditCut:'creditCut'}[kind]||'growthCust';}
 function sgProbabilityKind(kind){return ['newCust','growthCust','keepCust','newProd','growth','keepProd','risk','riskAll','riskWatch'].indexOf(kind)>=0;}
 function sgFindQuickItem(kind,title){var type=sgQuickType(kind);return sgPlanItems().find(function(it){return it.type===type&&String(it.title||'')===String(title||'');})||null;}
@@ -30097,14 +30111,38 @@ function sgAnalyze(){
     if(/\(폐업\)\s*$/.test(String(o&&o.name||'')))return true;
     try{return typeof catOf==='function'&&String(catOf(o.name)||'')==='거래중지';}catch(_e){return false;}
   };
-  var isMarketExcluded=function(o){return isAutoMarketExcluded(o)||!!riskExclusions[sgCreditKey(o&&o.name)];};
+  /* v987 : 목표표에서 «거래처 제외»한 업체도 자동 제외로 봅니다. */
+  var isTargetExcludedV987=function(o){return sgTargetExcludedV987(o&&o.name);};
+  var isMarketExcluded=function(o){return isAutoMarketExcluded(o)||isTargetExcludedV987(o)||!!riskExclusions[sgCreditKey(o&&o.name)];};
   var marketExcludedCust=custs.filter(isMarketExcluded).sort(function(a,b){return (b.py+b.cy)-(a.py+a.cy);});
-  marketExcludedCust.forEach(function(o){o.marketExcludeAuto=isAutoMarketExcluded(o);o.marketStatus=o.marketExcludeAuto?'자동제외':'사용자제외';});
-  var riskCust=custs.filter(function(o){return o.py>0&&!isMarketExcluded(o)&&(o.cy<=0||o.marketGapPp<=-20);})
-    .sort(function(a,b){return (a.cy<=0?-1:0)-(b.cy<=0?-1:0)||a.marketGapPp-b.marketGapPp||b.marketGapAmt-a.marketGapAmt;});
-  var watchCust=custs.filter(function(o){return o.py>0&&!isMarketExcluded(o)&&o.cy>0&&o.marketGapPp>-20&&o.marketGapPp<=-10;})
-    .sort(function(a,b){return a.marketGapPp-b.marketGapPp||b.marketGapAmt-a.marketGapAmt;});
-  var defendCust=custs.filter(function(o){return o.py>0&&!isMarketExcluded(o)&&o.cy>0&&o.marketGapPp>-10;}).sort(byCy);
+  marketExcludedCust.forEach(function(o){
+    o.marketExcludeTarget=isTargetExcludedV987(o);
+    o.marketExcludeAuto=isAutoMarketExcluded(o)||o.marketExcludeTarget;
+    o.marketStatus=o.marketExcludeTarget?'목표표 제외':(isAutoMarketExcluded(o)?'자동제외':'사용자제외');
+  });
+  /* v987 : 사람이 직접 고른 «위험·관찰·양호»가 자동 판정보다 앞섭니다. */
+  var riskManualMap=sgRiskManualV987();
+  var riskManOf=function(o){
+    var v=String(riskManualMap[sgCreditKey(o&&o.name)]||'');
+    return (v==='risk'||v==='watch'||v==='defend')?v:'';
+  };
+  var riskClsOf=function(o){
+    if(isMarketExcluded(o))return '';
+    var m=riskManOf(o); if(m)return m;
+    if(!(o.py>0))return '';
+    if(o.cy<=0||o.marketGapPp<=-20)return 'risk';
+    if(o.marketGapPp<=-10)return 'watch';
+    return 'defend';
+  };
+  custs.forEach(function(o){
+    o.riskManualV987=riskManOf(o);
+    if(o.riskManualV987)o.marketStatus=(o.riskManualV987==='risk'?'고위험':o.riskManualV987==='watch'?'관찰':'시장방어·양호')+' (지정)';
+  });
+  var riskCust=custs.filter(function(o){return riskClsOf(o)==='risk';})
+    .sort(function(a,b){return (a.cy<=0?-1:0)-(b.cy<=0?-1:0)||((a.marketGapPp==null?0:a.marketGapPp)-(b.marketGapPp==null?0:b.marketGapPp))||b.marketGapAmt-a.marketGapAmt;});
+  var watchCust=custs.filter(function(o){return riskClsOf(o)==='watch';})
+    .sort(function(a,b){return ((a.marketGapPp==null?0:a.marketGapPp)-(b.marketGapPp==null?0:b.marketGapPp))||b.marketGapAmt-a.marketGapAmt;});
+  var defendCust=custs.filter(function(o){return riskClsOf(o)==='defend';}).sort(byCy);
 
   /*
    * 거래축소 대상은 '매출 감소·이탈'과 분리합니다.
@@ -32576,7 +32614,7 @@ function sgTable(list,kind,A){
   if(!list.length)return toolbar+'<div class="sub2" style="padding:14px">'+(only?'등록된 분석 대상이 없습니다.':'표시할 분석 대상이 없습니다.')+'</div>';
   var h='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:'+(showMarket?'980':'760')+'px">'
     +'<thead><tr style="background:#f1f5f9;color:#334155">'
-    +(riskManage?'<th style="padding:7px;text-align:center;width:54px" title="현재 표에서 거래처위험 제외·복원">제외</th>':'')
+    +(riskManage?'<th style="padding:7px;text-align:center;width:54px" title="현재 표에서 거래처위험 제외·복원">제외</th><th style="padding:7px;text-align:center;width:92px" title="자동 판정 대신 위험·관찰·양호를 직접 지정합니다">판정 지정</th>':'')
     +(showRank?'<th style="padding:7px;text-align:center;width:52px">순위</th>':'')
     +(isProd?'<th class="sg-table-sort" data-kind="'+kind+'" data-sk="name" style="padding:7px;text-align:left!important">제품'+sgListArrow(kind,'name')+'</th><th class="sg-table-sort" data-kind="'+kind+'" data-sk="spec" style="padding:7px;text-align:left!important">규격'+sgListArrow(kind,'spec')+'</th>':'<th class="sg-table-sort" data-kind="'+kind+'" data-sk="name" style="padding:7px;text-align:left!important">거래처'+sgListArrow(kind,'name')+'</th>')
       +'<th class="sg-table-sort" data-kind="'+kind+'" data-sk="py" style="padding:7px;text-align:right">'+A.PY+'년'+sgListArrow(kind,'py')+'</th><th class="sg-table-sort" data-kind="'+kind+'" data-sk="cy" style="padding:7px;text-align:right">'+A.CY+'년'+sgListArrow(kind,'cy')+'</th>'
@@ -32592,6 +32630,16 @@ function sgTable(list,kind,A){
   list.forEach(function(o,i){
     var quickTitle=String(o.label||o.name||''),addKey=isProd?String(o.key||''):String(o.name||o.label||''),regItem=sgFindQuickItem(kind,quickTitle);
     var riskName=String(o.name||o.label||''),riskManual=riskManage&&!!riskEx[sgCreditKey(riskName)],riskAuto=riskManage&&!!o.marketExcludeAuto;
+    /* v987 : 판정 지정 칸 */
+    var _mcls=String(o.riskManualV987||'');
+    var _clsCell=riskManage?('<td style="padding:4px 5px;text-align:center"><select class="sgRiskClsV987" data-n="'+sgEsc(riskName)+'" '
+      +(o.marketExcludeTarget?'disabled title="목표표에서 제외한 업체입니다"':'')
+      +' style="width:84px;height:25px;padding:0 4px;border:1px solid '+(_mcls?'#7c3aed':'#cbd5e1')+';border-radius:6px;font-size:11px;font-family:inherit;background:'+(_mcls?'#faf5ff':'#fff')+'">'
+      +['','risk','watch','defend'].map(function(v){
+          var lab={'':'자동','risk':'🚨 위험','watch':'⚠️ 관찰','defend':'✅ 양호'}[v];
+          return '<option value="'+v+'"'+(_mcls===v?' selected':'')+'>'+lab+'</option>';
+        }).join('')
+      +'</select></td>'):'';
     var addMap=isProd?(state.fc.prodAddPct||(state.fc.prodAddPct={})):(state.fc.addPct||(state.fc.addPct={})),annualRaw=annualLinked?addMap[addKey]:'';
     var hasAnnual=annualLinked&&annualRaw!=null&&annualRaw!==''&&isFinite(+annualRaw)&&+annualRaw!==0;
     var addRaw=linkedAdd?(regItem?Math.max(0,Math.min(100,regItem.prob==null?(SG_SMAP[regItem.stage]||{p:20}).p:+regItem.prob||0)):(hasAnnual?annualRaw:'')):'',registered=!!regItem||hasAnnual;
@@ -32599,6 +32647,7 @@ function sgTable(list,kind,A){
     var gc=o.py<=0?'#1d4ed8':(o.gRaw>=0?'#16a34a':'#dc2626');
     h+='<tr style="border-bottom:1px solid #eef2f7">'
       +(riskManage?'<td style="padding:6px;text-align:center"><input type="checkbox" class="sgRiskExclude" data-n="'+sgEsc(riskName)+'" '+(riskManual||riskAuto?'checked':'')+' '+(riskAuto?'disabled title="폐업·거래중지 자동 제외는 해제할 수 없습니다"':'title="현재 위험판정에서 제외·복원"')+'></td>':'')
+      +_clsCell
       +(showRank?'<td style="padding:6px 7px;text-align:center;color:#64748b;font-weight:800">'+(i+1)+'</td>':'')
       +(isProd
         ?'<td style="padding:6px 7px;font-weight:700;color:#1e3a5f;text-align:left!important">'+sgEsc(o.name||o.label||'(미상)')+'</td><td style="padding:6px 7px;color:#475569;text-align:left!important">'+sgEsc(o.spec||'(규격없음)')+'</td>'
@@ -32664,7 +32713,7 @@ function sgRiskTab(A){
     risk:{ic:'🚨',t:'시장보정 거래처 위험 목록',c:'#dc2626',l:high,kind:'risk',d:'거래중단 또는 건설경기 기준보다 20%p 이상 추가 감소한 업체입니다.'},
     watch:{ic:'⚠️',t:'시장보정 관찰업체 목록',c:'#d97706',l:watch,kind:'riskWatch',d:'건설경기 기준보다 10~20%p 추가 감소해 추세 확인이 필요한 업체입니다.'},
     defend:{ic:'✅',t:'시장방어·양호 업체 목록',c:'#16a34a',l:ok,kind:'marketDefend',d:'매출이 감소했더라도 건설경기 기준보다 선방하거나 추가 하락이 10%p 미만인 업체입니다.'},
-    excluded:{ic:'🚫',t:'거래처위험 제외업체',c:'#64748b',l:excluded,kind:'riskExcluded',d:'폐업·거래중지 자동 제외와 사용자가 거래처위험 제외로 지정한 업체입니다. 위험·관찰·시장방어 집계에서 제외합니다.'}
+    excluded:{ic:'🚫',t:'거래처위험 제외업체',c:'#64748b',l:excluded,kind:'riskExcluded',d:'폐업·거래중지 자동 제외, <b>「📋 업체별 매출 목표」에서 거래처 제외한 업체</b>, 그리고 사용자가 직접 제외한 업체입니다. 위험·관찰·시장방어 집계에서 모두 빠집니다.'}
   };
   var filter=defs[pl.riskListFilter]?pl.riskListFilter:'risk',sel=defs[filter],searchKey='riskList_'+filter;
   var view=sgStrategyFilter(sel.l,searchKey);
@@ -32673,7 +32722,7 @@ function sgRiskTab(A){
     +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-size:14px;color:#1e3a5f">🏗️ 건설경기 보정 위험판정</b>'
     +'<label style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:#475569">건설경기 기준 감소율 <input id="sgMarketDecline" type="number" min="0" max="90" step="1" value="'+decline+'" style="width:62px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;text-align:right;font-family:inherit;font-size:12px;font-weight:800">%</label>'
     +'<span class="sub2">입력값은 저장되며 위험·관찰·회복목표에 즉시 반영됩니다.</span><span style="flex:1"></span>'
-    +'<button type="button" class="btn ghost" id="sgRiskExcludeToggle" style="font-size:11.5px;padding:5px 10px;white-space:nowrap;'+(manage?'background:#7c3aed;color:#fff;border-color:#7c3aed':'border-color:#a78bfa;color:#7c3aed')+'">🚫 거래처위험 제외 ('+manualExcluded+')</button></div>'
+    +'<button type="button" class="btn ghost" id="sgRiskExcludeToggle" style="font-size:11.5px;padding:5px 10px;white-space:nowrap;'+(manage?'background:#7c3aed;color:#fff;border-color:#7c3aed':'border-color:#a78bfa;color:#7c3aed')+'">🚫 제외·판정 직접 지정 ('+manualExcluded+')</button></div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:9px">'
     +card('all2026','📊',A.CY+' 매출 전체',all2026.length,'#1e3a5f','올해 매출이 발생한 전체 업체')
     +card('declineAll','📉','전체 감소·이탈',(defs.declineAll.l||[]).length,'#be123c','전년 대비 감소 또는 거래중단 전체')
@@ -32681,12 +32730,12 @@ function sgRiskTab(A){
     +card('watch','⚠️','관찰',watch.length,'#d97706','시장보다 10~20%p 추가 감소 · 현재 약 '+riskCut+'% ~ '+watchCut+'%')
     +card('defend','✅','시장방어·양호',ok.length,'#16a34a','시장 대비 추가 하락 10%p 미만 · 감소해도 시장보다 선방한 업체')
     +card('newCust','🏢','신규·경쟁사업체',newCustPlanV959.length,'#1d4ed8','② 추진현황 등록 기준 · 시장비교 판정 제외')
-    +card('excluded','🚫','제외업체',excluded.length,'#64748b','폐업·거래중지 자동 제외 + 사용자 지정 제외')
+    +card('excluded','🚫','제외업체',excluded.length,'#64748b','폐업·거래중지 · 목표표 거래처 제외 · 사용자 지정')
     +'</div><div class="note" style="margin-top:9px"><b>판단 예시:</b> 시장 -'+decline+'%일 때 업체 -'+goodDecline+'%는 시장 대비 <b style="color:#15803d">+'+goodGap.toFixed(0)+'%p 선방</b>, 업체 -'+(decline+15)+'%는 <b style="color:#b45309">관찰</b>, 업체 -'+(decline+25)+'%는 <b style="color:#dc2626">위험</b>입니다. 거래중단은 감소율과 관계없이 위험으로 분류합니다.</div></div>';
   var listPanel='<div id="sgRiskListPanel" class="panel" style="padding:0;overflow:hidden;margin-bottom:11px">'
     +'<div style="padding:10px 12px;background:'+sel.c+'0d;color:'+sel.c+';font-size:13px;font-weight:900">'+sel.ic+' '+sel.t+' · '+sel.l.length+'개사</div>'
     +'<div style="padding:11px 12px"><div class="sub2" style="margin-bottom:7px">'+sel.d+(filter==='risk'?' 회복 목표는 전년 매출 전액이 아니라 <b>시장 수준 매출(전년 × '+(100-decline)+'%)</b>까지의 부족액만 계산합니다.':'')+'</div>'
-    +(manage?'<div style="margin:0 0 8px;padding:7px 9px;border:1px solid #ddd6fe;border-radius:7px;background:#faf5ff;color:#6d28d9;font-size:11px"><b>제외 선택 중:</b> 현재 표시된 업체 행의 체크박스로 바로 제외하거나 복원할 수 있습니다.</div>':'')
+    +(manage?'<div style="margin:0 0 8px;padding:7px 9px;border:1px solid #ddd6fe;border-radius:7px;background:#faf5ff;color:#6d28d9;font-size:11px"><b>직접 지정 중:</b> 업체 행의 <b>제외</b> 체크로 위험판정에서 빼거나 되돌리고, <b>판정 지정</b>에서 위험·관찰·양호를 직접 고를 수 있습니다(자동 판정보다 우선). 「📋 업체별 매출 목표」에서 <b>거래처 제외</b>한 업체는 자동으로 제외되며 여기서는 바꿀 수 없습니다.</div>':'')
     +sgStrategySearchBar(searchKey,sel.l,sel.kind)+sgTable(view,sel.kind,A)+'</div></div>';
   return guide+listPanel;
 }
@@ -33152,6 +33201,12 @@ function sgBind(A){
     if(ch.checked)ex[k]=true;else delete ex[k];
     sgLastAnalysis=null;sgLastAnalysisRows=null;sgSave();sgRe();
   });});
+  /* v987 : 위험·관찰·양호 직접 지정 */
+  $$('.sgRiskClsV987').forEach(function(se){ se.addEventListener('change',function(){
+    var m=sgRiskManualV987(),k=sgCreditKey(se.dataset.n),v=String(se.value||'');
+    if(v==='risk'||v==='watch'||v==='defend')m[k]=v; else delete m[k];
+    sgLastAnalysis=null;sgLastAnalysisRows=null;sgSave();sgRe();
+  }); });
 
   /* 거래축소 제외 관리: 관리모드에서 전체 후보를 보여주고 체크로 제외·복원 */
   var cutToggle=document.getElementById('sgCreditExcludeToggle');
