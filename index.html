@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v987</title>
-<script>window.APP_BUILD='v987';</script>
+<title>동방파스텍 매출 분석 도구 v988</title>
+<script>window.APP_BUILD='v988';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v987</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v988</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -13915,16 +13915,17 @@ function forecast(){
           const st=fcNewStartMonV867(c),n=12-st+1; if(n<=0)return null;
           const mp=((state.fc.custMonthPct||{})[c])||{};
           const per=tot/n,arr=new Array(13).fill(0);
-          let used=0,last=0;
+          let used=0,last=0,exact=0;
           for(let m=st;m<=12;m++){
             const raw=mp[m];
             const pv=(raw===''||raw==null)?0:(parseFloat(raw)||0);
-            const v=Math.round(per*(1+pv/100));
-            arr[m]=v; used+=v; last=m;
+            const e=per*(1+pv/100), v=Math.round(e);
+            arr[m]=v; used+=v; exact+=e; last=m;
           }
-          /* %를 아무 데도 넣지 않았으면 합계를 올해목표와 정확히 맞춥니다. */
-          const touched=Object.keys(mp).some(k=>{const v=mp[k];return v!==''&&v!=null&&parseFloat(v)!==0;});
-          if(!touched&&last)arr[last]+=tot-used;
+          /* v988 : 반올림 잔돈은 «조정%를 넣었는지»와 상관없이 늘 마지막 달에서 맞춥니다.
+             예전에는 어느 한 달에 %를 넣는 순간 이 보정이 사라져, 손대지 않은 마지막 달 금액이
+             잔돈만큼 저절로 달라졌습니다. */
+          if(last)arr[last]+=Math.round(exact)-used;
           return arr;
         };
         const _newMonMemoV867={};
@@ -13938,14 +13939,16 @@ function forecast(){
         /* v804 : 0 은 «조정 없음»이므로 칸을 비워 회색 자동값만 보이게 합니다. */
         const pct=(c,m)=>{ const v=monthPct[c]&&monthPct[c][m]!=null?monthPct[c][m]:''; return (v===''||+v===0)?'':v; };
         const autoMonthPct=(c,m)=>{ const prev=pyMonCust[m].get(c)||0, target=amt(c,m); return prev>0?(target/prev-1)*100:0; };
-        const autoMonthPctText=(c,m)=>{ const v=autoMonthPct(c,m); return (v>=0?'+':'')+v.toFixed(1); };
+        /* v988 : 빈 칸에 비치는 회색 숫자는 «내가 넣은 조정%»가 아니라 «전년 같은 달 대비 증감률»입니다.
+           숫자 모양이 똑같아 조정%가 저절로 들어간 것처럼 보였기에 괄호로 감싸 구분합니다. */
+        const autoMonthPctText=(c,m)=>{ const v=autoMonthPct(c,m); return '('+((v>=0?'+':'')+v.toFixed(1))+')'; };
         const avgPct=(c)=>{ const vals=fcMonths.map(m=>{const v=pct(c,m);return v===''?0:(+v||0);}); return vals.length?vals.reduce((s,v)=>s+v,0)/vals.length:0; };
         /* v805 : «실적확정월» 이후 달에 실제 매출이 있으면 목표 아래에 작게 함께 보여 줍니다.
            예전에는 확정월 뒤는 목표만 나와, 거래처 담당자 현황에는 보이는 9·10월 매출이
            업체별 매출 목표 표에서는 전혀 보이지 않았습니다(목표 0원이면 «-»로만 표시). */
         const actAfterV805=(c,m)=>((cyMonCust[m]&&cyMonCust[m].get(c))||0);
         const actLineV805=(act,tgt)=>act>0?('<div class="fc-act-after-v805'+(act>(tgt||0)?' over':'')+'" title="실적확정월 이후이지만 실제 매출이 발생한 달입니다. 목표 합계에는 포함되지 않습니다.">실적 '+disp(act)+'</div>'):'';
-        const cellsFor=(c,m)=>{ const v=amt(c,m), editable=m>lastAct&&fcMonths.includes(m), pv=pct(c,m), pctClass=(pv!==''&&+pv<0)?' fc-cust-month-pct-neg':'', amount=((v||0)>0?disp(v):'-'), amountHtml=(m<=lastAct?'<span class="fc-cust-month-actual">'+amount+'</span>':'<b>'+amount+'</b>')+((m>lastAct)?actLineV805(actAfterV805(c,m),v):''); return '<td class="fc-cust-month-cell">'+amountHtml+(editable?'<div><input type="text" inputmode="decimal" class="fc-cust-month-pct'+pctClass+'" data-c="'+esc(c)+'" data-m="'+m+'" value="'+esc(pv)+'" placeholder="'+autoMonthPctText(c,m)+'" onclick="event.stopPropagation()"> %</div>':'<div class="sub2">'+(m<=lastAct?'실적':'목표')+'</div>')+'</td>'; };
+        const cellsFor=(c,m)=>{ const v=amt(c,m), editable=m>lastAct&&fcMonths.includes(m), pv=pct(c,m), pctClass=(pv!==''&&+pv<0)?' fc-cust-month-pct-neg':'', amount=((v||0)>0?disp(v):'-'), amountHtml=(m<=lastAct?'<span class="fc-cust-month-actual">'+amount+'</span>':'<b>'+amount+'</b>')+((m>lastAct)?actLineV805(actAfterV805(c,m),v):''); return '<td class="fc-cust-month-cell">'+amountHtml+(editable?'<div><input type="text" inputmode="decimal" class="fc-cust-month-pct'+pctClass+'" data-c="'+esc(c)+'" data-m="'+m+'" value="'+esc(pv)+'" placeholder="'+autoMonthPctText(c,m)+'" title="비어 있으면 «조정 없음»입니다. 괄호 안 회색 숫자는 전년 같은 달 대비 증감률(참고값)이며 조정%가 아닙니다. 여기에 넣는 %는 이 달 목표에만 적용됩니다." onclick="event.stopPropagation()"> %</div>':'<div class="sub2">'+(m<=lastAct?'실적':'목표')+'</div>')+'</td>'; };
         /* v805 : 확정월 이후 실제 매출이 있는 거래처 수·합계를 표 밑에 알려 줍니다
            (「담당자 현황」과 숫자가 다른 이유가 이것입니다). */
         const v805AfterNote=()=>{ try{
