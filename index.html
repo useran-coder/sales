@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1000</title>
-<script>window.APP_BUILD='v1000';</script>
+<title>동방파스텍 매출 분석 도구 v1001</title>
+<script>window.APP_BUILD='v1001';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1000</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1001</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -12051,6 +12051,13 @@ function fcCutLabel(){ const c=fcCutoffMonth(); return c===0?'없음':'1~'+c+'�
 /* v625 : PD 임가공비는 연매출 목표에 포함하지 않습니다(사업부 성격이 달라 별도 관리).
    되돌리려면 이 함수가 true를 돌려주게 하면 매출 목표·월별 추이·실적보고·담당자 표에 동시에 반영됩니다. */
 function fcPdInAnnualTarget(){ return false; }
+/* ══ v1001 · 계산용 «실적확정월» ══
+   다음 목표연도(예: 2027)에는 그 해 실적이 아직 하나도 없습니다.
+   그런데도 기준연도의 확정월(예: 10월)을 그대로 적용하면
+   1~10월이 «실적 0원»으로 처리되어 📅 월별보기·목표표가 0원으로 비고,
+   🎯 목표액(1~12월 목표 전액)과 수천억 단위로 달라 보였습니다.
+   화면의 확정월 선택 표시는 그대로 두고, 계산에서만 0으로 봅니다. */
+function fcCutoffEffV1001(){ try{ if(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode())return 0; }catch(_e){} return fcCutoffMonth(); }
 function fcFutLabel(){ var c=fcCutoffMonth(); return c>=12?'12월 이후 없음':((c+1)+'~12월'); }
 /* v717 : 목표 연도·기준 목표안 묶음 (목표안보다 «앞»에 놓기 위해 분리) */
 function fcYearSelectorHTML(){ try{ fcCutoffSelectorHTML(); }catch(_e){} return window.__FC_YEAR_HTML||''; }
@@ -12199,7 +12206,7 @@ function fcFutureTotals(){
   const M=()=>Array.from({length:13},()=>new Map());
   /* forecast와 동일한 원자료 집계를 재사용한다. 버튼을 누를 때마다 CUR 전체를 다시 순회하던 중복 집계를 제거한다. */
   const base=fcBaseAgg(PY,CY),pyMonTot=base.pyMonTot,pyMonCust=base.pyMonCust,pyMonCustProd=base.pyMonCustProd,cyMonCustProd=base.cyMonCustProd;
-  const lastAct=fcCutoffMonth();
+  const lastAct=fcCutoffEffV1001();
   const tot=Array(13).fill(0), has=Array(13).fill(false), custMon=M(), custProdMon=M();
   const exSet=fcTargetExcludedCustSet();
   for(let m=1;m<=12;m++){ if(pyMonTot[m]>0){ const pct=(state.fc.pct[m]!=null&&state.fc.pct[m]!=='')?+state.fc.pct[m]:0; const target=pyMonTot[m]*(1+pct/100);
@@ -12235,7 +12242,7 @@ function fcAnnualTargetSummary(plan){
   const ys=dataYears();
   if(!ys.length)return {annualTarget:0,lastAct:fcCutoffMonth(),actualAllRaw:0,actualEligibleRaw:0,actualExcludedRaw:0,actualPeriodTotal:0,futureTargetRaw:0,futurePeriodTarget:0,remainingTarget:0,newCustAnnual:0,lineCustTotal:0,pdActual:0,pdFuture:0,pdYearNet:0};
   const CY=ys[ys.length-1], exSet=fcTargetExcludedCustSet(), fut=plan||fcFutureTotals();
-  const lastAct=fcCutoffMonth();
+  const lastAct=fcCutoffEffV1001();
   let actualAllRaw=0;
   for(const r of CUR){
     if(+r.y!==CY||monthOf(r)>lastAct)continue;
@@ -12403,7 +12410,7 @@ function monthlyTrend(){
     py=(b&&b.pyMonTot)?b.pyMonTot.slice():Array(13).fill(0);
     cy=Array(13).fill(0);
   }else{ py=monthlyTotals(PY); cy=monthlyTotals(CY); }
-  const lastAct=fcCutoffMonth();
+  const lastAct=fcCutoffEffV1001();
   const exSetTrend=fcTargetExcludedCustSet();
   const pdTrendIncluded=!exSetTrend.has('PD사업부');
   const cyRaw=cy.slice();
@@ -13101,7 +13108,7 @@ function forecast(){
   const _base=fcBaseAgg(PY,CY);
   const {pyMonTot,cyMonTot,pyMonCust,cyMonCust,pyMonProd,cyMonProd,pyMonCustProd,cyMonCustProd,prodMeta}=_base;
   const addP=(map,pk,a,q)=>{ const e=map.get(pk)||{amt:0,qty:0}; e.amt+=a; e.qty+=q; map.set(pk,e); };
-  const lastAct=fcCutoffMonth();
+  const lastAct=fcCutoffEffV1001();
   // 연매출 목표의 확정실적 기준은 상단에서 선택한 확정월까지 사용한다.
   // 그래프의 실제 실적은 6월 이후에도 데이터가 있는 마지막 월까지 별도로 표시한다.
   let actualLastMonth=lastAct;
@@ -13387,17 +13394,44 @@ function forecast(){
   var _unV757=0, _unMonV757=Array(13).fill(0);   /* v757 : 신규업체·신규라인 배분액(점검용) */
   (function(){ try{
     const _s=(typeof fcAnnualTargetSummary==='function')?fcAnnualTargetSummary(fcTargetPlan):null; if(!_s)return;
-    const _un=(+_s.newCustAnnual||0)+(+_s.lineCustTotal||0); if(!(_un>0))return;
-    /* v675 : 주간보고 '목표수정액'과 같은 방식 — 확정월 이후(미래월)에만 배분합니다. */
-    const _cut=(typeof fcCutoffMonth==='function')?fcCutoffMonth():lastAct;
-    const _fm=[]; let _fb=0;
-    for(let m=_cut+1;m<=12;m++){ _fm.push(m); _fb+=(tgtV[m]||0); }
-    if(!_fm.length){ tgtV[12]+=_un; _unMonV757[12]=_un; _unV757=_un; return; }   /* 확정월이 12월이면 마지막 달에 실어 총액을 맞춥니다 */
+    const _newC=+_s.newCustAnnual||0, _lineT=+_s.lineCustTotal||0;
+    const _un=_newC+_lineT; if(!(_un>0))return;
+    /* ══ v1001 · 「🎯 다음연도 목표액」이 월별보기·목표표와 달라 보이던 원인 ══
+       ① 다음 목표연도에는 그 해 실적이 아직 없으므로 «실적확정월»이 없습니다.
+          예전에는 기준연도의 확정월(예: 10월)을 그대로 적용해 신규업체 목표 전액이
+          11·12월 두 달에만 몰렸습니다(그 두 달 막대만 유난히 높아짐).
+       ② 「📅 월별보기」는 같은 금액을 «시작월~12월 균등»으로 분산하므로
+          막대그래프와 목표표의 월별 금액이 서로 달랐습니다.
+       → 이제 막대그래프도 월별보기와 같은 규칙으로 배분합니다(연 합계는 종전과 동일). */
+    const _nx1001=(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode());
+    const _cut=_nx1001?0:((typeof fcCutoffMonth==='function')?fcCutoffMonth():lastAct);
+    const _startV1001=function(c){ let st=0;
+      try{ const pl=(state.strategyPlan||{}),tm=(pl.tgtMeta||{})[c];
+        if(tm&&+tm.mon)st=+tm.mon;
+        if(!st){ const it=(pl.items||[]).find(function(x){return x&&x.type==='newCust'&&String(x.cust||x.title||'').trim()===String(c).trim();}); if(it&&+it.mon)st=+it.mon; }
+      }catch(_e1){}
+      if(!st)st=_cut+1;
+      return Math.min(12,Math.max(1,Math.max(st,_cut+1)));
+    };
+    let _placed=0;
+    if(_newC>0&&typeof fcNewTargetAmount==='function'){
+      Object.keys((state.fc&&state.fc.newCusts)||{}).forEach(function(c){
+        const tot=+fcNewTargetAmount(c)||0; if(!(tot>0))return;
+        const st=_startV1001(c),n=12-st+1; if(n<=0)return;
+        let used=0;
+        for(let m=st;m<=12;m++){ const sh=(m===12)?(tot-used):Math.round(tot/n); used+=sh; tgtV[m]+=sh; _unMonV757[m]+=sh; }
+        _placed+=tot;
+      });
+    }
+    const _rest=_un-_placed;
+    if(!(_rest>0)){ _unV757=_un; return; }
+    const _fm=[];
+    for(let m=_cut+1;m<=12;m++)_fm.push(m);
+    if(!_fm.length){ tgtV[12]+=_rest; _unMonV757[12]+=_rest; _unV757=_un; return; }   /* 확정월이 12월이면 마지막 달에 실어 총액을 맞춥니다 */
     let _done=0;
-    _fm.forEach((m,i)=>{
-      /* 신규 목표는 연간금액입니다. 월마다 전액을 반복하지 않고 남은 월에 한 번만 균등 분할합니다. */
-      const _sh=(i===_fm.length-1)?(_un-_done):Math.round(_un/_fm.length);
-      _done+=_sh; tgtV[m]+=_sh; _unMonV757[m]=_sh;
+    _fm.forEach(function(m,i){
+      const _sh=(i===_fm.length-1)?(_rest-_done):Math.round(_rest/_fm.length);
+      _done+=_sh; tgtV[m]+=_sh; _unMonV757[m]+=_sh;
     });
     _unV757=_un;
   }catch(_e){} })();
