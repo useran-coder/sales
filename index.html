@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1003</title>
-<script>window.APP_BUILD='v1003';</script>
+<title>동방파스텍 매출 분석 도구 v1004</title>
+<script>window.APP_BUILD='v1004';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1003</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1004</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -30603,7 +30603,7 @@ function sgMxCellPanelV895(A,cellId){
         list.push({cust:it.cust||it.title||'(업체 미지정)',prod:it.prod||'',
           amount:Math.abs(+sgEffAmountV613(it)||0),
           expect:Math.abs((+sgEffAmountV613(it)||0)*(prob/100)),
-          note:sgItemNote(it),src:'② 추진현황',type:it.type||'',off:!!it.off,id:it.id||''});
+          note:sgItemNote(it),src:'② 추진현황',type:it.type||'',off:!!it.off,id:it.id||'',owner:it.owner||''});
       });
     }catch(_e1){}
     /* 목표표에 등록하며 이 칸을 고른 신규업체 */
@@ -30632,7 +30632,7 @@ function sgMxCellPanelV895(A,cellId){
         +'<td style="text-align:left!important">'+(o.amount?sgWon(o.amount):'-')+'</td>'
         +'<td style="text-align:left!important;color:#7c3aed;font-weight:800">'+(o.expect?sgWon(Math.round(o.expect)):'-')+'</td>'
         +'<td style="text-align:left!important">'+sgEsc(o.note||'')+(o.off?' · 미반영':'')+'</td>'
-        +sgMxMgrCellsV1003(o.cust)
+        +sgMxMgrCellsV1003(o.cust,o.owner)
         +'<td style="text-align:left!important;color:#64748b">'+sgEsc(o.src)+'</td></tr>';
     }).join('');
     return head+'<div class="sg-wf-company-scroll"><table class="sg-wf-company-table"><thead><tr>'
@@ -30648,14 +30648,20 @@ function sgMxCellPanelV895(A,cellId){
 /* ══ v1003 · 매트릭스 칸 목록에 영업·고객관리·기술개발 담당자 표시 ══
    「👥 거래처 담당자 현황」과 같은 값(mgrE·mgrS·mgrT)을 씁니다.
    업체가 아니라 제품으로 등록된 줄은 담당자가 없으므로 «-»로 둡니다. */
-function sgMxMgrCellsV1003(cust){
+function sgMxMgrCellsV1003(cust,owner){
   var name=String(cust||'').trim();
   var g=function(fn){ try{ return (typeof fn==='function'?(fn(name)||''):''); }catch(_e){ return ''; } };
   var e=name?g(typeof mgrE!=='undefined'?mgrE:null):'',
       sm=name?g(typeof mgrS!=='undefined'?mgrS:null):'',
       t=name?g(typeof mgrT!=='undefined'?mgrT:null):'';
-  var cell=function(v,col){ return '<td style="text-align:left!important;'+(v?('color:'+col+';font-weight:700'):'color:#cbd5e1')+'">'+sgEsc(v||'-')+'</td>'; };
-  return cell(e,'#1d4ed8')+cell(sm,'#0f766e')+cell(t,'#b45309');
+  /* ══ v1004 · 제품으로 등록된 줄은 거래처 담당자가 없습니다 ══
+     이때는 ② 영업전략 추진현황의 «담당» 칸에 적은 사람을 영업 담당자로 보여 줍니다.
+     (거래처 담당자가 있으면 그 값이 우선입니다. 고객관리·기술개발은 거래처 단위라 그대로 비워 둡니다.) */
+  var own=String(owner||'').trim(), fromOwner=false;
+  if(!e&&own){ e=own; fromOwner=true; }
+  var cell=function(v,col,tip){ return '<td style="text-align:left!important;'+(v?('color:'+col+';font-weight:700'):'color:#cbd5e1')+'"'+(tip?(' title="'+sgEsc(tip)+'"'):'')+'>'+sgEsc(v||'-')+'</td>'; };
+  return cell(e,fromOwner?'#7c3aed':'#1d4ed8',fromOwner?'② 영업전략 추진현황의 «담당» 칸에서 가져온 값입니다':'')
+        +cell(sm,'#0f766e','')+cell(t,'#b45309','');
 }
 function sgWaterfallCompanyPanel(A,key,planItems,useProb,basis,selectedAmount,autoOn){
   if(!key)return '';
