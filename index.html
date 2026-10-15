@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v996</title>
-<script>window.APP_BUILD='v996';</script>
+<title>동방파스텍 매출 분석 도구 v997</title>
+<script>window.APP_BUILD='v997';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v996</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v997</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -9401,10 +9401,12 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
     +'<span style="display:inline-flex;align-items:center;gap:5px;margin-left:4px">'+tb+yb+mb+'</span>'
     +'<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;font-size:11.5px;font-weight:800;color:#c2410c" title="레이저 비규격 등 비규격 품목이 그 해 매출에서 차지하는 비중입니다">📐 비규격 비중 '+nonPct.toFixed(1)+'%</span>'
     +'<span class="sub2" style="color:#c2410c">'+FV(nonAmt)+' / '+FV(allAmt)+'</span>'
-    +'<span class="sub2" style="margin-left:auto">합계 '+FV(tot)+' · <b style="color:#b45309">평균 '+FV(avg)+'</b>(거래월 '+nMon+'개월) · <b style="color:#dc2626">최고 '+FV(mx)+'</b>'+(iMax>=0?('('+(iMax+1)+'월)'):'')+' · <b style="color:#0d9488">최저 '+FV(mnPos)+'</b>'+(iMin>=0?('('+(iMin+1)+'월)'):'')+' · 출고 '+won(cnt.reduce(function(a,v){return a+v;},0))+'건'+(curM?(' · <b style="color:#94a3b8">'+curM+'월(진행 중)'+(prevM?('·'+prevM+'월(마감 전)'):'')+'·0원 달 제외</b>'):' · <b style="color:#94a3b8">0원 달 제외</b>')+'</span></div>'
+    +'<span class="sub2" style="margin-left:auto">합계 '+FV(tot)+' · <b style="color:#b45309">평균 '+FV(avg)+'</b>(거래월 '+nMon+'개월) · <b style="color:#dc2626">최고 '+FV(mx)+'</b>'+(iMax>=0?('('+(iMax+1)+'월)'):'')+' · <b style="color:#0d9488">최저 '+FV(mnPos)+'</b>'+(iMin>=0?('('+(iMin+1)+'월)'):'')+' · 출고 '+won(cnt.reduce(function(a,v){return a+v;},0))+'건</span>'
     /* v996 : 범례(실적·평균·○월 현재)를 그래프 «오른쪽 아래»로 내렸습니다. */
     +g
     +'<div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:2px 4px 0 0;font-size:11px;color:#475569">'
+      /* v997 : 「○월(진행 중)·0원 달 제외」 안내를 범례 맨 왼쪽에 둡니다. */
+      +'<span style="color:#94a3b8;font-weight:700">'+(curM?(curM+'월(진행 중)'+(prevM?('·'+prevM+'월(마감 전)'):'')+'·0원 달 제외'):'0원 달 제외')+'</span>'
       +'<span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:3px;background:#2563eb;border-radius:2px"></span>실적</span>'
       +(tvals?'<span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:11px;background:#f59e0b;opacity:.32;border-radius:2px"></span>월 목표</span>':'')
       +'<span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:0;border-top:2px dashed #f59e0b"></span>평균</span>'
@@ -29768,10 +29770,18 @@ function sgSyncDirectTargetV857(it,A,clear){
            몫을 내림으로 깔고 «나머지»를 앞쪽 달에 1원씩 나눠 합계를 정확히 맞춥니다. */
         var cbase925=Math.floor(expAmtV979/cn925), crem925=expAmtV979-cbase925*cn925, crow925={}, ci925=0;
         for(var cmm925=cm925;cmm925<=12;cmm925++){ crow925[cmm925]=cbase925+((ci925<crem925)?1:0); ci925++; }
-        sgPutPlanValV918('custMonthAdd',ck918,crow925);
-        if(state.fc.addPct[ck918]!=null&&state.fc.addPct[ck918]!=='')sgPutPlanValV918('addPct',ck918,'');
-        (state.fc.addPctAt=state.fc.addPctAt||{})[ck918]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};
-        changed=true;
+        /* ══ v997 · 화면을 그릴 때마다 «바뀜»으로 잡혀 저장·서버 전송이 반복되던 문제 ══
+           값이 이미 같으면 다시 쓰지도, 바뀜으로 표시하지도 않습니다. */
+        var _same997=false;
+        try{ var _cur997=(state.fc.custMonthAdd||{})[ck918];
+             _same997=!!_cur997&&JSON.stringify(_cur997)===JSON.stringify(crow925); }catch(_s997){}
+        if(!_same997){
+          sgPutPlanValV918('custMonthAdd',ck918,crow925);
+          if(state.fc.addPct[ck918]!=null&&state.fc.addPct[ck918]!=='')sgPutPlanValV918('addPct',ck918,'');
+          (state.fc.addPctAt=state.fc.addPctAt||{})[ck918]={t:Date.now(),u:(state.gsync&&state.gsync.user)||'관리자'};
+          changed=true;
+        }
+        if(!it.targetDirectV857||it.targetNewCustV853||it.targetNewCustKeyV857)changed=true;
         it.targetDirectV857=true; it.targetNewCustV853=false; it.targetNewCustKeyV857='';
       }
       if(changed){state.fc.matchBaseExact=null;sgTargetMapsCacheV613=null;try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();}catch(_e){}try{if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(fcTargetYear());}catch(_e2){}}
@@ -29810,9 +29820,16 @@ function sgSyncDirectTargetV857(it,A,clear){
           /* v980 : 합계가 몇 원 어긋나지 않도록 나머지를 앞쪽 달에 1원씩 나눕니다. */
           var base925=Math.floor(expAmtV979/n925), rem925=expAmtV979-base925*n925, row925={}, i925=0;
           for(var mm925=mon925;mm925<=12;mm925++){ row925[mm925]=base925+((i925<rem925)?1:0); i925++; }
-          sgPutPlanValV918('prodMonthAdd',real918.key,row925);
-          if(state.fc.prodAddPct[real918.key]!=null&&state.fc.prodAddPct[real918.key]!=='')sgPutPlanValV918('prodAddPct',real918.key,'');
-          changed=true;
+          /* v997 : 값이 같으면 다시 쓰지 않습니다(반복 저장·전송 차단) */
+          var _psame997=false;
+          try{ var _pcur997=(state.fc.prodMonthAdd||{})[real918.key];
+               _psame997=!!_pcur997&&JSON.stringify(_pcur997)===JSON.stringify(row925); }catch(_p997){}
+          if(!_psame997){
+            sgPutPlanValV918('prodMonthAdd',real918.key,row925);
+            if(state.fc.prodAddPct[real918.key]!=null&&state.fc.prodAddPct[real918.key]!=='')sgPutPlanValV918('prodAddPct',real918.key,'');
+            changed=true;
+          }
+          if(it.targetAddProdV918!==real918.key||!it.targetDirectV857||it.targetNewProdV857||it.targetNewProdKeyV857)changed=true;
           it.targetAddProdV918=real918.key; it.targetDirectV857=true; it.targetNewProdV857=false; it.targetNewProdKeyV857='';
         }
         if(changed){state.fc.matchBaseExact=null;sgTargetMapsCacheV613=null;try{if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();}catch(_e){}try{if(typeof fcSaveYearPlan==='function')fcSaveYearPlan(fcTargetYear());}catch(_e2){}}
@@ -33178,18 +33195,15 @@ function sgBind(A){
     state.strategyTab=card.dataset.tab||'overview';window.scrollTo(0,0);sgSave();sgRe(true);
   });});
   $$('.sgFilt').forEach(function(b){ b.addEventListener('click',function(){
-    /* ② 필터 변경 중 ① 워터폴을 재생성하지 않아 제목 깜빡임을 막습니다. */
-    var keepW=document.querySelector('#result .sgSec[data-k="w"]');
+    /* ══ v997 · 예전에는 ① 워터폴을 «옛 화면으로 되돌려 끼우는» 방식으로 깜빡임을 막았는데,
+       그 때문에 ② 칩을 골라도 ① 제목이 선택되지 않았고 오히려 두 번 그려져 더 깜빡였습니다.
+       이제는 되돌려 끼우지 않고 한 번만 그립니다. */
     sgUiSetV869('filter',b.dataset.v);
     /* v995 : ② 칩을 고르면 ① 워터폴 그래프에서도 같은 항목이 선택되게 합니다. */
     try{ sgUiSetV869('waterfallSelectedKey',b.dataset.v==='all'?'':b.dataset.v);
          sgUiSetV869('matrixSelectedCell',''); }catch(_w995){}
     if(b.dataset.v!=='all'&&SG_TMAP[b.dataset.v])pl.formTypeV854=b.dataset.v;
     sgSave(); sgRe(true);
-    if(keepW)setTimeout(function(){
-      var fresh=document.querySelector('#result .sgSec[data-k="w"]');
-      if(fresh&&fresh!==keepW)fresh.replaceWith(keepW);
-    },0);
   }); });
 
   /* 한글 IME 조합이 끝난 뒤 검색을 반영해 자모 분리·입력 중 포커스 손실을 방지 */
