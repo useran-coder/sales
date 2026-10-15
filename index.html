@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1004</title>
-<script>window.APP_BUILD='v1004';</script>
+<title>동방파스텍 매출 분석 도구 v1005</title>
+<script>window.APP_BUILD='v1005';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1004</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1005</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -39401,7 +39401,15 @@ function impo(which){
               var nv;
               if(V>0){ nv=((1+cur/100)*(A/V)-1)*100; }
               else if(A>0){ nv=(cur||0)+100; }          /* 0원 달에 금액이 있으면 기준 평균으로 끌어올립니다 */
-              else { nv=-100; }
+              else {
+                /* ══ v1005 · 신규목표 업체가 1~12월 모두 -100%로 박히던 문제 ══
+                   월별 집계(fcCustMon)에 금액이 없는 업체(신규목표 업체 등)는
+                   «깎아 낼 목표» 자체가 없는데도 -100%를 적어 넣어,
+                   목표연동 금액(예: (주)광스틸 3.6억)이 1~12월 전부 0원이 됐습니다.
+                   이제 깎을 목표가 있을 때만 -100%를 씁니다. */
+                if(!(V>0)){ if(mp973[m]!=null&&mp973[m]!==''){ delete mp973[m]; moved++; } continue; }
+                nv=-100;
+              }
               if(!isFinite(nv))continue;
               nv=Math.max(-100,Math.min(1000000,Math.round(nv*100000)/100000));
               if(Math.abs(nv-cur)>0.000005){ mp973[m]=nv; moved++; }
@@ -42761,6 +42769,105 @@ try{
 }catch(e){}
 })();
 </script>
+<script id="v1005-excl-menu">
+/* ═════ v1005 · 「📋 제외업체보기」를 「🚫 제외옵션」 버튼 하나로 합칩니다 ═════
+   버튼이 두 개 나란히 있어 무엇이 무엇인지 헷갈렸습니다.
+   이제 🚫 제외옵션을 누르면 작은 메뉴가 열리고, 거기서 골라 쓰면 됩니다. */
+(function(){
+'use strict';
+var MENU=null;
+function close(){ if(MENU&&MENU.parentNode)MENU.parentNode.removeChild(MENU); MENU=null; }
+function hideOld(){
+  try{
+    var r=document.getElementById('fcExclRows');
+    if(r&&r.style.display!=='none'){ r.style.display='none'; r.dataset.v1005hidden='1'; }
+  }catch(e){}
+}
+function open(btn){
+  close();
+  var rows=document.getElementById('fcExclRows');
+  var rowsLab=rows?String(rows.textContent||'').trim():'';
+  var on=!!(window.state&&state.fc&&state.fc.showExcl);
+  var m=document.createElement('div');
+  m.id='v1005ExclMenu';
+  m.style.cssText='position:absolute;z-index:9999;min-width:236px;background:#fff;border:1px solid #cbd5e1;'
+    +'border-radius:10px;box-shadow:0 10px 26px rgba(15,23,42,.18);padding:5px;font-size:12px;color:#1e3a5f';
+  var mk=function(label,hint,color,fn){
+    var it=document.createElement('button'); it.type='button';
+    it.style.cssText='display:block;width:100%;text-align:left;border:0;background:#fff;border-radius:7px;'
+      +'padding:8px 10px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:800;color:'+color;
+    it.innerHTML=label+(hint?('<div style="font-weight:400;color:#64748b;font-size:10.5px;margin-top:2px">'+hint+'</div>'):'');
+    it.onmouseenter=function(){it.style.background='#f1f5f9';};
+    it.onmouseleave=function(){it.style.background='#fff';};
+    it.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); close(); fn(); });
+    m.appendChild(it);
+    return it;
+  };
+  if(rows){
+    mk(rowsLab||'📋 제외업체보기','제외한 업체만 모아 보거나, 일반 업체 목록으로 되돌립니다.','#b91c1c',function(){
+      rows.style.display=''; rows.click(); setTimeout(hideOld,0);
+    });
+  }
+  mk((on?'🚫 제외옵션 닫기':'🚫 제외옵션 열기'),'표에서 거래처 제외·목표합산 제외를 직접 지정합니다.','#0f766e',function(){
+    btn.__v1005pass=true; btn.click();
+  });
+  document.body.appendChild(m);
+  var r=btn.getBoundingClientRect();
+  var top=r.bottom+window.scrollY+4, left=r.left+window.scrollX;
+  var w=m.getBoundingClientRect().width;
+  if(left+w>window.scrollX+document.documentElement.clientWidth-8)
+    left=window.scrollX+document.documentElement.clientWidth-w-8;
+  m.style.top=top+'px'; m.style.left=Math.max(8,left)+'px';
+  MENU=m;
+}
+document.addEventListener('click',function(e){
+  var t=e.target;
+  if(MENU&&t&&t.closest&&t.closest('#v1005ExclMenu'))return;
+  var b=(t&&t.closest)?t.closest('.fcexcltoggle'):null;
+  if(!b){ close(); return; }
+  if(b.__v1005pass){ b.__v1005pass=false; return; }
+  e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+  if(MENU)close(); else open(b);
+},true);
+/* ══ v1005 · 이미 박혀 버린 -100%를 한 번만 되돌립니다 ══
+   신규목표 업체인데 1~12월 월 조정%가 모두 -100%이면, 엑셀 불러오기 역산이
+   잘못 적어 넣은 값입니다(목표를 깎을 금액이 아예 없는 업체). 그 값만 지웁니다. */
+(function(){
+  var done=false,tries=0;
+  function repair(){
+    try{
+      if(done)return; if(typeof state==='undefined'||!state.fc)return;
+      tries++;
+      if(typeof fcNewTargetAmount!=='function')return;
+      var mp=state.fc.custMonthPct; if(!mp||typeof mp!=='object')return;
+      var fixed=[];
+      Object.keys(mp).forEach(function(c){
+        var o=mp[c]; if(!o||typeof o!=='object')return;
+        var all=true,n=0;
+        for(var m=1;m<=12;m++){ var v=o[m]; if(v==null||v===''){all=false;break;} if(+v!==-100){all=false;break;} n++; }
+        if(!all||n!==12)return;
+        var amt=0; try{ amt=+fcNewTargetAmount(c)||0; }catch(_e){}
+        if(!(amt>0))return;
+        delete mp[c]; fixed.push(c);
+      });
+      if(tries>=20)done=true;
+      if(fixed.length){
+        done=true;
+        try{ if(typeof fcSyncActivePlan==='function')fcSyncActivePlan(); }catch(_s){}
+        try{ if(typeof saveSettings==='function')saveSettings(); }catch(_s2){}
+        try{ if(typeof logEdit==='function')logEdit('매출 목표','월 조정% -100% 자동 복구 · '+fixed.join(', ')); }catch(_l){}
+        try{ if(typeof forecast==='function'&&state.act==='forecast')forecast(); }catch(_f){}
+        try{ if(typeof uiConfirm==='function')uiConfirm('엑셀 불러오기 때 잘못 들어간 월 조정% -100%를 지웠습니다 ('+fixed.length+'개사: '+fixed.join(', ')+'). 신규목표 금액이 다시 1~12월에 반영됩니다.'); }catch(_u){}
+      }
+    }catch(e){}
+  }
+  var iv=setInterval(function(){ repair(); if(done)clearInterval(iv); },3000);
+})();
+window.addEventListener('scroll',close,true);
+window.addEventListener('resize',close);
+setInterval(hideOld,700);
+})();
+</script>
 </body>
 <style id="v949-goal-title-and-receipt-date">
 /* v949 · 목표설정은 제목 바로 오른쪽에 고정하고 선택 메뉴도 같은 줄에 표시 */
@@ -43557,6 +43664,7 @@ function report(){
 }
 function bind(){
   try{
+    return;   /* v1005 : 동기화 문제가 해결되어 「🔍 변동점검」 버튼을 없앱니다 */
     if(!state||state.act!=='forecast'||!(state.fc&&state.fc._custMonView))return;
     var head=document.querySelector('#result h4.fch'); if(!head)return;
     var ex=document.getElementById('v990AuditBtn');
@@ -43813,7 +43921,7 @@ window.fcTargetFingerprintV998=show;
 function bind(){
   try{
     if(!state||state.act!=='forecast')return;
-    if(document.getElementById('v998ChkBtn'))return;
+    return;   /* v1005 : 동기화 문제가 해결되어 「🔎 목표액 점검」 버튼을 없앱니다 */
     var box=document.querySelector('.fc-reset-group-v804'); if(!box)return;
     var b=document.createElement('button'); b.type='button'; b.id='v998ChkBtn'; b.className='btn ghost';
     b.style.cssText='font-size:12px;padding:4px 10px;color:#b45309;border-color:#fcd34d;font-weight:800';
