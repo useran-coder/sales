@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1005</title>
-<script>window.APP_BUILD='v1005';</script>
+<title>동방파스텍 매출 분석 도구 v1006</title>
+<script>window.APP_BUILD='v1006';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1005</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1006</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -42769,6 +42769,14 @@ try{
 }catch(e){}
 })();
 </script>
+<style id="v1006-hide-btns">
+/* ══ v1006 · 「📋 제외업체보기」가 보였다 안 보였다 하던 문제 ══
+   v1005에서는 그려진 뒤 0.7초마다 자바스크립트로 숨겼기 때문에 그 사이 한 번 보였습니다.
+   이제 처음부터 CSS로 숨겨 한 번도 보이지 않습니다(기능은 🚫 제외옵션 메뉴 안에 있습니다). */
+#result #fcExclRows{display:none!important}
+/* v1006 : 「📌 이슈내용보기」 버튼 삭제 */
+#result #fcIssueCust{display:none!important}
+</style>
 <script id="v1005-excl-menu">
 /* ═════ v1005 · 「📋 제외업체보기」를 「🚫 제외옵션」 버튼 하나로 합칩니다 ═════
    버튼이 두 개 나란히 있어 무엇이 무엇인지 헷갈렸습니다.
@@ -42777,17 +42785,13 @@ try{
 'use strict';
 var MENU=null;
 function close(){ if(MENU&&MENU.parentNode)MENU.parentNode.removeChild(MENU); MENU=null; }
-function hideOld(){
-  try{
-    var r=document.getElementById('fcExclRows');
-    if(r&&r.style.display!=='none'){ r.style.display='none'; r.dataset.v1005hidden='1'; }
-  }catch(e){}
-}
+function hideOld(){}
 function open(btn){
   close();
   var rows=document.getElementById('fcExclRows');
   var rowsLab=rows?String(rows.textContent||'').trim():'';
-  var on=!!(window.state&&state.fc&&state.fc.showExcl);
+  /* v1006 : 열림 여부는 화면의 🚫 버튼 글자(✓)로 판단합니다 — 가장 확실합니다. */
+  var on=/✓/.test(String(btn.textContent||''));
   var m=document.createElement('div');
   m.id='v1005ExclMenu';
   m.style.cssText='position:absolute;z-index:9999;min-width:236px;background:#fff;border:1px solid #cbd5e1;'
@@ -42799,18 +42803,36 @@ function open(btn){
     it.innerHTML=label+(hint?('<div style="font-weight:400;color:#64748b;font-size:10.5px;margin-top:2px">'+hint+'</div>'):'');
     it.onmouseenter=function(){it.style.background='#f1f5f9';};
     it.onmouseleave=function(){it.style.background='#fff';};
-    it.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); close(); fn(); });
+    it.addEventListener('click',function(e){ if(it.__keep)return; e.preventDefault(); e.stopPropagation(); close(); fn(); });
     m.appendChild(it);
     return it;
   };
   if(rows){
     mk(rowsLab||'📋 제외업체보기','제외한 업체만 모아 보거나, 일반 업체 목록으로 되돌립니다.','#b91c1c',function(){
-      rows.style.display=''; rows.click(); setTimeout(hideOld,0);
+      rows.click();
     });
   }
-  mk((on?'🚫 제외옵션 닫기':'🚫 제외옵션 열기'),'표에서 거래처 제외·목표합산 제외를 직접 지정합니다.','#0f766e',function(){
-    btn.__v1005pass=true; btn.click();
-  });
+  /* ══ v1006 · 「제외옵션 열기」를 누르면 그 자리에서 바로 「제외옵션 닫기」로 바뀝니다 ══
+     메뉴를 닫지 않고 글자만 바꾸므로, 다시 눌러 바로 해제할 수 있습니다. */
+  var tg=mk((on?'🚫 제외옵션 닫기':'🚫 제외옵션 열기'),'표에서 거래처 제외·목표합산 제외를 직접 지정합니다.','#0f766e',function(){});
+  tg.__keep=true;
+  tg.addEventListener('click',function(e){
+    e.preventDefault(); e.stopPropagation();
+    var was=/✓/.test(String((document.querySelector('.fcexcltoggle')||btn).textContent||''));
+    var b2=document.querySelector('.fcexcltoggle')||btn;
+    b2.__v1005pass=true; b2.click();
+    /* 표가 다시 그려질 때까지 기다렸다가 메뉴 글자를 «닫기»로 바꿔 답니다. */
+    var n=0,iv=setInterval(function(){
+      n++;
+      var live=document.querySelector('.fcexcltoggle');
+      var now=live?/✓/.test(String(live.textContent||'')):was;
+      if((live&&now!==was)||n>30){
+        clearInterval(iv);
+        MENU=document.getElementById('v1005ExclMenu')||MENU;
+        if(live&&MENU)open(live);
+      }
+    },120);
+  },true);
   document.body.appendChild(m);
   var r=btn.getBoundingClientRect();
   var top=r.bottom+window.scrollY+4, left=r.left+window.scrollX;
@@ -42865,7 +42887,7 @@ document.addEventListener('click',function(e){
 })();
 window.addEventListener('scroll',close,true);
 window.addEventListener('resize',close);
-setInterval(hideOld,700);
+
 })();
 </script>
 </body>
