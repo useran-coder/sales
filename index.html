@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v983</title>
-<script>window.APP_BUILD='v983';</script>
+<title>동방파스텍 매출 분석 도구 v984</title>
+<script>window.APP_BUILD='v984';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v983</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v984</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -13621,10 +13621,12 @@ function forecast(){
     return {mc,mp}; })();
   const fcStratRawCustV980=(c)=>+(_stratRawV980.mc[c]||0);
   const fcStratRawProdV980=(pk)=>+(_stratRawV980.mp[pk]||0);
+  /* v984 : «목표반영» 글자를 빼고, 아래줄 금액을 위줄 금액과 같은 오른쪽 끝에 맞춥니다.
+     기대매출이 0인 줄(신규목표 등)은 아래줄을 붙이지 않습니다. */
   const _stratCellV980=(raw,exp)=>{
-    if(!raw&&!exp)return diffSpan(exp);
-    if(!raw||raw===exp)return diffSpan(exp);
-    return diffSpan(raw)+'<div class="sub2" style="color:#0f766e;font-weight:700;font-size:9.5px;margin-top:1px;white-space:nowrap">기대매출 '+won(Math.round(exp))+' <span style="color:#94a3b8;font-weight:400">목표반영</span></div>';
+    if(!raw||!exp||raw===exp)return diffSpan(exp);
+    return '<div style="text-align:right;white-space:nowrap">'+diffSpan(raw)+'</div>'
+      +'<div class="sub2" style="color:#0f766e;font-weight:700;font-size:9.5px;margin-top:1px;white-space:nowrap;text-align:right">기대매출 '+won(Math.round(exp))+'</div>';
   };
   const _pctOfV926=(amt,prev)=>{ if(!prev||!isFinite(prev)||prev<=0)return (amt?null:0); return amt/prev*100; };
   const _pctTxtV926=(amt,prev)=>{ const v=_pctOfV926(amt,prev); if(v==null)return '신규'; return (v>0?'+':'')+(Math.round(v*10)/10).toFixed(1); };
