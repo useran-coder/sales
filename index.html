@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v982</title>
-<script>window.APP_BUILD='v982';</script>
+<title>동방파스텍 매출 분석 도구 v983</title>
+<script>window.APP_BUILD='v983';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v982</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v983</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -13605,10 +13605,13 @@ function forecast(){
   const _stratRawV980=(()=>{ const mc={},mp={};
     try{
       const pl=state.strategyPlan||{}, items=Array.isArray(pl.items)?pl.items:[];
-      const yr=String((typeof fcTargetYear==='function')?fcTargetYear():''), ap=String(state.fc.activePlan||'1');
+      /* v983 : 연도·목표안 판정을 전략 연동(sgSyncDirectTargetV857)과 똑같이 맞춥니다.
+         예전에 등록해 연도 값이 비어 있는 건은 2027년으로 보며, 그 때문에
+         일부 거래처(경동원 등)만 기대매출 줄이 나오지 않던 문제를 없앱니다. */
+      const yr=+((typeof fcTargetYear==='function')?fcTargetYear():0), ap=String(state.fc.activePlan||'1');
       items.forEach(it=>{ if(!it)return;
         if(String(it.plan||'1')!==ap)return;
-        if(String(it.year==null?'':it.year)!==yr)return;
+        if(+(it.year==null?2027:it.year)!==yr)return;
         const a=Math.max(0,Math.round(+it.amount||0)); if(!a)return;
         const c=String(it.cust||'').trim(), pk=String(it.targetAddProdV918||'').trim();
         if(pk)mp[pk]=(mp[pk]||0)+a;
