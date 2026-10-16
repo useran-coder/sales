@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1007</title>
-<script>window.APP_BUILD='v1007';</script>
+<title>동방파스텍 매출 분석 도구 v1008</title>
+<script>window.APP_BUILD='v1008';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1007</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1008</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -32142,7 +32142,7 @@ function sgBridge(A){
     }catch(_v961){}
   }
   var b=A.brk;
-  var steps=[{l:A.PY+'년',v:A.pyTot,k:'t',sel:''},{l:'신규업체',v:b.newC,k:'d',sel:'newCust'},{l:'신규제품(참고)',v:b.newP,k:'i',sel:'newProd'},{l:'기존 증가',v:b.upC,k:'d',sel:'up'},
+  var steps=[{l:A.PY+'년',v:A.pyTot,k:'t',sel:''},{l:'신규업체',v:b.newC,k:'d',sel:'newCust'},{l:'신규제품',v:b.newP,k:'i',sel:'newProd'},{l:'기존 증가',v:b.upC,k:'d',sel:'up'},
              {l:'기존 감소',v:b.dnC,k:'d',sel:'down'},{l:'거래중단',v:b.lostC,k:'d',sel:'lost'},{l:A.CY+'년',v:A.cyTot,k:'t',sel:''}];
   var W=470,H=260,L=52,R=12,T=22,B=46,iw=W-L-R,ih=H-T-B;
   var max=Math.max(A.pyTot,A.cyTot)*1.18||1;
@@ -32196,14 +32196,14 @@ function sgBridge(A){
   var companyRow=function(c,impact){return {name:c.name,py:+c.py||0,cy:+c.cy||0,impact:+impact||0,growth:c.py>0?c.gRaw:null,nProd:+c.nProd||0,nMon:+c.nMon||0};};
   window.__sgBridgeCompanyLists={
     newCust:{label:'신규업체',amountLabel:'신규 매출',rows:A.newCust.map(function(c){return companyRow(c,c.cy);})},
-    newProd:{label:'신규제품(참고)',amountLabel:'신규제품 매출',rows:Object.keys(newProdCustomerAmounts).map(function(name){return companyRow(custByName[name]||{name:name},newProdCustomerAmounts[name]);}).sort(function(a,z){return z.impact-a.impact;})},
+    newProd:{label:'신규제품',amountLabel:'신규제품 매출',rows:Object.keys(newProdCustomerAmounts).map(function(name){return companyRow(custByName[name]||{name:name},newProdCustomerAmounts[name]);}).sort(function(a,z){return z.impact-a.impact;})},
     up:{label:'기존 증가',amountLabel:'증가액',rows:A.upCust.map(function(c){return companyRow(c,c.diff);})},
     down:{label:'기존 감소',amountLabel:'감소액',rows:A.dnCust.map(function(c){return companyRow(c,c.diff);})},
     lost:{label:'거래중단',amountLabel:'감소액',rows:A.lostCust.map(function(c){return companyRow(c,-c.py);})}
   };
   var explainRows=[
     {k:'newCust',l:'신규업체',v:b.newC,n:A.newCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출예상액이 없고 2027년 목표가 등록된 신규·경쟁사업체입니다.':'전년 매출이 없고 올해 처음 발생한 거래처 매출입니다.',c:topItems(A.newCust,function(o){return o.cy;},function(o){return o.name;}),p:productsForCustomers(A.newCust)},
-    {k:'newProd',l:'신규제품(참고)',v:b.newP,n:A.newProd.length,u:'종',d:'매출 증가(＋) 항목이나 고객 증감과 중복되어 누적합에서는 제외합니다.',c:newProdCompanies,p:topItems(A.newProd,function(o){return o.cy;},function(o){return o.label;})},
+    {k:'newProd',l:'신규제품',v:b.newP,n:A.newProd.length,u:'종',d:'매출 증가(＋) 항목이나 고객 증감과 중복되어 누적합에서는 제외합니다.',c:newProdCompanies,p:topItems(A.newProd,function(o){return o.cy;},function(o){return o.label;})},
     {k:'up',l:'기존 증가',v:b.upC,n:A.upCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출예상액보다 2027년 업체 목표가 증가한 기존 거래처입니다.':'양년 모두 거래하며 올해 매출이 증가한 거래처 매출입니다.',c:topItems(A.upCust,function(o){return o.diff;},function(o){return o.name;}),p:topItems(A.keepProd.filter(function(p){return p.diff>0;}),function(o){return o.diff;},function(o){return o.label;})},
     {k:'down',l:'기존 감소',v:b.dnC,n:A.dnCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출예상액보다 2027년 업체 목표가 감소한 기존 거래처입니다.':'양년 모두 거래하지만 올해 매출이 감소한 거래처 매출입니다.',c:topItems(A.dnCust,function(o){return o.diff;},function(o){return o.name;}),p:topItems(A.keepProd.filter(function(p){return p.diff<0;}),function(o){return o.diff;},function(o){return o.label;})},
     {k:'lost',l:'거래중단',v:b.lostC,n:A.lostCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출예상액은 있으나 2027년 업체 목표가 없는 거래처입니다.':'전년 매출이 있었지만 올해 매출이 끊긴 거래처 매출입니다.',c:topItems(A.lostCust,function(o){return -o.py;},function(o){return o.name;}),p:topItems(lostProd,function(o){return -o.py;},function(o){return o.label;})}
@@ -33426,15 +33426,52 @@ function sgBind(A){
 
   /* 매출 증감 분해: 오른쪽 행과 그래프 막대가 같은 업체 목록을 제어합니다. */
   var bridgeRows=$$('.sg-bridge-row'),bridgeBars=$$('.sg-bridge-bar'),bridgePanel=document.getElementById('sgBridgeCompanyPanel'),bridgeSelected='';
+  /* ══ v1008 · 「🏢 관련 업체」 표 — 숫자 머리글 오른쪽 정렬 · 머리글 클릭 정렬 ══
+     기본은 «증감액 많은 순»이며, 머리글을 누르면 그 열로 정렬합니다(다시 누르면 반대). */
+  var bridgeSortV1008={k:'impact',d:-1};
+  var bridgeYearsV1008=function(){
+    var cy=0; try{ cy=+((typeof fcTargetYear==='function')?fcTargetYear():0)||0; }catch(_e){}
+    if(!cy){ try{ cy=+((typeof sgActiveYearV949==='function')?sgActiveYearV949():0)||0; }catch(_e2){} }
+    return cy?{py:cy-1,cy:cy}:null;
+  };
   var bridgeListHtml=function(key){
     var data=(window.__sgBridgeCompanyLists||{})[key];
     if(!data)return '';
-    var rows=data.rows||[],body=rows.map(function(o,i){
+    var rows=(data.rows||[]).slice();
+    var SK=bridgeSortV1008.k,SD=bridgeSortV1008.d;
+    var val=function(o){
+      if(SK==='name')return String(o.name||'');
+      if(SK==='py')return +o.py||0;
+      if(SK==='cy')return +o.cy||0;
+      if(SK==='growth')return (o.growth==null?-1e18:+o.growth);
+      if(SK==='nProd')return +o.nProd||0;
+      if(SK==='nMon')return +o.nMon||0;
+      /* 증감액은 «많은 순»이 기준이므로 크기(절대값)로 비교합니다.
+         감소 그룹에서도 가장 많이 빠진 업체가 맨 위에 옵니다. */
+      return Math.abs(+o.impact||0);
+    };
+    rows.sort(function(a,z){
+      var A=val(a),B=val(z);
+      if(SK==='name')return SD*String(A).localeCompare(String(B),'ko');
+      return SD*(A-B);
+    });
+    var YR=bridgeYearsV1008();
+    var pyLab=YR?(YR.py+'년 매출'):'전년매출';
+    var cyLab=YR?(YR.cy+'년 예상'):'올해매출';
+    var ar=function(k){ return bridgeSortV1008.k===k?('<span style="color:#1d4ed8">'+(bridgeSortV1008.d>0?' ▲':' ▼')+'</span>'):''; };
+    var th=function(label,k,align){
+      var a=align||'right';
+      return '<th data-bk="'+k+'" style="cursor:pointer;text-align:'+a+'!important;white-space:nowrap" title="누르면 이 열로 정렬합니다">'+label+ar(k)+'</th>';
+    };
+    var body=rows.map(function(o,i){
       var impact=+o.impact||0,rate=o.growth==null?'-':((o.growth>0?'+':'')+o.growth.toFixed(1)+'%');
       return '<tr><td style="text-align:center;color:#64748b">'+(i+1)+'</td><td style="text-align:left;font-weight:800;color:#1e3a5f" title="'+sgEsc(o.name)+'">'+sgEsc(o.name)+'</td><td style="text-align:right">'+sgWon(o.py)+'</td><td style="text-align:right">'+sgWon(o.cy)+'</td><td style="text-align:right;font-weight:900;color:'+(impact<0?'#dc2626':'#15803d')+'">'+(impact>0?'+':'')+sgWon(impact)+'</td><td style="text-align:right;color:'+(o.growth<0?'#dc2626':'#15803d')+'">'+rate+'</td><td style="text-align:center">'+o.nProd+'</td><td style="text-align:center">'+o.nMon+'</td></tr>';
     }).join('');
     if(!body)body='<tr><td colspan="8" style="padding:16px;text-align:center;color:#94a3b8">해당 업체가 없습니다.</td></tr>';
-    return '<div class="sg-bridge-company-head"><span>🏢 '+sgEsc(data.label)+' 관련 업체</span><span>전체 '+rows.length.toLocaleString()+'개사</span></div><div class="sg-bridge-company-scroll"><table class="sg-bridge-company-table"><colgroup><col style="width:38px"><col style="width:25%"><col style="width:16%"><col style="width:16%"><col style="width:16%"><col style="width:10%"><col style="width:8%"><col style="width:8%"></colgroup><thead><tr><th>#</th><th>업체명</th><th>전년매출</th><th>올해매출</th><th>'+sgEsc(data.amountLabel)+'</th><th>증감률</th><th>품목</th><th>거래월</th></tr></thead><tbody>'+body+'</tbody></table></div>';
+    return '<div class="sg-bridge-company-head"><span>🏢 '+sgEsc(data.label)+' 관련 업체</span><span>전체 '+rows.length.toLocaleString()+'개사</span></div><div class="sg-bridge-company-scroll"><table class="sg-bridge-company-table"><colgroup><col style="width:38px"><col style="width:25%"><col style="width:16%"><col style="width:16%"><col style="width:16%"><col style="width:10%"><col style="width:8%"><col style="width:8%"></colgroup><thead><tr><th style="text-align:center!important">#</th>'
+      +th('업체명','name','left')+th(pyLab,'py')+th(cyLab,'cy')+th(sgEsc(data.amountLabel),'impact')+th('증감률','growth')
+      +th('품목','nProd','center')+th('거래월','nMon','center')
+      +'</tr></thead><tbody>'+body+'</tbody></table></div>';
   };
   var setBridgeSelection=function(key,scrollToPanel){
     if(!bridgePanel||!(window.__sgBridgeCompanyLists||{})[key])return;
@@ -33443,6 +33480,22 @@ function sgBind(A){
     bridgeBars.forEach(function(bar){var on=bridgeSelected&&bar.dataset.key===bridgeSelected;bar.classList.toggle('is-selected',!!on);bar.setAttribute('aria-pressed',on?'true':'false');});
     if(!bridgeSelected){bridgePanel.style.display='none';bridgePanel.innerHTML='';return;}
     bridgePanel.innerHTML=bridgeListHtml(bridgeSelected);bridgePanel.style.display='block';
+    /* v1008 : 머리글 클릭 정렬 */
+    if(!bridgePanel.__v1008){
+      bridgePanel.__v1008=true;
+      bridgePanel.addEventListener('click',function(e){
+        var h=e.target&&e.target.closest?e.target.closest('th[data-bk]'):null; if(!h)return;
+        e.preventDefault(); e.stopPropagation();
+        var k=h.dataset.bk;
+        if(bridgeSortV1008.k===k)bridgeSortV1008.d*=-1;
+        else bridgeSortV1008={k:k,d:(k==='name'?1:-1)};
+        var sc=bridgePanel.querySelector('.sg-bridge-company-scroll');
+        var top=sc?sc.scrollTop:0;
+        bridgePanel.innerHTML=bridgeListHtml(bridgeSelected);
+        var sc2=bridgePanel.querySelector('.sg-bridge-company-scroll');
+        if(sc2)sc2.scrollTop=top;
+      });
+    }
     if(scrollToPanel&&bridgePanel.scrollIntoView)setTimeout(function(){bridgePanel.scrollIntoView({behavior:'smooth',block:'nearest'});},20);
   };
   bridgeRows.forEach(function(row){
