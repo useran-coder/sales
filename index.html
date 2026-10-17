@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1032</title>
-<script>window.APP_BUILD='v1032';</script>
+<title>동방파스텍 매출 분석 도구 v1033</title>
+<script>window.APP_BUILD='v1033';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2046,6 +2046,11 @@ body.fpopen #fpSum{display:block}
 #result #fczZeroV1032:hover{background:#fee2e2!important}
 html.v1032-noanim #result *{transition:none!important;animation:none!important}
 </style>
+<style id="v1033-style">
+/* v1033 : 규격 아래 전년 매출·전년대비 */
+#result .fcd-prev-v1033{font-size:11px;color:#64748b;font-weight:600;line-height:1.35;margin-top:2px;white-space:nowrap}
+#result .ttLegendV1033{width:100%!important;justify-content:flex-end!important}
+</style>
 </head>
 <body>
 <header>
@@ -2063,7 +2068,7 @@ html.v1032-noanim #result *{transition:none!important;animation:none!important}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1032</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1033</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -9582,7 +9587,7 @@ function custMonthChartV665(cust,yr,rows,yrsOpt,opt){
     +'<span class="sub2" style="margin-left:auto">합계 '+FV(tot)+' · <b style="color:#b45309">평균 '+FV(avg)+'</b>(거래월 '+nMon+'개월) · <b style="color:#dc2626">최고 '+FV(mx)+'</b>'+(iMax>=0?('('+(iMax+1)+'월)'):'')+' · <b style="color:#0d9488">최저 '+FV(mnPos)+'</b>'+(iMin>=0?('('+(iMin+1)+'월)'):'')+' · 출고 '+won(cnt.reduce(function(a,v){return a+v;},0))+'건</span>'
     /* v996 : 범례(실적·평균·○월 현재)를 그래프 «오른쪽 아래»로 내렸습니다. */
     +g
-    +'<div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:2px 4px 0 0;font-size:11px;color:#475569">'
+    +'<div class="ttLegendV1033" style="display:flex;width:100%;justify-content:flex-end;align-items:center;gap:10px;margin:2px 4px 0 0;font-size:11px;color:#475569">'
       /* v997 : 「○월(진행 중)·0원 달 제외」 안내를 범례 맨 왼쪽에 둡니다. */
       +'<span style="color:#94a3b8;font-weight:700">'+(curM?(curM+'월(진행 중)'+(prevM?('·'+prevM+'월(마감 전)'):'')+'·0원 달 제외'):'0원 달 제외')+'</span>'
       +'<span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:3px;background:#2563eb;border-radius:2px"></span>실적</span>'
@@ -20105,13 +20110,16 @@ try{
       }
       monthlyRows=[...keysAll].map(pk=>{
         const meta=f.prodMeta.get(pk)||{code:pk,name:'',spec:''},months=[],baseAdjust=state.fc.custProdOverride[c+'│'+pk];
+        /* v1033 : 같은 제품·규격의 «전년 매출(수량)»을 함께 모읍니다 */
+        let pyAmt=0,pyQty=0;
+        for(let m=1;m<=12;m++){ const _pm=f.pyMonCustProd[m].get(c),_pe=_pm&&_pm.get(pk); if(_pe){pyAmt+=(+_pe.amt||0);pyQty+=(+_pe.qty||0);} }
         let total=0;
         for(let m=1;m<=12;m++){
           const sm=(m<=f.lastAct?f.cyMonCustProd[m]:f.fcCustProdMon[m]).get(c),ce=sm&&sm.get(pk),amt=ce?ce.amt:0,qty=ce?ce.qty:0;
           months[m]={amt,qty,adjust:fcMonthAdjustValue(c,pk,m),actual:m<=f.lastAct};
           total+=metric==='amount'?amt:qty;
         }
-        return{pk,...meta,months,total,baseAdjust:(baseAdjust==null?'':baseAdjust)};
+        return{pk,...meta,months,total,pyAmt,pyQty,baseAdjust:(baseAdjust==null?'':baseAdjust)};
       });
       if(fcIsTargetExcludedCust(c))monthlyRows=[];
       /* v1030 : 월별보기 표도 머리글을 누르면 그 열 기준으로 정렬합니다 */
@@ -20127,7 +20135,7 @@ try{
           const adjust=x.actual?'<span class="fc-month-actual-mark" title="확정실적월은 조정할 수 없습니다">실적</span>':`<input class="fc-month-adjust${x.adjust!==''?' edited':''}" data-pk="${esc(o.pk)}" data-month="${m}" value="${esc(x.adjust)}" inputmode="decimal" placeholder="0" title="제품 전체 목표% 기준 ${m}월 추가 조정률">`;
           return `<td><div class="fc-month-value ${metric}">${fcMonthlyValue(val,metric)}</div><div class="fc-month-adjust-wrap">${adjust}${x.actual?'':'<span>%</span>'}</div></td>`;
         }).join('');
-        return `<tr data-pk="${esc(o.pk)}"><td class="rank"><label class="fcz-pick-v1032" title="이 제품을 고릅니다"><input type="checkbox" class="fczChkV1032" data-pk="${esc(o.pk)}"><span>${i+1}</span></label></td><td class="l"><b>${esc(o.name)}</b><div class="sub2" style="font-size:11px;color:#64748b;margin-top:2px">${esc(o.code||'-')}</div></td><td class="l">${esc(o.spec||'(규격없음)')}</td>${cells}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(o.total,metric)}</b><div class="sub2" style="font-size:10px;color:#94a3b8;font-weight:400">전체% ${o.baseAdjust===''?'자동':esc(o.baseAdjust)+'%'}</div></td></tr>`;
+        return `<tr data-pk="${esc(o.pk)}"><td class="rank"><label class="fcz-pick-v1032" title="이 제품을 고릅니다"><input type="checkbox" class="fczChkV1032" data-pk="${esc(o.pk)}"><span>${i+1}</span></label></td><td class="l"><b>${esc(o.name)}</b><div class="sub2" style="font-size:11px;color:#64748b;margin-top:2px">${esc(o.code||'-')}</div></td><td class="l">${esc(o.spec||'(규격없음)')}${(()=>{const _pv=metric==='amount'?o.pyAmt:o.pyQty;const _cv=o.total||0;const _r=_pv>0?((_cv-_pv)/_pv*100):null;const _col=_r==null?'#7c3aed':(_r>=0?'#15803d':'#dc2626');const _tx=_r==null?(_cv>0?'신규':'-'):((_r>=0?'+':'')+_r.toFixed(1)+'%');return `<div class="fcd-prev-v1033">${f.PY} ${won(Math.round(_pv))} · 전년대비 <b style="color:${_col}">${_tx}</b></div>`;})()}</td>${cells}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(o.total,metric)}</b><div class="sub2" style="font-size:10px;color:#94a3b8;font-weight:400">전체% ${o.baseAdjust===''?'자동':esc(o.baseAdjust)+'%'}</div></td></tr>`;
       }).join('')||`<tr><td colspan="16" style="text-align:center;color:#94a3b8;padding:14px">표시할 월별 목표가 없습니다.</td></tr>`;
       const totalRow=monthlyRows.length?`<tr class="total-row"><td></td><td class="l">합 계</td><td></td>${Array.from({length:12},(_,k)=>`<td><b class="fc-month-value ${metric}">${fcMonthlyValue(monthTotals[k+1],metric)}</b></td>`).join('')}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(grand,metric)}</b></td></tr>`:'';
       bodyHtml=`<div class="tablewrap" style="max-height:1120px"><table class="fc-month-target-table ${metric==='amount'?'amount-view':'qty-view'}"><thead><tr><th>순위</th><th class="l fcdsm" data-sk="name">품명${_arm('name')}</th><th class="l fcdsm" data-sk="spec">규격${_arm('spec')}</th>${Array.from({length:12},(_,k)=>`<th class="fcdsm" data-sk="m${k+1}">${k+1}월${_arm('m'+(k+1))}<div style="font-size:11px;color:#94a3b8">${k+1<=f.lastAct?'확정실적':'조정%'}</div></th>`).join('')}<th class="fcdsm" data-sk="total">합계${_arm('total')}<div style="font-size:11px;color:#94a3b8">전체%</div></th></tr></thead><tbody>${mrows}${totalRow}</tbody></table></div>
@@ -43540,19 +43548,8 @@ else window.addEventListener('load',function(){setTimeout(bind,1200);},{once:tru
 function fix(){
   try{
     var root=document.getElementById('result'); if(!root)return;
-    /* ③ 범례 오른쪽 정렬 */
-    root.querySelectorAll('div').forEach(function(d){
-      try{
-        if(d.__v1020lg)return;
-        if(d.children.length<2)return;
-        var t=(d.textContent||'');
-        if(t.indexOf('0원 달 제외')<0||t.indexOf('실적')<0)return;
-        if(getComputedStyle(d).display.indexOf('flex')<0)return;
-        d.__v1020lg=1;
-        d.style.setProperty('justify-content','flex-end','important');
-        d.style.setProperty('width','100%','important');
-      }catch(_e){}
-    });
+    /* v1033 : 범례는 그려질 때부터 .ttLegendV1033 로 오른쪽에 고정되므로
+       여기서 다시 손대지 않습니다(옛 방식은 한 박자 뒤에 옮겨져 깜빡였습니다). */
     /* ①② 도구줄 합치기 */
     /* v1022 : 추이를 닫은 상태(「추이 보기」 버튼)에서도 같은 자리에 모이게 합니다. */
     var closeBtn=root.querySelector('.ttCloseV760')||root.querySelector('.ttOpenV760'); if(!closeBtn)return;
