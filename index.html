@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1028</title>
-<script>window.APP_BUILD='v1028';</script>
+<title>동방파스텍 매출 분석 도구 v1029</title>
+<script>window.APP_BUILD='v1029';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2054,7 +2054,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1028</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1029</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -13595,6 +13595,27 @@ function forecast(){
     }
   })();
   /* 조정된 제품 합계로 업체·제품·월 목표를 다시 집계해 상위 표와 월별 표를 일치시킵니다. */
+  /* ══ v1029 · 「목표%」를 넣어도 올해목표가 그대로이던 문제 ══
+     목표%는 ① 단계에서 한 번 맞췄지만, 그 뒤에 ② 영업전략 추진현황의 «직접입력 금액»이
+     다시 더해져 결과가 입력한 %와 달라졌습니다(전년 대비 −95%를 넣어도 +143%로 표시).
+     이제 전략 금액까지 더한 «최종 금액»을 한 번 더 목표%에 맞춰 보정합니다.
+     전략 금액을 제품에 따로 넣은 경우에는 목표%가 최종값을 결정합니다. */
+  try{
+    futurePairs.forEach(o=>{
+      const ov=cpOverride[o.c+'│'+o.pk]; if(ov==null||ov==='')return;
+      let prev=0,actual=0,cur=0;
+      for(let m=1;m<=12;m++){
+        const pe=(pyMonCustProd[m].get(o.c)||new Map()).get(o.pk); if(pe)prev+=pe.amt||0;
+        if(m<=lastAct){ const ae=(cyMonCustProd[m].get(o.c)||new Map()).get(o.pk); if(ae)actual+=ae.amt||0; }
+      }
+      for(const m of fcMonths){ const e=(fcCustProdMon[m].get(o.c)||new Map()).get(o.pk); if(e)cur+=(+e.amt||0); }
+      const desired=Math.max(0,prev*(1+(+ov||0)/100)), remain=Math.max(0,desired-actual);
+      if(cur<=0)return;
+      const f=remain/cur;
+      if(!isFinite(f)||Math.abs(f-1)<1e-9)return;
+      for(const m of fcMonths){ const e=(fcCustProdMon[m].get(o.c)||new Map()).get(o.pk); if(e){ e.amt*=f; e.qty*=f; } }
+    });
+  }catch(_e1029){}
   for(const m of fcMonths){ fcCustMon[m].clear();fcProdMon[m].clear();fcMonTot[m]=0;fcCustProdMon[m].forEach((pm,c)=>{let custTotal=0;pm.forEach((e,pk)=>{custTotal+=e.amt||0;addP(fcProdMon[m],pk,e.amt||0,e.qty||0);});fcCustMon[m].set(c,custTotal);fcMonTot[m]+=custTotal;}); }
   state._fc={PY,CY,lastAct,fcMonths,prodMeta,pyMonTot,cyMonTot,fcMonTot,pyMonCust,cyMonCust,fcCustMon,pyMonProd,cyMonProd,fcProdMon,pyMonCustProd,cyMonCustProd,fcCustProdMon};
   // chart: 3 bars per month — 전년(PY) / 목표(target) / 실적(actual)
