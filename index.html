@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1022</title>
-<script>window.APP_BUILD='v1022';</script>
+<title>동방파스텍 매출 분석 도구 v1023</title>
+<script>window.APP_BUILD='v1023';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1022</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1023</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -11750,6 +11750,16 @@ function pareto(){
   let th=parseFloat(state.pareto.threshold); if(isNaN(th))th=80; th=Math.min(100,Math.max(1,th));
   let topN=Math.round(+state.pareto.topN||20); topN=Math.min(500,Math.max(1,topN));
   const [pm1,pm2,pLab]=paretoRange();
+  /* ══ v1023 · 연도 기본값을 «상단 메뉴의 연도(현재연도)»로 맞추고 계속 연동합니다 ══
+     예전에는 «전체연도»로 시작해, 상단에서 연도를 바꿔도 파레토는 따로 놀았습니다. */
+  try{
+    const _hy=String(state.periodYear||'');
+    if(_hy){
+      if(state.pareto._hyV1023!==_hy){ state.pareto.year=_hy; state.pareto._hyV1023=_hy; }
+      else if(!state.pareto._initV1023){ state.pareto.year=_hy; }
+    }
+    state.pareto._initV1023=1;
+  }catch(_ey1023){}
   const yr=state.pareto.year;
   const inYear=r=>yr==='all'||+r.y===+yr;
   const inMon=r=>state.pareto.period==='all'||(monthOf(r)>=pm1&&monthOf(r)<=pm2);
@@ -11762,8 +11772,10 @@ function pareto(){
   let cum=0; arr.forEach(o=>{cum+=o.amt;o.share=tot?o.amt/tot*100:0;o.cumShare=tot?cum/tot*100:0;});
   let cutIdx=arr.findIndex(o=>o.cumShare>=th); if(cutIdx<0)cutIdx=arr.length-1;
   const coreCount=isCount?Math.min(topN,arr.length):Math.min(cutIdx+1,arr.length), restCount=arr.length-coreCount, showRest=state.pareto.showRest;
-  const view=showRest?arr.slice(coreCount):arr.slice(0,coreCount); const viewTot=view.reduce((a,o)=>a+o.amt,0);
-  const max=Math.max(...arr.map(o=>o.amt),1); const off=showRest?coreCount:0;
+  /* v1023 : 표 위 요약 버튼으로 «전체 / 핵심 / 나머지»를 골라 봅니다. */
+  const showAll=!!state.pareto.showAll;
+  const view=showAll?arr.slice():(showRest?arr.slice(coreCount):arr.slice(0,coreCount)); const viewTot=view.reduce((a,o)=>a+o.amt,0);
+  const max=Math.max(...arr.map(o=>o.amt),1); const off=(!showAll&&showRest)?coreCount:0;
   const cols = dim==='cust'?[
     {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>off+i+1},
     {k:'label',t:'거래처',cls:'l',cell:o=>esc(o.label)+' '+catChip(o.label)},
@@ -11812,16 +11824,23 @@ function pareto(){
     const core=arr.slice(0,coreCount).reduce((a,o)=>a+(+o.amt||0),0);
     const rest=Math.max(0,(+tot||0)-core);
     const pc=tot?core/tot*100:0, pr=tot?rest/tot*100:0;
-    const box=(lab,n,amt,pct,col,bg)=>'<span style="display:inline-flex;align-items:baseline;gap:5px;padding:4px 10px;border-radius:9px;background:'+bg+';border:1px solid '+col+'33">'
-      +'<b style="font-size:11.5px;color:'+col+'">'+lab+'</b>'
-      +(n==null?'':'<span class="sub2" style="font-size:10.5px">'+n.toLocaleString()+(dim==='cust'?'개사':'종')+'</span>')
-      +'<b style="font-size:13px;color:'+col+'">'+won(Math.round(amt))+'원</b>'
-      +(pct==null?'':'<span class="sub2" style="font-size:10.5px">'+pct.toFixed(1)+'%</span>')+'</span>';
+    const cur=showAll?'all':(showRest?'rest':'core');
+    const box=(lab,n,amt,pct,col,bg,v)=>{
+      const on=(cur===v);
+      return '<button type="button" class="pSumBtnV1023" data-pv="'+v+'" title="누르면 아래 표에 이 범위만 표시합니다"'
+        +' style="display:inline-flex;align-items:baseline;gap:5px;padding:5px 11px;border-radius:9px;cursor:pointer;font-family:inherit;'
+        +'background:'+(on?col:bg)+';border:1px solid '+(on?col:(col+'44'))+';'+(on?'box-shadow:0 2px 6px '+col+'33;':'')+'">'
+        +'<b style="font-size:11.5px;color:'+(on?'#fff':col)+'">'+lab+'</b>'
+        +(n==null?'':'<span style="font-size:10.5px;color:'+(on?'#ffffffcc':'#64748b')+'">'+n.toLocaleString()+(dim==='cust'?'개사':'종')+'</span>')
+        +'<b style="font-size:13px;color:'+(on?'#fff':col)+'">'+won(Math.round(amt))+'원</b>'
+        +(pct==null?'':'<span style="font-size:10.5px;color:'+(on?'#ffffffcc':'#64748b')+'">'+pct.toFixed(1)+'%</span>')
+        +(on?'<span style="font-size:11px;color:#fff;margin-left:2px">✓</span>':'')+'</button>';
+    };
     return '<div class="ctrlbar" style="margin-top:6px;gap:8px;flex-wrap:wrap;background:#f8fafc;border-radius:8px;padding:7px 10px">'
       +'<b style="font-size:12px;color:#334155">'+basisLabel+' 기준</b>'
-      +box('전체 합계',arr.length,tot,null,'#1e3a5f','#fff')
-      +box('핵심('+basisLabel+')',coreCount,core,pc,'#1d4ed8','#eff6ff')
-      +box('나머지',restCount,rest,pr,'#b45309','#fffbeb')
+      +box('전체 합계',arr.length,tot,null,'#1e3a5f','#fff','all')
+      +box('핵심('+basisLabel+')',coreCount,core,pc,'#1d4ed8','#eff6ff','core')
+      +box('나머지',restCount,rest,pr,'#b45309','#fffbeb','rest')
       +'</div>';
   })();
     const coreMixHtml = dim==='prod' ? (()=>{ const cm=mixZeroObj(); arr.slice(0,coreCount).forEach(o=>{ cm[mixCatKey(o)]+=o.amt; }); const ct=Object.values(cm).reduce((a,b)=>a+b,0)||1; return `<div class="ctrlbar" style="margin-top:6px;background:#f8fafc;border-radius:8px;padding:6px 10px"><b style="font-size:12px">핵심 ${coreCount}개(누적 ${th}%) 내 제품구분 비중:</b> `+mixCats().map(c=>`<span style="font-size:12px;font-weight:800;color:${MIX_TXT[c]}">${c} ${(cm[c]/ct*100).toFixed(1)}%</span>`).join('<span class="sub2">·</span> ')+`</div>`; })() : '';
@@ -11834,15 +11853,21 @@ function pareto(){
   render('매출 집중도 (파레토)',`${scopeLab} · ${dim==='cust'?'거래처':'제품·규격'} ${arr.length.toLocaleString()}개 · ${basisLabel} ${coreCount}개가 매출의 ${basisShare.toFixed(1)}% · 표시합계 ${won(viewTot)}원`,view,cols,'amt',
     `${basisName}표시 기준 또는 매출 기여 누적비중 기준으로 ${showRest?'<b>나머지</b>':'<b>핵심</b>'} 항목을 표시합니다. <b>연도</b>(특정 연도 또는 전체연도 합산)와 <b>기간</b>(월 구간)을 함께 지정할 수 있습니다. <b>행을 클릭</b>하면 ${dim==='cust'?'품목군 → 품번·품명·규격으로':'거래처별 매출이'} 이어집니다.`,
     {drill:pdrill, controlsHtml:controls+controls2+_pSumV1010+coreMixHtml, onMount:()=>{
-      $('#result').querySelectorAll('#pDim button').forEach(b=>b.addEventListener('click',()=>{state.pareto.dim=b.dataset.v;state.pareto.showRest=false;state.sortKey=null;pareto();}));
-      const setTop=v=>{state.pareto.mode='count';state.pareto.topN=Math.max(1,Math.min(500,Math.round(+v||20)));state.pareto.showRest=false;state.sortKey=null;pareto();};
-      const setPct=v=>{state.pareto.mode='pct';state.pareto.threshold=Math.max(1,Math.min(100,+v||80));state.pareto.showRest=false;state.sortKey=null;pareto();};
+      $('#result').querySelectorAll('#pDim button').forEach(b=>b.addEventListener('click',()=>{state.pareto.dim=b.dataset.v;state.pareto.showRest=false;state.pareto.showAll=false;state.sortKey=null;pareto();}));
+      const setTop=v=>{state.pareto.mode='count';state.pareto.topN=Math.max(1,Math.min(500,Math.round(+v||20)));state.pareto.showRest=false;state.pareto.showAll=false;state.sortKey=null;pareto();};
+      const setPct=v=>{state.pareto.mode='pct';state.pareto.threshold=Math.max(1,Math.min(100,+v||80));state.pareto.showRest=false;state.pareto.showAll=false;state.sortKey=null;pareto();};
       $('#pModeCount')&&$('#pModeCount').addEventListener('click',()=>setTop(topN));
       $('#pModePct')&&$('#pModePct').addEventListener('click',()=>setPct(th));
       const pn=$('#pTopN'),pc=$('#pTopCustom'); pn&&pn.addEventListener('change',e=>setTop(e.target.value)); if(pc){let _pn;const apply=()=>setTop(pc.value);pc.addEventListener('input',()=>{clearTimeout(_pn);_pn=setTimeout(apply,450);});pc.addEventListener('change',()=>{clearTimeout(_pn);apply();});}
-      $('#result').querySelectorAll('#pToggle button').forEach(b=>b.addEventListener('click',()=>{state.pareto.showRest=b.dataset.v==='rest';state.sortKey=null;pareto();}));
-      $('#result').querySelectorAll('#pYear button').forEach(b=>b.addEventListener('click',()=>{state.pareto.year=b.dataset.v;state.pareto.showRest=false;state.sortKey=null;pareto();}));
-      $('#result').querySelectorAll('#pPer button').forEach(b=>b.addEventListener('click',()=>{state.pareto.period=b.dataset.v;state.pareto.showRest=false;state.sortKey=null;pareto();}));
+      $('#result').querySelectorAll('.pSumBtnV1023').forEach(b=>b.addEventListener('click',()=>{
+        const v=b.dataset.pv;
+        state.pareto.showAll=(v==='all');
+        state.pareto.showRest=(v==='rest');
+        state.sortKey=null; pareto();
+      }));
+      $('#result').querySelectorAll('#pToggle button').forEach(b=>b.addEventListener('click',()=>{state.pareto.showAll=false;state.pareto.showRest=b.dataset.v==='rest';state.sortKey=null;pareto();}));
+      $('#result').querySelectorAll('#pYear button').forEach(b=>b.addEventListener('click',()=>{state.pareto.year=b.dataset.v;state.pareto._hyV1023=String(state.periodYear||'');state.pareto.showRest=false;state.pareto.showAll=false;state.sortKey=null;pareto();}));
+      $('#result').querySelectorAll('#pPer button').forEach(b=>b.addEventListener('click',()=>{state.pareto.period=b.dataset.v;state.pareto.showRest=false;state.pareto.showAll=false;state.sortKey=null;pareto();}));
       const q1=$('#pM1'),q2=$('#pM2'); q1&&q1.addEventListener('change',e=>{state.pareto.m1=+e.target.value;if(state.pareto.m1>state.pareto.m2)state.pareto.m2=state.pareto.m1;state.sortKey=null;pareto();}); q2&&q2.addEventListener('change',e=>{state.pareto.m2=+e.target.value;if(state.pareto.m2<state.pareto.m1)state.pareto.m1=state.pareto.m2;state.sortKey=null;pareto();});
       const ti=$('#pTh'),pi=$('#pPctCustom'); if(ti)ti.addEventListener('change',e=>setPct(e.target.value)); if(pi){let _pt;const apply=()=>setPct(pi.value);pi.addEventListener('input',()=>{clearTimeout(_pt);_pt=setTimeout(apply,450);});pi.addEventListener('change',()=>{clearTimeout(_pt);apply();});}
     }});
