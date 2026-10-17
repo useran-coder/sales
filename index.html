@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1030</title>
-<script>window.APP_BUILD='v1030';</script>
+<title>동방파스텍 매출 분석 도구 v1031</title>
+<script>window.APP_BUILD='v1031';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2056,7 +2056,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1030</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1031</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -20112,6 +20112,8 @@ try{
       const rows=arr.map((o,i)=>`<tr><td class="rank">${i+1}</td><td class="l">${esc(o.code)}</td><td class="l">${esc(o.name)}</td><td class="l">${esc(o.spec||'(규격없음)')}</td><td>${disp(o.prev)}</td><td>${disp(o.proj)}</td><td><input class="fccpov${o.cpov!==''?' edited':''}" data-pk="${esc(o.pk)}" value="${esc(o.cpov)}" placeholder="목표%" style="width:56px;text-align:right;font-size:13px;padding:3px;border:1px solid var(--line);border-radius:5px;font-family:inherit" onclick="event.stopPropagation()"></td><td>${diffSpan(o.diff)}</td><td>${pctSpan(o.pct)}</td><td>${won(Math.round(o.pq))}</td><td>${won(Math.round(o.cq))}</td></tr>`).join('');
       bodyHtml=`<div class="tablewrap" style="max-height:1120px"><table class="fcd-prod-fit"><colgroup><col style="width:4%"><col style="width:11%"><col style="width:14%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:8%"><col style="width:9%"><col style="width:6%"><col style="width:7%"><col style="width:7%"></colgroup><thead><tr><th>순위</th><th class="l fcds" data-sk="code">품번${_ar('code')}</th><th class="l fcds" data-sk="name">품명${_ar('name')}</th><th class="l fcds" data-sk="spec">규격${_ar('spec')}</th><th class="fcds" data-sk="prev">전년매출(${f.PY})${_ar('prev')}</th><th class="fcds" data-sk="proj">올해목표${_ar('proj')}</th><th>목표%<div style="font-size:8px;color:#94a3b8;font-weight:400">전년比</div></th><th class="fcds" data-sk="diff">증감액${_ar('diff')}</th><th class="fcds" data-sk="pct">증감%${_ar('pct')}</th><th class="fcds" data-sk="pq">전년수량${_ar('pq')}</th><th class="fcds" data-sk="cq">목표수량${_ar('cq')}</th></tr></thead><tbody>${rows}</tbody></table></div><div class="note">${fcRangeLabel()} 기준, ${esc(c)}의 제품·규격별 전년 대비 목표 증감입니다.</div>`;
     }
+    /* v1031 : 표 검색어는 같은 업체 화면을 다시 그릴 때 유지합니다 */
+    try{ if(window.__V939C!==c){ window.__V939C=c; window.__V939Q=''; } }catch(_e1031){}
     const metricText=monOn?(fcMonthlyMetric()==='amount'?' · 월별 목표금액':' · 월별 목표수량'):'';
     /* v760 : 업체를 고르면(월별보기 포함) 표 위에 그 업체의 월별 매출 추이를 표시합니다 */
     /* v902 : 그 해(목표 연도) 월 목표를 추이 그래프에 겹쳐 볼 수 있게 넘깁니다. */
@@ -42133,11 +42135,21 @@ function filt(){
     });
   }catch(e){}
 }
-document.addEventListener('input',function(e){ if(e.target&&e.target.id==='fcdQV939'){ clearTimeout(window.__v939T); window.__v939T=setTimeout(filt,120); } },true);
+document.addEventListener('input',function(e){ if(e.target&&e.target.id==='fcdQV939'){ try{ window.__V939Q=e.target.value; }catch(_q){} clearTimeout(window.__v939T); window.__v939T=setTimeout(filt,120); } },true);
 document.addEventListener('click',function(e){
-  try{ if(e.target&&e.target.closest&&e.target.closest('#fcdQClearV939')){ var q=document.getElementById('fcdQV939'); if(q){q.value='';filt();q.focus();} } }catch(_e){}
+  try{ if(e.target&&e.target.closest&&e.target.closest('#fcdQClearV939')){ var q=document.getElementById('fcdQV939'); if(q){q.value='';try{window.__V939Q='';}catch(_q){} filt();q.focus();} } }catch(_e){}
 },true);
-function all(){ move(); tools(); fallbackShow(); }
+/* v1031 : 조정% 입력 등으로 표가 다시 그려져도 검색어와 필터를 되살립니다 */
+function restoreQ(){
+  try{
+    var q=document.getElementById('fcdQV939'); if(!q)return;
+    var want=String(window.__V939Q||'');
+    if(!document.querySelector('#result table.fcd-prod-fit,#result table.fc-month-target-table'))return;
+    if(want&&q.value!==want&&document.activeElement!==q)q.value=want;
+    if(q.value)filt();
+  }catch(_e){}
+}
+function all(){ move(); tools(); fallbackShow(); restoreQ(); }
 try{
   var r=document.getElementById('result');
   if(r&&window.MutationObserver){
