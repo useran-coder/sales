@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1009</title>
-<script>window.APP_BUILD='v1009';</script>
+<title>동방파스텍 매출 분석 도구 v1010</title>
+<script>window.APP_BUILD='v1010';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1009</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1010</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -11672,6 +11672,25 @@ function pareto(){
   const controls2=`<div class="ctrlbar" style="margin-top:6px"><b style="font-size:12px">연도</b> ${yrBtns} <b style="font-size:12px">기간</b>
     <div class="seg" id="pPer">${pRanges.map(k=>`<button data-v="${k}" class="${state.pareto.period===k?'on':''}">${k}</button>`).join('')}<button data-v="range" class="${state.pareto.period==='range'?'on':''}">기간설정</button></div>
     <span id="pRangeSel" style="display:${state.pareto.period==='range'?'inline-flex':'none'};align-items:center;gap:4px"><select id="pM1">${monOpts(pm1)}</select> ~ <select id="pM2">${monOpts(pm2)}</select></span></div>`;
+  /* ══ v1010 · 표 위 합계 요약 ══
+     지금 기준(비중 80% 또는 업체표시 상위 N개)으로 «핵심»에 든 금액과
+     «나머지»에 남은 금액을 한 줄로 보여 줍니다. 두 기준 모두 같은 방식입니다. */
+  const _pSumV1010=(()=>{
+    const core=arr.slice(0,coreCount).reduce((a,o)=>a+(+o.amt||0),0);
+    const rest=Math.max(0,(+tot||0)-core);
+    const pc=tot?core/tot*100:0, pr=tot?rest/tot*100:0;
+    const box=(lab,n,amt,pct,col,bg)=>'<span style="display:inline-flex;align-items:baseline;gap:5px;padding:4px 10px;border-radius:9px;background:'+bg+';border:1px solid '+col+'33">'
+      +'<b style="font-size:11.5px;color:'+col+'">'+lab+'</b>'
+      +(n==null?'':'<span class="sub2" style="font-size:10.5px">'+n.toLocaleString()+(dim==='cust'?'개사':'종')+'</span>')
+      +'<b style="font-size:13px;color:'+col+'">'+won(Math.round(amt))+'원</b>'
+      +(pct==null?'':'<span class="sub2" style="font-size:10.5px">'+pct.toFixed(1)+'%</span>')+'</span>';
+    return '<div class="ctrlbar" style="margin-top:6px;gap:8px;flex-wrap:wrap;background:#f8fafc;border-radius:8px;padding:7px 10px">'
+      +'<b style="font-size:12px;color:#334155">'+basisLabel+' 기준</b>'
+      +box('전체 합계',arr.length,tot,null,'#1e3a5f','#fff')
+      +box('핵심('+basisLabel+')',coreCount,core,pc,'#1d4ed8','#eff6ff')
+      +box('나머지',restCount,rest,pr,'#b45309','#fffbeb')
+      +'</div>';
+  })();
     const coreMixHtml = dim==='prod' ? (()=>{ const cm=mixZeroObj(); arr.slice(0,coreCount).forEach(o=>{ cm[mixCatKey(o)]+=o.amt; }); const ct=Object.values(cm).reduce((a,b)=>a+b,0)||1; return `<div class="ctrlbar" style="margin-top:6px;background:#f8fafc;border-radius:8px;padding:6px 10px"><b style="font-size:12px">핵심 ${coreCount}개(누적 ${th}%) 내 제품구분 비중:</b> `+mixCats().map(c=>`<span style="font-size:12px;font-weight:800;color:${MIX_TXT[c]}">${c} ${(cm[c]/ct*100).toFixed(1)}%</span>`).join('<span class="sub2">·</span> ')+`</div>`; })() : '';
   const yLab = yr==='all'?'전체연도':yr+'년';
   const scopeLab = `${yLab} · ${pLab==='전체'?'전체기간':pLab+' '+pm1+'~'+pm2+'월'}`;
@@ -11681,7 +11700,7 @@ function pareto(){
     : {by:'cust',byLabel:'거래처',rowsFor:o=>CUR.filter(r=>((r.code||'(미상)')+'│'+(r.spec||''))===o.key&&inScope(r))};
   render('매출 집중도 (파레토)',`${scopeLab} · ${dim==='cust'?'거래처':'제품·규격'} ${arr.length.toLocaleString()}개 · ${basisLabel} ${coreCount}개가 매출의 ${basisShare.toFixed(1)}% · 표시합계 ${won(viewTot)}원`,view,cols,'amt',
     `${basisName}표시 기준 또는 매출 기여 누적비중 기준으로 ${showRest?'<b>나머지</b>':'<b>핵심</b>'} 항목을 표시합니다. <b>연도</b>(특정 연도 또는 전체연도 합산)와 <b>기간</b>(월 구간)을 함께 지정할 수 있습니다. <b>행을 클릭</b>하면 ${dim==='cust'?'품목군 → 품번·품명·규격으로':'거래처별 매출이'} 이어집니다.`,
-    {drill:pdrill, controlsHtml:controls+controls2+coreMixHtml, onMount:()=>{
+    {drill:pdrill, controlsHtml:controls+controls2+_pSumV1010+coreMixHtml, onMount:()=>{
       $('#result').querySelectorAll('#pDim button').forEach(b=>b.addEventListener('click',()=>{state.pareto.dim=b.dataset.v;state.pareto.showRest=false;state.sortKey=null;pareto();}));
       const setTop=v=>{state.pareto.mode='count';state.pareto.topN=Math.max(1,Math.min(500,Math.round(+v||20)));state.pareto.showRest=false;state.sortKey=null;pareto();};
       const setPct=v=>{state.pareto.mode='pct';state.pareto.threshold=Math.max(1,Math.min(100,+v||80));state.pareto.showRest=false;state.sortKey=null;pareto();};
@@ -13333,7 +13352,12 @@ function forecast(){
     const pAdd=state.fc.prodMonthAdd||{}, cAdd=state.fc.custMonthAdd||{};
     const pks=Object.keys(pAdd), cks=Object.keys(cAdd);
     if(!pks.length&&!cks.length)return;
-    const srcs=[fcCustProdMon,cyMonCustProd,pyMonCustProd];
+    /* ══ v1010 · 제품 전략금액을 거래처에 나눌 때 쓰는 «구성비»를 고정합니다 ══
+       예전에는 «지금 화면의 목표(fcCustProdMon)» 구성비로 나눴습니다.
+       그래서 A업체 5월 조정%를 고치면 그 제품의 구성비가 통째로 바뀌어,
+       손대지 않은 업체의 1~12월 금액까지 몇 백~몇 만 원씩 따라 움직였습니다.
+       이제 «전년 실적 → 올해 실적 → (없으면) 현재 목표» 순의 고정된 구성비를 씁니다. */
+    const srcs=[pyMonCustProd,cyMonCustProd,fcCustProdMon];
     const prodMix=(pk)=>{
       for(const S of srcs){ const mx=new Map(); let tot=0;
         for(let m=1;m<=12;m++){ const M=S[m]; if(!M)continue;
@@ -14646,7 +14670,9 @@ function gsFields(){ return [
   ['headcount',state,'headcount'],['headMonthly',state,'headMonthly'],['headYearDefault',state,'headYearDefault'],['salesMonthlySync',state,'salesMonthlySync'],['laserMonthlySync',state,'laserMonthlySync'],['purchaseMonthlySync',state,'purchaseMonthlySync'],
   ['mgrOverride',state,'mgrOverride'],['cmgrPrimary',state,'cmgrPrimary'],['cmgrKey',state,'cmgrKey'],
   ['fcPct',state.fc,'pct'],['fcOverride',state.fc,'override'],['fcAddPct',state.fc,'addPct'],['fcTargetPlans',state.fc,'targetPlans'],['fcActivePlan',state.fc,'activePlan'],
-  ['workdays',state,'workdays'],['bep',state,'bep'],['bepYears',state,'bepYears'],['fcNewCusts',state.fc,'newCusts'],
+  ['workdays',state,'workdays'],['bep',state,'bep'],['bepYears',state,'bepYears'],
+  /* v1010 : PD 매출 포함 여부가 동기화되지 않아 PC마다 확정매출·목표액이 달랐습니다. */
+  ['pdInclude',state,'pdInclude'],['fcNewCusts',state.fc,'newCusts'],
   ['clsOverride',state,'clsOverride'],['gradeOverride',state,'gradeOverride'],['gbunOverride',state,'gbunOverride'],['specKindOverride',state,'specKindOverride'],['mixCustomCats',state,'mixCustomCats'],['salesQtyAnalysis',state,'salesQtyAnalysis'],['doorFrameMap',state.doorFrame,'map'],['doorFrameProductGroups',state.doorFrame,'productGroups'],['doorFrameGroupMap',state.doorFrame,'groupMap'],['doorFrameDeletedGroups',state.doorFrame,'deletedGroups'],
   ['priceSets',state,'priceSets'],['comp',state,'comp'],['editLog',state,'editLog'],
   ['custProdOverride',state.fc,'custProdOverride'],['fcProdOverride',state.fc,'prodOverride'],['fcProdAddPct',state.fc,'prodAddPct'],
@@ -31461,7 +31487,20 @@ function sgLinkedTargetV613(it,maps){
   var byCust=sgTargetCustAmountV613(maps,it.cust),byProd=sgTargetProdAmountV613(maps,it.prod||it.title);
   var v=prodFirst?(byProd!=null?byProd:byCust):(byCust!=null?byCust:byProd);
   if(v==null||!isFinite(v))return null;
-  return Math.max(0,Math.round(v));
+  var r=Math.max(0,Math.round(v));
+  /* ══ v1010 · 「한 업체의 월 조정%를 고쳤는데 다른 업체 금액이 조금씩 바뀌던」 문제 ══
+     🔗 목표연동 전략은 «목표표의 올해목표»를 그대로 금액으로 썼습니다.
+     그래서 A업체 5월을 고치면 → 그 제품의 올해목표 합계가 바뀌고 → 연동 금액이 바뀌고
+     → 그 제품의 전략 추가금액이 모든 거래처에 다시 나뉘어, 손대지 않은 업체까지 미세하게 움직였습니다.
+     이제 연동 금액은 «연동한 시점의 값»으로 고정합니다.
+     최신 목표로 다시 맞추려면 그 줄의 🔗 목표연동 버튼을 한 번 껐다 켜면 됩니다. */
+  try{
+    if(it.amountLink!==false){
+      if(it.linkSnapV1010==null||!isFinite(+it.linkSnapV1010))it.linkSnapV1010=r;
+      return Math.max(0,Math.round(+it.linkSnapV1010));
+    }
+  }catch(_e1010){}
+  return r;
 }
 function sgItemAmountV613(it,maps){
   var linked=sgLinkedTargetV613(it,maps);
@@ -34308,7 +34347,8 @@ function sgBind(A){
       /* v613 : 금액을 직접 고치면 목표표 연동을 해제하고 입력값을 사용합니다. */
       /* v892 : 금액을 직접 고쳐 넣으면 «목표연동»을 풉니다(목표표 승격 항목도 동일).
          예전에는 목표표에 승격된 항목만 연동이 유지돼, 입력 직후 이전 금액으로 되돌아갔습니다. */
-      if(f==='amount'){it.amount=sgNum(v);it.amountLink=false;if(it.targetDirectV857)sgSyncDirectTargetV857(it,A,false);try{if(window.sgAmtRememberV910)window.sgAmtRememberV910(it.id,it.amount,false);}catch(_r910){}try{sgAmtCommitV909();}catch(_a909){}}
+      if(f==='cust'||f==='prod'){ try{ delete it.linkSnapV1010; }catch(_c1010){} }
+      if(f==='amount'){it.amount=sgNum(v);it.amountLink=false;try{ delete it.linkSnapV1010; }catch(_a1010){}if(it.targetDirectV857)sgSyncDirectTargetV857(it,A,false);try{if(window.sgAmtRememberV910)window.sgAmtRememberV910(it.id,it.amount,false);}catch(_r910){}try{sgAmtCommitV909();}catch(_a909){}}
       else if(f==='prob'){it.prob=Math.max(0,Math.min(100,sgNum(v)));it.stage=sgStageFromProbV856(it.prob);}
       else if(f==='mon')it.mon=+v||1;
       else if(f==='stage'){ it.stage=v; it.prob=(SG_SMAP[v]||{p:50}).p; }
@@ -34334,7 +34374,7 @@ function sgBind(A){
       var cur=sgLinkedTargetV613(it,sgAnnualTargetMapsV613());
       if(cur!=null)it.amount=cur;
       it.amountLink=false;
-    }else it.amountLink=true;
+    }else { it.amountLink=true; try{ delete it.linkSnapV1010; }catch(_s1010){} }
     if(typeof fcSyncActivePlan==='function')fcSyncActivePlan();
     try{ if(window.sgAmtRememberV910)window.sgAmtRememberV910(it.id,it.amount,it.amountLink); }catch(_r2){}
     sgSave(); sgAmtCommitV909(); sgRe(true);
@@ -39660,6 +39700,8 @@ try{
       var rows=oldFields.apply(this,arguments),req=[
         ['headcount',state,'headcount'],['headMonthly',state,'headMonthly'],['headYearDefault',state,'headYearDefault'],
         ['workdays',state,'workdays'],['bep',state,'bep'],['bepYears',state,'bepYears'],
+  /* v1010 : PD 매출 포함 여부가 동기화되지 않아 PC마다 확정매출·목표액이 달랐습니다. */
+  ['pdInclude',state,'pdInclude'],
         ['fcYearMisc',state,'fcYearMisc'],['pdYears',state,'pdYears'],
         ['fcCustMemo',state.fc,'custMemo'],['fcProdMemo',state.fc,'prodMemo']
       ];
