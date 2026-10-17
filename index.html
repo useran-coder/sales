@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1026</title>
-<script>window.APP_BUILD='v1026';</script>
+<title>동방파스텍 매출 분석 도구 v1027</title>
+<script>window.APP_BUILD='v1027';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -473,7 +473,8 @@
   .wr-mode-field{border:1px solid #e2e8f0;border-radius:8px;padding:4px 6px;background:#fff;transition:opacity .12s,border-color .12s,background .12s}
   .wr-mode-field.on{border-color:#1e3a5f;background:#eef2ff}
   .wr-mode-field.off{opacity:.52;background:#f8fafc}
-  .wr-mixbar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:0 0 8px}
+  /* v1027 : 제품구분 카드를 한 줄에 모두 표시합니다(개수에 맞춰 자동 분할). */
+  .wr-mixbar{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;margin:0 0 8px}
   .wr-mixitem{border:1px solid #cbd5e1;border-radius:8px;padding:5px 6px;background:#fff;min-width:0}
   .wr-mixitem b{display:block;font-size:10px;color:#334155;white-space:nowrap;overflow:visible;text-overflow:clip}.wr-mixitem>span{font-size:11px;font-weight:900;color:#111827}
   .wr-mixicon{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:22px;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:900;line-height:1.2;border:1px solid #cbd5e1;background:#f8fafc;color:#334155;white-space:nowrap}
@@ -2053,7 +2054,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1026</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1027</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -2419,10 +2420,23 @@ window.fcBootWaitV860=function(){
   try{
     var r=document.getElementById('result'); if(!r)return;
     if(r.querySelector&&r.querySelector('#fcBootWaitV860'))return;
-    r.innerHTML='<div id="fcBootWaitV860" style="margin:16px 0;padding:34px 24px;border:1px solid #bfdbfe;border-radius:14px;background:#f8fbff;text-align:center;color:#1e3a5f">'
-      +'<div style="display:inline-block;width:18px;height:18px;border:3px solid #93c5fd;border-top-color:#1d4ed8;border-radius:50%;animation:gsSpin .8s linear infinite;vertical-align:-4px;margin-right:9px"></div>'
-      +'<b style="font-size:15px">최신 매출목표를 확인하고 있습니다</b>'
-      +'<div style="margin-top:8px;font-size:12px;color:#64748b">연도별 목표와 동기화 자료를 모두 확인한 뒤 정확한 결과만 표시합니다.</div></div>';
+    /* ══ v1027 · 처음 실행할 때의 로딩 화면과 같은 모양(숫자 %·게이지)으로 맞춥니다 ══ */
+    r.innerHTML='<div id="fcBootWaitV860" style="min-height:52vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#1e3a5f">'
+      +'<div id="fcBootPctV1027" style="font-size:54px;line-height:1;font-weight:900;color:#1e3a5f;letter-spacing:-.03em;font-variant-numeric:tabular-nums">0<span style="font-size:30px">%</span></div>'
+      +'<div style="height:9px;width:260px;margin:16px auto 0;background:#e2e8f0;border-radius:6px;overflow:hidden">'
+      +'<div id="fcBootBarV1027" style="height:100%;width:0%;background:linear-gradient(90deg,#1e3a5f,#3b82f6);border-radius:6px;transition:width .25s ease"></div></div>'
+      +'<div style="margin-top:11px;font-size:13px;font-weight:700;color:#64748b">최신 매출목표를 확인하는 중입니다</div></div>';
+    try{
+      clearInterval(window.__FC_BOOT_T_V1027);
+      var _p=0;
+      window.__FC_BOOT_T_V1027=setInterval(function(){
+        var n=document.getElementById('fcBootPctV1027'), b=document.getElementById('fcBootBarV1027');
+        if(!n||!b){ clearInterval(window.__FC_BOOT_T_V1027); return; }
+        if(_p<96)_p+=Math.max(0.6,(96-_p)*0.06);
+        n.innerHTML=Math.round(_p)+'<span style="font-size:30px">%</span>';
+        b.style.width=Math.round(_p)+'%';
+      },90);
+    }catch(_t1027){}
   }catch(_e){}
 };
 let state={ basis:'공급가', unit:1, period:'year', periodKey:null, periodYear:null, workdays:{}, bep:0, clsOverride:{}, gradeOverride:{}, gbunOverride:{}, specKindOverride:{}, mixCustomCats:[], salesQtyAnalysis:{view:'product',threshold:10,basis:'total',mergeCode:true,show:'low',mix:'전체',group:'전체',search:'',sort:{key:'basisQty',dir:'asc'},selectedKey:'',exLaser:false}, region:{level:'do'}, credit:{cat:null,by:'status'}, retain:{issue:false,showExcl:false,visitOnly:false,exclOnly:false}, retainMemo:{}, retainMemoAt:{}, retainExcl:{}, retainVisit:{}, cmgrExcl:{'(주)네써쎄리':true,'(주)동방파스텍 광주지점':true}, elogSeenTs:0, cross:{base:'',baseSpec:'',targets:[''],filter:'all'}, ir:{target:'all',view:'spec',sm:10}, trend2:{win:12,dim:'cust',grp:'none',catSel:null,mixSel:'전체'}, clsCat:null, clsCustSearch:'', rankMonthly:false, rankMonYear:null, rankGroupDrillMetric:'amt', prodRankMonthly:false, prodRankYear:null, prodDrillMonthly:false, prodDrillYear:null, mixSalesView:'category', mixSalesMonthly:false, mixSalesYear:null, homeSpecBasis:'amt', monthIssue:{}, price:{mode:'cust',histMode:'all',mixBasis:'qty',rangeStart:'',rangeEnd:''}, weekly:{page:1,year:null,month:null,week:null,periodMode:'week',rangeStart:'',rangeEnd:'',topN:20,topPct:80,rankMode:'count',notes:{},issues:{},newCustomerNotes:{},commonPlans:{},issueScope:'current',issueSearch:'',issueDraft:null,issueEditId:null,issueAuthor:''}, priceSets:[], setDraft:{title:'',items:[{name:'',spec:'',code:'',qty:1,price:'',cost:'',profit:''}]}, rangeStart:null, rangeEnd:null, headcount:53, headMonthly:{}, headYearDefault:{}, mgrOverride:{}, cmgrPrimary:{}, cmgrKey:{}, scrapVendors:[], scrapVendorOff:{}, kvcExclProd:{}, doorFrame:{map:{},view:'cust',listFilter:'전체',search:'',limit:120,sortMode:'sales'}, salesMonthlySync:{}, laserMonthlySync:{}, purchaseMonthlySync:{}, gsync:{url:'',key:'',auto:true,lastSync:'',user:'',syncCount:0},syncLog:{}, act:null, sortKey:null, sortDir:-1, _search:'', chipVal:null, lastData:null,
