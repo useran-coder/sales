@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1034</title>
-<script>window.APP_BUILD='v1034';</script>
+<title>동방파스텍 매출 분석 도구 v1036</title>
+<script>window.APP_BUILD='v1036';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2048,7 +2048,8 @@ html.v1032-noanim #result *{transition:none!important;animation:none!important}
 </style>
 <style id="v1033-style">
 /* v1033 : 규격 아래 전년 매출·전년대비 */
-#result table.fc-month-target-table td.rank,#result table.fc-month-target-table th:first-child{text-align:center!important}
+#result table.fc-month-target-table td.rank,#result table.fc-month-target-table th:first-child,
+#result table.fcd-prod-fit td.rank,#result table.fcd-prod-fit th:first-child{text-align:center!important}
 #result table.fc-month-target-table td.rank .fcz-pick-v1032{justify-content:center}
 #result .fcd-prev-v1033{font-size:11px;color:#64748b;font-weight:600;line-height:1.35;margin-top:2px;white-space:nowrap}
 #result .ttLegendV1033{width:100%!important;justify-content:flex-end!important}
@@ -2070,7 +2071,7 @@ html.v1032-noanim #result *{transition:none!important;animation:none!important}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1034</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1036</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -13632,6 +13633,18 @@ function forecast(){
       for(const m of fcMonths){ const e=(fcCustProdMon[m].get(o.c)||new Map()).get(o.pk); if(e){ e.amt*=f; e.qty*=f; } }
     });
   }catch(_e1029){}
+  /* ══ v1036 · 「매출 0」(월 조정 −100)이 다시 살아나던 문제 ══
+     월 조정 −100 은 중간 단계에서 한 번 0으로 만들지만, 그 뒤에 ② 영업전략 추진현황의
+     «직접입력 금액»이 월에 다시 «더해져» 금액이 되살아났습니다(월마다 같은 금액이 찍히던 현상).
+     이제 집계 직전에 −100 인 달을 한 번 더 0 으로 고정합니다. */
+  try{
+    for(const m of fcMonths){
+      fcCustProdMon[m].forEach((pm,c)=>pm.forEach((e,pk)=>{
+        const v=cpOverride['@M│'+c+'│'+pk+'│'+m];
+        if(v!=null&&v!==''&&+v<=-100){ e.amt=0; e.qty=0; }
+      }));
+    }
+  }catch(_e1036){}
   for(const m of fcMonths){ fcCustMon[m].clear();fcProdMon[m].clear();fcMonTot[m]=0;fcCustProdMon[m].forEach((pm,c)=>{let custTotal=0;pm.forEach((e,pk)=>{custTotal+=e.amt||0;addP(fcProdMon[m],pk,e.amt||0,e.qty||0);});fcCustMon[m].set(c,custTotal);fcMonTot[m]+=custTotal;}); }
   state._fc={PY,CY,lastAct,fcMonths,prodMeta,pyMonTot,cyMonTot,fcMonTot,pyMonCust,cyMonCust,fcCustMon,pyMonProd,cyMonProd,fcProdMon,pyMonCustProd,cyMonCustProd,fcCustProdMon};
   // chart: 3 bars per month — 전년(PY) / 목표(target) / 실적(actual)
