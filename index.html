@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1023</title>
-<script>window.APP_BUILD='v1023';</script>
+<title>동방파스텍 매출 분석 도구 v1024</title>
+<script>window.APP_BUILD='v1024';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1023</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1024</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -4396,11 +4396,14 @@ function wrRankPick(arr,valFn){
   const totalAmt=list.reduce((a,o)=>a+Math.max(0,+valFn(o)||0),0);
   if(wrRankMode()==='pct'){
     const pct=Math.max(1,Math.min(100,+state.weekly.topPct||80));
-    if(totalAmt>0){let sum=0,cut=list.length;for(let i=0;i<list.length;i++){sum+=Math.max(0,+valFn(list[i])||0);if(sum/totalAmt*100>=pct){cut=i+1;break;}}const view=list.slice(0,cut),rest=list.slice(cut),share=sum/totalAmt*100;return{view,rest,label:`상위 ${pct}%`,restLabel:`상위 ${pct}%외`,count:view.length,totalCount:list.length,share,mode:'pct'};}
+    if(totalAmt>0){let sum=0,cut=list.length;for(let i=0;i<list.length;i++){sum+=Math.max(0,+valFn(list[i])||0);if(sum/totalAmt*100>=pct){cut=i+1;break;}}const view=list.slice(0,cut),rest=list.slice(cut),share=sum/totalAmt*100;const _rs=Math.max(0,totalAmt-sum);return{view,rest,viewAmt:sum,totalAmt:totalAmt,restCount:rest.length,restAmt:_rs,restShare:totalAmt?_rs/totalAmt*100:0,label:`상위 ${pct}%`,restLabel:`상위 ${pct}%외`,count:view.length,totalCount:list.length,share,mode:'pct'};}
   }
   const n=Math.max(1,Math.min(500,Math.round(+state.weekly.topN||20)));
   const view=list.slice(0,n),rest=list.slice(n),sum=view.reduce((a,o)=>a+Math.max(0,+valFn(o)||0),0);
-  return{view,rest,label:`상위 ${n}`,restLabel:`상위 ${n}위외`,count:view.length,totalCount:list.length,share:totalAmt?sum/totalAmt*100:0,mode:'count'};
+  /* v1024 : 표에 나오지 않는 «미표시» 건수·금액·비중도 함께 넘깁니다. */
+  const restSum=Math.max(0,totalAmt-sum);
+  return{view,rest,label:`상위 ${n}`,restLabel:`상위 ${n}위외`,count:view.length,totalCount:list.length,share:totalAmt?sum/totalAmt*100:0,mode:'count',
+    viewAmt:sum,totalAmt:totalAmt,restCount:rest.length,restAmt:restSum,restShare:totalAmt?restSum/totalAmt*100:0};
 }
 function wrModel(){
   const s=wrEnsure(); if(!s)return null;
@@ -4482,7 +4485,19 @@ function wrRankBar(label,info,tailHtml=''){
   const pctOpts=[90,80,70,60,50],pctExtra=pctOpts.includes(curPct)?'':`<option value="${curPct}" selected>상위 ${curPct}%</option>`;
   const cnt=info&&info.count!=null?info.count:0,total=info&&info.totalCount!=null?info.totalCount:0,share=info&&isFinite(info.share)?info.share:0;
   const isCount=wrRankMode()==='count',base=label==='품목'?'품목표시':'업체표시';
-  return `<div class="wr-rankbar"><b style="font-size:12px;color:#334155">${esc(label)} 표시 기준</b><button type="button" id="wrModeCount" class="wr-mode-btn ${isCount?'on':'off'}">${base} 기준</button><button type="button" id="wrModePct" class="wr-mode-btn ${!isCount?'on':'off'}">비중 기준</button><label class="wr-mode-field ${isCount?'on':'off'}">건수 <select id="wrTopN">${topOpts.map(v=>`<option value="${v}" ${isCount&&v===curTop?'selected':''}>상위 ${v}</option>`).join('')}${topExtra}</select><input id="wrTopCustom" class="wr-top-custom" type="number" min="1" max="500" step="1" value="${curTop}" title="상위 건수 직접 입력" placeholder="건수"></label><label class="wr-mode-field ${!isCount?'on':'off'}">비중 <select id="wrTopPct">${pctOpts.map(v=>`<option value="${v}" ${!isCount&&v===curPct?'selected':''}>상위 ${v}%</option>`).join('')}${pctExtra}</select><input id="wrPctCustom" class="wr-pct-custom" type="number" min="1" max="100" step="1" value="${curPct}" title="상위 누적비중 직접 입력" placeholder="%"></label><span class="wr-rankstat">표시 ${won(cnt)}건 / 전체 ${won(total)}건 · 비중 ${share.toFixed(1)}%</span>${tailHtml?`<span class="wr-rank-spacer"></span><span class="wr-rank-actions">${tailHtml}</span>`:''}</div>`;
+  return `<div class="wr-rankbar"><b style="font-size:12px;color:#334155">${esc(label)} 표시 기준</b><button type="button" id="wrModeCount" class="wr-mode-btn ${isCount?'on':'off'}">${base} 기준</button><button type="button" id="wrModePct" class="wr-mode-btn ${!isCount?'on':'off'}">비중 기준</button><label class="wr-mode-field ${isCount?'on':'off'}">건수 <select id="wrTopN">${topOpts.map(v=>`<option value="${v}" ${isCount&&v===curTop?'selected':''}>상위 ${v}</option>`).join('')}${topExtra}</select><input id="wrTopCustom" class="wr-top-custom" type="number" min="1" max="500" step="1" value="${curTop}" title="상위 건수 직접 입력" placeholder="건수"></label><label class="wr-mode-field ${!isCount?'on':'off'}">비중 <select id="wrTopPct">${pctOpts.map(v=>`<option value="${v}" ${!isCount&&v===curPct?'selected':''}>상위 ${v}%</option>`).join('')}${pctExtra}</select><input id="wrPctCustom" class="wr-pct-custom" type="number" min="1" max="100" step="1" value="${curPct}" title="상위 누적비중 직접 입력" placeholder="%"></label><span class="wr-rankstat" style="display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1.35">
+    <span>표시 ${won(cnt)}건 / 전체 ${won(total)}건 · 비중 ${share.toFixed(1)}%</span>
+    ${(function(){ /* v1024 : 표에 나오지 않는 나머지를 아랫줄에 알려 줍니다. */
+      try{
+        const rc=info&&info.restCount!=null?info.restCount:Math.max(0,total-cnt);
+        if(!(rc>0))return '<span style="font-size:10.5px;color:#94a3b8;font-weight:600">미표시 없음 · 전체가 표시됨</span>';
+        const ra=info&&info.restAmt!=null?info.restAmt:null, rs=info&&isFinite(info.restShare)?info.restShare:null;
+        return '<span style="font-size:10.5px;color:#b45309;font-weight:700" title="표시 기준에 들지 못해 표에 나오지 않는 항목입니다">미표시 '+won(rc)+'건'
+          +(ra!=null?(' · '+won(Math.round(ra))+'원'):'')
+          +(rs!=null?(' · 비중 '+rs.toFixed(1)+'%'):'')+'</span>';
+      }catch(_e){ return ''; }
+    })()}
+  </span>${tailHtml?`<span class="wr-rank-spacer"></span><span class="wr-rank-actions">${tailHtml}</span>`:''}</div>`;
 }
 function wrCell(v){ return v?wrVal(v):'<span class="wr-zero">-</span>'; }
 function wrAmt(v){ return `<span class="wr-amt">${wrCell(v)}</span>`; }
@@ -4936,7 +4951,7 @@ function wrPage1(model){
   const newCustOnly=!!(state.weekly&&state.weekly.p1NewCustomers),currentIssueRows=wrIssueFilteredRows(model,'current'),futureIssueRows=wrIssueFilteredRows(model,'future'),tableRows=wrP1VisibleRows(model);
   const selectedCust=tableRows.some(r=>r.cust===state.weekly.p1Cust&&!/^상위 .+외 업체$/.test(r.cust))?state.weekly.p1Cust:'';
   const todayIssueCount=wrIssueCustomerCount([wrTodayWeekRange()].filter(Boolean));
-  const issueFilterActions=`<button type="button" class="wr-issue-filter-btn wr-new-customer-btn ${newCustOnly?'on':''}" id="wrNewCustBtn" title="현재 목록에 등록 신규업체를 합계 바로 위에 추가합니다.">✨ 신규업체 (${won((model.registeredNewRows||[]).length)})${newCustOnly?' ✓':''}</button><button type="button" class="wr-issue-filter-btn ${issueMode==='current'&&!visitOnly&&!newCustOnly?'on':''}" data-wr-issue-filter="current">이번주 이슈내용보기 (${won(todayIssueCount)})</button><button type="button" class="wr-issue-filter-btn ${issueMode==='future'&&!visitOnly&&!newCustOnly?'on':''}" data-wr-issue-filter="future">차주 이슈내용보기 (${won(futureIssueRows.length)})</button>${issueMode!=='all'&&!visitOnly&&!newCustOnly?'<button type="button" class="wr-issue-filter-btn" data-wr-issue-filter="all">전체 업체 보기</button>':''}<button type="button" class="wr-issue-filter-btn ${visitOnly&&!newCustOnly?'on':''}" id="wrVisitBtn">🚩 방문필요 (${won(visitRows.length)})${visitOnly?' ✓':''}</button>`;
+  const issueFilterActions=`<button type="button" class="wr-issue-filter-btn wr-new-customer-btn ${newCustOnly?'on':''}" id="wrNewCustBtn" title="현재 목록에 등록 신규업체를 합계 바로 위에 추가합니다.">✨ 신규업체 (${won((model.registeredNewRows||[]).length)})${newCustOnly?' ✓':''}</button><button type="button" class="wr-issue-filter-btn ${issueMode==='current'&&!visitOnly&&!newCustOnly?'on':''}" data-wr-issue-filter="current">이번주 이슈내용 (${won(todayIssueCount)})</button><button type="button" class="wr-issue-filter-btn ${issueMode==='future'&&!visitOnly&&!newCustOnly?'on':''}" data-wr-issue-filter="future">차주 이슈내용 (${won(futureIssueRows.length)})</button>${issueMode!=='all'&&!visitOnly&&!newCustOnly?'<button type="button" class="wr-issue-filter-btn" data-wr-issue-filter="all">전체 업체 보기</button>':''}<button type="button" class="wr-issue-filter-btn ${visitOnly&&!newCustOnly?'on':''}" id="wrVisitBtn">🚩 방문필요 (${won(visitRows.length)})${visitOnly?' ✓':''}</button>`;
   const body=tableRows.map((r,i)=>{
     const isRest=/^상위 .+외 업체$/.test(r.cust),isNewRegistered=!!r.isRegisteredNew,selected=!isRest&&selectedCust===r.cust,nk=wrNoteKey(model,r.cust),memo=wrMemo(model,r),mgrName=isRest?'':(mgrS(r.cust)||'미배정');
     const weekTds=(r.weeks||[]).slice(0,model.ranges.length).map((v,idx)=>{const visible=model.isCustom||idx<model.w,issueLink=!isRest?wrIssueCellLink(r.cust,model.ranges[idx]):'';return `<td class="${wkColCls(idx)}" data-sort-v="${+v||0}"><div class="wr-weekcell">${visible?wrAmt(v):'<span class="wr-zero">-</span>'}${issueLink}</div></td>`;}).join('');
