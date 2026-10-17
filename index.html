@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1027</title>
-<script>window.APP_BUILD='v1027';</script>
+<title>동방파스텍 매출 분석 도구 v1028</title>
+<script>window.APP_BUILD='v1028';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2054,7 +2054,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1027</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1028</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -14318,7 +14318,13 @@ function forecast(){
           return '<div class="fc-act-after-note-v805">📌 <b>실적확정월('+lastAct+'월) 이후에도 실제 매출이 있는 거래처 '+cnt+'개 · 합계 '+disp(sum)+'</b> — 각 칸의 목표 아래 <span style="color:#1d4ed8;font-weight:800">파란 「실적」</span> 줄로 표시했습니다. 이 금액은 <b>목표 합계에는 들어가지 않습니다</b>(목표표는 «1~'+lastAct+'월 실적 + '+(lastAct+1)+'~12월 목표» 기준). 실적까지 합한 금액은 👥 거래처 담당자 현황에서 볼 수 있습니다.</div>';
         }catch(_e){ return ''; } };
         /* v776 : 월별보기가 꺼져 있으면 표를 미리 만들지 않습니다(입력칸 수천 개 + 이벤트 수만 개를 만들지 않아 진입이 훨씬 빨라집니다). */
-        const monRows=(!monOn)?'':custArr.map((o,i)=>{ let total=0; for(let m=1;m<=12;m++)total+=amt(o.c,m); const prev=o.prev||0, yoy=prev?((total-prev)/prev*100):(total>0?null:0), yoyText=yoy==null?'신규':(yoy>=0?'+':'')+yoy.toFixed(1)+'%', yoyClass=yoy==null?'':(yoy<0?' fc-cust-month-yoy-neg':' fc-cust-month-yoy-pos'); return '<tr class="fc-cust-month-row" data-c="'+esc(o.c)+'"><td class="rank">'+(i+1)+'</td><td class="l">'+esc(o.c)+' '+catChip(o.c)+fcRiskTagV1009(o.c)+'<div class="fc-cust-month-prev">전년 '+disp(prev)+' · 전년대비 <span class="'+yoyClass.trim()+'">'+yoyText+'</span></div></td>'+Array.from({length:12},(_,k)=>cellsFor(o.c,k+1)).join('')+'<td><b>'+disp(total)+'</b>'+(function(){ let a=0; for(let m=lastAct+1;m<=12;m++)a+=actAfterV805(o.c,m); return a>0?('<div class="fc-act-after-v805 over" title="확정월 이후 실제 매출까지 더한 금액입니다(목표 합계와 다릅니다)">실적포함 '+disp(total+a)+'</div>'):''; })()+'<div class="fc-cust-month-avg">평균 '+avgPct(o.c).toFixed(1)+'%</div></td></tr>'; }).join('');
+        const monRows=(!monOn)?'':custArr.map((o,i)=>{ let total=0; for(let m=1;m<=12;m++)total+=amt(o.c,m); const prev=o.prev||0, yoy=prev?((total-prev)/prev*100):(total>0?null:0), yoyText=yoy==null?'신규':(yoy>=0?'+':'')+yoy.toFixed(1)+'%', yoyClass=yoy==null?'':(yoy<0?' fc-cust-month-yoy-neg':' fc-cust-month-yoy-pos'); /* ══ v1028 · 월별보기에서도 신규목표 업체를 「신규 · 신규목표」로 표시합니다 ══
+             연간 표와 같은 판정(실적 없음 + 전년 0원 + 신규목표 등록)을 씁니다. */
+          const _ne1028=(typeof fcNewTargetEntry==='function')?fcNewTargetEntry(o.c):null;
+          const _isNew1028=!!_ne1028&&((+o.ytd||0)+(+o.ytdAfter||0)<=0)&&(+o.prev||0)<=0;
+          const _rank1028=_isNew1028?'<span style="color:#7c3aed;font-weight:700">신규</span>':String(i+1);
+          const _badge1028=_isNew1028&&(typeof fcNewTargetBadge==='function')?(' '+fcNewTargetBadge(o.c)):'';
+          return '<tr class="fc-cust-month-row'+(_isNew1028?' fcnewrow':'')+'" data-c="'+esc(o.c)+'"><td class="rank">'+_rank1028+'</td><td class="l">'+esc(o.c)+_badge1028+' '+catChip(o.c)+fcRiskTagV1009(o.c)+'<div class="fc-cust-month-prev">전년 '+disp(prev)+' · 전년대비 <span class="'+yoyClass.trim()+'">'+yoyText+'</span></div></td>'+Array.from({length:12},(_,k)=>cellsFor(o.c,k+1)).join('')+'<td><b>'+disp(total)+'</b>'+(function(){ let a=0; for(let m=lastAct+1;m<=12;m++)a+=actAfterV805(o.c,m); return a>0?('<div class="fc-act-after-v805 over" title="확정월 이후 실제 매출까지 더한 금액입니다(목표 합계와 다릅니다)">실적포함 '+disp(total+a)+'</div>'):''; })()+'<div class="fc-cust-month-avg">평균 '+avgPct(o.c).toFixed(1)+'%</div></td></tr>'; }).join('');
         const monTotal=(!monOn)?new Array(13).fill(0):Array.from({length:13},(_,m)=>custArr.reduce((s,o)=>s+amt(o.c,m),0));
         const allPctVals=(!monOn)?[]:custArr.flatMap(o=>fcMonths.map(m=>{const v=pct(o.c,m);return v===''?0:(+v||0);})); const avgAllPct=allPctVals.length?allPctVals.reduce((s,v)=>s+v,0)/allPctVals.length:0;
         const _afterTotV805=(!monOn)?0:custArr.reduce((s,o)=>{ let a=0; for(let m=lastAct+1;m<=12;m++)a+=actAfterV805(o.c,m); return s+a; },0);
