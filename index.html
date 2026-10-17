@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1031</title>
-<script>window.APP_BUILD='v1031';</script>
+<title>동방파스텍 매출 분석 도구 v1032</title>
+<script>window.APP_BUILD='v1032';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2039,6 +2039,13 @@ body.fpopen #fpSum{display:block}
 <style id="v913-sales-font">#result table.sales-search-13,#result table.sales-search-13 th,#result table.sales-search-13 td{font-size:13px!important}#result table.sales-search-13 .sub2{font-size:11px!important}</style>
 <style>/* v1030 : 거래처명 아래 «전년 … · 전년대비 …» 글자 11px */
 #result .fc-cust-month-prev,#result .fc-cust-month-prev *{font-size:11px!important}</style>
+<style id="v1032-style">
+/* v1032 : 제품 고르기 체크박스 + 재렌더 깜빡임 억제 */
+.fcz-pick-v1032{display:inline-flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
+.fcz-pick-v1032 input{width:13px;height:13px;margin:0;cursor:pointer;accent-color:#b91c1c}
+#result #fczZeroV1032:hover{background:#fee2e2!important}
+html.v1032-noanim #result *{transition:none!important;animation:none!important}
+</style>
 </head>
 <body>
 <header>
@@ -2056,7 +2063,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1031</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1032</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -20038,6 +20045,23 @@ try{
     return v==null?'':String(v);
   }
   function fcMonthlyMetric(){return state.fc._custMonMetric==='qty'?'qty':'amount';}
+  /* v1032 : 조정% 입력·매출0 적용 후 다시 그릴 때 «깜빡임»을 없앱니다.
+     표/화면 스크롤 위치를 그대로 두고, 재렌더 동안 전환·애니메이션을 잠시 끕니다. */
+  function fcdQuietRerenderV1032(c){
+    var sx=0,sy=0,wy=0,W=null;
+    try{ W=document.querySelector('#result table.fc-month-target-table,#result table.fcd-prod-fit'); W=W&&W.closest('.tablewrap'); if(W){sx=W.scrollLeft;sy=W.scrollTop;} wy=window.scrollY||0; }catch(_e){}
+    try{ document.documentElement.classList.add('v1032-noanim'); }catch(_e2){}
+    try{ forecast(); }catch(_e3){}
+    try{ fcDrillCust(c); }catch(_e4){}
+    try{
+      var W2=document.querySelector('#result table.fc-month-target-table,#result table.fcd-prod-fit');
+      W2=W2&&W2.closest('.tablewrap');
+      if(W2){ W2.scrollLeft=sx; W2.scrollTop=sy; }
+      window.scrollTo(0,wy);
+    }catch(_e5){}
+    try{ clearTimeout(window.__v1032T); window.__v1032T=setTimeout(function(){ document.documentElement.classList.remove('v1032-noanim'); },450); }catch(_e6){}
+  }
+  window.fcdQuietRerenderV1032=fcdQuietRerenderV1032;
   function fcMonthlyValue(v,metric){return won(Math.round(v||0));}
 
   fcDrillCust=function(c){
@@ -20103,7 +20127,7 @@ try{
           const adjust=x.actual?'<span class="fc-month-actual-mark" title="확정실적월은 조정할 수 없습니다">실적</span>':`<input class="fc-month-adjust${x.adjust!==''?' edited':''}" data-pk="${esc(o.pk)}" data-month="${m}" value="${esc(x.adjust)}" inputmode="decimal" placeholder="0" title="제품 전체 목표% 기준 ${m}월 추가 조정률">`;
           return `<td><div class="fc-month-value ${metric}">${fcMonthlyValue(val,metric)}</div><div class="fc-month-adjust-wrap">${adjust}${x.actual?'':'<span>%</span>'}</div></td>`;
         }).join('');
-        return `<tr><td class="rank">${i+1}</td><td class="l"><b>${esc(o.name)}</b><div class="sub2" style="font-size:11px;color:#64748b;margin-top:2px">${esc(o.code||'-')}</div></td><td class="l">${esc(o.spec||'(규격없음)')}</td>${cells}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(o.total,metric)}</b><div class="sub2" style="font-size:10px;color:#94a3b8;font-weight:400">전체% ${o.baseAdjust===''?'자동':esc(o.baseAdjust)+'%'}</div></td></tr>`;
+        return `<tr data-pk="${esc(o.pk)}"><td class="rank"><label class="fcz-pick-v1032" title="이 제품을 고릅니다"><input type="checkbox" class="fczChkV1032" data-pk="${esc(o.pk)}"><span>${i+1}</span></label></td><td class="l"><b>${esc(o.name)}</b><div class="sub2" style="font-size:11px;color:#64748b;margin-top:2px">${esc(o.code||'-')}</div></td><td class="l">${esc(o.spec||'(규격없음)')}</td>${cells}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(o.total,metric)}</b><div class="sub2" style="font-size:10px;color:#94a3b8;font-weight:400">전체% ${o.baseAdjust===''?'자동':esc(o.baseAdjust)+'%'}</div></td></tr>`;
       }).join('')||`<tr><td colspan="16" style="text-align:center;color:#94a3b8;padding:14px">표시할 월별 목표가 없습니다.</td></tr>`;
       const totalRow=monthlyRows.length?`<tr class="total-row"><td></td><td class="l">합 계</td><td></td>${Array.from({length:12},(_,k)=>`<td><b class="fc-month-value ${metric}">${fcMonthlyValue(monthTotals[k+1],metric)}</b></td>`).join('')}<td><b class="fc-month-value ${metric}">${fcMonthlyValue(grand,metric)}</b></td></tr>`:'';
       bodyHtml=`<div class="tablewrap" style="max-height:1120px"><table class="fc-month-target-table ${metric==='amount'?'amount-view':'qty-view'}"><thead><tr><th>순위</th><th class="l fcdsm" data-sk="name">품명${_arm('name')}</th><th class="l fcdsm" data-sk="spec">규격${_arm('spec')}</th>${Array.from({length:12},(_,k)=>`<th class="fcdsm" data-sk="m${k+1}">${k+1}월${_arm('m'+(k+1))}<div style="font-size:11px;color:#94a3b8">${k+1<=f.lastAct?'확정실적':'조정%'}</div></th>`).join('')}<th class="fcdsm" data-sk="total">합계${_arm('total')}<div style="font-size:11px;color:#94a3b8">전체%</div></th></tr></thead><tbody>${mrows}${totalRow}</tbody></table></div>
@@ -20141,7 +20165,9 @@ try{
         _tgtLabV902='🎯 '+_ty+'년 목표'; window.__FC_TGT_YEAR_V906=_ty;
       }
     }catch(_e902){}
-    const _metricBtns=`<button class="btn ghost ${fcMonthlyMetric()==='amount'?'on':''}" id="fcCustMonAmount" type="button">금액보기</button><button class="btn ghost ${fcMonthlyMetric()==='qty'?'on':''}" id="fcCustMonQty" type="button">수량</button>`;
+    /* v1032 : 고른 제품(없으면 화면에 보이는 제품 전부)의 1~12월 목표를 한 번에 0원으로 만듭니다 */
+    const _zeroBtns=monOn?`<button class="btn ghost" id="fczZeroV1032" type="button" title="고른 제품의 조정 가능한 모든 달을 -100%(0원)으로 설정합니다. 고른 제품이 없으면 지금 화면에 보이는 제품 전부에 적용합니다." style="font-weight:800;color:#b91c1c;border-color:#fca5a5;background:#fef2f2">🚫 매출 0</button><button class="btn ghost" id="fczUndoV1032" type="button" title="고른 제품(없으면 화면에 보이는 제품)의 월 조정%를 모두 해제합니다." style="font-weight:700;color:#334155">0 해제</button>`:'';
+    const _metricBtns=`<button class="btn ghost ${fcMonthlyMetric()==='amount'?'on':''}" id="fcCustMonAmount" type="button">금액보기</button><button class="btn ghost ${fcMonthlyMetric()==='qty'?'on':''}" id="fcCustMonQty" type="button">수량</button>${_zeroBtns}`;
     const _toolLeft=`<span class="v944-left">${monBtn}${_metricBtns}</span>`;
     const _toolRight=`<span id="fcdToolRowV943"><span id="fcdSearchWrapV939"><b style="font-size:12px;color:#334155">표 검색</b><input type="search" id="fcdQV939" autocomplete="off" spellcheck="false" placeholder="품번 · 품명 · 규격 (띄어쓰기로 여러 개)"><button type="button" class="btn ghost" id="fcdQClearV939">✕ 지우기</button><button class="btn ghost" id="fcdCsv">엑셀 내보내기</button></span></span>`;
     const _ttTopC=trendTopV760(c,(typeof CUR!=='undefined'?CUR:[]).filter(r=>r&&r.cust===c),_ttKeyC,{hint:'',target:_tgtArrV902,targetLabel:_tgtLabV902,targetYear:(typeof fcTargetYear==='function'?fcTargetYear():0),toolbarPrefix:_toolLeft,toolbarSuffix:_toolRight});
@@ -20158,8 +20184,41 @@ try{
         let _sx=0,_sy=0; try{ const w=th.closest('.tablewrap'); if(w){_sx=w.scrollLeft;_sy=w.scrollTop;} }catch(_e){}
         fcDrillCust(c);
         try{ const w2=document.querySelector('#result .fc-month-target-table'); const wr=w2&&w2.closest('.tablewrap'); if(wr){wr.scrollLeft=_sx;wr.scrollTop=_sy;} }catch(_e2){} });});
-      $('#result').querySelectorAll('.fccpov').forEach(inp=>{inp.addEventListener('change',()=>{state.fc.custProdOverride=state.fc.custProdOverride||{};const pk=inp.dataset.pk,v=inp.value.trim(),k=c+'│'+pk;if(v==='')delete state.fc.custProdOverride[k];else state.fc.custProdOverride[k]=v;logEdit('제품목표',`${c} · ${pk} 전체 목표 ${v===''?'해제':v+'%'}`);v796SaveSoon();v797Defer(()=>{forecast();fcDrillCust(c);});});inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});inp.addEventListener('click',e=>e.stopPropagation());});
-      $('#result').querySelectorAll('.fc-month-adjust').forEach(inp=>{inp.addEventListener('click',e=>e.stopPropagation());inp.addEventListener('change',()=>{const pk=inp.dataset.pk,m=+inp.dataset.month,key=fcMonthAdjustKey(c,pk,m),raw=inp.value.trim().replace(',','.');state.fc.custProdOverride=state.fc.custProdOverride||{};if(raw===''){delete state.fc.custProdOverride[key];}else{let n=Number(raw);if(!isFinite(n))n=0;n=Math.max(-100,Math.min(1000,n));state.fc.custProdOverride[key]=String(n);}logEdit('제품월목표',`${c} · ${pk} · ${m}월 조정 ${raw===''?'해제':state.fc.custProdOverride[key]+'%'}`);v796SaveSoon();v797Defer(()=>{forecast();fcDrillCust(c);});});inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});});
+      $('#result').querySelectorAll('.fccpov').forEach(inp=>{inp.addEventListener('change',()=>{state.fc.custProdOverride=state.fc.custProdOverride||{};const pk=inp.dataset.pk,v=inp.value.trim(),k=c+'│'+pk;if(v==='')delete state.fc.custProdOverride[k];else state.fc.custProdOverride[k]=v;logEdit('제품목표',`${c} · ${pk} 전체 목표 ${v===''?'해제':v+'%'}`);v796SaveSoon();v797Defer(()=>{fcdQuietRerenderV1032(c);});});inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});inp.addEventListener('click',e=>e.stopPropagation());});
+      $('#result').querySelectorAll('.fc-month-adjust').forEach(inp=>{inp.addEventListener('click',e=>e.stopPropagation());inp.addEventListener('change',()=>{const pk=inp.dataset.pk,m=+inp.dataset.month,key=fcMonthAdjustKey(c,pk,m),raw=inp.value.trim().replace(',','.');state.fc.custProdOverride=state.fc.custProdOverride||{};if(raw===''){delete state.fc.custProdOverride[key];}else{let n=Number(raw);if(!isFinite(n))n=0;n=Math.max(-100,Math.min(1000,n));state.fc.custProdOverride[key]=String(n);}logEdit('제품월목표',`${c} · ${pk} · ${m}월 조정 ${raw===''?'해제':state.fc.custProdOverride[key]+'%'}`);v796SaveSoon();v797Defer(()=>{fcdQuietRerenderV1032(c);});});inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});});
+      /* v1032 : 매출 0 / 0 해제 */
+      (function(){
+        const pickPks=()=>{
+          const tb=$('#result').querySelector('table.fc-month-target-table'); if(!tb)return [];
+          const chk=[...tb.querySelectorAll('.fczChkV1032:checked')].map(x=>x.dataset.pk);
+          if(chk.length)return chk;
+          return [...tb.tBodies[0].rows].filter(tr=>!tr.classList.contains('total-row')&&tr.style.display!=='none'&&tr.dataset.pk).map(tr=>tr.dataset.pk);
+        };
+        const nameOf=pk=>{const m=(state._fc&&state._fc.prodMeta&&state._fc.prodMeta.get(pk))||null;return m?((m.name||pk)+(m.spec?' / '+m.spec:'')):pk;};
+        const zb=$('#fczZeroV1032');
+        zb&&zb.addEventListener('click',async()=>{
+          const pks=pickPks(); if(!pks.length){ await uiConfirm('적용할 제품이 없습니다.'); return; }
+          const cut=(state._fc&&state._fc.lastAct)||0;
+          const ms=[]; for(let m=cut+1;m<=12;m++)ms.push(m);
+          if(!ms.length){ await uiConfirm('조정할 수 있는 달이 없습니다. (모두 확정실적월)'); return; }
+          const prev=pks.slice(0,3).map(nameOf).join(', ')+(pks.length>3?` 외 ${pks.length-3}개`:'');
+          if(!await uiConfirm(`제품 ${pks.length}개의 ${ms[0]}~12월 목표를 모두 <b>0원</b>으로 만들까요?<br><span style="color:#64748b">${esc(prev)}</span>`))return;
+          state.fc.custProdOverride=state.fc.custProdOverride||{};
+          pks.forEach(pk=>{ ms.forEach(m=>{ state.fc.custProdOverride['@M│'+c+'│'+pk+'│'+m]='-100'; }); });
+          logEdit('제품월목표',`${c} · 제품 ${pks.length}개 ${ms[0]}~12월 매출 0 적용`);
+          v796SaveSoon(); fcdQuietRerenderV1032(c);
+        });
+        const ub=$('#fczUndoV1032');
+        ub&&ub.addEventListener('click',async()=>{
+          const pks=pickPks(); if(!pks.length)return;
+          if(!await uiConfirm(`제품 ${pks.length}개의 <b>월 조정%</b>를 모두 해제할까요?`))return;
+          state.fc.custProdOverride=state.fc.custProdOverride||{};
+          pks.forEach(pk=>{ for(let m=1;m<=12;m++)delete state.fc.custProdOverride['@M│'+c+'│'+pk+'│'+m]; });
+          logEdit('제품월목표',`${c} · 제품 ${pks.length}개 월 조정 해제`);
+          v796SaveSoon(); fcdQuietRerenderV1032(c);
+        });
+        $('#result').querySelectorAll('.fczChkV1032').forEach(x=>x.addEventListener('click',e=>e.stopPropagation()));
+      })();
       fcBindNegativeFields($('#result'));
       const cc=$('#fcdCsv');cc&&cc.addEventListener('click',()=>{if(state.fc._custDrillMonView){const metric=fcMonthlyMetric(),label=metric==='amount'?'금액':'수량',aoa=[['순위','품명','규격',...Array.from({length:12},(_,k)=>(k+1)+'월'),'합계']];monthlyRows.forEach((o,i)=>aoa.push([i+1,o.name,o.spec,...Array.from({length:12},(_,k)=>Math.round(metric==='amount'?o.months[k+1].amt:o.months[k+1].qty)),Math.round(o.total)]));dlXLSX(`forecast_customer_monthly_${metric}.xlsx`,`월별목표${label}`,aoa);}else dlCSV('forecast_customer_products.csv',['순위','품번','품명','규격','전년','올해목표','증감액','증감%','전년수량','목표수량'],arr.map((o,i)=>[i+1,o.code,o.name,o.spec,Math.round(o.prev),Math.round(o.proj),Math.round(o.diff),o.pct==null?'신규':o.pct.toFixed(1),Math.round(o.pq),Math.round(o.cq)]));});
     });
