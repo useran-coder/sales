@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1037</title>
-<script>window.APP_BUILD='v1037';</script>
+<title>동방파스텍 매출 분석 도구 v1038</title>
+<script>window.APP_BUILD='v1038';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2071,7 +2071,7 @@ html.v1032-noanim #result *{transition:none!important;animation:none!important}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1037</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1038</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -42247,10 +42247,24 @@ setTimeout(all,0); setTimeout(all,60); setTimeout(all,260);
     if(typeof window.fcDrillCust==='function'&&!window.fcDrillCust.__v901){
       var o=window.fcDrillCust;
       var w=function(c){
+        /* ══ v1038 · 표를 보는 중에 화면이 갑자기 맨 위로 튀던 문제 ══
+           v907 은 fcDrillCust 가 «불릴 때마다» 맨 위로 올렸습니다. 그런데 이 함수는
+           처음 들어올 때만이 아니라 배경 동기화(30초 주기)·조정% 저장·정렬·금액/수량 전환
+           등으로도 다시 불립니다. 그래서 표를 읽는 중에 그래프 위로 끌려 올라갔습니다.
+           이제 «다른 업체로 새로 들어올 때»만 맨 위로 올리고, 같은 화면을 다시 그릴 때는
+           보고 있던 위치를 그대로 둡니다. */
+        var _same1038=false;
+        try{
+          _same1038=(String(window.__FC_DRILL_V901||'')===String(c||''))
+                    && !!document.querySelector('#result table.fcd-prod-fit,#result table.fc-month-target-table');
+        }catch(_e1038){}
         try{ window.__FC_DRILL_V901=String(c||''); clearTimeout(window.__FC_DRILL_TM_V903); }catch(e){}
+        var _sy1038=0; try{ _sy1038=window.scrollY||document.documentElement.scrollTop||0; }catch(_e){}
         var r=o.apply(this,arguments);
-        /* v907 : 제품·규격별 목표 화면은 «맨 위»부터 보이게 합니다. */
-        try{ setTimeout(function(){ try{ window.scrollTo({top:0,left:0,behavior:'auto'}); }catch(e2){} },0); }catch(e3){}
+        try{ setTimeout(function(){ try{
+          if(_same1038){ if(Math.abs((window.scrollY||0)-_sy1038)>2)window.scrollTo(0,_sy1038); }
+          else window.scrollTo({top:0,left:0,behavior:'auto'});
+        }catch(e2){} },0); }catch(e3){}
         return r;
       };
       w.__v901=true; window.fcDrillCust=w;
