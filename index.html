@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1015</title>
-<script>window.APP_BUILD='v1015';</script>
+<title>동방파스텍 매출 분석 도구 v1017</title>
+<script>window.APP_BUILD='v1017';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2052,7 +2052,7 @@ body.fpopen #fpSum{display:block}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1015</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1017</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -2529,8 +2529,11 @@ function fcSwitchYear(y){
     try{ if(typeof gsCommitNotes==='function')gsCommitNotes(); }catch(_n){}
     /* v879 : 연도 보관함을 새로 만들 때 «화면에 그린 월별 목표»가 지워지지 않게 먼저 챙겨 둡니다. */
     var _keepTgtV879=null; try{ _keepTgtV879=(state.fcYearMisc[String(cur)]||{}).monthTgtV878||null; }catch(_k879){}
+    /* v1016 : 그 해 화면에서 직접 찍은 목표액 기록을 연도 전환 때 잃지 않게 보관합니다. */
+    var _keepChkV1016=null; try{ _keepChkV1016=(state.fcYearMisc[String(cur)]||{}).atChk974||null; }catch(_k1016){}
     state.fcYearMisc[String(cur)]={notesHtml:String(f.notesHtml||''),notesTeam:String(f.notesTeam||''),notesSales:String(f.notesSales||''),notesTech:String(f.notesTech||''),notesMeta:_cp(f.notesMeta),exclCust:_cp(f.exclCust),cmgrExcl:_cp(state.cmgrExcl),sgTomb:_cp(state.strategyActionTombstones),sgRestoreAt:(+state.strategyActionRestoreAt||0),targetExclCust:_cp(f.targetExclCust),targetOnlyExcl:_cp(f.targetOnlyExcl),strategyPlan:_cp(state.strategyPlan)};
     try{ if(_keepTgtV879)state.fcYearMisc[String(cur)].monthTgtV878=_keepTgtV879; }catch(_k2){}
+    try{ if(_keepChkV1016)state.fcYearMisc[String(cur)].atChk974=_keepChkV1016; }catch(_k3){}
     const mv=state.fcYearMisc[String(next)];
     if(mv){
       f.notesHtml=String(mv.notesHtml||''); f.notesTeam=String(mv.notesTeam||'');
@@ -4289,6 +4292,19 @@ function fcChartArraysV678(){
   const D=window.FC_CHART_V677;
   return (D&&D.base)?D:null;
 }
+/* ══ v1016 · 매출자료의 «마지막 날짜» ══
+   주차 범위는 10/21까지여도 실제 자료가 10/15까지면, 실적·진행률은 10/15 기준이어야 합니다.
+   (파일·관리의 「기간단위 … ~ 2026.10.15」와 같은 날짜입니다) */
+function wrDataLastDateV1016(y){
+  try{
+    var key='y'+y, c=window.__WR_LASTD_V1016;
+    if(c&&c.cur===CUR&&c[key])return c[key];
+    var mx=null;
+    (CUR||[]).forEach(function(r){ if(+r.y!==+y)return; var d=r.d; if(d&&(!mx||d>mx))mx=d; });
+    if(!c||c.cur!==CUR)c=window.__WR_LASTD_V1016={cur:CUR};
+    c[key]=mx; return mx;
+  }catch(e){ return null; }
+}
 function wrMonthlyTargetLink(y,asOf){
   const ys=dataYears(); if(ys.length<2||+y!==ys[ys.length-1])return null;
   /* v886 : 전년은 «자료의 가장 오래된 해»가 아니라 «기준연도−1»입니다(2019~2021 자료가 있으면 2019가 잡혔습니다). */
@@ -4395,7 +4411,13 @@ function wrModel(){
   const _wrPlanLabel='목표 '+((state.fc&&state.fc.activePlan)==='2'?'2':'1')+'안';
   /* v1015 : 매출실적이 «어느 날짜까지»인지 행 이름에 함께 적습니다. */
   let _actLabV1015='매출실적';
-  try{ const _d=asOf; if(_d&&_d.getMonth)_actLabV1015='매출실적 (~'+(_d.getMonth()+1)+'/'+_d.getDate()+')'; }catch(_e3015){}
+  try{
+    /* v1016 : 조회 주차 끝(예 10/21)이 아니라 «자료가 있는 마지막 날»(예 10/15)을 적습니다. */
+    let _d=asOf;
+    const _ld=(typeof wrDataLastDateV1016==='function')?wrDataLastDateV1016(y):null;
+    if(_ld&&(!_d||_ld<_d))_d=_ld;
+    if(_d&&_d.getMonth)_actLabV1015='매출실적 (~'+(_d.getMonth()+1)+'/'+_d.getDate()+')';
+  }catch(_e3015){}
   const annualRows=['목표액',_wrPlanLabel,_actLabV1015,'목표대비 달성률'].map(label=>({label,vals:Array(13).fill(0),total:0}));
   for(let mm=1;mm<=12;mm++){
     let b=0,rv=0; plan.base[mm].forEach(v=>b+=v); plan.revised[mm].forEach(v=>rv+=v);
@@ -4612,7 +4634,24 @@ function wrMonthPacing(model){
     if(_v>0)monthTarget=_v;
   }catch(_e1015){}
   const monthActual=(model.allCustRows||[]).reduce((a,r)=>a+(+r.monthActual||0),0);
-  const cumThroughW=w>0?(cum[w-1]||0):0;
+  /* ══ v1016 · 주차 끝까지 다 지난 것으로 보던 진행 비중을 «자료 마지막 날» 기준으로 고칩니다 ══
+     3주차(15~21일)를 골라도 자료가 15일까지면 그 주는 1/7만 지난 것입니다.
+     예전에는 3주차 비중(23.0%)을 통째로 더해 진행 비중이 77.7%로 잡히고,
+     그 때문에 전망 매출이 실제보다 낮게 나와 «미달»로 보였습니다. */
+  let cumThroughW=w>0?(cum[w-1]||0):0;
+  try{
+    const _ld=(typeof wrDataLastDateV1016==='function')?wrDataLastDateV1016(model.y):null;
+    const _rg=(model.ranges||[])[w-1];
+    if(w>0&&_ld&&_rg&&_rg.sDate&&_rg.eDate&&_ld>=_rg.sDate&&_ld<_rg.eDate){
+      const _day=24*3600*1000;
+      const _tot=Math.round((_rg.eDate-_rg.sDate)/_day)+1;
+      const _done=Math.round((_ld-_rg.sDate)/_day)+1;
+      if(_tot>0&&_done>0&&_done<_tot){
+        cumThroughW=(cum[w-2]||0)+(mpat[w-1]||0)*(_done/_tot);
+        if(cumThroughW<=0)cumThroughW=cum[w-1]||0;
+      }
+    }
+  }catch(_e1016){}
   const projMonth=(w>0&&cumThroughW>0)?monthActual/cumThroughW:null;
   const projRate=(monthTarget>0&&projMonth!=null)?projMonth/monthTarget*100:null;
   const toDateRate=monthTarget>0?monthActual/monthTarget*100:null;
@@ -4734,17 +4773,37 @@ function wrYearPacingSection(model){
   const targetLabel=_ym==='modified'?'목표수정액':'목표액';
   const trows=[];
   for(let i=1;i<=12;i++){
-    const sh=P.pat[i],cumv=P.cum[i],actual=P.curMonths[i-1]||0,done=(i<=P.m),targetAmount=+((selectedTargetRow&&selectedTargetRow.vals[i])||0);
+    const sh=P.pat[i],actual=P.curMonths[i-1]||0,done=(i<=P.m),targetAmount=+((selectedTargetRow&&selectedTargetRow.vals[i])||0);
+    /* ══ v1017 · 기준 월(아직 진행 중인 달)을 «끝난 달»처럼 다루던 문제 ══
+       예전에는 10월이 15일까지인데도 ① 누적비중에 10월 비중을 통째로 더하고(81.1%)
+       ② 월 목표 전액과 비교해 «미달 −377,684,394원»으로 표시했습니다.
+       이제 기준 월은 ③ 상단 「진행 비중」과 같은 경과분만 반영하고
+       ④ «그 시점까지의 목표»와 비교하며 ⑤ 상태를 「진행 중」으로 표시합니다. */
+    let cumv=P.cum[i];
+    const baseRatio=(P.cum[P.m]>0)?Math.max(0,Math.min(1,((P.cumThroughM-(P.cum[P.m-1]||0))/(P.pat[P.m]||1)))):1;
+    if(i===P.m&&baseRatio<1)cumv=P.cumThroughM;
     let cumActual=0; for(let j=0;j<i;j++)cumActual+=P.curMonths[j]||0;
     const projM=(P.projYear!=null)?P.projYear*sh:null;
     const showForecast=i>=P.m;
     const projMCell=showForecast&&projM!=null?won(projM)+'원':'<span class="wr-zero">-</span>';
     const isBase=(i===P.m),cls=(isBase?'wr-mpace-base':'')+(done?'':' wr-mpace-future');
-    const rate=targetAmount>0?actual/targetAmount*100:null,status=done?(actual>=targetAmount?'<span class="wr-rate-good">달성</span>':'<span class="wr-rate-bad">미달</span>'):'<span class="wr-zero">예정</span>',shortfall=done&&actual<targetAmount?'<span class="wr-rate-bad">-'+won(targetAmount-actual)+'원</span>':'<span class="wr-zero">-</span>',rateCell=done?'<span class="'+(actual>=targetAmount?'wr-rate-good':'wr-rate-bad')+'">'+wrPct(rate)+'</span>':'<span class="wr-zero">-</span>';
-    trows.push(`<tr class="${cls}"><td class="wr-center"><b>${i}월</b>${isBase?' <span class="wr-mpace-tag">기준</span>':''}</td><td class="wr-center">${wrPct(sh*100)}</td><td class="wr-center">${wrPct(cumv*100)}</td><td class="wr-right">${done?won(actual)+'원':'<span class="wr-zero">-</span>'}</td><td class="wr-right">${done?won(cumActual)+'원':'<span class="wr-zero">-</span>'}</td><td class="wr-right">${won(targetAmount)}원</td><td class="wr-right">${projMCell}</td><td class="wr-center">${status}</td><td class="wr-right">${shortfall}</td><td class="wr-center">${rateCell}</td></tr>`);
+    const inProgress=(i===P.m&&baseRatio<1);
+    /* 진행 중인 달은 «경과분 목표»와 비교합니다(월 목표 × 그 달 경과 비율). */
+    const cmpTarget=inProgress?targetAmount*baseRatio:targetAmount;
+    const rate=cmpTarget>0?actual/cmpTarget*100:null;
+    const status=!done?'<span class="wr-zero">예정</span>'
+      :(inProgress?(actual>=targetAmount
+          ?'<span class="wr-rate-good">달성</span><div style="font-size:9px;color:#1d4ed8;font-weight:700">진행 중</div>'
+          :'<span style="color:#1d4ed8;font-weight:800">진행 중</span>')
+        :(actual>=targetAmount?'<span class="wr-rate-good">달성</span>':'<span class="wr-rate-bad">미달</span>'));
+    const shortfall=(done&&!inProgress&&actual<targetAmount)
+      ?'<span class="wr-rate-bad">-'+won(targetAmount-actual)+'원</span>'
+      :(inProgress?'<span style="color:#64748b">잔여 '+won(Math.max(0,targetAmount-actual))+'원</span>':'<span class="wr-zero">-</span>');
+    const rateCell=done?'<span class="'+(rate!=null&&rate>=100?'wr-rate-good':'wr-rate-bad')+'" title="'+(inProgress?('경과분 목표 '+won(Math.round(cmpTarget))+'원 대비'):'월 목표 대비')+'">'+wrPct(rate)+(inProgress?'<div style="font-size:9px;color:#64748b;font-weight:600">경과분 기준</div>':'')+'</span>':'<span class="wr-zero">-</span>';
+    trows.push(`<tr class="${cls}"><td class="wr-center"><b>${i}월</b>${isBase?' <span class="wr-mpace-tag">기준</span>':''}</td><td class="wr-center">${wrPct(sh*100)}</td><td class="wr-center">${wrPct(cumv*100)}</td><td class="wr-right">${done?won(actual)+'원':'<span class="wr-zero">-</span>'}</td><td class="wr-right">${done?won(cumActual)+'원':'<span class="wr-zero">-</span>'}</td><td class="wr-right">${won(targetAmount)}원${inProgress?'<div style="font-size:9px;color:#1d4ed8;font-weight:700">경과분 '+won(Math.round(cmpTarget))+'원</div>':''}</td><td class="wr-right">${projMCell}</td><td class="wr-center">${status}</td><td class="wr-right">${shortfall}</td><td class="wr-center">${rateCell}</td></tr>`);
   }
   const table=`<div class="wr-tablewrap"><table class="wr-table wr-mpace-table"><thead><tr><th style="width:7%;text-align:center">월</th><th style="width:12%">과거평균월비중</th><th style="width:10%">누적비중</th><th style="width:12%">올해 월실적</th><th style="width:14%">올해 누적실적</th><th style="width:13%">${targetLabel}</th><th style="width:15%">평균예측매출(월단위)</th><th style="width:5%">상태</th><th style="width:8%">미달금액</th><th style="width:4%">달성률</th></tr></thead><tbody>${trows.join('')}</tbody></table></div>`;
-  const note=`<div class="wr-note">과거 완료 연도들의 월별 매출비중을 평균했습니다. <b>과거평균월비중</b>은 직전 5개년 중 <b>해당 월에 실제 매출 데이터가 있는 연도만</b> 평균에 포함합니다. <b>평균예측 연매출 = 기준 월까지 실적 ÷ 해당 시점 누적 비중</b>. 평균예측매출(월단위)은 <b>기준 월과 앞으로 남은 월만</b> 표시합니다. 연 목표와 월별 목표 열은 상단에서 고른 <b>목표액/수정 목표액</b> 기준으로 함께 변경됩니다. 기준 월은 상단에서 <b>월</b>을 바꿔 선택합니다.</div>`;
+  const note=`<div class="wr-note">과거 완료 연도들의 월별 매출비중을 평균했습니다. <b>과거평균월비중</b>은 직전 5개년 중 <b>해당 월에 실제 매출 데이터가 있는 연도만</b> 평균에 포함합니다. <b>평균예측 연매출 = 기준 월까지 실적 ÷ 해당 시점 누적 비중</b>. 평균예측매출(월단위)은 <b>기준 월과 앞으로 남은 월만</b> 표시합니다. 연 목표와 월별 목표 열은 상단에서 고른 <b>목표액/수정 목표액</b> 기준으로 함께 변경됩니다. 기준 월은 상단에서 <b>월</b>을 바꿔 선택합니다. <b style="color:#1d4ed8">아직 진행 중인 달</b>은 누적비중·달성률을 <b>자료가 있는 날까지의 경과분</b> 기준으로 계산하고 상태를 「진행 중」으로 표시합니다(월 목표 전액과 비교하지 않습니다).</div>`;
   return head+banner+grid+table+note;
 }
 
@@ -13620,7 +13679,19 @@ function forecast(){
   const bepMon=((typeof bepGetV791==='function')?bepGetV791():0)>0?bepGetV791()/12:0; const refs=[{value:tgtAvgV,label:`목표 월평균 ${fmtM(tgtAvgV)}백만`,color:'#dc2626',dock:'right'}]; if(bepMon>0)refs.push({value:bepMon,label:`BEP 월 ${fmtM(bepMon)}백만`,color:'#7c3aed',dock:'left'});
   const _wdL={}; for(let m=1;m<=12;m++)_wdL[m]=workdaysFor(`${CY}-${String(m).padStart(2,'0')}`);
   const chart=svgGrouped(series,320,refs,_wdL);
-  const pyAnnual=py.reduce((a,b)=>a+b,0); const tgtAnnual=tgt.reduce((a,b)=>a+b,0);
+  /* ══ v1016 · 2027년 화면의 «전년(2026)» 금액을 2026년 화면의 🎯 목표액과 같게 맞춥니다 ══
+     두 화면은 제외업체 목록이 연도별로 달라, 같은 2026년인데도 금액이 어긋났습니다
+     (2027 화면 9,028,858,819 vs 2026 화면 8,984,870,959).
+     2026년 화면을 열 때 기록해 둔 그 해 목표액이 있으면 그 값을 그대로 씁니다. */
+  let pyAnnual=py.reduce((a,b)=>a+b,0);
+  try{
+    if(typeof fcIsNextYearMode==='function'&&fcIsNextYearMode()){
+      const _s=((state.fcYearMisc||{})[String(PY)]||{}).atChk974;
+      const _v=(_s&&!_s.py)?(+_s.v||0):0;   /* 그 해 화면에서 직접 찍은 값만 사용 */
+      if(_v>0)pyAnnual=_v;
+    }
+  }catch(_epy1016){}
+  const tgtAnnual=tgt.reduce((a,b)=>a+b,0);
   let mixAnnual=0; for(let mm=1;mm<=12;mm++){ mixAnnual += (mm<=lastAct? Math.max(0,cyMonTot[mm]-fcExcludedMonActual[mm]) : tgt[mm]); }
   const newCustAnnualGross=Object.entries(state.fc.newCusts||{}).reduce((a,[c,v])=>{ const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; return a+adjustScrapCustAmount(c,+v||0)*af; },0);
   const newCustExcluded=Object.entries(state.fc.newCusts||{}).reduce((a,[c,v])=>{ if(!fcExSet.has(c))return a; const ad=state.fc.addPct[c]; const af=1+((ad!=null&&ad!=='')?+ad:0)/100; return a+adjustScrapCustAmount(c,+v||0)*af; },0);
@@ -13921,9 +13992,11 @@ function forecast(){
   /* v812 : 🎯 목표액 오른쪽에 «전년 대비 %»를 함께 보여 줍니다. */
   let _pyTotV812=0;
   try{ _pyTotV812=((fcBaseAgg(PY,CY)||{}).pyMonTot||[]).reduce(function(a,b){return a+(+b||0);},0); }catch(_e){ _pyTotV812=0; }
+  /* v1016 : 「전년 대비」 괄호 안 금액도 위 KPI(전년 연매출)와 같은 값을 씁니다. */
+  try{ if(+pyAnnual>0)_pyTotV812=+pyAnnual; }catch(_e812){}
   const _yoyV812=(_pyTotV812>0)?((olhaeTarget-_pyTotV812)/_pyTotV812*100):null;
   const _yoyBadgeV812=(_yoyV812==null)?''
-    :('<span class="fc-legend-yoy-v812" title="'+PY+'년 실적 '+won(Math.round(_pyTotV812))+'원 대비 '+CY+'년 목표액의 증감률입니다. (목표-전년) / 전년 기준"'
+    :('<span class="fc-legend-yoy-v812" title="'+PY+'년 매출목표액 '+won(Math.round(_pyTotV812))+'원 대비 '+CY+'년 목표액의 증감률입니다. (목표-전년) / 전년 기준"'
       +' style="margin-left:5px;padding:2px 10px;border-radius:999px;background:'+(_yoyV812>=0?'#f0fdf4':'#fef2f2')+';border:1px solid '+(_yoyV812>=0?'#86efac':'#fca5a5')+';color:'+(_yoyV812>=0?'#15803d':'#dc2626')+';font-weight:800">'
       +'전년 대비 '+(_yoyV812>=0?'\u25b2 +':'\u25bc ')+_yoyV812.toFixed(1)+'%'
       +'<span style="font-weight:600;color:#64748b;margin-left:5px">('+PY+'년 '+won(Math.round(_pyTotV812))+'원)</span></span>');
@@ -32412,11 +32485,11 @@ function sgBridge(A){
     lost:{label:'거래중단',amountLabel:'감소액',rows:A.lostCust.map(function(c){return companyRow(c,-c.py);})}
   };
   var explainRows=[
-    {k:'newCust',l:'신규업체',v:b.newC,n:A.newCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출예상액이 없고 2027년 목표가 등록된 신규·경쟁사업체입니다.':'전년 매출이 없고 올해 처음 발생한 거래처 매출입니다.',c:topItems(A.newCust,function(o){return o.cy;},function(o){return o.name;}),p:productsForCustomers(A.newCust)},
+    {k:'newCust',l:'신규업체',v:b.newC,n:A.newCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출목표액이 없고 2027년 목표가 등록된 신규·경쟁사업체입니다.':'전년 매출이 없고 올해 처음 발생한 거래처 매출입니다.',c:topItems(A.newCust,function(o){return o.cy;},function(o){return o.name;}),p:productsForCustomers(A.newCust)},
     {k:'newProd',l:'신규제품',v:b.newP,n:A.newProd.length,u:'종',d:'매출 증가(＋) 항목이나 고객 증감과 중복되어 누적합에서는 제외합니다.',c:newProdCompanies,p:topItems(A.newProd,function(o){return o.cy;},function(o){return o.label;})},
-    {k:'up',l:'기존 증가',v:b.upC,n:A.upCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출예상액보다 2027년 업체 목표가 증가한 기존 거래처입니다.':'양년 모두 거래하며 올해 매출이 증가한 거래처 매출입니다.',c:topItems(A.upCust,function(o){return o.diff;},function(o){return o.name;}),p:topItems(A.keepProd.filter(function(p){return p.diff>0;}),function(o){return o.diff;},function(o){return o.label;})},
-    {k:'down',l:'기존 감소',v:b.dnC,n:A.dnCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출예상액보다 2027년 업체 목표가 감소한 기존 거래처입니다.':'양년 모두 거래하지만 올해 매출이 감소한 거래처 매출입니다.',c:topItems(A.dnCust,function(o){return o.diff;},function(o){return o.name;}),p:topItems(A.keepProd.filter(function(p){return p.diff<0;}),function(o){return o.diff;},function(o){return o.label;})},
-    {k:'lost',l:'거래중단',v:b.lostC,n:A.lostCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출예상액은 있으나 2027년 업체 목표가 없는 거래처입니다.':'전년 매출이 있었지만 올해 매출이 끊긴 거래처 매출입니다.',c:topItems(A.lostCust,function(o){return -o.py;},function(o){return o.name;}),p:topItems(lostProd,function(o){return -o.py;},function(o){return o.label;})}
+    {k:'up',l:'기존 증가',v:b.upC,n:A.upCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출목표액보다 2027년 업체 목표가 증가한 기존 거래처입니다.':'양년 모두 거래하며 올해 매출이 증가한 거래처 매출입니다.',c:topItems(A.upCust,function(o){return o.diff;},function(o){return o.name;}),p:topItems(A.keepProd.filter(function(p){return p.diff>0;}),function(o){return o.diff;},function(o){return o.label;})},
+    {k:'down',l:'기존 감소',v:b.dnC,n:A.dnCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출목표액보다 2027년 업체 목표가 감소한 기존 거래처입니다.':'양년 모두 거래하지만 올해 매출이 감소한 거래처 매출입니다.',c:topItems(A.dnCust,function(o){return o.diff;},function(o){return o.name;}),p:topItems(A.keepProd.filter(function(p){return p.diff<0;}),function(o){return o.diff;},function(o){return o.label;})},
+    {k:'lost',l:'거래중단',v:b.lostC,n:A.lostCust.length,u:'개사',d:bridgeFutureV961?'2026년 매출목표액은 있으나 2027년 업체 목표가 없는 거래처입니다.':'전년 매출이 있었지만 올해 매출이 끊긴 거래처 매출입니다.',c:topItems(A.lostCust,function(o){return -o.py;},function(o){return o.name;}),p:topItems(lostProd,function(o){return -o.py;},function(o){return o.label;})}
   ].map(function(x){
     var neg=x.v<0;
     return '<tr class="sg-bridge-row" data-key="'+x.k+'" tabindex="0" role="button" aria-expanded="false" style="border-bottom:1px solid #e2e8f0"><td style="padding:7px 8px;text-align:left;font-weight:800;color:'+(neg?'#dc2626':'#1e3a5f')+'"><span class="sg-bridge-arrow">▸</span>'+x.l+'</td><td style="padding:7px 8px;text-align:right;font-weight:900;color:'+(neg?'#dc2626':'#16a34a')+'">'+(neg?'−':'＋')+sgShort(Math.abs(x.v))+'</td><td style="padding:7px 8px;text-align:center;color:#475569;white-space:nowrap">'+x.n+x.u+'</td><td style="padding:7px 8px;text-align:left;color:#64748b;line-height:1.45">'+x.d+'</td></tr>';
@@ -32425,7 +32498,7 @@ function sgBridge(A){
   return '<div style="display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:14px;align-items:start">'
     +'<div>'+s+'</div>'
     +'<div><div class="sub2" style="margin-bottom:6px">'+(bridgeFutureV961
-      ?(A.PY+'년 매출예상액에서 '+A.CY+'년 목표금액까지의 변화를 업체별 목표 기준으로 신규업체·기존 증가·기존 감소·거래중단으로 나눴습니다.')
+      ?(A.PY+'년 매출목표액에서 '+A.CY+'년 목표금액까지의 변화를 업체별 목표 기준으로 신규업체·기존 증가·기존 감소·거래중단으로 나눴습니다.')
       :(A.PY+'년에서 '+A.CY+'년까지의 실제 매출 변화를 신규업체·신규제품·기존 증가·기존 감소·거래중단으로 나눴습니다.'))+'</div>'
     +'<div class="note">'+msg+'</div>'
     +'<div style="margin-top:7px">'+explain+'<div id="sgBridgeCompanyPanel" class="sg-bridge-company-panel" style="display:none" aria-live="polite"></div></div></div></div>';
@@ -43977,13 +44050,17 @@ function stamp(){
     try{ var b1000=window.FC_PY_ANNUAL_V1000;
       if(b1000&&+b1000.year>0&&+b1000.value>0){
         var by=String(+b1000.year), bm=state.fcYearMisc[by]=state.fcYearMisc[by]||{};
-        if(!bm.atChk974||bm.atChk974.v!==Math.round(+b1000.value))
-          bm.atChk974={v:Math.round(+b1000.value),at:Date.now(),dev:dev()};
+        /* ══ v1016 · 다음연도 화면에서 계산한 «전년 추정값»이, 그 해 화면에서 직접 찍은
+           «진짜 목표액»을 덮어쓰지 않게 합니다. 기록이 없거나 추정값(py)일 때만 씁니다. */
+        if(!bm.atChk974||bm.atChk974.py){
+          if(!bm.atChk974||bm.atChk974.v!==Math.round(+b1000.value))
+            bm.atChk974={v:Math.round(+b1000.value),at:Date.now(),dev:dev(),py:true};
+        }
       } }catch(_b1000){}
     var m=state.fcYearMisc[y]=state.fcYearMisc[y]||{};
     var o=m.atChk974;
     if(o&&o.dev===dev()&&o.v===val)return;
-    m.atChk974={v:val,at:Date.now(),dev:dev()};
+    m.atChk974={v:val,at:Date.now(),dev:dev()};   /* v1016 : 그 해 화면에서 직접 찍은 값(추정 아님) */
     /* v976 : 다른 컴퓨터도 같은 금액을 쓰도록 저장·동기화에 실어 보냅니다(1분에 한 번만). */
     try{
       var now=Date.now();
