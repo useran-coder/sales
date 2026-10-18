@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동방파스텍 매출 분석 도구 v1041</title>
-<script>window.APP_BUILD='v1041';</script>
+<title>동방파스텍 매출 분석 도구 v1042</title>
+<script>window.APP_BUILD='v1042';</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -2085,6 +2085,22 @@ html.v1032-noanim #result *{transition:none!important;animation:none!important}
   font-weight:800;cursor:pointer;border:1px solid #cbd5e1;background:#fff;color:#334155}
 #pwModalV1041 #pwOkV1041{background:#0d6d66;border-color:#0d6d66;color:#fff}
 </style>
+<style id="v1042-style">
+/* v1042 : 자동 수신 중 전체화면 로딩 */
+#autoLoadV1042{position:fixed;inset:0;z-index:99990;display:flex;align-items:center;justify-content:center;
+  background:#f8fafc;padding:20px}
+#autoLoadV1042 .alBoxV1042{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#autoLoadV1042 .alCiV1042{display:block;width:150px;height:150px;object-fit:contain;margin:0 auto 18px;
+  filter:drop-shadow(0 7px 16px rgba(30,58,95,.17))}
+#autoLoadV1042 .alPctV1042{font-size:54px;line-height:1;font-weight:900;color:#1e3a5f;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums}
+#autoLoadV1042 .alPctV1042 span{font-size:30px}
+#autoLoadV1042 .alBarV1042{height:9px;width:260px;margin:16px auto 0;background:#e2e8f0;border-radius:6px;overflow:hidden}
+#autoLoadV1042 .alBarV1042>div{height:100%;width:0%;background:linear-gradient(90deg,#1e3a5f,#3b82f6);
+  border-radius:6px;transition:width .25s ease}
+#autoLoadV1042 .alMsgV1042{margin-top:11px;font-size:13px;font-weight:700;color:#64748b;white-space:pre-line}
+@media (max-width:640px){#autoLoadV1042 .alCiV1042{width:112px;height:112px;margin-bottom:13px}}
+</style>
 </head>
 <body>
 <header>
@@ -2102,7 +2118,7 @@ html.v1032-noanim #result *{transition:none!important;animation:none!important}
   <a class="header-purchase-btn" href="https://useran-coder.github.io/purchase" target="_blank" rel="noopener">🧾 매입분석 도구</a>
   <button id="headerPeriodBtn" class="header-history-btn" type="button" title="기간 단위와 세부 기간을 고릅니다 (매출순위에 적용)">📅 기간</button>
   <button id="gsSyncBtn" class="header-sync-btn" type="button" title="구글시트 동기화"><span class="sync-main">🔄 동기화</span><span class="sync-time"> · 미실행</span></button>
-  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1041</span>
+  <span class="appver" id="appVer" title="현재 파일의 빌드 번호와 수정 일시입니다. 문의하실 때 이 번호를 알려주십시오.">v1042</span>
   <span class="appuser" id="appUser" title="로그인 사용자">👤 <b>—</b></span>
   <span class="hdr-user" id="hdrUserBox" hidden><span class="hu-ic">👤</span><b id="hdrUserName">—</b><span class="hu-role" id="hdrUserRole"></span><button type="button" id="hdrOutBtn" title="로그아웃">로그아웃</button></span>
 </header>
@@ -43746,6 +43762,92 @@ function mountBtn(){
 setInterval(mountBtn,600);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){ mountBtn(); lockFiles(); });
 else { mountBtn(); lockFiles(); }
+})();
+</script>
+<script id="v1042-autoload">
+/* ══ v1042 · 자료가 없으면 「끌어다 놓으세요」 대신 자동으로 받아옵니다 ══
+   처음 설치한 PC나 서버 자료가 바뀐 PC에서, 로그인만 하면 최신 매출자료를
+   스스로 내려받습니다. 받는 동안에는 화면 한가운데에 회전 CI와 게이지를 띄우고,
+   드래그&드롭 안내 화면(#drop)은 감춥니다. */
+(function(){
+'use strict';
+var MAXTRY=6, tries=0, busy=false, done=false, shown=0, target=4, timer=0, phase='';
+function hasData(){ try{ return typeof CUR!=='undefined' && CUR.length>0; }catch(_e){ return false; } }
+function srvOn(){ try{ return typeof dsUrl==='function' && !!dsUrl(); }catch(_e){ return false; } }
+function logged(){ try{ return typeof auValid==='function' ? auValid() : true; }catch(_e){ return true; } }
+
+function ov(){
+  var el=document.getElementById('autoLoadV1042');
+  if(el)return el;
+  el=document.createElement('div');
+  el.id='autoLoadV1042';
+  var img='';
+  try{
+    var src=document.getElementById('bootCiV1039');
+    if(src&&src.src)img='<img class="alCiV1042" src="'+src.src+'" alt="">';
+  }catch(_e){}
+  el.innerHTML='<div class="alBoxV1042">'+img
+    +'<div class="alPctV1042" id="alPctV1042">0<span>%</span></div>'
+    +'<div class="alBarV1042"><div id="alBarInV1042"></div></div>'
+    +'<div class="alMsgV1042" id="alMsgV1042">최신 매출자료를 받는 중입니다</div></div>';
+  document.body.appendChild(el);
+  return el;
+}
+function paint(){
+  var n=document.getElementById('alPctV1042'), b=document.getElementById('alBarInV1042');
+  if(n)n.innerHTML=Math.round(shown)+'<span>%</span>';
+  if(b)b.style.width=Math.round(shown)+'%';
+}
+function msg(t){ var e=document.getElementById('alMsgV1042'); if(e&&t&&e.textContent!==t)e.textContent=t; }
+function start(){
+  ov().style.display='flex';
+  try{ var d=document.getElementById('drop'); if(d)d.classList.add('hidden'); }catch(_e){}
+  try{ var bw=document.getElementById('bootWait'); if(bw)bw.style.display='none'; }catch(_e2){}
+  if(!timer)timer=setInterval(function(){
+    var gap=target-shown;
+    if(gap>0)shown+=Math.max(0.4,gap*0.1); else if(shown<96)shown+=0.14;
+    if(shown>98.5)shown=98.5;
+    paint();
+    /* 진행 문구는 자료공유 상태줄을 그대로 따라 씁니다 */
+    try{ var st=document.getElementById('dsStatus');
+      var t=st&&String(st.textContent||'').trim();
+      if(t&&/받는|자동|동기화|적용/.test(t))msg(t.split('\n')[0]);
+    }catch(_e3){}
+  },90);
+}
+function finish(ok){
+  done=true; clearInterval(timer); timer=0;
+  if(ok){ shown=100; target=100; paint(); msg('자료 준비 완료'); }
+  setTimeout(function(){
+    var el=document.getElementById('autoLoadV1042'); if(el)el.remove();
+    if(!ok){ try{ var d=document.getElementById('drop'); if(d&&!hasData())d.classList.remove('hidden'); }catch(_e){} }
+  },ok?420:0);
+}
+async function pull(){
+  if(busy||done)return;
+  busy=true; tries++;
+  try{
+    target=Math.min(92,18+tries*14);
+    msg(tries===1?'최신 매출자료를 받는 중입니다':'자료를 다시 확인하는 중입니다 ('+tries+'/'+MAXTRY+')');
+    if(typeof dsAutoPullLatest==='function')await dsAutoPullLatest();
+    if(!hasData()&&typeof dsPull==='function')await dsPull({silent:true,source:'auto1042'});
+  }catch(_e){}
+  finally{ busy=false; }
+}
+function tick(){
+  if(done)return;
+  if(hasData()){ if(document.getElementById('autoLoadV1042'))finish(true); done=true; return; }
+  if(!srvOn()||!logged())return;              /* 서버 미설정·로그인 전에는 기다립니다 */
+  var app=document.getElementById('app');
+  if(app&&app.classList.contains('hidden')&&!document.getElementById('auGate'))return;
+  if(!document.getElementById('autoLoadV1042'))start();
+  if(!busy){
+    if(tries>=MAXTRY){ msg('자료를 받지 못했습니다. 관리자에게 문의하세요.'); finish(false); return; }
+    pull();
+  }
+}
+setInterval(tick,1200);
+setTimeout(tick,1500);
 })();
 </script>
 </body>
