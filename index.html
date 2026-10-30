@@ -50698,12 +50698,19 @@ function toToday(){
   }catch(_e){}
 }
 
+/* v1174 : 월별 금액(원 단위 반올림) + [0]칸에 그래프 «연매출 목표»와 같은 연 합계(소수점까지 더한 뒤 반올림) */
+function tgArr(c,Y){
+  var tg=c.tgt.map(function(v){ return Math.round(+v||0); }), raw=0, sm=0; for(var i=1;i<=12;i++){ raw+=(+c.tgt[i]||0); sm+=tg[i]; }
+  var ann=Math.round(raw);
+  try{ if(typeof window.fcLockAnnualFixV1128==='function'){ var lk=Math.round(+window.fcLockAnnualFixV1128(+Y,raw)||0); if(lk>0&&Math.abs(lk-sm)<13)ann=lk; } }catch(_e){}
+  if(Math.abs(ann-sm)>=13)ann=sm; tg[0]=ann; return tg;
+}
 /* ② 다음 연도 월별 목표 적어 두기 */
 function saveNy(){
   try{
     if(state.act!=='forecast'||window.__FC_BUILDING_V737)return;
     var c=window.FC_CHART_V677, Y=ny(); if(!c||+c.CY!==Y||!Array.isArray(c.tgt)||c.tgt.length<13)return;
-    var tg=c.tgt.map(function(v){ return Math.round(+v||0); }), tot=0; for(var i=1;i<=12;i++)tot+=tg[i]; if(!(tot>0))return;
+    var tg=tgArr(c,Y), tot=0; for(var i=1;i<=12;i++)tot+=tg[i]; if(!(tot>0))return;
     putRec(Y,String(c.plan||'1'),tg);
   }catch(_e){}
 }
@@ -50743,7 +50750,7 @@ function autoRead(Y){
     try{
       if(Date.now()-t0>25000){ if(prevY&&+fcTargetYear()!==prevY)clickYear(prevY); finish(); return; }
       if(step===0){ if(document.querySelector('#fcYearSeg')||Date.now()-t0>4000){ if(+fcTargetYear()!==Y)clickYear(Y); step=1; } }
-      else if(step===1){ var c=window.FC_CHART_V677; if(c&&+c.CY===Y&&Array.isArray(c.tgt)){ var tg=c.tgt.map(function(v){ return Math.round(+v||0); }), tot=0; for(var i=1;i<=12;i++)tot+=tg[i];
+      else if(step===1){ var c=window.FC_CHART_V677; if(c&&+c.CY===Y&&Array.isArray(c.tgt)){ var tg=tgArr(c,Y), tot=0; for(var i=1;i<=12;i++)tot+=tg[i];
           if(tot>0){ putRec(Y,String(c.plan||'1'),tg); step=2; if(prevY&&prevY!==Y)clickYear(prevY); } } }
       else if(step===2){ if(!prevY||+fcTargetYear()===prevY){ finish(); return; } }
     }catch(_e){}
@@ -50783,7 +50790,7 @@ function calcNy(Y){
     if(+ky!==+Y&&typeof fcSwitchYear==='function')fcSwitchYear(Y);
     window.FC_CHART_V677=null;
     var C=(typeof fcChartArraysV678==='function')?fcChartArraysV678():null;
-    if(C&&+C.CY===+Y&&Array.isArray(C.tgt))out={plan:String(C.plan||(state.fc&&state.fc.activePlan)||'1'),tgt:C.tgt.map(function(v){ return Math.round(+v||0); }),at:Date.now()};
+    if(C&&+C.CY===+Y&&Array.isArray(C.tgt))out={plan:String(C.plan||(state.fc&&state.fc.activePlan)||'1'),tgt:tgArr(C,Y),at:Date.now()};
   }catch(_e){}
   finally{
     if(keep){
@@ -50812,7 +50819,7 @@ function renderNy(){
   var main=rec[ap]&&rec[ap].tgt?ap:(plans[0]||'');
   var ys=dataYears().concat([Y]);
   var sel='<select id="wrYearNyV1167" class="wr-select" style="height:34px;padding:0 10px;border:1px solid #cbd5e1;border-radius:8px;font-weight:700">'+ys.map(function(v){ return '<option value="'+v+'"'+(v===Y?' selected':'')+'>'+v+'년'+(v===Y?' (목표)':'')+'</option>'; }).join('')+'</select>';
-  var row=function(label,vals,cls){ var tot=0; if(vals)for(var m=1;m<=12;m++)tot+=(+vals[m]||0);
+  var row=function(label,vals,cls){ var tot=0; if(vals)for(var m=1;m<=12;m++)tot+=(+vals[m]||0); if(vals&&+vals[0]>0&&Math.abs(+vals[0]-tot)<13)tot=+vals[0];
     return '<tr class="'+(cls||'')+'"><td style="text-align:left;font-weight:800">'+label+'</td><td style="font-weight:800">'+(vals===null?'-':amt(tot))+'</td>'+Array.from({length:12},function(_,i){ return '<td>'+(vals===null?'-':amt(vals[i+1]))+'</td>'; }).join('')+'</tr>'; };
   var rows='';
   if(main){
