@@ -173,7 +173,7 @@
          display:flex;flex-direction:column;transform:translateX(102%);transition:transform .22s ease}
   .hp.on .hpbox{transform:none}
   .hptop{display:flex;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}
-  .hptop b{white-space:nowrap}
+  .hptop b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
   .hpq{display:flex;align-items:center;gap:6px;margin-left:16px;flex:1;max-width:280px;height:34px;padding:0 6px 0 10px;border:1px solid var(--line);border-radius:8px;background:#111214;color:var(--dim)}
   .hpq:focus-within{border-color:#3b82f6}
   .hpq input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--text);font:inherit;font-size:14px}
@@ -342,7 +342,7 @@
   </form>
 </div>
 <div class="sr" id="sr" aria-live="polite"><div class="srin" id="srin"></div></div>
-<div class="hp" id="hp"><div class="hpbox"><div class="hptop"><b>거래 이력</b><div class="hpq" id="hpQw"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="hpQ" type="search" placeholder="업체명 검색" autocomplete="off" spellcheck="false"><button type="button" id="hpQx" aria-label="지우기">×</button></div><button type="button" class="x" id="hpX" aria-label="닫기">×</button></div><div class="hpbody" id="hpBody"></div></div></div>
+<div class="hp" id="hp"><div class="hpbox"><div class="hptop"><b id="hpTitle">거래 이력</b><div class="hpq" id="hpQw"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="hpQ" type="search" placeholder="업체명 검색" autocomplete="off" spellcheck="false"><button type="button" id="hpQx" aria-label="지우기">×</button></div><button type="button" class="x" id="hpX" aria-label="닫기">×</button></div><div class="hpbody" id="hpBody"></div></div></div>
 <div class="scrim" id="scrim"></div>
 <nav class="drawer" id="drawer" aria-label="메뉴">
   <div class="dh"><span>메뉴</span><button class="x" id="drawerX" type="button" aria-label="닫기">×</button></div>
@@ -1164,13 +1164,15 @@
         (list2.some(function(r){ return !r.ok; })?'<div class="snote">흐리게 표시된 줄은 반품·정산이거나 평소 단가와 너무 달라 단가 계산에서 뺀 거래입니다.</div>':'');
     }
     $('hpBody').innerHTML='<div class="hph"><div class="code">'+esc(f.code)+'</div><div class="ttl">'+esc(f.name)+(f.spec?'<span class="tsp">'+esc(f.spec)+'</span>':'')+'</div>'+
-      (it.party?'<div class="sp">'+M.party+': <b>'+esc(it.party)+'</b></div>':'')+'</div>'+chips+
+      '</div>'+chips+
       (HP.pf ? (function(){ var ps={}; rows.forEach(function(r){ ps[r.party]=1; }); var pk=Object.keys(ps);
         return '<div class="pfbar">'+M.party+': <b>'+esc(HP.pfx?HP.pf:('«'+HP.pf+'» 포함'))+'</b>'+(!HP.pfx&&pk.length?'<span class="muted">('+pk.length+'곳'+(pk.length<=3?' · '+pk.map(esc).join(', '):'')+')</span>':'')+'<span class="muted">· '+rows.length+'건'+(HP.year&&pfAll?' (전체 기간 '+pfAll.length+'건)':'')+'</span><button type="button" id="pfClr">전체 '+M.party+' 보기</button></div>'; })() : '')+
       '<div class="kpis"><div><span>최근 단가</span><b>'+(g.lastP?won(g.lastP.price):'—')+'</b>'+(g.lastP?chgHtml(g):'')+'</div>'+
       '<div class="kbtn'+(HP.view==='price'?' on':'')+'" id="hpRange" role="button" tabindex="0" title="단가별 목록 보기"><span>최저 ~ 최고 <em>단가별 보기 ›</em></span><b>'+(g.min?won(g.min)+' ~ '+won(g.max):'—')+'</b></div>'+
       '<div><span>수량 합계</span><b>'+num(g.qty)+'</b></div><div><span>공급가 합계</span><b>'+won(g.amt)+'</b></div></div>'+tbl;
     var body=$('hpBody');
+    $('hpTitle').textContent = it.party ? it.party+' 거래이력' : '거래 이력';
+    $('hpTitle').title = $('hpTitle').textContent;
     body.querySelectorAll('.chip[data-hy]').forEach(function(b){ b.addEventListener('click', function(){ HP.year=b.getAttribute('data-hy'); drawHist(); }); });
     body.querySelectorAll('th.hsrt').forEach(function(th){ th.addEventListener('click', function(){ var k=th.getAttribute('data-k'); if(HP.sk===k) HP.dir=-HP.dir; else { HP.sk=k; HP.dir=th.classList.contains('n')||k==='t'||k==='first'||k==='last'?-1:1; } drawHist(); }); });
     var rg=$('hpRange'); function tog(){ HP.view = HP.view==='price' ? 'list' : 'price'; HP.sk = HP.view==='price' ? 'price' : 't'; HP.dir=-1; drawHist(); }
