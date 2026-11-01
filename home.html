@@ -244,14 +244,21 @@
   }
 
   // ① 기본: 같은 github.io 주소의 배포 파일 머리(Last-Modified = 배포 시각) — 조회 한도 없음
+  // v2: 브라우저 저장소(HTTP 캐시)에 아예 쓰지 않고(no-store), 40KB 읽으면 연결을 확실히 끊음(abort).
+  //     전에는 6MB 도구 파일을 캐시에 쓰다 만 상태로 남겨, 버튼을 처음 누르면 새 탭이
+  //     그 캐시 기록이 끝나기를 기다리며 하얀 화면으로 멈춰 있었음.
   function viaPages(t){
-    return fetch(t.url, {headers:{Range:'bytes=0-40000'}, cache:'no-cache'}).then(function(r){
+    var ctl = window.AbortController ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function(){ ctl.abort(); }, 15000) : null;
+    return fetch(t.url, {headers:{Range:'bytes=0-40000'}, cache:'no-store', signal: ctl?ctl.signal:undefined}).then(function(r){
       var lm = r.headers.get('Last-Modified');
       return headText(r).then(function(s){
+        if(ctl) ctl.abort();
+        if(timer) clearTimeout(timer);
         if(!lm) throw new Error('no Last-Modified');
         return { date:new Date(lm).toISOString(), ver:findVer(s) };
       });
-    });
+    }).catch(function(e){ if(timer) clearTimeout(timer); throw e; });
   }
   // ② 예비: GitHub API(1시간 60회 한도) + raw 파일 머리
   function viaApi(t){
@@ -306,6 +313,18 @@
   }
 
   $('reload').addEventListener('click', function(){ load(true); });
+
+  // 버튼에 마우스를 올리거나 손가락을 대는 순간 그 도구 파일을 미리 받아 둠 → 눌렀을 때 바로 열림
+  var warmed = {};
+  function warm(url){
+    if(warmed[url]) return; warmed[url] = 1;
+    try{ var l=document.createElement('link'); l.rel='prefetch'; l.href=url; l.as='document'; document.head.appendChild(l); }catch(e){}
+  }
+  document.querySelectorAll('a.btn').forEach(function(a){
+    ['pointerenter','touchstart','focus'].forEach(function(ev){
+      a.addEventListener(ev, function(){ warm(a.href); }, {passive:true});
+    });
+  });
   load(false);
 })();
 </script>
