@@ -209,6 +209,34 @@
   .sbox table.ht td.nm{max-width:170px;overflow:hidden;text-overflow:ellipsis}
   .hpsub{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:14px}
   .hpsub .lnk{margin-left:auto;background:none;border:none;color:#60a5fa;font:inherit;font-size:13px;cursor:pointer}
+  /* 새 버전 알림 카드 — 매출분석도구 알림(#updNoteV1104)과 같은 모양 */
+  #updNote{position:fixed;top:14px;right:18px;z-index:2147483000;display:none;flex-direction:column;width:min(440px,calc(100vw - 32px));
+    background:#fff;color:#0f172a;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,.55);overflow:hidden;
+    font-size:13px;animation:updIn .22s ease-out;text-align:left}
+  @keyframes updIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+  #updNote .u-hd{display:flex;align-items:center;gap:10px;padding:13px 14px 11px;border-bottom:1px solid #f1f5f9}
+  #updNote .u-ic{width:32px;height:32px;border-radius:50%;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto}
+  #updNote .u-ti{font-weight:900;font-size:14px;line-height:1.3}
+  #updNote .u-st{font-size:11.5px;color:#64748b;margin-top:2px}
+  #updNote .u-x{margin-left:auto;border:0;background:transparent;color:#94a3b8;font-size:18px;cursor:pointer;padding:2px 6px;border-radius:6px}
+  #updNote .u-hd .u-x{border:0;background:transparent}
+  #updNote .u-hd .u-x:hover{background:#f1f5f9;color:#475569}
+  #updNote .u-list{max-height:260px;overflow:auto;padding:4px 0}
+  #updNote .u-row{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;padding:8px 14px;border-bottom:1px dashed #f1f5f9}
+  #updNote .u-row:last-child{border-bottom:0}
+  #updNote .u-cat{grid-row:1/3;align-self:start;font-size:11px;font-weight:800;color:#1d4ed8;background:#eff6ff;border:1px solid #dbeafe;border-radius:999px;padding:2px 8px;white-space:nowrap}
+  #updNote .u-cat.purchase{color:#047857;background:#ecfdf5;border-color:#a7f3d0}
+  #updNote .u-cat.cost{color:#6d28d9;background:#f5f3ff;border-color:#ddd6fe}
+  #updNote .u-cat.salesteam{color:#be185d;background:#fdf2f8;border-color:#fbcfe8}
+  #updNote .u-cat.home{color:#b45309;background:#fffbeb;border-color:#fde68a}
+  #updNote .u-d{font-weight:700;color:#1e293b;line-height:1.4;word-break:keep-all}
+  #updNote .u-m{font-size:11px;color:#94a3b8}
+  #updNote .u-ft{display:flex;gap:8px;justify-content:flex-end;padding:10px 14px;background:#f8fafc;border-top:1px solid #f1f5f9}
+  #updNote .u-ft button{border-radius:8px;padding:7px 14px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}
+  #updNote .u-go{background:#2563eb;color:#fff;border:1px solid #2563eb}
+  #updNote .u-go:hover{background:#1d4ed8}
+  #updNote .u-later{background:#fff;color:#475569;border:1px solid #cbd5e1}
+  #updNote .u-ft .u-later:hover{background:#f1f5f9}
 </style>
 </head>
 <body>
@@ -430,6 +458,101 @@
       a.addEventListener(ev, function(){ warm(a.href); }, {passive:true});
     });
   });
+
+  // ── 화면을 켜 둔 동안 새 버전이 배포되면 알림 카드(매출분석도구와 같은 모양) ──
+  var known = {};          // 지금 화면에 보이는 도구별 배포 시각·버전
+  var pendUpd = {};        // 아직 반영 안 한 새 버전 {key:{info, old}}
+  var selfLM = '', selfNew = '', laterUntil = 0, lastChk = Date.now(), chkBusy = false;
+  var CHK_MS = 3 * 60 * 1000;
+  var _show = show;
+  show = function(t, info){
+    if(info && info.date){
+      known[t.key] = {date:info.date, ver:info.ver||''};
+      var p = pendUpd[t.key];   // «새로 확인»으로 이미 화면에 반영됐으면 알림에서 뺌
+      if(p && new Date(info.date).getTime() >= new Date(p.info.date).getTime()){ delete pendUpd[t.key]; setTimeout(paintNote, 0); }
+    }
+    _show(t, info);
+  };
+  function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function md(d){ var p=kst(d); return p.m+'/'+p.d+' '+pad(p.h)+':'+pad(p.mi); }
+  function selfHead(){
+    var ctl = window.AbortController ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function(){ ctl.abort(); }, 15000) : null;
+    return fetch(location.href.split('#')[0], {headers:{Range:'bytes=0-1000'}, cache:'no-store', signal: ctl?ctl.signal:undefined})
+      .then(function(r){ var lm = r.ok ? (r.headers.get('Last-Modified')||'') : ''; if(ctl) ctl.abort(); if(timer) clearTimeout(timer); return lm; })
+      .catch(function(){ if(timer) clearTimeout(timer); return ''; });
+  }
+  function note(){
+    var n = $('updNote');
+    if(!n){
+      n = document.createElement('div'); n.id = 'updNote'; n.setAttribute('role','alert');
+      n.innerHTML = '<div class="u-hd"><div class="u-ic">🔔</div><div><div class="u-ti"></div><div class="u-st"></div></div>'
+        + '<button type="button" class="u-x u-later" title="나중에">✕</button></div><div class="u-list"></div>'
+        + '<div class="u-ft"><button type="button" class="u-later">나중에</button><button type="button" class="u-go">지금 업데이트</button></div>';
+      document.body.appendChild(n);
+    }
+    return n;
+  }
+  function paintNote(){
+    var keys = Object.keys(pendUpd), n = note();
+    var cnt = keys.length + (selfNew ? 1 : 0);
+    if(!cnt || Date.now() < laterUntil){ n.style.display = 'none'; return; }
+    n.querySelector('.u-ti').textContent = '새 버전이 배포되었습니다 ' + cnt + '건';
+    n.querySelector('.u-st').textContent = selfNew ? '«지금 업데이트»를 누르면 홈페이지를 새로 엽니다'
+      : '«지금 업데이트»를 누르면 업데이트 일자에 반영됩니다';
+    var rows = [];
+    if(selfNew) rows.push('<div class="u-row"><span class="u-cat home">홈페이지</span><div class="u-d">업무분석도구 홈페이지 새 버전</div>'
+      + '<div class="u-m">' + esc(md(new Date(selfNew))) + ' 배포</div></div>');
+    TOOLS.forEach(function(t){
+      var u = pendUpd[t.key]; if(!u) return;
+      var v = u.info.ver, ov = u.old && u.old.ver;
+      var d = v ? ((ov && ov !== v) ? ov + ' → ' + v : v) + ' 새 버전' : '새 버전';
+      rows.push('<div class="u-row"><span class="u-cat ' + t.key + '">' + esc(t.name) + '</span><div class="u-d">' + esc(d) + '</div>'
+        + '<div class="u-m">' + esc(md(new Date(u.info.date))) + ' 배포 · 도구를 다시 열면 새 버전이 적용됩니다</div></div>');
+    });
+    n.querySelector('.u-list').innerHTML = rows.join('');
+    n.style.display = 'flex';
+  }
+  function applyUpd(){
+    if(selfNew){ location.reload(); return; }
+    var c = readCache() || {}; c.data = c.data || {};
+    TOOLS.forEach(function(t){ var u = pendUpd[t.key]; if(u){ show(t, u.info); c.data[t.key] = u.info; } });
+    if(c.at) writeCache(c);
+    pendUpd = {}; $('checked').textContent = fmtTime(new Date()) + ' 확인'; paintNote();
+  }
+  function check(){
+    if(chkBusy || !ON_PAGES) return;
+    chkBusy = true; lastChk = Date.now();
+    var jobs = TOOLS.map(function(t){
+      return viaPages(t).then(function(info){
+        var k = known[t.key];
+        if(!k || !info.date || new Date(info.date).getTime() <= new Date(k.date).getTime()) return;
+        var p = pendUpd[t.key];
+        if(p && p.info.date === info.date) return;
+        var full = info.ver ? Promise.resolve(info)
+          : viaApi(t).then(function(a){ return {date:info.date, ver:a.ver}; }, function(){ return info; });   // 영업팀: 버전은 커밋 메시지
+        return full.then(function(fi){ pendUpd[t.key] = {info:fi, old:k}; });
+      }).catch(function(){});
+    });
+    jobs.push(selfHead().then(function(lm){
+      if(!lm) return;
+      if(!selfLM){ selfLM = lm; return; }
+      if(lm !== selfLM && new Date(lm).getTime() > new Date(selfLM).getTime()) selfNew = lm;
+    }));
+    Promise.all(jobs).then(function(){ chkBusy = false; paintNote(); });
+  }
+  document.addEventListener('click', function(e){
+    var t = e.target; if(!t || !t.closest) return;
+    if(t.closest('#updNote .u-go')){ e.preventDefault(); applyUpd(); }
+    else if(t.closest('#updNote .u-later')){ e.preventDefault(); laterUntil = Date.now() + 10*60*1000; paintNote(); setTimeout(paintNote, 10*60*1000 + 500); }
+  }, true);
+  setInterval(function(){ if(document.visibilityState === 'visible') check(); }, CHK_MS);
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible' && Date.now() - lastChk > 60*1000) check();
+  });
+  if(ON_PAGES) selfHead().then(function(lm){ if(lm && !selfLM) selfLM = lm; });
+  window.__homeUpd = { check:check, state:function(){ return {known:known, pend:pendUpd, selfLM:selfLM, selfNew:selfNew}; } };
+
   load(false);
 })();
 </script>
