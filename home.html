@@ -201,6 +201,14 @@
     .sf select{max-width:150px;padding-right:26px;font-size:13px}
     .sf button{padding:0 12px}
   }
+  .kpis .kbtn{cursor:pointer}
+  .kpis .kbtn:hover,.kpis .kbtn.on{border-color:#3b82f6}
+  .kpis .kbtn em{font-style:normal;color:#60a5fa;margin-left:4px}
+  .sbox th.hsrt{cursor:pointer;user-select:none}
+  .sbox th.hsrt:hover,.sbox th.hsrt.on{color:var(--text)}
+  .sbox table.ht td.nm{max-width:170px;overflow:hidden;text-overflow:ellipsis}
+  .hpsub{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:14px}
+  .hpsub .lnk{margin-left:auto;background:none;border:none;color:#60a5fa;font:inherit;font-size:13px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -872,25 +880,63 @@
   }
   function rerun(){ closeHist(); if(MODES[VIEW.mode].kind==='prod') runProd(); else runParty(); }
 
-  /* ── 오른쪽 거래 이력 ── */
+  /* ── 오른쪽 거래 이력: 연도 선택, 제목 정렬, «최저 ~ 최고» 누르면 단가별 목록 ── */
+  var HP=null; // {it, year, view:'list'|'price', sk, dir}
   function histPanel(it){
-    var M=MODES[VIEW.mode], g=it.g, rows=it.rows; // 최근순
-    // 같은 거래처의 직전 단가와 비교해 변동 표시
-    var prevBy={}, marks=new Array(rows.length);
-    for(var i=rows.length-1;i>=0;i--){ var r=rows[i]; if(!r.ok){ marks[i]=''; continue; }
-      var p=prevBy[r.party];
-      if(p!=null && Math.abs(r.price-p)>=0.5){ var c=(r.price-p)/p*100; marks[i]='<span class="chg '+(c>0?'up':'dn')+'" title="직전 '+won(p)+'원">'+(c>0?'▲':'▼')+' '+Math.abs(c).toFixed(1)+'%</span>'; }
-      else marks[i]='';
+    var rows=it.rows;
+    // 같은 거래처의 직전 단가와 비교(전체 기간 기준으로 미리 계산)
+    var prevBy={}, med=median(rows.filter(function(r){ return r.ok; }).map(function(r){ return r.price; }));
+    rows.forEach(function(r){ r._bad = !r.ok || (med && (r.price>med*10 || r.price<med/10)); });
+    for(var i=rows.length-1;i>=0;i--){ var r=rows[i]; r._chg=null; if(r._bad) continue;
+      var pv=prevBy[r.party]; if(pv!=null && Math.abs(r.price-pv)>=0.5){ r._chg=(r.price-pv)/pv*100; r._prev=pv; }
       prevBy[r.party]=r.price; }
-    var showParty = M.kind==='prod';
-    var body=rows.map(function(r,i){ return '<tr'+(r.ok?'':' class="bad"')+'><td class="d">'+ymd(r.t)+'</td>'+(showParty?'<td class="nm">'+esc(r.party)+'</td>':'')+'<td class="n">'+num(r.qty)+'</td><td class="n">'+won(r.price)+'</td><td class="n">'+marks[i]+'</td><td class="n">'+won(r.supply)+'</td></tr>'; }).join('');
-    var f=rows[0];
-    openHist('<div class="hph"><div class="code">'+esc(f.code)+'</div><div class="ttl">'+esc(f.name)+'</div><div class="sp">'+esc(f.spec)+'</div>'+
-      (it.party?'<div class="sp">'+M.party+': <b>'+esc(it.party)+'</b></div>':'')+'</div>'+
-      '<div class="kpis"><div><span>최근 단가</span><b>'+(g.lastP?won(g.lastP.price):'—')+'</b>'+chgHtml(g)+'</div><div><span>최저 ~ 최고</span><b>'+(g.min?won(g.min)+' ~ '+won(g.max):'—')+'</b></div><div><span>수량 합계</span><b>'+num(g.qty)+'</b></div><div><span>공급가 합계</span><b>'+won(g.amt)+'</b></div></div>'+
-      (VIEW.year?'<div class="snote" style="padding:0 0 8px">'+VIEW.year+'년 거래만 표시 중</div>':'')+
-      '<div class="sbox"><table class="ht"><thead><tr><th>일자</th>'+(showParty?'<th>'+M.party+'</th>':'')+'<th class="n">수량</th><th class="n">단가</th><th class="n">변동</th><th class="n">공급가</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
-      (g.out?'<div class="snote">흐리게 표시된 줄은 반품·정산 등으로 단가 계산에서 뺀 거래입니다.</div>':''));
+    HP={it:it, year:VIEW.year||'', view:'list', sk:'t', dir:-1};
+    drawHist(); $('hp').classList.add('on'); $('hpBody').scrollTop=0;
+  }
+  function hpSortTh(cols){
+    return cols.map(function(c){ var on=HP.sk===c.k; return '<th class="'+(c.n?'n ':'')+'hsrt'+(on?' on':'')+'" data-k="'+c.k+'">'+c.h+'<i>'+(on?(HP.dir>0?'▲':'▼'):'')+'</i></th>'; }).join('');
+  }
+  function cmp(k,dir){ return function(a,b){ var x=a[k], y=b[k]; if(typeof x==='string'||typeof y==='string') return String(x||'').localeCompare(String(y||''),'ko')*dir; return ((x==null?-1e18:x)-(y==null?-1e18:y))*dir; }; }
+  function drawHist(){
+    var M=MODES[VIEW.mode], it=HP.it, all=it.rows;
+    var rows=HP.year ? all.filter(function(r){ return r.y===+HP.year; }) : all;
+    var g=rows.length ? stats(rows) : {n:0,qty:0,amt:0,lastP:null,min:0,max:0,out:0};
+    var showParty=M.kind==='prod', f=all[0];
+    var ys={}; all.forEach(function(r){ ys[r.y]=1; });
+    var chips='<div class="chips"><span class="cl">연도</span><button type="button" class="chip'+(HP.year?'':' on')+'" data-hy="">전체</button>'+Object.keys(ys).sort().reverse().map(function(y){ return '<button type="button" class="chip'+(+HP.year===+y?' on':'')+'" data-hy="'+y+'">'+y+'년</button>'; }).join('')+'</div>';
+    var tbl;
+    if(HP.view==='price'){
+      // 단가별 목록
+      var pm={}, list=[];
+      rows.forEach(function(r){ if(!r.ok) return; var k=Math.round(r.price*100)/100, x=pm[k];
+        if(!x){ x=pm[k]={price:k,n:0,qty:0,amt:0,first:r.t,last:r.t,parties:{},bad:r._bad}; list.push(x); }
+        x.n++; x.qty+=r.qty; x.amt+=r.supply; if(r.t<x.first) x.first=r.t; if(r.t>x.last) x.last=r.t; x.parties[r.party]=(x.parties[r.party]||0)+1; });
+      list.forEach(function(x){ x.pn=Object.keys(x.parties).length; x.ptxt=Object.keys(x.parties).sort(function(a,b){ return x.parties[b]-x.parties[a]; }).join(', '); });
+      list.sort(cmp(HP.sk in {price:1,n:1,qty:1,amt:1,first:1,last:1,pn:1}?HP.sk:'price', HP.sk in {price:1,n:1,qty:1,amt:1,first:1,last:1,pn:1}?HP.dir:-1));
+      var cols=[{k:'price',h:'단가',n:1},{k:'n',h:'건수',n:1},{k:'qty',h:'수량',n:1},{k:'amt',h:'공급가',n:1},{k:'first',h:'처음 거래'},{k:'last',h:'마지막 거래'},{k:'pn',h:M.party}];
+      tbl='<div class="hpsub"><b>단가별 목록</b> <span class="muted">'+list.length+'가지 단가</span><button type="button" class="lnk" id="hpBack">← 거래 이력으로</button></div>'+
+        '<div class="sbox"><table class="ht"><thead><tr>'+hpSortTh(cols)+'</tr></thead><tbody>'+list.map(function(x){
+          return '<tr'+(x.bad?' class="bad" title="평소 단가와 너무 달라 최저~최고 계산에서 뺀 단가"':'')+'><td class="n"><b>'+won(x.price)+'</b></td><td class="n">'+x.n+'</td><td class="n">'+num(x.qty)+'</td><td class="n">'+won(x.amt)+'</td><td class="d">'+ymd(x.first)+'</td><td class="d">'+ymd(x.last)+'</td><td class="nm" title="'+esc(x.ptxt)+'">'+esc(x.ptxt.length>24?x.ptxt.slice(0,24)+'…':x.ptxt)+'</td></tr>'; }).join('')+'</tbody></table></div>';
+    }else{
+      var list2=rows.map(function(r){ return {t:r.t, party:r.party, qty:r.qty, price:r.price, chg:r._chg, prev:r._prev, supply:r.supply, ok:!r._bad}; });
+      list2.sort(cmp(HP.sk in {t:1,party:1,qty:1,price:1,chg:1,supply:1}?HP.sk:'t', HP.sk in {t:1,party:1,qty:1,price:1,chg:1,supply:1}?HP.dir:-1));
+      var cols2=[{k:'t',h:'일자'}].concat(showParty?[{k:'party',h:M.party}]:[]).concat([{k:'qty',h:'수량',n:1},{k:'price',h:'단가',n:1},{k:'chg',h:'변동',n:1},{k:'supply',h:'공급가',n:1}]);
+      tbl='<div class="sbox"><table class="ht"><thead><tr>'+hpSortTh(cols2)+'</tr></thead><tbody>'+list2.map(function(r){
+        var mk = r.chg==null ? '' : '<span class="chg '+(r.chg>0?'up':'dn')+'" title="직전 '+won(r.prev)+'원">'+(r.chg>0?'▲':'▼')+' '+Math.abs(r.chg).toFixed(1)+'%</span>';
+        return '<tr'+(r.ok?'':' class="bad"')+'><td class="d">'+ymd(r.t)+'</td>'+(showParty?'<td class="nm">'+esc(r.party)+'</td>':'')+'<td class="n">'+num(r.qty)+'</td><td class="n">'+won(r.price)+'</td><td class="n">'+mk+'</td><td class="n">'+won(r.supply)+'</td></tr>'; }).join('')+'</tbody></table></div>'+
+        (list2.some(function(r){ return !r.ok; })?'<div class="snote">흐리게 표시된 줄은 반품·정산이거나 평소 단가와 너무 달라 단가 계산에서 뺀 거래입니다.</div>':'');
+    }
+    $('hpBody').innerHTML='<div class="hph"><div class="code">'+esc(f.code)+'</div><div class="ttl">'+esc(f.name)+'</div><div class="sp">'+esc(f.spec)+'</div>'+
+      (it.party?'<div class="sp">'+M.party+': <b>'+esc(it.party)+'</b></div>':'')+'</div>'+chips+
+      '<div class="kpis"><div><span>최근 단가</span><b>'+(g.lastP?won(g.lastP.price):'—')+'</b>'+(g.lastP?chgHtml(g):'')+'</div>'+
+      '<div class="kbtn'+(HP.view==='price'?' on':'')+'" id="hpRange" role="button" tabindex="0" title="단가별 목록 보기"><span>최저 ~ 최고 <em>단가별 보기 ›</em></span><b>'+(g.min?won(g.min)+' ~ '+won(g.max):'—')+'</b></div>'+
+      '<div><span>수량 합계</span><b>'+num(g.qty)+'</b></div><div><span>공급가 합계</span><b>'+won(g.amt)+'</b></div></div>'+tbl;
+    var body=$('hpBody');
+    body.querySelectorAll('.chip[data-hy]').forEach(function(b){ b.addEventListener('click', function(){ HP.year=b.getAttribute('data-hy'); drawHist(); }); });
+    body.querySelectorAll('th.hsrt').forEach(function(th){ th.addEventListener('click', function(){ var k=th.getAttribute('data-k'); if(HP.sk===k) HP.dir=-HP.dir; else { HP.sk=k; HP.dir=th.classList.contains('n')||k==='t'||k==='first'||k==='last'?-1:1; } drawHist(); }); });
+    var rg=$('hpRange'); function tog(){ HP.view = HP.view==='price' ? 'list' : 'price'; HP.sk = HP.view==='price' ? 'price' : 't'; HP.dir=-1; drawHist(); }
+    rg.addEventListener('click', tog); rg.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tog(); } });
+    var bk=$('hpBack'); if(bk) bk.addEventListener('click', tog);
   }
 
   /* ── 검색 실행 ── */
