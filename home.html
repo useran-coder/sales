@@ -137,6 +137,14 @@
     background-image:linear-gradient(45deg,transparent 50%,#9aa0a8 50%),linear-gradient(135deg,#9aa0a8 50%,transparent 50%);
     background-position:calc(100% - 15px) 17px,calc(100% - 10px) 17px;background-size:5px 5px;background-repeat:no-repeat}
   .sf input{flex:1;min-width:0;padding:0 12px}
+  .sf{position:relative}
+  /* 검색 종류 목록: 브라우저 기본 목록은 구분선이 거의 안 보여 직접 그림 */
+  .smenu{position:absolute;top:46px;left:0;z-index:30;min-width:220px;background:#111214;border:1px solid #3a3f47;border-radius:10px;padding:5px;box-shadow:0 12px 30px rgba(0,0,0,.6);display:none}
+  .smenu.on{display:block}
+  .smenu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text);font:inherit;font-size:14px;padding:9px 12px;border-radius:7px;cursor:pointer;white-space:nowrap}
+  .smenu button:hover,.smenu button.kb{background:#1f2937}
+  .smenu button.on{color:#60a5fa;font-weight:600}
+  .smenu .sep{height:1px;background:#4b5563;margin:5px 8px}
   .sf input:focus,.sf select:focus{outline:none;border-color:#3b82f6}
   .sf button.go{width:40px;padding:0;display:flex;align-items:center;justify-content:center;background:#0d0e10;color:var(--sub);cursor:pointer}
   .sf button.go:hover{color:var(--text);border-color:#4b5563}
@@ -890,6 +898,19 @@
     co:{src:'co', kind:'co', title:'업체 검색', party:'업체', ph:'업체명 · 대표자 · 사업자번호 · 전화 · 주소'}
   };
   $('sMode').addEventListener('change', function(){ $('sQ').placeholder=MODES[this.value].ph; $('sQ').focus(); });
+  // 검색 종류 목록(구분선이 잘 보이게 직접 그림). 키보드 ↑↓ 는 기본 선택상자 그대로 동작
+  (function(){
+    var sel=$('sMode'), m=document.createElement('div'); m.className='smenu'; m.setAttribute('role','listbox');
+    m.innerHTML=[].map.call(sel.children,function(c){ return c.tagName==='HR'?'<div class="sep"></div>':'<button type="button" data-v="'+c.value+'">'+esc(c.textContent)+'</button>'; }).join('');
+    sel.parentNode.appendChild(m);
+    function open(){ m.style.left=sel.offsetLeft+'px'; m.style.minWidth=sel.offsetWidth+'px';
+      m.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v')===sel.value); }); m.classList.add('on'); }
+    function close(){ m.classList.remove('on'); }
+    sel.addEventListener('mousedown', function(e){ e.preventDefault(); sel.focus(); m.classList.contains('on')?close():open(); });
+    sel.addEventListener('keydown', function(e){ if(e.key==='Escape') close(); });
+    m.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; sel.value=b.getAttribute('data-v'); close(); sel.dispatchEvent(new Event('change',{bubbles:true})); });
+    document.addEventListener('mousedown', function(e){ if(!m.contains(e.target) && e.target!==sel) close(); });
+  })();
 
   /* ── 결과 창 / 오른쪽 이력 창 ── */
   function show(html){ $('srin').innerHTML=html; $('sr').classList.add('on'); }
