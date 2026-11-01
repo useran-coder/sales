@@ -1311,7 +1311,7 @@
   }
   function coTable(side, name, rows){
     var M=MODES[side==='s'?'sc':'pc'];
-    var list=CO.ty?rows.filter(function(r){ return r.y===+CO.ty; }):rows;
+    var list=(CO.ty&&CO.ty!=='all')?rows.filter(function(r){ return r.y===+CO.ty; }):rows;
     if(CO.f){ var ts=terms(CO.f); list=list.filter(function(r){ return hitAll(r.pk,ts); }); }
     if(!VIEW || VIEW.mode!==(side==='s'?'sc':'pc')) VIEW={mode:side==='s'?'sc':'pc', q:name, year:'', party:name, sortKey:'amt', dir:-1, items:[], cols:[]};
     VIEW.cols=[{k:'code',h:'품번'},{k:'name',h:'품명'},{k:'spec',h:'규격'},{k:'price',h:'마지막 단가',n:1},{k:'chg',h:'변동',n:1},{k:'date',h:'마지막 '+(side==='s'?'출고일':'입고일'),n:1,dt:1},{k:'n',h:(side==='s'?'출고':'입고')+'횟수',n:1},{k:'qty',h:'총수량',n:1},{k:'amt',h:'공급가 합계',n:1}];
@@ -1328,11 +1328,11 @@
     var c=CO.sel, side=CO.side, name=side==='s'?c.s:c.p, all=side==='s'?DATA.sales:DATA.purch, lab=side==='s'?'매출':'매입';
     var rows=all.filter(function(r){ return r.party===name; });
     var ys={}; rows.forEach(function(r){ ys[r.y]=1; }); var yl=Object.keys(ys).map(Number).sort(function(a,b){ return b-a; });
-    if(!CO.cy || !ys[CO.cy]) CO.cy=yl[0]||new Date().getFullYear();
+    if(!CO.cy || !ys[CO.cy]){ CO.cy=yl[0]||new Date().getFullYear(); if(CO.ty!=='all') CO.ty=String(CO.cy); }
     var ch=chartHtml(rows, CO.cy, lab, 1000);
     var tabs = (c.s&&c.p) ? '<div class="co-tabs"><button type="button" class="co-tab'+(side==='s'?' on':'')+'" data-side="s">📈 매출처 <span>'+esc(c.s)+'</span></button><button type="button" class="co-tab'+(side==='p'?' on':'')+'" data-side="p">📦 매입처 <span>'+esc(c.p)+'</span></button></div>' : '';
     var back = CO.fromList && CO.hits.length>1 ? '<button type="button" class="lnk" id="coBack">← 후보 '+CO.hits.length+'곳 목록</button>' : '';
-    var ychips='<button type="button" class="chip'+(CO.ty?'':' on')+'" data-ty="">전체</button>'+yl.map(function(y){ return '<button type="button" class="chip'+(+CO.ty===y?' on':'')+'" data-ty="'+y+'">'+y+'년</button>'; }).join('');
+    var ychips='<button type="button" class="chip'+(CO.ty==='all'?' on':'')+'" data-ty="all">전체</button>'+yl.map(function(y){ return '<button type="button" class="chip'+(+CO.ty===y?' on':'')+'" data-ty="'+y+'">'+y+'년</button>'; }).join('');
     show(head(esc(c.name)+' '+sideChips(c), back)+profileHtml(c)+tabs+kpiHtml(side,name,rows)+
       '<div class="co-chart"><div class="co-ch"><b>📈 '+esc(name)+' / '+CO.cy+'년 · 월별 '+lab+' 추이</b>'+yl.map(function(y){ return '<button type="button" class="chip sm'+(y===CO.cy?' on':'')+'" data-cy="'+y+'">'+y+'년</button>'; }).join('')+'<span class="co-sub">'+ch.sub+'</span></div><div id="coSvg"></div></div>'+
       '<div class="co-tbh"><b>📒 '+lab+' 품목</b><div class="chips" style="margin:0">'+ychips+'</div><input type="search" id="coF" placeholder="품번 · 품명 · 규격 (띄어쓰기로 여러 개)" value="'+esc(CO.f)+'" autocomplete="off"></div>'+
@@ -1343,8 +1343,8 @@
     CO.paint();
     bindTable();
     S.querySelectorAll('[data-side]').forEach(function(b){ b.addEventListener('click', function(){ CO.side=b.getAttribute('data-side'); CO.cy=0; CO.ty=''; CO.f=''; VIEW=null; drawCompany(); }); });
-    S.querySelectorAll('[data-cy]').forEach(function(b){ b.addEventListener('click', function(){ CO.cy=+b.getAttribute('data-cy'); drawCompany(); }); });
-    S.querySelectorAll('[data-ty]').forEach(function(b){ b.addEventListener('click', function(){ CO.ty=b.getAttribute('data-ty'); drawCompany(); }); });
+    S.querySelectorAll('[data-cy]').forEach(function(b){ b.addEventListener('click', function(){ CO.cy=+b.getAttribute('data-cy'); CO.ty=String(CO.cy); drawCompany(); }); });  // 그래프 연도 = 표 연도
+    S.querySelectorAll('[data-ty]').forEach(function(b){ b.addEventListener('click', function(){ CO.ty=b.getAttribute('data-ty'); if(CO.ty!=='all') CO.cy=+CO.ty; drawCompany(); }); });  // 표 연도를 고르면 그래프도 그 연도
     var f=$('coF'), ft=0; f.addEventListener('input', function(){ clearTimeout(ft); ft=setTimeout(function(){ CO.f=f.value.trim(); $('srTbl').innerHTML=coTable(side,name,rows); bindTable(); }, 150); });
     var bk=$('coBack'); if(bk) bk.addEventListener('click', function(){ closeHist(); coList(); });
   }
