@@ -256,8 +256,9 @@
   .co-ch{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px}
   .co-ch .chip.sm{padding:3px 10px;font-size:12px}
   .co-sub{margin-left:auto;font-size:12.5px;color:var(--sub)}
-  .co-svg{display:block;width:100%;height:auto;margin-top:6px}
-  @media (max-width:700px){ .co-chart{overflow-x:auto} .co-svg{min-width:680px} .co-sub{margin-left:0} }
+  .co-svg{display:block;margin-top:6px;font-family:inherit}
+  #coSvg{width:100%}
+  @media (max-width:700px){ .co-chart{overflow-x:auto} .co-sub{margin-left:0} }
   .co-tbh{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 10px;font-size:14px}
   .co-tbh input{margin-left:auto;width:min(360px,100%);height:36px;border:1px solid var(--line);border-radius:8px;background:#0d0e10;color:var(--text);padding:0 12px;font:inherit;font-size:13px}
   .co-tbh input:focus{outline:none;border-color:#3b82f6}
@@ -1290,23 +1291,23 @@
       h+='<div class="co-kp"><span class="l">신용등급</span><b>'+esc(p.grade||'미지정')+'</b></div><div class="co-kp"><span class="l">신용상태</span><b style="color:'+sc+'">'+esc(p.cat||'미분류')+'</b></div>'+(p.pay!==''?'<div class="co-kp"><span class="l">결제일</span><b>'+esc(p.pay)+'일</b></div>':''); }
     return '<div class="co-kps">'+h+'</div>';
   }
-  function chartHtml(rows, y, lab){
+  function chartHtml(rows, y, lab, PW){
     var m=[0,0,0,0,0,0,0,0,0,0,0,0], cnt=0; rows.forEach(function(r){ if(r.y===y){ m[new Date(r.t).getMonth()]+=r.supply; cnt++; } });
     var now=new Date(), curY=now.getFullYear(), curM=now.getMonth(), isCur=(y===curY);
     var used=m.map(function(v,i){ return {v:v,i:i}; }).filter(function(o){ return o.v>0 && !(isCur && o.i>=curM); });
     var tot=m.reduce(function(a,b){ return a+b; },0), avg=used.length?used.reduce(function(a,o){ return a+o.v; },0)/used.length:0;
     var mx=used.length?used.reduce(function(a,o){ return o.v>a.v?o:a; }):null, mn=used.length?used.reduce(function(a,o){ return o.v<a.v?o:a; }):null;
-    var W=1000,H=300,L=86,R=28,T=34,B=44, top=Math.max.apply(null,m.concat([avg,1]))*1.08;
-    var x=function(i){ return L+(W-L-R)*i/11; }, yv=function(v){ return T+(H-T-B)*(1-v/top); };
+    var W=Math.max(320,Math.round(PW||1000)),H=300,L=86,R=34,T=40,B=40, IN=28, top=Math.max.apply(null,m.concat([avg,1]))*1.1;
+    var x=function(i){ return L+IN+(W-L-R-IN*2)*i/11; }, yv=function(v){ return T+(H-T-B)*(1-v/top); };
     var grid='', i; for(i=0;i<=4;i++){ var gv=top*i/4, gy=yv(gv); grid+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+gy+'" y2="'+gy+'" stroke="#23262c"/><text x="'+(L-10)+'" y="'+(gy+4)+'" text-anchor="end" fill="#6b7280" font-size="12">'+won(gv)+'</text>'; }
     var pts=m.map(function(v,i){ return x(i)+','+yv(v); }).join(' ');
     var dots=m.map(function(v,i){ var c=(mx&&i===mx.i)?'#f87171':(mn&&i===mn.i&&used.length>1)?'#2dd4bf':'#3b82f6', r=(c==='#3b82f6')?4:6;
       return '<circle cx="'+x(i)+'" cy="'+yv(v)+'" r="'+r+'" fill="'+c+'"/><text x="'+x(i)+'" y="'+(yv(v)-12)+'" text-anchor="middle" fill="'+(c==='#3b82f6'?'#cbd5e1':c)+'" font-size="12.5" font-weight="600">'+(v?won(v):'0')+'</text>'+
         '<text x="'+x(i)+'" y="'+(H-18)+'" text-anchor="middle" fill="'+((mx&&i===mx.i)?'#f87171':(mn&&i===mn.i&&used.length>1)?'#2dd4bf':'#9ca3af')+'" font-size="13">'+(i+1)+'월</text>'; }).join('');
-    var avgL=avg?'<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yv(avg)+'" y2="'+yv(avg)+'" stroke="#f59e0b" stroke-dasharray="7 6" stroke-width="1.5"/><text x="'+(W-R)+'" y="'+(yv(avg)-8)+'" text-anchor="end" fill="#fbbf24" font-size="12.5" font-weight="600">평균 '+won(avg)+'</text>':'';
-    var curL=isCur?'<line x1="'+x(curM)+'" x2="'+x(curM)+'" y1="'+T+'" y2="'+(H-B)+'" stroke="#ef4444" stroke-dasharray="4 4"/><text x="'+x(curM)+'" y="'+(T-12)+'" text-anchor="middle" fill="#f87171" font-size="12">'+(curM+1)+'월 현재</text>':'';
+    var avgL=avg?'<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yv(avg)+'" y2="'+yv(avg)+'" stroke="#f59e0b" stroke-dasharray="6 5" stroke-width="0.75"/><text x="'+(W-R)+'" y="'+(yv(avg)-8)+'" text-anchor="end" fill="#fbbf24" font-size="12.5" font-weight="600">평균 '+won(avg)+'</text>':'';
+    var curL=isCur?'<line x1="'+x(curM)+'" x2="'+x(curM)+'" y1="'+T+'" y2="'+(H-B)+'" stroke="#ef4444" stroke-dasharray="4 4" stroke-width="0.5"/><text x="'+x(curM)+'" y="'+(T-12)+'" text-anchor="middle" fill="#f87171" font-size="12">'+(curM+1)+'월 현재</text>':'';
     var sub='합계 '+won(tot)+' · 평균 <b style="color:#fbbf24">'+won(avg)+'</b>(거래월 '+used.length+'개월)'+(mx?' · 최고 <b style="color:#f87171">'+won(mx.v)+'</b>('+(mx.i+1)+'월)':'')+(mn&&used.length>1?' · 최저 <b style="color:#2dd4bf">'+won(mn.v)+'</b>('+(mn.i+1)+'월)':'')+' · '+(lab==='매출'?'출고':'입고')+' '+cnt+'건';
-    return {sub:sub, svg:'<svg class="co-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="월별 '+lab+' 추이">'+grid+avgL+curL+'<polyline points="'+pts+'" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linejoin="round"/>'+dots+'</svg>'};
+    return {sub:sub, svg:'<svg class="co-svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="월별 '+lab+' 추이">'+grid+avgL+curL+'<polyline points="'+pts+'" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linejoin="round"/>'+dots+'</svg>'};
   }
   function coTable(side, name, rows){
     var M=MODES[side==='s'?'sc':'pc'];
@@ -1322,20 +1323,24 @@
     sortItems();
     return VIEW.items.length ? tableHtml() : '<div class="snote">조건에 맞는 제품이 없습니다.</div>';
   }
+  var coRT=0; window.addEventListener('resize', function(){ clearTimeout(coRT); coRT=setTimeout(function(){ if(CO&&CO.paint&&$('coSvg')) CO.paint(); }, 150); });
   function drawCompany(){
     var c=CO.sel, side=CO.side, name=side==='s'?c.s:c.p, all=side==='s'?DATA.sales:DATA.purch, lab=side==='s'?'매출':'매입';
     var rows=all.filter(function(r){ return r.party===name; });
     var ys={}; rows.forEach(function(r){ ys[r.y]=1; }); var yl=Object.keys(ys).map(Number).sort(function(a,b){ return b-a; });
     if(!CO.cy || !ys[CO.cy]) CO.cy=yl[0]||new Date().getFullYear();
-    var ch=chartHtml(rows, CO.cy, lab);
+    var ch=chartHtml(rows, CO.cy, lab, 1000);
     var tabs = (c.s&&c.p) ? '<div class="co-tabs"><button type="button" class="co-tab'+(side==='s'?' on':'')+'" data-side="s">📈 매출처 <span>'+esc(c.s)+'</span></button><button type="button" class="co-tab'+(side==='p'?' on':'')+'" data-side="p">📦 매입처 <span>'+esc(c.p)+'</span></button></div>' : '';
     var back = CO.fromList && CO.hits.length>1 ? '<button type="button" class="lnk" id="coBack">← 후보 '+CO.hits.length+'곳 목록</button>' : '';
     var ychips='<button type="button" class="chip'+(CO.ty?'':' on')+'" data-ty="">전체</button>'+yl.map(function(y){ return '<button type="button" class="chip'+(+CO.ty===y?' on':'')+'" data-ty="'+y+'">'+y+'년</button>'; }).join('');
     show(head(esc(c.name)+' '+sideChips(c), back)+profileHtml(c)+tabs+kpiHtml(side,name,rows)+
-      '<div class="co-chart"><div class="co-ch"><b>📈 '+esc(name)+' / '+CO.cy+'년 · 월별 '+lab+' 추이</b>'+yl.map(function(y){ return '<button type="button" class="chip sm'+(y===CO.cy?' on':'')+'" data-cy="'+y+'">'+y+'년</button>'; }).join('')+'<span class="co-sub">'+ch.sub+'</span></div>'+ch.svg+'</div>'+
+      '<div class="co-chart"><div class="co-ch"><b>📈 '+esc(name)+' / '+CO.cy+'년 · 월별 '+lab+' 추이</b>'+yl.map(function(y){ return '<button type="button" class="chip sm'+(y===CO.cy?' on':'')+'" data-cy="'+y+'">'+y+'년</button>'; }).join('')+'<span class="co-sub">'+ch.sub+'</span></div><div id="coSvg"></div></div>'+
       '<div class="co-tbh"><b>📒 '+lab+' 품목</b><div class="chips" style="margin:0">'+ychips+'</div><input type="search" id="coF" placeholder="품번 · 품명 · 규격 (띄어쓰기로 여러 개)" value="'+esc(CO.f)+'" autocomplete="off"></div>'+
       '<div id="srTbl">'+coTable(side,name,rows)+'</div><div class="snote">제품 줄을 누르면 오른쪽에 이 업체와의 거래 이력이 나옵니다. 제목을 누르면 정렬됩니다.</div>'+coFoot());
     var S=$('srin');
+    // 그래프는 실제 화면 폭에 맞춰 그림 → 글자가 늘어나지 않고 늘 같은 크기(12~13px)
+    CO.paint=function(){ var box=$('coSvg'); if(!box) return; var w=box.clientWidth||1000; if(window.innerWidth<=700) w=Math.max(680,w); box.innerHTML=chartHtml(rows, CO.cy, lab, w).svg; };
+    CO.paint();
     bindTable();
     S.querySelectorAll('[data-side]').forEach(function(b){ b.addEventListener('click', function(){ CO.side=b.getAttribute('data-side'); CO.cy=0; CO.ty=''; CO.f=''; VIEW=null; drawCompany(); }); });
     S.querySelectorAll('[data-cy]').forEach(function(b){ b.addEventListener('click', function(){ CO.cy=+b.getAttribute('data-cy'); drawCompany(); }); });
