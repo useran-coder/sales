@@ -210,6 +210,9 @@
   .hpsub{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:14px}
   .hpsub .lnk{margin-left:auto;background:none;border:none;color:#60a5fa;font:inherit;font-size:13px;cursor:pointer}
   tr.pmany{cursor:pointer}
+  .swbox{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 6px 14px;padding:12px 14px;border:1px solid #1e3a8a;background:#0b1424;border-radius:10px;font-size:14px;color:var(--text)}
+  .swbtn{background:#2563eb;color:#fff;border:1px solid #2563eb;border-radius:8px;padding:8px 14px;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+  .swbtn:hover{background:#1d4ed8}
   tr.pmany td.nm .pn{color:#60a5fa;font-size:12px;margin-left:4px;white-space:nowrap}
   tr.pmany.open td{background:#16181c}
   tr.pexp td{background:#0d0e10;padding:8px 10px 12px;white-space:normal}
@@ -978,7 +981,7 @@
     });
     if(!VIEW.sortKey){ VIEW.sortKey='date'; VIEW.dir=-1; } sortItems();
     show(head(M.title+' · '+esc(VIEW.q), VIEW.items.length+'개 제품')+(hits.length?yearChips(hits,VIEW.year,'y'):'')+
-      (VIEW.items.length?'<div id="srTbl">'+tableHtml()+'</div><div class="snote">제품 줄을 누르면 오른쪽에 거래 이력이 나옵니다. 제목을 누르면 정렬됩니다.</div>':'<div class="snote">찾는 제품이 없습니다. 품번·품명·규격 일부만 넣어 보세요.</div>')+foot(M.src));
+      (VIEW.items.length?'<div id="srTbl">'+tableHtml()+'</div><div class="snote">제품 줄을 누르면 오른쪽에 거래 이력이 나옵니다. 제목을 누르면 정렬됩니다.</div>':noProdHtml(M,R,ts))+foot(M.src));
     bindAfter();
   }
   // ② 업체별 단가
@@ -986,7 +989,11 @@
     var M=MODES[VIEW.mode], R=DATA[M.src], ts=terms(VIEW.q), cm={};
     R.forEach(function(r){ if(r.party && hitAll(r.ck,ts)){ (cm[r.party]=cm[r.party]||{amt:0}).amt+=r.supply; } });
     var parties=Object.keys(cm).sort(function(a,b){ return cm[b].amt-cm[a].amt; });
-    if(!parties.length){ show(head(M.title+' · '+esc(VIEW.q))+'<div class="snote">찾는 '+M.party+'가 없습니다. 이름 일부만 넣어 보세요.</div>'+foot(M.src)); return; }
+    if(!parties.length){
+      var pn=0; for(var i=0;i<R.length;i++){ if(hitAll(R[i].pk,ts)){ pn=1; break; } }
+      show(head(M.title+' · '+esc(VIEW.q))+'<div class="snote">찾는 '+M.party+'가 없습니다. 이름 일부만 넣어 보세요.</div>'+
+        (pn?'<div class="swbox"><span>«'+esc(VIEW.q)+'» 이름의 제품이 있습니다.</span><button type="button" class="swbtn" data-sw="'+(M.src==='sales'?'sp':'pp')+'">제품으로 검색하기 →</button></div>':'')+foot(M.src));
+      bindSwitch(); return; }
     if(!VIEW.party || !cm[VIEW.party]) VIEW.party=parties[0];
     var mine=R.filter(function(r){ return r.party===VIEW.party; });
     var rows=VIEW.year ? mine.filter(function(r){ return r.y===+VIEW.year; }) : mine;
@@ -1003,7 +1010,21 @@
       '<div id="srTbl">'+tableHtml()+'</div><div class="snote">제품 줄을 누르면 오른쪽에 이 '+M.party+'와의 거래 이력이 나옵니다. 제목을 누르면 정렬됩니다.</div>'+foot(M.src));
     bindAfter();
   }
+  // 제품으로 찾았는데 없을 때: 같은 말이 업체명에 있으면 «업체명으로 검색하기» 버튼
+  function noProdHtml(M,R,ts){
+    var pm={}; R.forEach(function(r){ if(r.party && hitAll(r.ck,ts)) pm[r.party]=1; });
+    var ps=Object.keys(pm), base='<div class="snote">찾는 제품이 없습니다. 품번·품명·규격 일부만 넣어 보세요.</div>';
+    if(!ps.length) return base;
+    return base+'<div class="swbox"><span>«'+esc(VIEW.q)+'» 이름의 '+M.party+'가 '+ps.length+'곳 있습니다'+(ps.length<=3?' ('+ps.map(esc).join(', ')+')':'')+'.</span>'+
+      '<button type="button" class="swbtn" data-sw="'+(M.src==='sales'?'sc':'pc')+'">'+M.party+'명으로 검색하기 →</button></div>';
+  }
+  function bindSwitch(){
+    $('srin').querySelectorAll('.swbtn[data-sw]').forEach(function(b){ b.addEventListener('click', function(){
+      var sel=$('sMode'); sel.value=b.getAttribute('data-sw'); sel.dispatchEvent(new Event('change',{bubbles:true}));
+      $('sQ').value=VIEW.q; if($('sf').requestSubmit) $('sf').requestSubmit(); else $('sf').dispatchEvent(new Event('submit',{cancelable:true})); }); });
+  }
   function bindAfter(){
+    bindSwitch();
     bindTable();
     $('srin').querySelectorAll('.chip[data-y]').forEach(function(b){ b.addEventListener('click', function(){ VIEW.year=b.getAttribute('data-y'); rerun(); }); });
     $('srin').querySelectorAll('.chip[data-p]').forEach(function(b){ b.addEventListener('click', function(){ VIEW.party=b.getAttribute('data-p'); rerun(); }); });
