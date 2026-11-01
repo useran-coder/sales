@@ -260,6 +260,7 @@
   #coSvg{width:100%}
   @media (max-width:700px){ .co-chart{overflow-x:auto} .co-sub{margin-left:0} }
   .co-tbh{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 10px;font-size:14px}
+  td.buy{color:#a7f3d0}
   .co-vw{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
   .co-vb{background:#0d0e10;color:var(--sub);border:none;padding:7px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
   .co-vb+.co-vb{border-left:1px solid var(--line)}
@@ -1044,6 +1045,30 @@
   function terms(q){ return String(q).toLowerCase().split(/\s+/).filter(Boolean).map(norm); }
   function hitAll(key, ts){ for(var i=0;i<ts.length;i++) if(key.indexOf(ts[i])<0) return false; return true; }
 
+  /* ── 매출 제품의 매입가: 매입 자료(품번별 가장 최근 매입일, 같은 날은 수량가중) 또는 매출분석도구에 공유된 매입가 ── */
+  var BUY=null;
+  function loadBuy(cur){
+    if(BUY) return Promise.resolve(BUY);
+    return Promise.all([readIdb('dbpastec_sales','settings'), ensure('purch',cur).catch(function(){ return []; })]).then(function(a){
+      var m={}, pb=(a[0]&&a[0].prodBuyPrice)||{};
+      Object.keys(pb).forEach(function(k){ var o=pb[k]; if(k==='_meta'||!o||!(o.p>0)) return; var d=toDate(o.d); m[String(k).trim()]={p:+o.p, t:d?d.getTime():0, v:o.v||''}; });
+      var best={}; (a[1]||[]).forEach(function(r){ if(!r.code||!(r.qty>0)) return; var u=r.supply>0?r.supply/r.qty:r.price; if(!(u>0)) return;
+        var o=best[r.code]; if(!o||r.t>o.t) best[r.code]={t:r.t,sum:u*r.qty,qty:r.qty,v:r.party}; else if(r.t===o.t){ o.sum+=u*r.qty; o.qty+=r.qty; } });
+      Object.keys(best).forEach(function(k){ var o=best[k], x=m[k]; if(!x||o.t>=x.t) m[k]={p:Math.round(o.sum/o.qty), t:o.t, v:o.v}; });
+      BUY=m; return m;
+    });
+  }
+  function addBuy(on){ // 표에 «매입가» 열을 «최근 단가» 왼쪽에 끼움
+    if(!on || !BUY || !VIEW || VIEW.kind==='tx') return;
+    var at=-1; VIEW.cols.forEach(function(c,i){ if(c.k==='price') at=i; }); if(at<0) return;
+    if(!VIEW.cols.some(function(c){ return c.k==='buy'; })) VIEW.cols.splice(at,0,{k:'buy',h:'매입가',n:1});
+    VIEW.items.forEach(function(it){ var b=BUY[String(it.s.code||'').trim()]; it.s.buy=b?b.p:0;
+      var sp=it.s.price, mg=(b&&sp)?((sp-b.p)/sp*100):null;
+      var td=b?'<td class="n buy" title="'+esc((b.v||'')+(b.t?' · '+ymd(b.t):'')+(mg!=null?' · 마진 '+mg.toFixed(1)+'%':''))+'">'+won(b.p)+'</td>':'<td class="n buy"><span class="muted">—</span></td>';
+      var pos=-1; for(var i=0;i<at;i++){ pos=it.cells.indexOf('</td>',pos+1); if(pos<0) break; }
+      if(pos>=0) it.cells=it.cells.slice(0,pos+5)+td+it.cells.slice(pos+5); });
+  }
+
   // ① 제품 단가
   function runProd(){
     var M=MODES[VIEW.mode], R=DATA[M.src], ts=terms(VIEW.q);
@@ -1055,6 +1080,7 @@
       return {rows:G.rows, g:g, label:f.code+' '+f.name+' '+f.spec, s:{code:f.code,name:f.name,spec:f.spec,price:g.lastP?g.lastP.price:0,chg:g.chg,date:g.last.t,party:L.party,min:g.min,max:g.max,np:g.np,n:g.n},
         cells:'<td class="code">'+esc(f.code)+'</td><td class="nm">'+esc(f.name)+'</td><td class="nm">'+esc(f.spec)+'</td><td class="n"><b>'+(g.lastP?won(g.lastP.price):'—')+'</b></td><td class="n">'+chgHtml(g)+'</td><td class="d">'+ymd(g.last.t)+'</td><td class="nm">'+esc(L.party)+'</td><td class="n">'+(g.min?won(g.min):'—')+'</td><td class="n">'+(g.max?won(g.max):'—')+'</td><td class="n">'+g.np+'</td><td class="n">'+g.n+'</td>'};
     });
+    addBuy(M.src==='sales');
     if(!VIEW.sortKey){ VIEW.sortKey='date'; VIEW.dir=-1; } sortItems();
     show(head(M.title+' · '+esc(VIEW.q), VIEW.items.length+'개 제품')+(hits.length?yearChips(hits,VIEW.year,'y'):'')+
       (VIEW.items.length?'<div id="srTbl">'+tableHtml()+'</div><div class="snote">제품 줄을 누르면 오른쪽에 거래 이력이 나옵니다. 제목을 누르면 정렬됩니다.</div>':noProdHtml(M,R,ts))+foot(M.src));
@@ -1080,6 +1106,7 @@
       return {rows:G.rows, g:g, party:VIEW.party, label:f.code+' '+f.name+' '+f.spec, s:{code:f.code,name:f.name,spec:f.spec,price:g.lastP?g.lastP.price:0,chg:g.chg,date:g.last.t,min:g.min,max:g.max,qty:g.qty,amt:g.amt,n:g.n},
         cells:'<td class="code">'+esc(f.code)+'</td><td class="nm">'+esc(f.name)+'</td><td class="nm">'+esc(f.spec)+'</td><td class="n"><b>'+(g.lastP?won(g.lastP.price):'—')+'</b></td><td class="n">'+chgHtml(g)+'</td><td class="d">'+ymd(g.last.t)+'</td><td class="n">'+(g.min?won(g.min):'—')+'</td><td class="n">'+(g.max?won(g.max):'—')+'</td><td class="n">'+num(g.qty)+'</td><td class="n">'+won(g.amt)+'</td><td class="n">'+g.n+'</td>'};
     });
+    addBuy(M.src==='sales');
     if(!VIEW.sortKey){ VIEW.sortKey='date'; VIEW.dir=-1; } sortItems();
     var chips= parties.length>1 ? '<div class="chips"><span class="cl">'+M.party+'</span>'+parties.slice(0,30).map(function(c){ return '<button type="button" class="chip'+(c===VIEW.party?' on':'')+'" data-p="'+esc(c)+'">'+esc(c)+'</button>'; }).join('')+(parties.length>30?'<span class="muted" style="align-self:center;font-size:12px">외 '+(parties.length-30)+'곳</span>':'')+'</div>' : '';
     show(head(M.title+' · '+esc(VIEW.party), VIEW.items.length+'개 제품 · 공급가 '+won(tot)+'원')+chips+yearChips(mine,VIEW.year,'y')+
@@ -1246,7 +1273,7 @@
   function runCompany(q, cur){
     show(head('업체 검색 중…')+'<div class="snote">매출·매입 자료와 업체 정보를 모으고 있습니다.</div>');
     var purchErr='';
-    return Promise.all([ensure('sales',cur), ensure('purch',cur).catch(function(e){ purchErr=e&&e.message||String(e); return []; }), loadInfo()]).then(function(){
+    return Promise.all([ensure('sales',cur), ensure('purch',cur).catch(function(e){ purchErr=e&&e.message||String(e); return []; }), loadInfo()]).then(function(){ return loadBuy(cur).catch(function(){}); }).then(function(){
       var all=coIndex(), ts=terms(q), hits=all.filter(function(c){ return coMatch(c,ts); });
       hits.sort(function(a,b){ return b.last-a.last; });
       CO={q:q, hits:hits, purchErr:purchErr, sel:null, side:'s', cy:0, ty:'', f:''};
@@ -1345,6 +1372,7 @@
       return {rows:G.rows, g:g, party:name, s:{code:f.code,name:f.name,spec:f.spec,price:g.lastP?g.lastP.price:0,chg:g.chg,date:g.last.t,n:g.n,qty:g.qty,amt:g.amt},
         cells:'<td class="code">'+esc(f.code)+'</td><td class="nm">'+esc(f.name)+'</td><td class="nm">'+esc(f.spec)+'</td><td class="n"><b>'+(g.lastP?won(g.lastP.price):'—')+'</b></td><td class="n">'+chgHtml(g)+'</td><td class="d">'+ymd(g.last.t)+'</td><td class="n">'+g.n+'</td><td class="n">'+num(g.qty)+'</td><td class="n">'+won(g.amt)+'</td>'};
     });
+    addBuy(side==='s');
     sortItems();
     return VIEW.items.length ? tableHtml() : '<div class="snote">조건에 맞는 제품이 없습니다.</div>';
   }
@@ -1390,7 +1418,7 @@
       if(!cur){ show(head('로그인이 필요합니다')+'<div class="snote">검색은 매출분석도구 계정으로 로그인한 사람만 쓸 수 있습니다. 오른쪽 위 «로그인»을 눌러 주세요.</div>'); if(H) H.openMem(); return; }
       if(mode==='co') return runCompany(q,cur);
       show(head('검색 중…')+'<div class="snote">자료를 준비하고 있습니다.</div>');
-      return ensure(M.src,cur).then(function(R){
+      return ensure(M.src,cur).then(function(R){ return M.src==='sales' ? loadBuy(cur).then(function(){ return R; }, function(){ return R; }) : R; }).then(function(R){
         if(!R.length){ show(head('자료 없음')+'<div class="snote">자료가 비어 있습니다.</div>'); return; }
         VIEW={mode:mode,q:q,year:'',party:'',sortKey:'',dir:-1,items:[],cols:[]};
         rerun();
