@@ -260,6 +260,13 @@
   #coSvg{width:100%}
   @media (max-width:700px){ .co-chart{overflow-x:auto} .co-sub{margin-left:0} }
   .co-tbh{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 10px;font-size:14px}
+  .co-vw{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .co-vb{background:#0d0e10;color:var(--sub);border:none;padding:7px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+  .co-vb+.co-vb{border-left:1px solid var(--line)}
+  .co-vb.on{background:#2563eb;color:#fff}
+  .co-mon{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--sub)}
+  .co-mon select{height:34px;border:1px solid #7c3aed;background:#1e1438;color:#fff;border-radius:8px;padding:0 10px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+  .co-mon select:focus{outline:none;border-color:#a78bfa}
   .co-tbh input{margin-left:auto;width:min(360px,100%);height:36px;border:1px solid var(--line);border-radius:8px;background:#0d0e10;color:var(--text);padding:0 12px;font:inherit;font-size:13px}
   .co-tbh input:focus{outline:none;border-color:#3b82f6}
   .kpis .kbtn{cursor:pointer}
@@ -1022,8 +1029,8 @@
   }
   function tableHtml(){
     var th=VIEW.cols.map(function(c){ var on=VIEW.sortKey===c.k; return '<th class="'+(c.n&&!c.dt?'n ':'')+'srt'+(on?' on':'')+'" data-k="'+c.k+'">'+c.h+'<i>'+(on?(VIEW.dir>0?'▲':'▼'):'')+'</i></th>'; }).join('');
-    var tr=VIEW.items.slice(0,500).map(function(it,i){ return '<tr class="pick" data-i="'+i+'">'+it.cells+'</tr>'; }).join('');
-    return '<div class="sbox"><table><thead><tr>'+th+'</tr></thead><tbody>'+tr+'</tbody></table></div>'+(VIEW.items.length>500?'<div class="snote">표에는 500개까지만 표시합니다. 검색어를 더 좁혀 주세요.</div>':'');
+    var LIM=VIEW.limit||500, tr=VIEW.items.slice(0,LIM).map(function(it,i){ return '<tr class="pick" data-i="'+i+'">'+it.cells+'</tr>'; }).join('');
+    return '<div class="sbox"><table><thead><tr>'+th+'</tr></thead><tbody>'+tr+'</tbody></table></div>'+(VIEW.items.length>LIM?'<div class="snote">표에는 '+LIM.toLocaleString()+'줄까지만 표시합니다. 연도·월이나 검색어로 좁혀 주세요.</div>':'');
   }
   function bindTable(){
     $('srin').querySelectorAll('th.srt').forEach(function(th){ th.addEventListener('click', function(){
@@ -1264,7 +1271,7 @@
     return a+'</div>';
   }
   function openCompany(c, fromList){
-    CO.sel=c; CO.fromList=!!fromList || CO.hits.length>1; CO.side=c.s?'s':'p'; CO.cy=0; CO.ty=''; CO.f=''; VIEW=null; drawCompany();
+    CO.sel=c; CO.fromList=!!fromList || CO.hits.length>1; CO.side=c.s?'s':'p'; CO.cy=0; CO.ty=''; CO.f=''; CO.view='item'; CO.mon=0; VIEW=null; drawCompany();
   }
   function profileHtml(c){
     if(!c.prof) return '<div class="co-card"><div class="co-row"><span class="muted">매입처 기본정보(대표자·주소 등)는 매입분석도구에 없습니다. 아래 매입 내역과 그래프만 표시합니다.</span></div></div>';
@@ -1303,7 +1310,7 @@
     var pts=m.map(function(v,i){ return x(i)+','+yv(v); }).join(' ');
     var dots=m.map(function(v,i){ var c=(mx&&i===mx.i)?'#f87171':(mn&&i===mn.i&&used.length>1)?'#2dd4bf':'#3b82f6', r=(c==='#3b82f6')?4:6;
       return '<circle cx="'+x(i)+'" cy="'+yv(v)+'" r="'+r+'" fill="'+c+'"/><text x="'+x(i)+'" y="'+(yv(v)-12)+'" text-anchor="middle" fill="'+(c==='#3b82f6'?'#cbd5e1':c)+'" font-size="12.5" font-weight="600">'+(v?won(v):'0')+'</text>'+
-        '<text x="'+x(i)+'" y="'+(H-18)+'" text-anchor="middle" fill="'+((mx&&i===mx.i)?'#f87171':(mn&&i===mn.i&&used.length>1)?'#2dd4bf':'#9ca3af')+'" font-size="13">'+(i+1)+'월</text>'; }).join('');
+        '<text data-mon="'+(i+1)+'" style="cursor:pointer" x="'+x(i)+'" y="'+(H-18)+'" text-anchor="middle" fill="'+((mx&&i===mx.i)?'#f87171':(mn&&i===mn.i&&used.length>1)?'#2dd4bf':'#9ca3af')+'" font-size="13">'+(i+1)+'월</text>'; }).join('');
     var avgL=avg?'<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yv(avg)+'" y2="'+yv(avg)+'" stroke="#f59e0b" stroke-dasharray="6 5" stroke-width="0.75"/><text x="'+(W-R)+'" y="'+(yv(avg)-8)+'" text-anchor="end" fill="#fbbf24" font-size="12.5" font-weight="600">평균 '+won(avg)+'</text>':'';
     var curL=isCur?'<line x1="'+x(curM)+'" x2="'+x(curM)+'" y1="'+T+'" y2="'+(H-B)+'" stroke="#ef4444" stroke-dasharray="4 4" stroke-width="0.5"/><text x="'+x(curM)+'" y="'+(T-12)+'" text-anchor="middle" fill="#f87171" font-size="12">'+(curM+1)+'월 현재</text>':'';
     var sub='합계 '+won(tot)+' · 평균 <b style="color:#fbbf24">'+won(avg)+'</b>(거래월 '+used.length+'개월)'+(mx?' · 최고 <b style="color:#f87171">'+won(mx.v)+'</b>('+(mx.i+1)+'월)':'')+(mn&&used.length>1?' · 최저 <b style="color:#2dd4bf">'+won(mn.v)+'</b>('+(mn.i+1)+'월)':'')+' · '+(lab==='매출'?'출고':'입고')+' '+cnt+'건';
@@ -1313,7 +1320,23 @@
     var M=MODES[side==='s'?'sc':'pc'];
     var list=(CO.ty&&CO.ty!=='all')?rows.filter(function(r){ return r.y===+CO.ty; }):rows;
     if(CO.f){ var ts=terms(CO.f); list=list.filter(function(r){ return hitAll(r.pk,ts); }); }
-    if(!VIEW || VIEW.mode!==(side==='s'?'sc':'pc')) VIEW={mode:side==='s'?'sc':'pc', q:name, year:'', party:name, sortKey:'amt', dir:-1, items:[], cols:[]};
+    var vm=side==='s'?'sc':'pc', wk=side==='s'?'출고':'입고';
+    if(CO.view==='tx'){
+      // 거래내역: 한 줄 = 한 번의 거래, 월 선택
+      if(CO.mon) list=list.filter(function(r){ return new Date(r.t).getMonth()+1===CO.mon; });
+      if(!VIEW || VIEW.mode!==vm || VIEW.kind!=='tx') VIEW={mode:vm, kind:'tx', q:name, year:'', party:name, sortKey:'t', dir:-1, items:[], cols:[], limit:3000};
+      VIEW.cols=[{k:'t',h:wk+'일',n:1,dt:1},{k:'code',h:'품번'},{k:'name',h:'품명'},{k:'spec',h:'규격'},{k:'qty',h:'수량',n:1},{k:'price',h:'단가',n:1},{k:'supply',h:'공급가',n:1}];
+      var byP={}; rows.forEach(function(r){ var k=r.code+'|'+r.name+'|'+r.spec; (byP[k]=byP[k]||[]).push(r); });
+      var tq=0, ta=0;
+      VIEW.items=list.map(function(r){ tq+=r.qty; ta+=r.supply; var bad=!r.ok;
+        return {rows:byP[r.code+'|'+r.name+'|'+r.spec], party:name, s:{t:r.t,code:r.code,name:r.name,spec:r.spec,qty:r.qty,price:r.price,supply:r.supply},
+          cells:'<td class="d">'+ymd(r.t)+'</td><td class="code">'+esc(r.code)+'</td><td class="nm">'+esc(r.name)+'</td><td class="nm">'+esc(r.spec)+'</td><td class="n"'+(bad?' style="color:#f87171"':'')+'>'+num(r.qty)+'</td><td class="n">'+won(r.price)+'</td><td class="n"'+(r.supply<0?' style="color:#f87171"':'')+'>'+won(r.supply)+'</td>'}; });
+      sortItems();
+      CO.sum=list.length.toLocaleString()+'건 · 수량 '+num(tq)+' · 공급가 <b>'+won(ta)+'</b>원';
+      return VIEW.items.length ? tableHtml() : '<div class="snote">'+((CO.ty&&CO.ty!=='all')?CO.ty+'년 ':'')+(CO.mon?CO.mon+'월 ':'')+'거래가 없습니다.</div>';
+    }
+    if(!VIEW || VIEW.mode!==vm || VIEW.kind==='tx') VIEW={mode:vm, q:name, year:'', party:name, sortKey:'amt', dir:-1, items:[], cols:[]};
+    CO.sum=groupBy(list,function(r){ return r.code+'|'+r.name+'|'+r.spec; }).length+'개 품목 · 공급가 <b>'+won(list.reduce(function(a,r){ return a+r.supply; },0))+'</b>원';
     VIEW.cols=[{k:'code',h:'품번'},{k:'name',h:'품명'},{k:'spec',h:'규격'},{k:'price',h:'마지막 단가',n:1},{k:'chg',h:'변동',n:1},{k:'date',h:'마지막 '+(side==='s'?'출고일':'입고일'),n:1,dt:1},{k:'n',h:(side==='s'?'출고':'입고')+'횟수',n:1},{k:'qty',h:'총수량',n:1},{k:'amt',h:'공급가 합계',n:1}];
     VIEW.items=groupBy(list,function(r){ return r.code+'|'+r.name+'|'+r.spec; }).map(function(G){
       var g=stats(G.rows), f=G.rows[0];
@@ -1335,17 +1358,23 @@
     var ychips='<button type="button" class="chip'+(CO.ty==='all'?' on':'')+'" data-ty="all">전체</button>'+yl.map(function(y){ return '<button type="button" class="chip'+(+CO.ty===y?' on':'')+'" data-ty="'+y+'">'+y+'년</button>'; }).join('');
     show(head(esc(c.name)+' '+sideChips(c), back)+profileHtml(c)+tabs+kpiHtml(side,name,rows)+
       '<div class="co-chart"><div class="co-ch"><b>📈 '+esc(name)+' / '+CO.cy+'년 · 월별 '+lab+' 추이</b>'+yl.map(function(y){ return '<button type="button" class="chip sm'+(y===CO.cy?' on':'')+'" data-cy="'+y+'">'+y+'년</button>'; }).join('')+'<span class="co-sub">'+ch.sub+'</span></div><div id="coSvg"></div></div>'+
-      '<div class="co-tbh"><b>📒 '+lab+' 품목</b><div class="chips" style="margin:0">'+ychips+'</div><input type="search" id="coF" placeholder="품번 · 품명 · 규격 (띄어쓰기로 여러 개)" value="'+esc(CO.f)+'" autocomplete="off"></div>'+
-      '<div id="srTbl">'+coTable(side,name,rows)+'</div><div class="snote">제품 줄을 누르면 오른쪽에 이 업체와의 거래 이력이 나옵니다. 제목을 누르면 정렬됩니다.</div>'+coFoot());
+      '<div class="co-tbh"><div class="co-vw"><button type="button" class="co-vb'+(CO.view==='tx'?'':' on')+'" data-vw="item">📒 품목별</button><button type="button" class="co-vb'+(CO.view==='tx'?' on':'')+'" data-vw="tx">🧾 거래내역</button></div>'+
+        (CO.view==='tx'?'<label class="co-mon">월 선택 <select id="coMon"><option value="0">전체월</option>'+[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){ return '<option value="'+m+'"'+(CO.mon===m?' selected':'')+'>'+m+'월</option>'; }).join('')+'</select></label>':'')+
+        '<div class="chips" style="margin:0">'+ychips+'</div><input type="search" id="coF" placeholder="품번 · 품명 · 규격 (띄어쓰기로 여러 개)" value="'+esc(CO.f)+'" autocomplete="off"></div>'+
+      '<div id="srTbl">'+coTable(side,name,rows)+'</div><div class="snote"><span id="coSum">'+(CO.sum||'')+'</span> · '+(CO.view==='tx'?'줄을 누르면 오른쪽에 그 제품의 이 업체 거래 이력이 나옵니다. 그래프의 월 이름을 눌러도 그 달 거래내역으로 갑니다.':'제품 줄을 누르면 오른쪽에 이 업체와의 거래 이력이 나옵니다. 제목을 누르면 정렬됩니다.')+'</div>'+coFoot());
     var S=$('srin');
     // 그래프는 실제 화면 폭에 맞춰 그림 → 글자가 늘어나지 않고 늘 같은 크기(12~13px)
     CO.paint=function(){ var box=$('coSvg'); if(!box) return; var w=box.clientWidth||1000; if(window.innerWidth<=700) w=Math.max(680,w); box.innerHTML=chartHtml(rows, CO.cy, lab, w).svg; };
     CO.paint();
     bindTable();
-    S.querySelectorAll('[data-side]').forEach(function(b){ b.addEventListener('click', function(){ CO.side=b.getAttribute('data-side'); CO.cy=0; CO.ty=''; CO.f=''; VIEW=null; drawCompany(); }); });
+    S.querySelectorAll('[data-side]').forEach(function(b){ b.addEventListener('click', function(){ CO.side=b.getAttribute('data-side'); CO.cy=0; CO.ty=''; CO.f=''; CO.mon=0; VIEW=null; drawCompany(); }); });
     S.querySelectorAll('[data-cy]').forEach(function(b){ b.addEventListener('click', function(){ CO.cy=+b.getAttribute('data-cy'); CO.ty=String(CO.cy); drawCompany(); }); });  // 그래프 연도 = 표 연도
     S.querySelectorAll('[data-ty]').forEach(function(b){ b.addEventListener('click', function(){ CO.ty=b.getAttribute('data-ty'); if(CO.ty!=='all') CO.cy=+CO.ty; drawCompany(); }); });  // 표 연도를 고르면 그래프도 그 연도
-    var f=$('coF'), ft=0; f.addEventListener('input', function(){ clearTimeout(ft); ft=setTimeout(function(){ CO.f=f.value.trim(); $('srTbl').innerHTML=coTable(side,name,rows); bindTable(); }, 150); });
+    var f=$('coF'), ft=0; f.addEventListener('input', function(){ clearTimeout(ft); ft=setTimeout(function(){ CO.f=f.value.trim(); $('srTbl').innerHTML=coTable(side,name,rows); bindTable(); var cs=$('coSum'); if(cs) cs.innerHTML=CO.sum||''; }, 150); });
+    S.querySelectorAll('[data-vw]').forEach(function(b){ b.addEventListener('click', function(){ CO.view=b.getAttribute('data-vw'); VIEW=null; drawCompany(); }); });
+    var ms=$('coMon'); if(ms) ms.addEventListener('change', function(){ CO.mon=+ms.value; drawCompany(); });
+    $('coSvg').addEventListener('click', function(e){ var t=e.target.closest&&e.target.closest('[data-mon]'); if(!t) return;
+      CO.view='tx'; CO.mon=+t.getAttribute('data-mon'); CO.ty=String(CO.cy); VIEW=null; drawCompany(); var tb=$('srTbl'); if(tb) tb.scrollIntoView({block:'start',behavior:'smooth'}); });
     var bk=$('coBack'); if(bk) bk.addEventListener('click', function(){ closeHist(); coList(); });
   }
 
