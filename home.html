@@ -209,6 +209,13 @@
   .sbox table.ht td.nm{max-width:170px;overflow:hidden;text-overflow:ellipsis}
   .hpsub{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:14px}
   .hpsub .lnk{margin-left:auto;background:none;border:none;color:#60a5fa;font:inherit;font-size:13px;cursor:pointer}
+  tr.pmany{cursor:pointer}
+  tr.pmany td.nm .pn{color:#60a5fa;font-size:12px;margin-left:4px;white-space:nowrap}
+  tr.pmany.open td{background:#16181c}
+  tr.pexp td{background:#0d0e10;padding:8px 10px 12px;white-space:normal}
+  .plist{display:flex;flex-wrap:wrap;gap:6px}
+  .plist span{display:inline-flex;gap:6px;align-items:baseline;border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:13px;color:var(--text);background:#111214}
+  .plist span em{font-style:normal;color:var(--dim);font-size:12px;font-variant-numeric:tabular-nums}
   /* 새 버전 알림 카드 — 매출분석도구 알림(#updNoteV1104)과 같은 모양 */
   #updNote{position:fixed;top:14px;right:18px;z-index:2147483000;display:none;flex-direction:column;width:min(440px,calc(100vw - 32px));
     background:#fff;color:#0f172a;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,.55);overflow:hidden;
@@ -1033,13 +1040,18 @@
       var pm={}, list=[];
       rows.forEach(function(r){ if(!r.ok) return; var k=Math.round(r.price*100)/100, x=pm[k];
         if(!x){ x=pm[k]={price:k,n:0,qty:0,amt:0,first:r.t,last:r.t,parties:{},bad:r._bad}; list.push(x); }
-        x.n++; x.qty+=r.qty; x.amt+=r.supply; if(r.t<x.first) x.first=r.t; if(r.t>x.last) x.last=r.t; x.parties[r.party]=(x.parties[r.party]||0)+1; });
+        x.n++; x.qty+=r.qty; x.amt+=r.supply; if(r.t<x.first) x.first=r.t; if(r.t>x.last) x.last=r.t; x.parties[r.party]=(x.parties[r.party]||0)+1; x.pq=x.pq||{}; x.pq[r.party]=(x.pq[r.party]||0)+r.qty; });
       list.forEach(function(x){ x.pn=Object.keys(x.parties).length; x.ptxt=Object.keys(x.parties).sort(function(a,b){ return x.parties[b]-x.parties[a]; }).join(', '); });
       list.sort(cmp(HP.sk in {price:1,n:1,qty:1,amt:1,first:1,last:1,pn:1}?HP.sk:'price', HP.sk in {price:1,n:1,qty:1,amt:1,first:1,last:1,pn:1}?HP.dir:-1));
       var cols=[{k:'price',h:'단가',n:1},{k:'n',h:'건수',n:1},{k:'qty',h:'수량',n:1},{k:'amt',h:'공급가',n:1},{k:'first',h:'처음 거래'},{k:'last',h:'마지막 거래'},{k:'pn',h:M.party}];
       tbl='<div class="hpsub"><b>단가별 목록</b> <span class="muted">'+list.length+'가지 단가</span><button type="button" class="lnk" id="hpBack">← 거래 이력으로</button></div>'+
         '<div class="sbox"><table class="ht"><thead><tr>'+hpSortTh(cols)+'</tr></thead><tbody>'+list.map(function(x){
-          return '<tr'+(x.bad?' class="bad" title="평소 단가와 너무 달라 최저~최고 계산에서 뺀 단가"':'')+'><td class="n"><b>'+won(x.price)+'</b></td><td class="n">'+x.n+'</td><td class="n">'+num(x.qty)+'</td><td class="n">'+won(x.amt)+'</td><td class="d">'+ymd(x.first)+'</td><td class="d">'+ymd(x.last)+'</td><td class="nm" title="'+esc(x.ptxt)+'">'+esc(x.ptxt.length>24?x.ptxt.slice(0,24)+'…':x.ptxt)+'</td></tr>'; }).join('')+'</tbody></table></div>';
+          var many=x.pn>1, op=many && HP.open && HP.open[x.price];
+          var cls=(x.bad?'bad ':'')+(many?'pmany':'')+(op?' open':'');
+          var ptd = many ? esc(Object.keys(x.parties).sort(function(a,b){ return x.parties[b]-x.parties[a]; })[0])+'<span class="pn">외 '+(x.pn-1)+'곳 '+(op?'▴':'▾')+'</span>' : esc(x.ptxt);
+          var tr='<tr'+(cls.trim()?' class="'+cls.trim()+'"':'')+(many?' data-pk="'+x.price+'" title="눌러서 '+M.party+' 전체 보기"':(x.bad?' title="평소 단가와 너무 달라 최저~최고 계산에서 뺀 단가"':''))+'><td class="n"><b>'+won(x.price)+'</b></td><td class="n">'+x.n+'</td><td class="n">'+num(x.qty)+'</td><td class="n">'+won(x.amt)+'</td><td class="d">'+ymd(x.first)+'</td><td class="d">'+ymd(x.last)+'</td><td class="nm">'+ptd+'</td></tr>';
+          if(op) tr+='<tr class="pexp"><td colspan="7"><div class="plist">'+Object.keys(x.parties).sort(function(a,b){ return x.pq[b]-x.pq[a]; }).map(function(pn){ return '<span>'+esc(pn)+'<em>'+x.parties[pn]+'건 · '+num(x.pq[pn])+'개</em></span>'; }).join('')+'</div></td></tr>';
+          return tr; }).join('')+'</tbody></table></div>';
     }else{
       var list2=rows.map(function(r){ return {t:r.t, party:r.party, qty:r.qty, price:r.price, chg:r._chg, prev:r._prev, supply:r.supply, ok:!r._bad}; });
       list2.sort(cmp(HP.sk in {t:1,party:1,qty:1,price:1,chg:1,supply:1}?HP.sk:'t', HP.sk in {t:1,party:1,qty:1,price:1,chg:1,supply:1}?HP.dir:-1));
@@ -1060,6 +1072,8 @@
     var rg=$('hpRange'); function tog(){ HP.view = HP.view==='price' ? 'list' : 'price'; HP.sk = HP.view==='price' ? 'price' : 't'; HP.dir=-1; drawHist(); }
     rg.addEventListener('click', tog); rg.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tog(); } });
     var bk=$('hpBack'); if(bk) bk.addEventListener('click', tog);
+    body.querySelectorAll('tr.pmany').forEach(function(tr){ tr.addEventListener('click', function(){
+      var k=tr.getAttribute('data-pk'), st=body.scrollTop; HP.open=HP.open||{}; if(HP.open[k]) delete HP.open[k]; else HP.open[k]=1; drawHist(); body.scrollTop=st; }); });
   }
 
   /* ── 검색 실행 ── */
