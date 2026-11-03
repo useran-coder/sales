@@ -110,6 +110,9 @@
   .mhead .x{margin-left:auto;background:none;border:none;color:var(--sub);font-size:22px;cursor:pointer}
   .mbody{padding:14px 18px;overflow:auto;flex:1}
   .mbody table{width:100%;border-collapse:collapse;font-size:14px}
+  .mbody th.msrt{cursor:pointer;user-select:none;white-space:nowrap}
+  .mbody th.msrt:hover,.mbody th.msrt.on{color:var(--text)}
+  .mbody th.msrt i{font-style:normal;font-size:10px;margin-left:3px}
   .mbody th{text-align:left;font-size:12px;color:var(--sub);font-weight:600;padding:8px;border-bottom:1px solid var(--line);
             position:sticky;top:-14px;background:var(--card)}
   .mbody td{padding:9px 8px;border-bottom:1px solid #1f2227}
@@ -755,17 +758,8 @@
       all.sort(function(a,b){ return (b.pending?1:0)-(a.pending?1:0) || String(a.name||a.id).localeCompare(String(b.name||b.id),'ko'); });
       $('memCnt').textContent = all.length+'명';
       if(!all.length) return body(acctCard()+'<div class="note">등록된 사람이 없습니다.</div>');
-      body(acctCard()+'<table><thead><tr><th>#</th><th>아이디</th><th>이름</th><th>마지막 로그인</th></tr></thead><tbody>'+
-        all.map(function(u,i){
-          var tags='';
-          if(u.pending) tags+='<span class="tag pend">승인 대기</span>';
-          else if(u.active===false) tags+='<span class="tag off">사용중지</span>';
-          if(u.role==='admin') tags+='<span class="tag adm">관리자</span>';
-          else if(u.role==='uploader') tags+='<span class="tag">업로더</span>';
-          return '<tr><td class="no">'+(i+1)+'</td><td class="id">'+esc(u.id)+'</td><td>'+esc(u.name||'')+tags+'</td><td class="ll">'+lastLogin(u.lastLogin)+'</td></tr>';
-        }).join('')+'</tbody></table>'+
-        '<div class="note" style="margin-top:10px">계정 추가·삭제·권한 변경은 매출분석도구 관리자 메뉴에서 합니다.</div>');
-      bindAcct();
+      all.forEach(function(u,i){ u._no=i+1; var t=u.lastLogin?new Date(String(u.lastLogin)).getTime():NaN; u._ll=isNaN(t)?-1:t; });
+      MS.list=all; drawMem();
     }).catch(function(err){
       if(/토큰|로그인|만료|권한|token|auth/i.test(err.message)){
         if(cur && cur.src==='own') setOwn(null);
@@ -773,6 +767,30 @@
       }
       body('<div class="note" style="color:#f87171">'+esc(err.message)+'</div>');
     });
+  }
+  // 회원 표: 제목(#·아이디·이름·마지막 로그인)을 누르면 정렬, 한 번 더 누르면 반대로
+  var MS={list:[], k:'_no', dir:1};
+  var MCOLS=[{k:'_no',h:'#'},{k:'id',h:'아이디'},{k:'name',h:'이름'},{k:'_ll',h:'마지막 로그인'}];
+  function drawMem(){
+    var all=MS.list.slice(), k=MS.k, dir=MS.dir;
+    all.sort(function(a,b){ var x=a[k], y=b[k];
+      if(k==='_no'||k==='_ll') return ((x||0)-(y||0))*dir || (a._no-b._no);
+      return String(x||a.id||'').localeCompare(String(y||b.id||''),'ko')*dir; });
+    {
+      body(acctCard()+'<table><thead><tr>'+MCOLS.map(function(c){ var on=MS.k===c.k; return '<th class="msrt'+(on?' on':'')+'" data-mk="'+c.k+'">'+c.h+'<i>'+(on?(MS.dir>0?'▲':'▼'):'')+'</i></th>'; }).join('')+'</tr></thead><tbody>'+
+        all.map(function(u,i){
+          var tags='';
+          if(u.pending) tags+='<span class="tag pend">승인 대기</span>';
+          else if(u.active===false) tags+='<span class="tag off">사용중지</span>';
+          if(u.role==='admin') tags+='<span class="tag adm">관리자</span>';
+          else if(u.role==='uploader') tags+='<span class="tag">업로더</span>';
+          return '<tr><td class="no">'+u._no+'</td><td class="id">'+esc(u.id)+'</td><td>'+esc(u.name||'')+tags+'</td><td class="ll">'+lastLogin(u.lastLogin)+'</td></tr>';
+        }).join('')+'</tbody></table>'+
+        '<div class="note" style="margin-top:10px">계정 추가·삭제·권한 변경은 매출분석도구 관리자 메뉴에서 합니다. 제목을 누르면 정렬됩니다.</div>');
+      bindAcct();
+      $('memBody').querySelectorAll('th[data-mk]').forEach(function(th){ th.addEventListener('click', function(){
+        var k=th.getAttribute('data-mk'); if(MS.k===k) MS.dir=-MS.dir; else { MS.k=k; MS.dir=(k==='_ll')?-1:1; } drawMem(); }); });
+    }
   }
 
   // 지금 로그인 상태 찾기: 이 화면 로그인 → 매출분석도구 로그인 순서
