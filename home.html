@@ -35,6 +35,17 @@
   .name{font-size:21px;font-weight:700}
   .url{font-size:12px;color:var(--dim);margin-top:4px}
   .tx{flex:1 1 auto;min-width:0}
+  /* 미리 읽기 막대: 검은 바탕에 파인 홈 모양 */
+  .pre{display:flex;align-items:center;gap:10px;margin-top:9px;max-width:340px}
+  .pbar{position:relative;flex:1 1 auto;height:8px;border-radius:999px;overflow:hidden;background:#000;
+        border:1px solid #1b1d21;box-shadow:inset 0 2px 3px rgba(0,0,0,.95),inset 0 -1px 0 rgba(255,255,255,.03),0 1px 0 rgba(255,255,255,.06)}
+  .pbar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:var(--c);
+          box-shadow:0 0 6px var(--c);opacity:.9;transition:width .25s ease}
+  .pbar.idle i{width:28%!important;opacity:.55;animation:pslide 1.2s ease-in-out infinite}
+  .pbar.done i{opacity:.75;box-shadow:none}
+  @keyframes pslide{0%{left:-28%}100%{left:100%}}
+  .pct{flex:0 0 auto;min-width:64px;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pct.ok{color:var(--sub)}
   .arrow{margin-left:4px;font-size:22px;color:var(--c)}
   .upd{flex:0 0 210px;align-self:stretch;border-left:1px solid var(--line);
        padding:2px 0 2px 20px;display:flex;flex-direction:column;justify-content:center}
@@ -426,7 +437,8 @@
     row.innerHTML =
       '<a class="btn" style="--c:'+t.color+'" href="'+t.url+'" target="_blank" rel="noopener">' +
         '<span class="ico">'+t.icon+'</span>' +
-        '<span class="tx"><div class="name">'+t.name+'</div><div class="url">'+t.url.replace('https://','')+'</div></span>' +
+        '<span class="tx"><div class="name">'+t.name+'</div><div class="url">'+t.url.replace('https://','')+'</div>' +
+        '<div class="pre"><span class="pbar idle" id="pb-'+t.key+'"><i></i></span><span class="pct" id="pp-'+t.key+'">대기</span></div></span>' +
         '<span class="upd" id="upd-'+t.key+'"><span class="lb">마지막 업데이트</span>' +
         '<span class="dt">확인 중…</span><span class="meta"></span></span>' +
         '<span class="arrow">→</span></a>';
@@ -536,17 +548,111 @@
 
   $('reload').addEventListener('click', function(){ load(true); });
 
-  // 버튼에 마우스를 올리거나 손가락을 대는 순간 그 도구 파일을 미리 받아 둠 → 눌렀을 때 바로 열림
-  var warmed = {};
-  function warm(url){
-    if(warmed[url]) return; warmed[url] = 1;
-    try{ var l=document.createElement('link'); l.rel='prefetch'; l.href=url; l.as='document'; document.head.appendChild(l); }catch(e){}
+  // ── 홈페이지를 열면 4개 도구 파일을 미리 읽어 둠(막대로 진행 표시) ──
+  // 다 읽은 도구: 버튼을 누르면 브라우저 저장소(HTTP 캐시)에서 바로 열림
+  // 읽는 중인 도구: 새 탭에 로딩 화면을 띄워 지금까지 읽은 곳부터 막대를 이어서 채우고, 다 읽으면 그 탭이 도구 화면으로 넘어감
+  //   (읽는 도중에 같은 파일로 바로 이동하면 캐시 기록이 끝날 때까지 하얀 화면으로 멈추던 문제를 피함)
+  var PRE = {};   // key → {pct, done, fail, busy, waiters:[]}
+  var SIZE_KEY = 'dbfPreSize_';
+  var SAVE = !!(navigator.connection && navigator.connection.saveData);
+  function preUI(t){
+    var st = PRE[t.key], bar = $('pb-'+t.key), tx = $('pp-'+t.key);
+    if(bar){
+      var known = st.pct >= 0, fill = bar.querySelector('i');
+      bar.classList.toggle('idle', st.busy && !known);
+      bar.classList.toggle('done', !!st.done);
+      fill.style.width = st.done ? '100%' : st.fail ? '0%' : Math.max(0, st.pct) + '%';
+      tx.classList.toggle('ok', !!st.done);
+      tx.textContent = st.done ? '✓ 준비됨' : st.fail ? '미리 읽기 실패' : known ? '읽는 중 ' + Math.floor(st.pct) + '%' : '읽는 중…';
+    }
+    st.waiters.slice().forEach(function(f){ try{ f(st); }catch(e){} });
   }
-  document.querySelectorAll('a.btn').forEach(function(a){
-    ['pointerenter','touchstart','focus'].forEach(function(ev){
-      a.addEventListener(ev, function(){ warm(a.href); }, {passive:true});
-    });
+  function preload(t, revalidate){
+    var st = PRE[t.key];
+    if(st.busy) return;
+    st.busy = true; st.pct = -1; st.done = false; st.fail = false; preUI(t);
+    var saved = 0; try{ saved = +localStorage.getItem(SIZE_KEY+t.key) || 0; }catch(e){}
+    fetch(t.url, {cache: revalidate ? 'no-cache' : 'default'}).then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      var cl = +r.headers.get('Content-Length') || 0, enc = r.headers.get('Content-Encoding');
+      var total = saved || (cl ? (enc ? cl*4 : cl) : 0);   // 압축 전송이면 실제 크기는 대략 4배로 어림
+      if(!r.body || !r.body.getReader) return r.arrayBuffer().then(function(b){ return b.byteLength; });
+      var rd = r.body.getReader(), got = 0;
+      function pump(){
+        return rd.read().then(function(x){
+          if(x.done) return got;
+          got += x.value.byteLength;
+          if(total){ st.pct = Math.min(99, got/total*100); preUI(t); }
+          return pump();
+        });
+      }
+      return pump();
+    }).then(function(n){
+      st.busy = false; st.done = true; st.pct = 100;
+      try{ if(n) localStorage.setItem(SIZE_KEY+t.key, n); }catch(e){}
+      preUI(t);
+    }).catch(function(){ st.busy = false; st.fail = true; preUI(t); });
+  }
+  // 로딩 화면(새 탭): 홈페이지와 같은 검은 바탕, 지금까지 읽은 만큼에서 막대가 이어서 참
+  function loadingTab(t, w){
+    var st = PRE[t.key];
+    var c = getComputedStyle(document.documentElement).getPropertyValue(t.color.slice(4,-1)).trim() || '#3b82f6';
+    var d = w.document;
+    d.open();
+    d.write('<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+      + '<title>'+t.name+' 여는 중…</title><style>html,body{margin:0;height:100%;background:#000;color:#f2f3f5;'
+      + 'font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}'
+      + '.w{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 24px}'
+      + '.ic{font-size:40px}.nm{font-size:22px;font-weight:700}.sb{font-size:13px;color:#6b7078}'
+      + '.bar{position:relative;width:min(360px,80vw);height:10px;border-radius:999px;overflow:hidden;background:#000;border:1px solid #1b1d21;'
+      + 'box-shadow:inset 0 2px 3px rgba(0,0,0,.95),0 1px 0 rgba(255,255,255,.07)}'
+      + '.bar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:'+c+';box-shadow:0 0 8px '+c+';transition:width .25s ease}'
+      + '.bar.idle i{width:28%;animation:s 1.2s ease-in-out infinite}@keyframes s{0%{left:-28%}100%{left:100%}}'
+      + '.pc{font-size:13px;color:#9aa0a8;font-variant-numeric:tabular-nums}</style></head><body><div class="w">'
+      + '<div class="ic">'+t.icon+'</div><div class="nm">'+t.name+'</div>'
+      + '<div class="bar" id="b"><i id="f"></i></div><div class="pc" id="p"></div><div class="sb">파일을 다 읽으면 바로 열립니다</div></div></body></html>');
+    d.close();
+    var gone = false;
+    function go(){
+      if(gone) return; gone = true;
+      var i = st.waiters.indexOf(paint); if(i >= 0) st.waiters.splice(i, 1);
+      try{ w.location.replace(t.url); }catch(e){}
+    }
+    function paint(s){
+      if(gone) return;
+      try{
+        var b = d.getElementById('b'), f = d.getElementById('f'), p = d.getElementById('p');
+        var known = s.done || s.pct >= 0;
+        b.className = 'bar' + (known ? '' : ' idle');
+        f.style.width = known ? (s.done ? 100 : s.pct) + '%' : '';
+        p.textContent = s.done ? '100% · 여는 중…' : known ? Math.floor(s.pct) + '%' : '읽는 중…';
+      }catch(e){}
+      if(s.done) setTimeout(go, 250); else if(s.fail) go();
+    }
+    st.waiters.push(paint); paint(st);
+    setTimeout(go, 60000);   // 너무 오래 걸리면 그냥 이동(도구 자체 로딩 화면이 이어받음)
+  }
+  TOOLS.forEach(function(t){
+    PRE[t.key] = {pct:-1, done:false, fail:false, busy:false, waiters:[]};
+    if(SAVE || !ON_PAGES){ var b = $('pb-'+t.key); if(b) b.parentNode.style.display = 'none'; }
   });
+  if(!SAVE && ON_PAGES){
+    var kick = function(){ setTimeout(function(){ TOOLS.forEach(function(t){ preload(t); }); }, 50); };
+    if(document.readyState === 'complete') kick(); else window.addEventListener('load', kick);
+    document.querySelectorAll('a.btn').forEach(function(a, i){
+      var t = TOOLS[i];
+      a.addEventListener('click', function(e){
+        var st = PRE[t.key];
+        if(!st || !st.busy) return;                           // 다 읽었거나 실패 → 보통대로 열기(다 읽었으면 캐시에서 바로)
+        if(e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+        var w = null; try{ w = window.open('', '_blank'); }catch(_e){}
+        if(!w) return;                                        // 팝업이 막히면 보통대로 열기
+        e.preventDefault();
+        try{ w.opener = null; }catch(_e){}
+        loadingTab(t, w);
+      });
+    });
+  }
 
   // ── 화면을 켜 둔 동안 새 버전이 배포되면 알림 카드(매출분석도구와 같은 모양) ──
   var known = {};          // 지금 화면에 보이는 도구별 배포 시각·버전
@@ -605,7 +711,7 @@
   function applyUpd(){
     if(selfNew){ location.reload(); return; }
     var c = readCache() || {}; c.data = c.data || {};
-    TOOLS.forEach(function(t){ var u = pendUpd[t.key]; if(u){ show(t, u.info); c.data[t.key] = u.info; } });
+    TOOLS.forEach(function(t){ var u = pendUpd[t.key]; if(u){ show(t, u.info); c.data[t.key] = u.info; if(ON_PAGES && !SAVE) preload(t, true); } });
     if(c.at) writeCache(c);
     pendUpd = {}; $('checked').textContent = fmtTime(new Date()) + ' 확인'; paintNote();
   }
