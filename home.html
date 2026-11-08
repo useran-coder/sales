@@ -224,6 +224,23 @@
   .chip{border:1px solid var(--line);background:#0d0e10;color:var(--text);border-radius:16px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
   .chip.on{background:#f2f3f5;color:#000;border-color:#f2f3f5;font-weight:700}
   .muted{color:var(--dim)}
+  .ar-red{color:#f87171}
+  .ar-rk{display:inline-block;font-size:12px;font-weight:700;border:1px solid;border-radius:999px;padding:1px 8px}
+  .co-kp.ar-warn{border-color:#7f1d1d;background:#1a0f10}
+  .co-kp.ar-warn b{color:#fca5a5}
+  .ar-ag{display:flex;flex-direction:column;gap:8px;padding:10px 0 12px}
+  .ar-agr{display:grid;grid-template-columns:84px 1fr 130px;align-items:center;gap:10px;font-size:13px}
+  .ar-agr>span:first-child{color:var(--sub)}
+  .ar-agr b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+  .ar-agb{height:10px;background:#000;border:1px solid #1b1d21;border-radius:999px;overflow:hidden}
+  .ar-agb i{display:block;height:100%;border-radius:999px}
+  .ar-bars{display:flex;gap:6px;align-items:flex-end;height:170px;padding:12px 0 8px}
+  .ar-bc{flex:1 1 0;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;min-width:24px}
+  .ar-bc.fut{opacity:.3}
+  .ar-bw{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:2px;border-bottom:1px solid var(--line)}
+  .ar-bw i{width:28%;max-width:12px;min-height:1px;border-radius:2px 2px 0 0}
+  .ar-bc span{font-size:11px;color:var(--sub)}
+  .ar-lg{display:inline-block;width:9px;height:9px;border-radius:2px;margin:0 3px 0 8px;vertical-align:0}
   @media (max-width:960px){
     .topbar{height:116px;align-items:flex-end;padding:0 16px 12px}
     .sf{width:100%}
@@ -344,6 +361,8 @@
       <option value="pc">매입 업체별 단가</option>
       <hr>
       <option value="co">업체 검색 (매출·매입처)</option>
+      <hr>
+      <option value="ar">미수관리</option>
     </select>
     <input id="sQ" type="search" placeholder="품번 · 품명 · 규격" aria-label="검색어">
     <button type="submit" class="go" aria-label="검색" title="검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
@@ -913,7 +932,8 @@
     sc:{src:'sales', kind:'party',title:'매출 업체별 단가', party:'업체', ph:'업체명'},
     pp:{src:'purch', kind:'prod', title:'매입 제품단가', party:'매입처', ph:'품번 · 품명 · 규격'},
     pc:{src:'purch', kind:'party',title:'매입 업체별 단가', party:'매입처', ph:'매입처명'},
-    co:{src:'co', kind:'co', title:'업체 검색', party:'업체', ph:'업체명 · 대표자 · 사업자번호 · 전화 · 주소'}
+    co:{src:'co', kind:'co', title:'업체 검색', party:'업체', ph:'업체명 · 대표자 · 사업자번호 · 전화 · 주소'},
+    ar:{src:'ar', kind:'ar', title:'미수관리', party:'업체', ph:'업체명 · 영업담당 (전체 = 미수 업체 모두)'}
   };
   $('sMode').addEventListener('change', function(){ $('sQ').placeholder=MODES[this.value].ph; $('sQ').focus(); });
   // 검색 종류 목록(구분선이 잘 보이게 직접 그림). 키보드 ↑↓ 는 기본 선택상자 그대로 동작
@@ -1443,6 +1463,103 @@
     var bk=$('coBack'); if(bk) bk.addEventListener('click', function(){ closeHist(); coList(); });
   }
 
+  /* ── 미수관리: 매출분석도구가 계산해 이 PC에 남긴 미수 요약(dbpastec_sales/kv/ar_summary_v1)을 읽어서 표시 ──
+     미수 계산(별칭·이월·실제잔액·어음 등)은 매출분석도구와 숫자가 꼭 같아야 해서 여기서 다시 계산하지 않음 */
+  var AR=null;
+  function arPct(a,b){ return b>0 ? Math.round(a/b*100) : 0; }
+  function arDays(n){ n=+n; return !isFinite(n)||n>=999 ? '수금 없음' : n<=0 ? '오늘' : n+'일 전'; }
+  function arRisk(r){ var c={'위험':'#f87171','주의':'#fbbf24','관리':'#60a5fa','정상':'#34d399'}[r]||'#9aa0a8'; return r?'<span class="ar-rk" style="color:'+c+';border-color:'+c+'55">'+esc(r)+'</span>':''; }
+  function arFoot(){
+    var S=AR&&AR.sum; if(!S) return '';
+    var at=S.at?new Date(S.at):null;
+    return '<div class="snote">기준일 '+esc(S.end||'')+' · 매출분석도구에서 '+(at&&!isNaN(at)?fmtDT(at):'')+' 계산한 값'+(S.build?' ('+esc(S.build)+')':'')+'. 최신 값은 매출분석도구를 열면 다시 계산됩니다.</div>';
+  }
+  function fmtDT(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+  function runAR(q){
+    show(head('미수관리 검색 중…')+'<div class="snote">매출분석도구의 미수 자료를 읽고 있습니다.</div>');
+    return readIdb('dbpastec_sales','ar_summary_v1').then(function(S){
+      if(!S || !Array.isArray(S.customers)){
+        show(head('미수관리 · '+esc(q))+'<div class="snote">이 PC에 미수 요약이 아직 없습니다. <a href="https://useran-coder.github.io/sales/" target="_blank" rel="noopener" style="color:#60a5fa">매출분석도구</a>를 한 번 열면 미수 계산 결과가 저장되고, 그다음부터 여기서 바로 볼 수 있습니다.</div>');
+        return;
+      }
+      var all=S.customers.filter(function(c){ return c && c.cust; });
+      var ts=terms(q), every=/^(전체|\*|all)$/i.test(q.trim());
+      var hits=every ? all.filter(function(c){ return (+c.balance||0)!==0; }) : all.filter(function(c){
+        var k=pnorm(c.cust)+' '+norm(c.manager)+' '+norm(c.tech);
+        return ts.every(function(t){ return k.indexOf(pnorm(t))>=0 || k.indexOf(t)>=0; });
+      });
+      hits.sort(function(a,b){ return (+b.balance||0)-(+a.balance||0); });
+      AR={q:q, sum:S, hits:hits, sk:'balance', dir:-1};
+      var pq=pnorm(q), exact=hits.filter(function(c){ return pnorm(c.cust)===pq; });
+      if(hits.length===1) arOpen(hits[0]); else if(exact.length===1) arOpen(exact[0]); else arList();
+    });
+  }
+  var AR_COLS=[['cust','업체명',''],['manager','영업담당',''],['balance','미수잔액','n'],['overduePay','결제조건 초과','n'],['long90Pay','90일 초과','n'],['bills','받을어음','n'],['sales','올해 매출','n'],['receipts','올해 수금','n'],['noDays','최근 수금','n'],['risk','위험도','']];
+  function arList(){
+    var H=AR.hits;
+    if(!H.length){ show(head('미수관리 · '+esc(AR.q),'0곳')+'<div class="snote">찾는 업체가 없습니다. 업체명 일부나 영업담당 이름으로 찾아 보세요. «전체»로 검색하면 미수가 있는 업체를 모두 보여 줍니다.</div>'+arFoot()); return; }
+    var k=AR.sk, d=AR.dir;
+    H=H.slice().sort(function(a,b){ var x=a[k], y=b[k]; if(typeof x==='number'||typeof y==='number') return ((+x||0)-(+y||0))*d; return String(x||'').localeCompare(String(y||''),'ko')*d; });
+    AR.view=H;
+    var tot={balance:0,overduePay:0,long90Pay:0,bills:0,sales:0,receipts:0};
+    H.forEach(function(c){ Object.keys(tot).forEach(function(t){ tot[t]+=+c[t]||0; }); });
+    var th=AR_COLS.map(function(c){ return '<th class="srt'+(c[2]?' n':'')+(k===c[0]?' on':'')+'" data-ak="'+c[0]+'">'+c[1]+(k===c[0]?'<i>'+(d<0?'▼':'▲')+'</i>':'')+'</th>'; }).join('');
+    var rows=H.slice(0,500).map(function(c,i){
+      return '<tr class="pick" data-ai="'+i+'"><td class="nm"><b>'+esc(c.cust)+'</b>'+(c.excluded?' <span class="muted" style="font-size:11px">(집계 제외)</span>':'')+'</td><td>'+esc(c.manager||'')+'</td>'+
+        '<td class="n"><b>'+won(c.balance)+'</b></td><td class="n'+((+c.overduePay||0)>0?' ar-red':'')+'">'+won(c.overduePay)+'</td><td class="n'+((+c.long90Pay||0)>0?' ar-red':'')+'">'+won(c.long90Pay)+'</td>'+
+        '<td class="n">'+won(c.bills)+'</td><td class="n">'+won(c.sales)+'</td><td class="n">'+won(c.receipts)+'</td><td class="d">'+esc(c.lastReceipt||'')+' <span class="muted">'+arDays(c.noDays)+'</span></td><td>'+arRisk(c.risk)+'</td></tr>';
+    }).join('');
+    var ft='<tr><td>합계 '+H.length+'곳</td><td></td><td class="n">'+won(tot.balance)+'</td><td class="n">'+won(tot.overduePay)+'</td><td class="n">'+won(tot.long90Pay)+'</td><td class="n">'+won(tot.bills)+'</td><td class="n">'+won(tot.sales)+'</td><td class="n">'+won(tot.receipts)+'</td><td></td><td></td></tr>';
+    show(head('미수관리 · '+esc(AR.q), H.length+'곳')+'<div class="sbox"><table><thead><tr>'+th+'</tr></thead><tbody>'+rows+'</tbody><tfoot>'+ft+'</tfoot></table></div>'+
+      '<div class="snote">업체 줄을 누르면 그 업체의 미수 상세(경과기간·월별 잔액·회수계획)가 나옵니다. 제목을 누르면 정렬됩니다.</div>'+arFoot());
+    $('srin').querySelectorAll('th[data-ak]').forEach(function(t){ t.addEventListener('click', function(){ var nk=t.getAttribute('data-ak'); if(AR.sk===nk) AR.dir=-AR.dir; else { AR.sk=nk; AR.dir=(nk==='cust'||nk==='manager'||nk==='risk')?1:-1; } arList(); }); });
+    $('srin').querySelectorAll('tr.pick[data-ai]').forEach(function(tr){ tr.addEventListener('click', function(){ arOpen(AR.view[+tr.getAttribute('data-ai')], true); }); });
+  }
+  function arOpen(c, fromList){
+    var S=AR.sum, bal=+c.balance||0;
+    var kp=function(l,v,sub,cls){ return '<div class="co-kp'+(cls?' '+cls:'')+'"><span class="l">'+l+'</span><b>'+v+'</b>'+(sub?'<small style="display:block;margin-top:3px">'+sub+'</small>':'')+'</div>'; };
+    var kps='<div class="co-kps">'+
+      kp('미수잔액', won(bal)+'원', c.balanceMode?esc(c.balanceMode):'')+
+      kp('결제조건 초과', won(c.overduePay)+'원', (c.payDays?'결제조건 '+(+c.payDays)+'일 · ':'')+'잔액의 '+arPct(+c.overduePay||0,bal)+'%', (+c.overduePay||0)>0?'ar-warn':'')+
+      kp('90일 넘은 미수', won(c.long90Pay)+'원', '잔액의 '+arPct(+c.long90Pay||0,bal)+'%', (+c.long90Pay||0)>0?'ar-warn':'')+
+      kp('받을어음(미결제)', won(c.bills)+'원')+
+      kp('최근 수금', esc(c.lastReceipt||'—'), arDays(c.noDays))+
+      kp('회수기간(DSO)', c.dso?Math.round(+c.dso)+'일':'—', '월평균 매출 '+won(c.avgSales)+'원')+
+      '</div>';
+    var ag=c.agingPay||{}, AG=[['d0','30일 이내'],['d31','31~60일'],['d61','61~90일'],['d91','91~180일'],['d181','180일 초과']];
+    var agMax=Math.max.apply(null, AG.map(function(a){ return +ag[a[0]]||0; }).concat([1]));
+    var agHtml='<div class="co-chart"><div class="co-ch"><b>결제조건 넘긴 기간별 미수</b><span class="co-sub">결제일(월말+'+(+c.payDays||0)+'일)이 지난 뒤 경과일</span></div><div class="ar-ag">'+
+      AG.map(function(a,i){ var v=+ag[a[0]]||0; return '<div class="ar-agr"><span>'+a[1]+'</span><span class="ar-agb"><i style="width:'+(v/agMax*100)+'%;background:'+['#60a5fa','#fbbf24','#fb923c','#f87171','#dc2626'][i]+'"></i></span><b>'+won(v)+'</b></div>'; }).join('')+'</div></div>';
+    var mon=Array.isArray(c.mon)?c.mon:[], monHtml='';
+    if(mon.length){
+      var mx=Math.max.apply(null, mon.map(function(m){ return Math.max(+m.b||0, +m.s||0, +m.r||0); }).concat([1]));
+      var cur=+(String(S.end||'').slice(5,7))||12;
+      monHtml='<div class="co-chart"><div class="co-ch"><b>'+(S.year||'')+'년 월별 매출·수금·월말 미수</b><span class="co-sub"><i class="ar-lg" style="background:#3b82f6"></i>매출 <i class="ar-lg" style="background:#10b981"></i>수금 <i class="ar-lg" style="background:#f59e0b"></i>월말 미수</span></div><div class="ar-bars">'+
+        mon.slice(0,12).map(function(m,i){ var fut=i+1>cur;
+          return '<div class="ar-bc'+(fut?' fut':'')+'" title="'+(i+1)+'월 · 매출 '+won(m.s)+' · 수금 '+won(m.r)+' · 월말 미수 '+won(m.b)+(m.od?' · 조건초과 '+won(m.od):'')+'"><div class="ar-bw"><i style="height:'+((+m.s||0)/mx*100)+'%;background:#3b82f6"></i><i style="height:'+((+m.r||0)/mx*100)+'%;background:#10b981"></i><i style="height:'+((+m.b||0)/mx*100)+'%;background:#f59e0b"></i></div><span>'+(i+1)+'월</span></div>'; }).join('')+
+        '</div></div>'+
+        '<div class="sbox" style="margin-bottom:14px"><table style="min-width:640px"><thead><tr><th>월</th><th class="n">매출</th><th class="n">수금</th><th class="n">월말 미수</th><th class="n">결제조건 초과</th></tr></thead><tbody>'+
+        mon.slice(0,cur).map(function(m,i){ return '<tr><td class="d">'+(i+1)+'월</td><td class="n">'+won(m.s)+'</td><td class="n">'+won(m.r)+'</td><td class="n"><b>'+won(m.b)+'</b></td><td class="n'+((+m.od||0)>0?' ar-red':'')+'">'+won(m.od)+'</td></tr>'; }).join('')+
+        '</tbody><tfoot><tr><td>합계</td><td class="n">'+won(c.sales)+'</td><td class="n">'+won(c.receipts)+'</td><td class="n">'+won(bal)+'</td><td class="n">'+won(c.overduePay)+'</td></tr></tfoot></table></div>';
+    }
+    var p=c.plan||{}, pl=[['status','진행상태'],['date','회수 예정일'],['owner','담당'],['action','조치'],['memo','메모'],['updatedAt','수정']].filter(function(x){ return String(p[x[0]]||'').trim(); });
+    var planHtml='<div class="co-card"><div class="co-row" style="border:none"><span class="co-h">회수계획</span>'+(pl.length?pl.map(function(x){ return '<span class="co-i"><span class="muted" style="font-size:12px">'+x[1]+'</span>'+esc(p[x[0]])+'</span>'; }).join(''):'<span class="muted">등록된 회수계획이 없습니다</span>')+'</div></div>';
+    var info='<div class="co-card"><div class="co-row" style="border:none">'+
+      '<span class="co-i"><span class="muted" style="font-size:12px">이월 미수</span>'+won(c.opening)+'원</span>'+
+      '<span class="co-i"><span class="muted" style="font-size:12px">올해 매출</span>'+won(c.sales)+'원</span>'+
+      '<span class="co-i"><span class="muted" style="font-size:12px">올해 수금</span>'+won(c.receipts)+'원</span>'+
+      (c.grade?'<span class="co-i"><span class="muted" style="font-size:12px">등급</span>'+esc(c.grade)+'</span>':'')+
+      (c.status?'<span class="co-i"><span class="muted" style="font-size:12px">상태</span>'+esc(c.status)+'</span>':'')+
+      (c.manager?'<span class="co-i"><span class="muted" style="font-size:12px">영업</span>'+esc(c.manager)+'</span>':'')+
+      (c.tech?'<span class="co-i"><span class="muted" style="font-size:12px">기술</span>'+esc(c.tech)+'</span>':'')+
+      '<span class="co-i"><span class="muted" style="font-size:12px">위험도</span>'+arRisk(c.risk)+(c.score!=null?' <span class="muted">'+(+c.score)+'점</span>':'')+'</span>'+
+      '</div></div>';
+    show(head(esc(c.cust)+' 미수 현황', '기준일 '+esc(S.end||''))+
+      (fromList||AR.hits.length>1?'<button type="button" class="co-tab" id="arBack" style="margin-bottom:12px">← 목록으로</button>':'')+
+      kps+info+agHtml+monHtml+planHtml+arFoot());
+    var bk=$('arBack'); if(bk) bk.addEventListener('click', arList);
+  }
+
   /* ── 검색 실행 ── */
   $('sf').addEventListener('submit', function(e){
     e.preventDefault();
@@ -1452,6 +1569,7 @@
     (H?H.refreshWho():Promise.resolve(null)).then(function(cur){
       if(!cur){ show(head('로그인이 필요합니다')+'<div class="snote">검색은 매출분석도구 계정으로 로그인한 사람만 쓸 수 있습니다. 오른쪽 위 «로그인»을 눌러 주세요.</div>'); if(H) H.openMem(); return; }
       if(mode==='co') return runCompany(q,cur);
+      if(mode==='ar') return runAR(q);
       show(head('검색 중…')+'<div class="snote">자료를 준비하고 있습니다.</div>');
       return ensure(M.src,cur).then(function(R){ return M.src==='sales' ? loadBuy(cur).then(function(){ return R; }, function(){ return R; }) : R; }).then(function(R){
         if(!R.length){ show(head('자료 없음')+'<div class="snote">자료가 비어 있습니다.</div>'); return; }
