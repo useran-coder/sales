@@ -1747,6 +1747,7 @@
     var fl=Object.keys(flat).map(function(k){ return flat[k]; }).sort(function(a,b){ return ({'원자재':0,'부자재':1,'스크랩':2}[a.kind]||3)-({'원자재':0,'부자재':1,'스크랩':2}[b.kind]||3) || String(a.name).localeCompare(String(b.name),'ko'); });
     var nRaw=fl.filter(function(f){ return f.kind==='원자재'; }).length;
     var h='<div class="co-card"><div class="co-row" style="border:none"><span class="co-i"><span class="muted" style="font-size:12px">품번</span>'+esc(code)+'</span><span class="co-i"><span class="muted" style="font-size:12px">품명</span><b>'+esc(inf.name)+'</b></span>'+(inf.spec?'<span class="co-i"><span class="muted" style="font-size:12px">규격</span>'+esc(inf.spec)+'</span>':'')+'<span class="co-i"><span class="muted" style="font-size:12px">원자재</span><b>'+nRaw+'</b>종</span></div></div>';
+    h+=spSection(code, inf);
     h+='<div class="bm-sec">🧱 사용 원자재·부자재 <span class="muted">— 자재를 누르면 이 자재를 쓰는 다른 제품</span></div>';
     h+=fl.length?'<div class="sbox" style="margin-bottom:16px"><table style="min-width:700px"><thead><tr><th>구분</th><th>자재 품번</th><th>품명</th><th>규격</th><th>단위</th><th>들어가는 곳</th></tr></thead><tbody>'+
       fl.map(function(f,i){ var v=f.via.filter(function(x,j,a){ return a.indexOf(x)===j; }); return '<tr class="pick" data-fr="'+esc(f.code)+'"><td>'+bomKind(f.kind)+'</td><td class="code">'+esc(f.code)+'</td><td class="nm"><b>'+esc(f.name)+'</b></td><td>'+esc(f.spec)+'</td><td class="d">'+esc(f.unit||'')+'</td><td class="muted" style="font-size:12px">'+esc(v.slice(0,4).join(' · '))+(v.length>4?' 외 '+(v.length-4):'')+'</td></tr>'; }).join('')+'</tbody></table></div>'
@@ -1755,7 +1756,7 @@
     h+='<div class="bm-sec">🌳 BOM 구성</div><div class="sbox"><table style="min-width:700px"><thead><tr><th>품목</th><th>구분</th><th>품번</th><th class="n">BOM 수량</th></tr></thead><tbody>'+
       rows.map(function(r){ return '<tr'+(bomIsRaw(r.kind)?' class="pick" data-fr="'+esc(r.code)+'"':'')+'><td class="nm" style="padding-left:'+(10+r.d*22)+'px">'+(r.d?'<span class="muted">└ </span>':'')+'<b>'+esc(r.name)+'</b> <span class="muted">'+esc(r.spec||'')+'</span></td><td>'+bomKind(r.kind)+'</td><td class="code">'+esc(r.code)+'</td><td class="n">'+esc(r.qty==null?'':r.qty)+' '+esc(r.unit||'')+'</td></tr>'; }).join('')+'</tbody></table></div>';
     show(head(esc(inf.name||code)+(inf.spec?' <span class="muted" style="font-weight:400">'+esc(inf.spec)+'</span>':'')+' · 사용 원자재')+(back&&BM?'<button type="button" class="co-tab" id="bmBack" style="margin-bottom:12px">← 목록으로</button>':'')+h+bomFoot());
-    bomBind(); bpPaintAll();
+    bomBind(); spDraw(); bpPaintAll();
   }
   // 원자재 → 들어가는 최상위 제품(반제품 거쳐)
   function bomTops(code){
@@ -1881,6 +1882,71 @@
     return '<div class="bm-sec" style="margin-top:18px">📈 원자재 매입단가 <span class="muted">— 매입분석도구 자료 기준</span></div>'+raw.map(function(m,i){ return bpPanel(m,i); }).join('');
   }
   function bpPaintAll(){ Object.keys(BP).forEach(function(k){ bpDraw(+k); }); }
+
+  /* ── 제품 월별 매출 추이(매출분석도구와 같은 구성) : BOM 품번 ↔ 매출 품번(접미사·앞자리 0 무시), 없으면 품명+규격 ── */
+  var SP=null;
+  function spRows(code, inf){
+    var R=DATA.sales||[], k=bomNk(code), nk=bpN(inf.name)+'|'+bpN(inf.spec), out=[];
+    for(var i=0;i<R.length;i++){ var r=R[i]; if(bomNk(r.code)===k) out.push(r); }
+    if(!out.length && inf.name){ for(var j=0;j<R.length;j++){ var x=R[j]; if((bpN(x.name)+'|'+bpN(x.spec))===nk) out.push(x); } }
+    return out;
+  }
+  function spSection(code, inf){
+    SP=null;
+    if(!DATA.sales) return '<div class="snote">매출자료를 읽지 못해 매출 추이를 표시할 수 없습니다.</div>';
+    var rows=spRows(code, inf);
+    if(!rows.length) return '<div class="bp"><div class="bp-h"><b>📈 '+esc(inf.name||code)+' · 월별 매출 추이</b></div><div class="snote">매출자료에서 이 제품('+esc(code)+')의 출고 기록을 찾지 못했습니다.</div></div>';
+    var yrs={}; rows.forEach(function(r){ yrs[r.y]=1; }); var yl=Object.keys(yrs).map(Number).sort(function(a,b){ return b-a; });
+    SP={code:code, inf:inf, rows:rows, yl:yl, year:yl[0], m:'amt'};
+    return '<div class="bp" id="spBox"></div>';
+  }
+  function spDraw(){
+    var S=SP, box=$('spBox'); if(!S||!box) return;
+    var now=new Date(), cy=now.getFullYear(), cm=now.getMonth()+1, last=S.year===cy?cm:12;
+    var mon=[]; for(var i=0;i<12;i++) mon.push({amt:0, qty:0, n:0});
+    var cust={};
+    S.rows.forEach(function(r){ if(r.y!==S.year) return; var m=new Date(r.t).getMonth(); mon[m].amt+=r.supply||0; mon[m].qty+=r.qty||0; mon[m].n++; cust[r.party]=(cust[r.party]||0)+(r.supply||0); });
+    var key=S.m, vals=mon.map(function(x){ return x[key]; }), tot=vals.reduce(function(a,b){ return a+b; },0), cnt=mon.reduce(function(a,x){ return a+x.n; },0);
+    // 평균·최고·최저: 진행 중인 이번 달과 0원 달은 빼고 계산
+    var use=[]; for(var k=0;k<last;k++){ if(S.year===cy && k===cm-1) continue; if(vals[k]>0) use.push(k); }
+    var avg=use.length?use.reduce(function(a,k){ return a+vals[k]; },0)/use.length:0;
+    var iMx=-1, iMn=-1; use.forEach(function(k){ if(iMx<0||vals[k]>vals[iMx]) iMx=k; if(iMn<0||vals[k]<vals[iMn]) iMn=k; });
+    var f=key==='amt'?won:num, unit=key==='amt'?'':'';
+    var h='<div class="bp-h"><b>📈 '+esc(S.inf.name||S.code)+(S.inf.spec?' <span class="muted" style="font-weight:400">'+esc(S.inf.spec)+'</span>':'')+' / '+S.year+'년 · 월별 매출 추이</b>'+
+      S.yl.map(function(y){ return '<button type="button" class="chip sm'+(S.year===y?' on':'')+'" data-spy="'+y+'">'+y+'년</button>'; }).join('')+
+      '<span class="co-vw"><button type="button" class="co-vb'+(key==='amt'?' on':'')+'" data-spm="amt">금액</button><button type="button" class="co-vb'+(key==='qty'?' on':'')+'" data-spm="qty">수량</button></span>'+
+      '<span class="bp-sub" style="margin-left:auto">합계 <b style="color:var(--text)">'+f(tot)+'</b> · <span style="color:#fbbf24">평균 <b>'+f(Math.round(avg))+'</b>(거래월 '+use.length+'개월)</span>'+
+      (iMx>=0?' · <span class="ar-red">최고 <b>'+f(vals[iMx])+'</b>('+(iMx+1)+'월)</span> · <span style="color:#34d399">최저 <b>'+f(vals[iMn])+'</b>('+(iMn+1)+'월)</span>':'')+' · 출고 '+cnt.toLocaleString()+'건</span></div>'+
+      '<div class="bp-svg" id="spSvg"></div>'+
+      '<div class="bp-st" style="text-align:right">'+(S.year===cy?cm+'월(진행 중)·':'')+'0원 달은 평균·최고·최저에서 제외 · <span style="color:#60a5fa">━ 실적</span> <span style="color:#fbbf24">┅ 평균</span>'+(S.year===cy?' <span class="ar-red">┆ '+cm+'월 현재</span>':'')+'</div>';
+    var cl=Object.keys(cust).sort(function(a,b){ return cust[b]-cust[a]; });
+    if(cl.length) h+='<div class="bp-st" style="margin-top:8px">'+S.year+'년 출고 업체 '+cl.length+'곳 : '+cl.slice(0,8).map(function(c){ return esc(c)+' <b>'+won(cust[c])+'</b>'; }).join(' · ')+(cl.length>8?' 외 '+(cl.length-8)+'곳':'')+'</div>';
+    box.innerHTML=h;
+    S.paint=function(){ var el=$('spSvg'); if(!el) return; var w=el.clientWidth||1000; if(window.innerWidth<=700) w=Math.max(680,w); el.innerHTML=spChart(vals, last, avg, iMx, iMn, S.year===cy?cm:0, f, w); };
+    S.paint();
+    box.querySelectorAll('[data-spy]').forEach(function(b){ b.addEventListener('click', function(){ SP.year=+b.getAttribute('data-spy'); spDraw(); }); });
+    box.querySelectorAll('[data-spm]').forEach(function(b){ b.addEventListener('click', function(){ SP.m=b.getAttribute('data-spm'); spDraw(); }); });
+  }
+  function spChart(vals, last, avg, iMx, iMn, curM, f, W){
+    var H=330, L=96, R=150, T=34, B=58, iw=W-L-R, ih=H-T-B;
+    var mx=Math.max.apply(null, vals.slice(0,last).concat([avg,1])), top=mx*1.08;
+    var X=function(k){ return L+iw*k/11; }, Y=function(v){ return T+ih-(Math.max(0,v)/top)*ih; };
+    var o='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block;font-size:12px">';
+    for(var g=0;g<=4;g++){ var v=top*g/4, yy=Y(v); o+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yy+'" y2="'+yy+'" stroke="#23262c"/><text x="'+(L-8)+'" y="'+(yy+4)+'" text-anchor="end" fill="#6b7078">'+f(Math.round(v))+'</text>'; }
+    if(avg>0){ var ya=Y(avg); o+='<line x1="'+L+'" x2="'+(W-R+20)+'" y1="'+ya+'" y2="'+ya+'" stroke="#f59e0b" stroke-width="1.3" stroke-dasharray="7 5"/><rect x="'+(W-R+22)+'" y="'+(ya-11)+'" width="'+(R-26)+'" height="22" rx="11" fill="#1f1606" stroke="#f59e0b"/><text x="'+(W-R+22+(R-26)/2)+'" y="'+(ya+4)+'" text-anchor="middle" fill="#fbbf24" font-weight="700" font-size="11.5">평균 '+f(avg)+'</text>'; }
+    if(curM){ var xc=X(curM-1); o+='<line x1="'+xc+'" x2="'+xc+'" y1="'+T+'" y2="'+(T+ih)+'" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="5 4"/><rect x="'+(xc-38)+'" y="'+(H-22)+'" width="76" height="20" rx="10" fill="#2a0d0f" stroke="#ef4444"/><text x="'+xc+'" y="'+(H-8)+'" text-anchor="middle" fill="#fca5a5" font-weight="700" font-size="11.5">'+curM+'월 현재</text>'; }
+    var pts=[]; for(var k=0;k<last;k++) pts.push([X(k),Y(vals[k])]);
+    if(pts.length>1) o+='<path d="'+pts.map(function(p,j){ return (j?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1); }).join(' ')+'" fill="none" stroke="#3b82f6" stroke-width="2.4"/>';
+    for(var m=0;m<12;m++){ var x=X(m), sp=m===iMx?'#f87171':m===iMn?'#34d399':(m<last?'#9aa0a8':'#4b5058');
+      o+='<text x="'+x+'" y="'+(T+ih+20)+'" text-anchor="middle" fill="'+sp+'"'+(m===iMx||m===iMn?' font-weight="700"':'')+'>'+(m+1)+'월</text>'; }
+    for(var q=0;q<last;q++){ var p=pts[q], big=q===iMx||q===iMn, col=q===iMx?'#ef4444':q===iMn?'#14b8a6':'#3b82f6';
+      o+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="'+(big?6:4.5)+'" fill="'+col+'" stroke="#000" stroke-width="1.5"><title>'+(q+1)+'월 '+f(vals[q])+'</title></circle>';
+      o+='<text x="'+p[0]+'" y="'+(p[1]-11)+'" text-anchor="middle" fill="'+(q===iMx?'#fca5a5':q===iMn?'#5eead4':'#e5e7eb')+'" font-weight="600">'+f(vals[q])+'</text>';
+      if(big){ var lb=q===iMx?'최고':'최저'; o+='<rect x="'+(p[0]-21)+'" y="'+(p[1]+10)+'" width="42" height="19" rx="9.5" fill="'+(q===iMx?'#2a0d0f':'#06201d')+'" stroke="'+col+'"/><text x="'+p[0]+'" y="'+(p[1]+23.5)+'" text-anchor="middle" fill="'+(q===iMx?'#fca5a5':'#5eead4')+'" font-size="11" font-weight="700">'+lb+'</text>'; }
+    }
+    return o+'</svg>';
+  }
+  window.addEventListener('resize', function(){ setTimeout(function(){ if(SP&&SP.paint&&$('spSvg')) SP.paint(); }, 160); });
 
   function bomBind(){
     var bk=$('bmBack'); if(bk) bk.addEventListener('click', bomList);
