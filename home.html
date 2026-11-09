@@ -227,6 +227,19 @@
   .bm-sec{font-size:14px;font-weight:600;margin:4px 0 10px}
   .bm-sec .muted{font-weight:400;font-size:12.5px}
   .bm-k{display:inline-block;font-size:11.5px;font-weight:700;border:1px solid;border-radius:999px;padding:1px 8px;white-space:nowrap}
+  .bp{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px 14px;margin-bottom:14px}
+  .bp-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px}
+  .bp-mt{font-weight:600;color:#e5e7eb}
+  .bp-sub{font-size:12px;color:var(--dim)}
+  .bp-lg{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)}
+  .bp-lg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px}
+  .bp-vn{border:1px solid #a16207;color:#fcd34d;border-radius:999px;padding:2px 10px;font-weight:600}
+  .bp-svg{margin-top:6px}
+  .bp-st{font-size:12.5px;color:var(--sub);margin-top:6px;font-variant-numeric:tabular-nums}
+  .bp-st b{color:var(--text)}
+  .bp-nx{color:#fbbf24!important}
+  .bp-dn{color:#60a5fa}
+  @media (max-width:700px){ .bp-svg{overflow-x:auto} .bp-lg{margin-left:0} }
   .ar-red{color:#f87171}
   .ar-lgd{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 8px;font-size:13px;color:var(--sub);margin-top:4px}
   .ar-ln{display:inline-block;width:22px;height:0;margin-right:6px;vertical-align:4px}
@@ -298,7 +311,7 @@
   .co-kp .rk{color:#fbbf24;font-weight:700;margin-left:4px}
   .co-chart{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px 4px;margin-bottom:14px}
   .co-ch{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px}
-  .co-ch .chip.sm{padding:3px 10px;font-size:12px}
+  .co-ch .chip.sm,.bp-h .chip.sm{padding:3px 10px;font-size:12px}
   .co-sub{margin-left:auto;font-size:12.5px;color:var(--sub)}
   .co-svg{display:block;margin-top:6px;font-family:inherit}
   #coSvg{width:100%}
@@ -1679,7 +1692,7 @@
   function runBom(q, cur){
     show(head('사용 제품=원자재 검색 중…')+'<div class="snote">제품별 제조원가 프로그램에서 BOM 을 읽고 있습니다.</div>');
     var hadS=!!DATA.sales;
-    return Promise.all([bomLoad(), ensure('sales',cur).catch(function(){ return null; })]).then(function(){
+    return Promise.all([bomLoad(), ensure('sales',cur).catch(function(){ return null; }), ensure('purch',cur).catch(function(){ return null; })]).then(function(){
       if(!hadS && DATA.sales) BOM_NM=null;   // 매출 품목명으로 이름 없는 BOM 품번 채우기
       var ts=terms(q), seen={}, prods=[], raws=[];
       function hay(cd, inf){ return norm(cd)+' '+norm(inf.name)+' '+norm(inf.spec); }
@@ -1738,10 +1751,11 @@
     h+=fl.length?'<div class="sbox" style="margin-bottom:16px"><table style="min-width:700px"><thead><tr><th>구분</th><th>자재 품번</th><th>품명</th><th>규격</th><th>단위</th><th>들어가는 곳</th></tr></thead><tbody>'+
       fl.map(function(f,i){ var v=f.via.filter(function(x,j,a){ return a.indexOf(x)===j; }); return '<tr class="pick" data-fr="'+esc(f.code)+'"><td>'+bomKind(f.kind)+'</td><td class="code">'+esc(f.code)+'</td><td class="nm"><b>'+esc(f.name)+'</b></td><td>'+esc(f.spec)+'</td><td class="d">'+esc(f.unit||'')+'</td><td class="muted" style="font-size:12px">'+esc(v.slice(0,4).join(' · '))+(v.length>4?' 외 '+(v.length-4):'')+'</td></tr>'; }).join('')+'</tbody></table></div>'
       :'<div class="snote">BOM 에 원자재가 연결되어 있지 않습니다.</div>';
+    h+=bpSection(fl);
     h+='<div class="bm-sec">🌳 BOM 구성</div><div class="sbox"><table style="min-width:700px"><thead><tr><th>품목</th><th>구분</th><th>품번</th><th class="n">BOM 수량</th></tr></thead><tbody>'+
       rows.map(function(r){ return '<tr'+(bomIsRaw(r.kind)?' class="pick" data-fr="'+esc(r.code)+'"':'')+'><td class="nm" style="padding-left:'+(10+r.d*22)+'px">'+(r.d?'<span class="muted">└ </span>':'')+'<b>'+esc(r.name)+'</b> <span class="muted">'+esc(r.spec||'')+'</span></td><td>'+bomKind(r.kind)+'</td><td class="code">'+esc(r.code)+'</td><td class="n">'+esc(r.qty==null?'':r.qty)+' '+esc(r.unit||'')+'</td></tr>'; }).join('')+'</tbody></table></div>';
     show(head(esc(inf.name||code)+(inf.spec?' <span class="muted" style="font-weight:400">'+esc(inf.spec)+'</span>':'')+' · 사용 원자재')+(back&&BM?'<button type="button" class="co-tab" id="bmBack" style="margin-bottom:12px">← 목록으로</button>':'')+h+bomFoot());
-    bomBind();
+    bomBind(); bpPaintAll();
   }
   // 원자재 → 들어가는 최상위 제품(반제품 거쳐)
   function bomTops(code){
@@ -1759,18 +1773,115 @@
       .sort(function(a,b){ return (!!b.name-!!a.name) || String(a.name).localeCompare(String(b.name),'ko') || String(a.spec).localeCompare(String(b.spec),'ko'); });
     var h='<div class="co-card"><div class="co-row" style="border:none"><span class="co-i"><span class="muted" style="font-size:12px">구분</span>'+bomKind(inf.kind)+'</span><span class="co-i"><span class="muted" style="font-size:12px">자재 품번</span>'+esc(code)+'</span><span class="co-i"><span class="muted" style="font-size:12px">품명</span><b>'+esc(inf.name)+'</b></span>'+(inf.spec?'<span class="co-i"><span class="muted" style="font-size:12px">규격</span>'+esc(inf.spec)+'</span>':'')+
       '<span class="co-i"><span class="muted" style="font-size:12px">직접 투입</span><b>'+direct.length+'</b>곳</span><span class="co-i"><span class="muted" style="font-size:12px">사용 제품</span><b>'+tops.length+'</b>종</span></div></div>';
+    var bpx=bpSection([{code:code, name:inf.name, spec:inf.spec, kind:inf.kind}]);
     h+='<div class="bm-sec">📦 이 자재가 들어가는 제품 <span class="muted">— 제품을 누르면 그 제품의 원자재 전체</span></div>';
     h+=tops.length?'<div class="sbox"><table style="min-width:700px"><thead><tr><th>제품 품번</th><th>품명</th><th>규격</th><th>거쳐 가는 반제품</th></tr></thead><tbody>'+
       tops.map(function(t){ return '<tr class="pick" data-fp="'+esc(t.code)+'"><td class="code">'+esc(t.code)+'</td><td class="nm"><b>'+esc(t.name||'(이름 없음)')+'</b></td><td>'+esc(t.spec)+'</td><td class="muted" style="font-size:12px">'+esc(t.via.slice(0,4).join(' · '))+(t.via.length>4?' 외 '+(t.via.length-4):'')+'</td></tr>'; }).join('')+'</tbody></table></div>'
       :'<div class="snote">이 자재를 쓰는 제품을 찾지 못했습니다.</div>';
+    h+=bpx;
     show(head(esc(inf.name||code)+(inf.spec?' <span class="muted" style="font-weight:400">'+esc(inf.spec)+'</span>':'')+' · 사용 제품', tops.length+'종')+(back&&BM?'<button type="button" class="co-tab" id="bmBack" style="margin-bottom:12px">← 목록으로</button>':'')+h+bomFoot());
-    bomBind();
+    bomBind(); bpPaintAll();
   }
   function bomReach(top, mid){   // top 아래에 mid 가 있는지
     var st=[top], seen={}, g=0;
     while(st.length && g++<5000){ var c=st.pop(); if(c===mid) return true; if(seen[c]) continue; seen[c]=1; bomKids(c).forEach(function(k){ st.push(String(k.code||'')); }); }
     return false;
   }
+  /* ── 원자재 입고일별 매입단가 추이(매입분석도구와 같은 구성) : BOM 자재 ↔ 매입자료 품번·품명+규격으로 맞춤 ── */
+  var BP={};   // 패널별 상태 {i:{mat, rows, year, paint}}
+  function bpN(v){ return String(v==null?'':v).toUpperCase().replace(/[×＊*Ｘ]/g,'X').replace(/\s+/g,'').replace(/[()\[\]{}·ㆍ・\-_]/g,''); }
+  function bpCode(c){ c=String(c||'').toUpperCase().replace(/_[A-Z0-9()]+$/,''); c=c.replace(/^MAT/,'').replace(/^MC/,'').replace(/^MA/,''); return c.replace(/[^A-Z0-9.]/g,''); }
+  function bpRows(mat){
+    var R=DATA.purch||[], ck=bpCode(mat.code), nk=bpN(mat.name)+'|'+bpN(mat.spec), nm=bpN(mat.name), sp=bpN(mat.spec), out=[];
+    for(var i=0;i<R.length;i++){ var r=R[i]; if(!r.ok) continue;
+      var hit=(ck && bpCode(r.code)===ck) || (bpN(r.name)+'|'+bpN(r.spec))===nk;
+      if(!hit && sp && nm){ var all=bpN(r.name+' '+r.spec); hit=all.indexOf(nm)>=0 && all.indexOf(sp)>=0; }
+      if(hit) out.push(r);
+    }
+    return out;
+  }
+  function bpDays(a,b){ return Math.round((b-a)/86400000); }
+  function bpYmd(t,short){ var d=new Date(t), s=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); return short?s.slice(2):s; }
+  // 같은 날 입고는 한 점으로(수량 가중 단가)
+  function bpDaily(rows){
+    var m={}; rows.forEach(function(r){ var d=new Date(r.t), k=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
+      var x=m[k]||(m[k]={t:new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(), qty:0, amt:0, n:0, vend:{}});
+      x.qty+=r.qty; x.amt+=r.supply||r.qty*r.price; x.n++; x.vend[r.party]=(x.vend[r.party]||0)+r.qty; });
+    return Object.keys(m).map(function(k){ var x=m[k]; x.price=x.qty?x.amt/x.qty:0; x.vendor=Object.keys(x.vend).sort(function(a,b){ return x.vend[b]-x.vend[a]; }).join(', '); return x; }).sort(function(a,b){ return a.t-b.t; });
+  }
+  function bpPanel(mat, i){
+    var rows=bpRows(mat);
+    var head0='<div class="bp"><div class="bp-h"><b>📊 입고일별 매입단가 추이</b><span class="bp-mt">'+esc(mat.name)+(mat.spec?' · '+esc(mat.spec):'')+'</span>';
+    if(!DATA.purch) return head0+'</div><div class="snote">매입자료를 읽지 못해 매입단가를 표시할 수 없습니다.</div></div>';
+    if(!rows.length) return head0+'</div><div class="snote">매입자료에서 이 원자재('+esc(mat.code)+')의 입고 기록을 찾지 못했습니다. 매입 품번이나 품명·규격이 BOM 과 다를 수 있습니다.</div></div>';
+    var yrs={}; rows.forEach(function(r){ yrs[r.y]=1; }); var yl=Object.keys(yrs).map(Number).sort(function(a,b){ return b-a; });
+    BP[i]={mat:mat, rows:rows, year:yl[0], yl:yl};
+    return '<div class="bp" id="bp'+i+'"></div>';
+  }
+  function bpDraw(i){
+    var S=BP[i], box=$('bp'+i); if(!S||!box) return;
+    var rows=S.rows.filter(function(r){ return S.year==='all' || r.y===S.year; }), D=bpDaily(rows), n=D.length;
+    var vend={}; rows.forEach(function(r){ vend[r.party]=1; }); var nv=Object.keys(vend).length;
+    var ps=D.map(function(x){ return x.price; }), mn=Math.min.apply(null,ps), mx=Math.max.apply(null,ps), avg=ps.reduce(function(a,b){ return a+b; },0)/Math.max(1,n);
+    var iMn=ps.indexOf(mn), iMx=ps.lastIndexOf(mx), tq=0, ta=0, tn=0; D.forEach(function(x){ tq+=x.qty; ta+=x.amt; tn+=x.n; });
+    var gaps=[]; for(var g=1; g<n; g++) gaps.push(bpDays(D[g-1].t, D[g].t));
+    var avgGap=gaps.length?Math.round(gaps.reduce(function(a,b){ return a+b; },0)/gaps.length):0;
+    var today=new Date(); today=new Date(today.getFullYear(),today.getMonth(),today.getDate()).getTime();
+    var since=n?bpDays(D[n-1].t, today):0, nextT=avgGap&&n?D[n-1].t+avgGap*86400000:0, left=nextT?bpDays(today,nextT):0;
+    var h='<div class="bp-h"><b>📊 입고일별 매입단가 추이</b><span class="bp-mt">'+esc(S.mat.name)+(S.mat.spec?' · '+esc(S.mat.spec):'')+'</span>'+
+      S.yl.map(function(y){ return '<button type="button" class="chip sm'+(S.year===y?' on':'')+'" data-bpy="'+y+'">'+y+'년</button>'; }).join('')+
+      (S.yl.length>1?'<button type="button" class="chip sm'+(S.year==='all'?' on':'')+'" data-bpy="all">전체</button>':'')+
+      '<span class="bp-sub">왼쪽 → 오른쪽: 과거 → 최근</span><span class="bp-lg"><span class="bp-vn">매입처 '+nv+'개사</span><i style="background:#f87171"></i>인상선 <i style="background:#60a5fa"></i>인하선 <i style="background:#9aa0a8"></i>동일선</span></div>';
+    if(!n){ box.innerHTML=h+'<div class="snote">이 기간에 입고 기록이 없습니다.</div>'; bpBind(i); return; }
+    h+='<div class="bp-svg" id="bpSvg'+i+'"></div>'+
+      '<div class="bp-st">매입단가 최저 <b>'+won(mn)+'원</b> <span class="muted">('+bpYmd(D[iMn].t,1)+')</span> · 최고 <b class="ar-red">'+won(mx)+'원</b> <span class="muted">('+bpYmd(D[iMx].t,1)+')</span> · 평균 <b>'+won(avg)+'원</b> · 합계 <b>'+won(ta)+'원</b> · 입고 <b>'+n+'</b>회 · 기간 '+bpYmd(D[0].t)+' ~ '+bpYmd(D[n-1].t)+'</div>'+
+      (gaps.length?'<div class="bp-st">평균 구매주기 <b>'+avgGap+'일</b> · 최단 '+Math.min.apply(null,gaps)+'일 · 최장 '+Math.max.apply(null,gaps)+'일 · 최근 입고 후 <b>'+since+'일</b> 경과 · 다음 예상 <b class="bp-nx">'+bpYmd(nextT)+'</b> · '+(left>=0?left+'일 남음':(-left)+'일 지남')+'</div>':'');
+    var T=D.slice().reverse();
+    h+='<div class="sbox" style="margin-top:12px"><table style="min-width:900px"><thead><tr><th class="n">순위</th><th>입고일자</th><th>매입처</th><th class="n">매입단가</th><th class="n">이전단가</th><th>인상·인하</th><th class="n">차액</th><th class="n">변동률</th><th class="n">수량</th><th class="n">매입액</th><th class="n">건수</th></tr></thead><tbody>'+
+      T.map(function(x,k){ var j=n-1-k, pv=j>0?D[j-1].price:null, df=pv==null?null:x.price-pv, rt=pv?df/pv*100:null;
+        var ch=pv==null?'<span class="muted">최초</span>':Math.round(df)>0?'<span class="ar-red">▲ 인상</span>':Math.round(df)<0?'<span class="bp-dn">▼ 인하</span>':'<span class="muted">- 동일</span>';
+        var cl=df==null||Math.round(df)===0?'':(df>0?' ar-red':' bp-dn');
+        return '<tr><td class="n">'+(k+1)+'</td><td class="d">'+bpYmd(x.t)+'</td><td>'+esc(x.vendor)+'</td><td class="n"><b>'+won(x.price)+'</b></td><td class="n">'+(pv==null?'-':won(pv))+'</td><td>'+ch+'</td>'+
+          '<td class="n'+cl+'">'+(df==null?'-':(df>0?'+':'')+won(df))+'</td><td class="n'+cl+'">'+(rt==null?'-':(rt>0?'+':'')+rt.toFixed(1)+'%')+'</td><td class="n">'+num(x.qty)+'</td><td class="n">'+won(x.amt)+'</td><td class="n">'+x.n+'</td></tr>'; }).join('')+
+      '</tbody><tfoot><tr><td></td><td>합계</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="n">'+num(tq)+'</td><td class="n">'+won(ta)+'</td><td class="n">'+tn+'</td></tr></tfoot></table></div>';
+    box.innerHTML=h;
+    S.paint=function(){ var el=$('bpSvg'+i); if(!el) return; var w=el.clientWidth||1000; if(window.innerWidth<=700) w=Math.max(680,w); el.innerHTML=bpChart(D, avg, iMn, iMx, w); };
+    S.paint(); bpBind(i);
+  }
+  function bpBind(i){
+    var box=$('bp'+i); if(!box) return;
+    box.querySelectorAll('[data-bpy]').forEach(function(b){ b.addEventListener('click', function(){ var v=b.getAttribute('data-bpy'); BP[i].year=v==='all'?'all':+v; bpDraw(i); }); });
+  }
+  function bpChart(D, avg, iMn, iMx, W){
+    var H=330, L=58, R=40, T=30, B=78, iw=W-L-R, ih=H-T-B, n=D.length;
+    var ps=D.map(function(x){ return x.price; }), lo=Math.min.apply(null,ps), hi=Math.max.apply(null,ps), pad=Math.max((hi-lo)*0.25, hi*0.03, 1);
+    var y0=lo-pad, y1=hi+pad, X=function(k){ return n===1 ? L+iw/2 : L+28+(iw-56)*k/(n-1); }, Y=function(v){ return T+ih-(v-y0)/(y1-y0)*ih; };
+    var o='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block;font-size:12px">';
+    for(var k=0;k<=4;k++){ var v=y0+(y1-y0)*k/4, yy=Y(v); o+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yy+'" y2="'+yy+'" stroke="#23262c"/><text x="'+(L-8)+'" y="'+(yy+4)+'" text-anchor="end" fill="#6b7078">'+won(v)+'</text>'; }
+    var ya=Y(avg); o+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+ya+'" y2="'+ya+'" stroke="#34d399" stroke-width="1" stroke-dasharray="5 4" opacity=".7"/><text x="'+(W-R)+'" y="'+(ya+15)+'" text-anchor="end" fill="#6ee7b7">평균 '+won(avg)+'</text>';
+    for(var j=1;j<n;j++){ var d=Math.round(D[j].price)-Math.round(D[j-1].price), c=d>0?'#f87171':d<0?'#60a5fa':'#9aa0a8';
+      o+='<line x1="'+X(j-1)+'" y1="'+Y(D[j-1].price)+'" x2="'+X(j)+'" y2="'+Y(D[j].price)+'" stroke="'+c+'" stroke-width="2.2"/>'; }
+    var by=T+ih+20, cy=H-16;
+    D.forEach(function(x,k){ var cx=X(k), py=Y(x.price), big=k===iMx||k===iMn, col=k===iMx&&n>1?'#f87171':'#34d399';
+      o+='<circle cx="'+cx+'" cy="'+py+'" r="'+(big?5.5:4)+'" fill="'+(k===iMx&&n>1?'#f87171':'#10b981')+'" stroke="#000" stroke-width="1.5"><title>'+bpYmd(x.t)+' · '+esc(x.vendor)+' · '+won(x.price)+'원 · '+num(x.qty)+'</title></circle>';
+      o+='<text x="'+cx+'" y="'+(py-11)+'" text-anchor="middle" fill="'+(k===iMx&&n>1?'#fca5a5':'#e5e7eb')+'" font-weight="600">'+won(x.price)+'</text>';
+      if(n>1 && (k===iMx||k===iMn)){ var lb=k===iMx?'최고':'최저', ty=py+(k===iMx?20:20); o+='<rect x="'+(cx-20)+'" y="'+(ty-11)+'" width="40" height="18" rx="9" fill="'+(k===iMx?'#3b1215':'#0c2a22')+'" stroke="'+col+'"/><text x="'+cx+'" y="'+(ty+2)+'" text-anchor="middle" fill="'+col+'" font-size="11" font-weight="700">'+lb+'</text>'; }
+      var anchor=n>1&&k===0?'start':n>1&&k===n-1?'end':'middle';
+      o+='<text x="'+cx+'" y="'+by+'" text-anchor="'+anchor+'" fill="#9aa0a8">'+bpYmd(x.t,1)+'</text>';
+      if(k>0){ var gx=(X(k-1)+cx)/2, gd=bpDays(D[k-1].t,x.t), gc=gd>=60?'#fbbf24':gd<=14?'#60a5fa':'#9aa0a8';
+        o+='<line x1="'+gx+'" x2="'+gx+'" y1="'+(T+ih+4)+'" y2="'+(cy-12)+'" stroke="#23262c"/><rect x="'+(gx-22)+'" y="'+(cy-11)+'" width="44" height="18" rx="9" fill="#0d0e10" stroke="'+gc+'88"/><text x="'+gx+'" y="'+(cy+2)+'" text-anchor="middle" fill="'+gc+'" font-size="11">'+gd+'일</text>'; }
+    });
+    o+='<text x="'+(L-8)+'" y="'+(cy+2)+'" text-anchor="end" fill="#6b7078" font-size="11">구매주기</text>';
+    return o+'</svg>';
+  }
+  var bpRT=0; window.addEventListener('resize', function(){ clearTimeout(bpRT); bpRT=setTimeout(function(){ Object.keys(BP).forEach(function(k){ if(BP[k].paint) BP[k].paint(); }); }, 150); });
+  function bpSection(mats){
+    BP={};
+    var raw=mats.filter(function(m){ return m.kind==='원자재'; }); if(!raw.length) return '';
+    return '<div class="bm-sec" style="margin-top:18px">📈 원자재 매입단가 <span class="muted">— 매입분석도구 자료 기준</span></div>'+raw.map(function(m,i){ return bpPanel(m,i); }).join('');
+  }
+  function bpPaintAll(){ Object.keys(BP).forEach(function(k){ bpDraw(+k); }); }
+
   function bomBind(){
     var bk=$('bmBack'); if(bk) bk.addEventListener('click', bomList);
     $('srin').querySelectorAll('tr[data-fr]').forEach(function(tr){ tr.addEventListener('click', function(){ bomRaw(tr.getAttribute('data-fr'), true); $('sr').scrollTop=0; }); });
