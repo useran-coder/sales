@@ -377,7 +377,7 @@
       <option value="pc">매입 업체별 단가</option>
       <hr>
       <option value="co">업체 검색 (매출·매입처)</option>
-      <option value="bom">사용품목/원자재</option>
+      <option value="bom">사용 제품=원자재</option>
       <hr>
       <option value="ar">미수관리</option>
     </select>
@@ -950,7 +950,7 @@
     pp:{src:'purch', kind:'prod', title:'매입 제품단가', party:'매입처', ph:'품번 · 품명 · 규격'},
     pc:{src:'purch', kind:'party',title:'매입 업체별 단가', party:'매입처', ph:'매입처명'},
     co:{src:'co', kind:'co', title:'업체 검색', party:'업체', ph:'업체명 · 대표자 · 사업자번호 · 전화 · 주소'},
-    bom:{src:'bom', kind:'bom', title:'사용품목/원자재', party:'', ph:'제품(품번·품명·규격) 또는 원자재(EGI 1.6 · STS430)'},
+    bom:{src:'bom', kind:'bom', title:'사용 제품=원자재', party:'', ph:'제품(품번·품명·규격) 또는 원자재(EGI 1.6 · STS430)'},
     ar:{src:'ar', kind:'ar', title:'미수관리', party:'업체', ph:'업체명 · 영업담당 (전체 = 미수 업체 모두)'}
   };
   $('sMode').addEventListener('change', function(){ $('sQ').placeholder=MODES[this.value].ph; $('sQ').focus(); });
@@ -1613,7 +1613,7 @@
       setHl(AR.hl); }
   }
 
-  /* ── 사용품목/원자재: 제품별 제조원가 프로그램(/product/)의 BOM(제품 → 반제품 → 원자재)으로
+  /* ── 사용 제품=원자재: 제품별 제조원가 프로그램(/product/)의 BOM(제품 → 반제품 → 원자재)으로
         제품이 쓰는 원자재, 원자재가 들어가는 제품을 찾음. 이 PC에서 제조원가 프로그램에 직접 추가한 BOM(dbfastec_cost_user_bom_v1)도 합침 ── */
   var BOMD=null, BOMP=null, BM=null;
   var BOM_SRC='https://useran-coder.github.io/product/';
@@ -1677,7 +1677,7 @@
   var BOM_KC={'원자재':'#fbbf24','부자재':'#93c5fd','스크랩':'#9ca3af','반제품':'#c4b5fd','제품':'#6ee7b7'};
   function bomKind(k){ var c=BOM_KC[k]||'#9aa0a8'; return '<span class="bm-k" style="color:'+c+';border-color:'+c+'55">'+esc(k||'-')+'</span>'; }
   function runBom(q, cur){
-    show(head('사용품목/원자재 검색 중…')+'<div class="snote">제품별 제조원가 프로그램에서 BOM 을 읽고 있습니다.</div>');
+    show(head('사용 제품=원자재 검색 중…')+'<div class="snote">제품별 제조원가 프로그램에서 BOM 을 읽고 있습니다.</div>');
     var hadS=!!DATA.sales;
     return Promise.all([bomLoad(), ensure('sales',cur).catch(function(){ return null; })]).then(function(){
       if(!hadS && DATA.sales) BOM_NM=null;   // 매출 품목명으로 이름 없는 BOM 품번 채우기
@@ -1705,13 +1705,13 @@
   function bomFoot(){ return '<div class="snote">자료: 제품별 제조원가 프로그램 '+(BOMD&&BOMD.ver?esc(BOMD.ver)+' ':'')+'BOM ('+(BOMD?BOMD.n.toLocaleString():0)+'개 품목 구성). BOM 수량은 제조원가 프로그램에 적힌 값 그대로입니다.</div>'; }
   function bomList(){
     var P=BM.prods, R=BM.raws;
-    if(!P.length && !R.length){ show(head('사용품목/원자재 · '+esc(BM.q),'0건')+'<div class="snote">BOM 에서 찾지 못했습니다. 제품은 품번·품명·규격 일부(예: DB-2BH134, 십자앙카), 원자재는 이름·두께(예: EGI 1.6, STS430)로 찾아 보세요.</div>'+bomFoot()); return; }
+    if(!P.length && !R.length){ show(head('사용 제품=원자재 · '+esc(BM.q),'0건')+'<div class="snote">BOM 에서 찾지 못했습니다. 제품은 품번·품명·규격 일부(예: DB-2BH134, 십자앙카), 원자재는 이름·두께(예: EGI 1.6, STS430)로 찾아 보세요.</div>'+bomFoot()); return; }
     var LIM=300, h='';
     if(R.length) h+='<div class="bm-sec">🧱 원자재·부자재 <b>'+R.length+'</b>건 <span class="muted">— 누르면 이 자재가 들어가는 제품</span></div><div class="sbox" style="margin-bottom:16px"><table style="min-width:700px"><thead><tr><th>구분</th><th>자재 품번</th><th>품명</th><th>규격</th><th>단위</th><th class="n">사용 제품</th></tr></thead><tbody>'+
       R.slice(0,LIM).map(function(r,i){ return '<tr class="pick" data-br="'+i+'"><td>'+bomKind(r.kind)+'</td><td class="code">'+esc(r.code)+'</td><td class="nm"><b>'+esc(r.name)+'</b></td><td>'+esc(r.spec)+'</td><td class="d">'+esc(r.unit||'')+'</td><td class="n">'+r.n.toLocaleString()+'종</td></tr>'; }).join('')+'</tbody></table></div>';
     if(P.length) h+='<div class="bm-sec">📦 제품·반제품 <b>'+P.length+'</b>건 <span class="muted">— 누르면 이 제품에 쓰는 원자재</span></div><div class="sbox"><table style="min-width:700px"><thead><tr><th>구분</th><th>품번</th><th>품명</th><th>규격</th><th class="n">하위 품목</th></tr></thead><tbody>'+
       P.slice(0,LIM).map(function(p,i){ return '<tr class="pick" data-bp="'+i+'"><td>'+bomKind(p.kind)+'</td><td class="code">'+esc(p.code)+'</td><td class="nm"><b>'+esc(p.name)+'</b></td><td>'+esc(p.spec)+'</td><td class="n">'+p.n+'개</td></tr>'; }).join('')+'</tbody></table></div>';
-    show(head('사용품목/원자재 · '+esc(BM.q), (P.length+R.length).toLocaleString()+'건')+h+((P.length>LIM||R.length>LIM)?'<div class="snote">각 '+LIM+'건까지만 표시합니다. 검색어를 더 좁혀 주세요.</div>':'')+bomFoot());
+    show(head('사용 제품=원자재 · '+esc(BM.q), (P.length+R.length).toLocaleString()+'건')+h+((P.length>LIM||R.length>LIM)?'<div class="snote">각 '+LIM+'건까지만 표시합니다. 검색어를 더 좁혀 주세요.</div>':'')+bomFoot());
     $('srin').querySelectorAll('tr[data-bp]').forEach(function(tr){ tr.addEventListener('click', function(){ bomProd(BM.prods[+tr.getAttribute('data-bp')].code, true); }); });
     $('srin').querySelectorAll('tr[data-br]').forEach(function(tr){ tr.addEventListener('click', function(){ bomRaw(BM.raws[+tr.getAttribute('data-br')].code, true); }); });
   }
