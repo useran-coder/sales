@@ -225,8 +225,19 @@
   .chip.on{background:#f2f3f5;color:#000;border-color:#f2f3f5;font-weight:700}
   .muted{color:var(--dim)}
   .ar-red{color:#f87171}
-  .ar-lgd{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 18px;font-size:13px;color:var(--sub);margin-top:4px}
+  .ar-lgd{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 8px;font-size:13px;color:var(--sub);margin-top:4px}
   .ar-ln{display:inline-block;width:22px;height:0;margin-right:6px;vertical-align:4px}
+  .ar-lgd button{background:none;border:1px solid transparent;border-radius:8px;color:inherit;font:inherit;font-size:13px;padding:3px 8px;cursor:pointer;transition:opacity .15s,background .15s}
+  .ar-lgd button:hover{background:#1a1c20}
+  .ar-lgd.has button{opacity:.4}
+  .ar-lgd.has button.on{opacity:1;border-color:#3a3f47;background:#1a1c20;color:var(--text)}
+  #arSvg .se{transition:opacity .2s}
+  #arSvg .se-od.lb{opacity:0}
+  #arSvg[data-hl] .se{opacity:.12}
+  #arSvg[data-hl="s"] .se-s,#arSvg[data-hl="r"] .se-r,#arSvg[data-hl="b"] .se-b,#arSvg[data-hl="od"] .se-od{opacity:1}
+  #arSvg[data-hl]:not([data-hl="od"]) .se-od.lb{opacity:0}
+  #arSvg[data-hl="b"] .se-b.ln,#arSvg[data-hl="od"] .se-od.ln{stroke-width:3.5}
+  #arSvg[data-hl="s"] rect.se-s,#arSvg[data-hl="r"] rect.se-r{opacity:1;filter:brightness(1.15)}
   .ar-rk{display:inline-block;font-size:12px;font-weight:700;border:1px solid;border-radius:999px;padding:1px 8px}
   .co-kp.ar-warn{border-color:#7f1d1d;background:#1a0f10}
   .co-kp.ar-warn b{color:#fca5a5}
@@ -1492,16 +1503,16 @@
       var m=mon[i]||{}, cx=L+sw*i+sw/2, fut=i+1>cur;
       o+='<text x="'+cx+'" y="'+(H-10)+'" text-anchor="middle" fill="'+(fut?'#4b5058':'#9aa0a8')+'">'+(i+1)+'월</text>';
       var sv=+m.s||0, rv=+m.r||0;
-      if(sv){ o+='<rect x="'+(cx-bw-2)+'" y="'+y(sv)+'" width="'+bw+'" height="'+(T+ih-y(sv))+'" rx="2" fill="#60a5fa" opacity=".85"><title>'+(i+1)+'월 매출 '+won(sv)+'원</title></rect>'; lab+='<text x="'+(cx-bw/2-2)+'" y="'+(y(sv)-6)+'" text-anchor="middle" fill="#93c5fd">'+arAmt(sv)+'</text>'; }
-      if(rv){ o+='<rect x="'+(cx+2)+'" y="'+y(rv)+'" width="'+bw+'" height="'+(T+ih-y(rv))+'" rx="2" fill="#34d399" opacity=".85"><title>'+(i+1)+'월 수금 '+won(rv)+'원</title></rect>'; lab+='<text x="'+(cx+bw/2+2)+'" y="'+(y(rv)-6)+'" text-anchor="middle" fill="#6ee7b7">'+arAmt(rv)+'</text>'; }
+      if(sv){ o+='<rect class="se se-s" x="'+(cx-bw-2)+'" y="'+y(sv)+'" width="'+bw+'" height="'+(T+ih-y(sv))+'" rx="2" fill="#60a5fa" opacity=".85"><title>'+(i+1)+'월 매출 '+won(sv)+'원</title></rect>'; lab+='<text class="se se-s" x="'+(cx-bw/2-2)+'" y="'+(y(sv)-6)+'" text-anchor="middle" fill="#93c5fd">'+arAmt(sv)+'</text>'; }
+      if(rv){ o+='<rect class="se se-r" x="'+(cx+2)+'" y="'+y(rv)+'" width="'+bw+'" height="'+(T+ih-y(rv))+'" rx="2" fill="#34d399" opacity=".85"><title>'+(i+1)+'월 수금 '+won(rv)+'원</title></rect>'; lab+='<text class="se se-r" x="'+(cx+bw/2+2)+'" y="'+(y(rv)-6)+'" text-anchor="middle" fill="#6ee7b7">'+arAmt(rv)+'</text>'; }
       if(!fut && m.b!=null) pb.push([cx, y(m.b), +m.b||0, i]);
       if(!fut && m.od!=null) po.push([cx, y(m.od), +m.od||0, i]);
     }
     var path=function(a){ return a.map(function(p,j){ return (j?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1); }).join(' '); };
-    if(po.length){ o+='<path d="'+path(po)+'" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="6 4"/>';
-      po.forEach(function(p){ o+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="#000" stroke="#a78bfa" stroke-width="1.5"><title>'+(p[3]+1)+'월 결제일 기준 미수 '+won(p[2])+'원</title></circle>'; }); }
-    if(pb.length){ o+='<path d="'+path(pb)+'" fill="none" stroke="#f87171" stroke-width="2.2"/>';
-      pb.forEach(function(p){ o+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="#f87171"><title>'+(p[3]+1)+'월 말 미수 '+won(p[2])+'원</title></circle>'; lab+='<text x="'+p[0]+'" y="'+(p[1]-10)+'" text-anchor="middle" fill="#fca5a5" font-weight="600">'+arAmt(p[2])+'</text>'; }); }
+    if(po.length){ o+='<path class="se se-od ln" d="'+path(po)+'" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="6 4"/>';
+      po.forEach(function(p){ o+='<circle class="se se-od" cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="#000" stroke="#a78bfa" stroke-width="1.5"><title>'+(p[3]+1)+'월 결제일 기준 미수 '+won(p[2])+'원</title></circle>'; lab+='<text class="se se-od lb" x="'+p[0]+'" y="'+(p[1]-10)+'" text-anchor="middle" fill="#c4b5fd" font-weight="600">'+arAmt(p[2])+'</text>'; }); }
+    if(pb.length){ o+='<path class="se se-b ln" d="'+path(pb)+'" fill="none" stroke="#f87171" stroke-width="2.2"/>';
+      pb.forEach(function(p){ o+='<circle class="se se-b" cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="#f87171"><title>'+(p[3]+1)+'월 말 미수 '+won(p[2])+'원</title></circle>'; lab+='<text class="se se-b" x="'+p[0]+'" y="'+(p[1]-10)+'" text-anchor="middle" fill="#fca5a5" font-weight="600">'+arAmt(p[2])+'</text>'; }); }
     return o+lab+'</svg>';
   }
   var arRT=0; window.addEventListener('resize', function(){ clearTimeout(arRT); arRT=setTimeout(function(){ if(AR&&AR.paint&&$('arSvg')) AR.paint(); }, 150); });
@@ -1566,8 +1577,8 @@
       var cur=+(String(S.end||'').slice(5,7))||12;
       var pdl=+c.payDays||0;
       monHtml='<div class="co-chart"><div class="co-ch"><b>📈 월별 매출·수금·추정미수 추이</b><span class="co-sub">'+(S.year||'')+'년</span></div>'+
-        '<div class="ar-lgd"><span><i class="ar-lg" style="background:#60a5fa"></i>매출</span><span><i class="ar-lg" style="background:#34d399"></i>수금</span>'+
-        '<span><i class="ar-ln" style="border-top:2px solid #f87171"></i>미수(현재)</span><span style="color:#c4b5fd"><i class="ar-ln" style="border-top:2px dashed #a78bfa"></i>결제일 기준 미수 ('+pdl+'일)</span></div>'+
+        '<div class="ar-lgd" id="arLgd"><button type="button" data-ser="s"><i class="ar-lg" style="background:#60a5fa"></i>매출</button><button type="button" data-ser="r"><i class="ar-lg" style="background:#34d399"></i>수금</button>'+
+        '<button type="button" data-ser="b"><i class="ar-ln" style="border-top:2px solid #f87171"></i>미수(현재)</button><button type="button" data-ser="od" style="color:#c4b5fd"><i class="ar-ln" style="border-top:2px dashed #a78bfa"></i>결제일 기준 미수 ('+pdl+'일)</button></div>'+
         '<div class="co-svg" id="arSvg"></div></div>'+
         '<div class="sbox" style="margin-bottom:14px"><table style="min-width:640px"><thead><tr><th>월</th><th class="n">매출</th><th class="n">수금</th><th class="n">월말 미수</th><th class="n">결제조건 초과</th></tr></thead><tbody>'+
         mon.slice(0,cur).map(function(m,i){ return '<tr><td class="d">'+(i+1)+'월</td><td class="n">'+won(m.s)+'</td><td class="n">'+won(m.r)+'</td><td class="n"><b>'+won(m.b)+'</b></td><td class="n'+((+m.od||0)>0?' ar-red':'')+'">'+won(m.od)+'</td></tr>'; }).join('')+
@@ -1591,6 +1602,10 @@
     var bk=$('arBack'); if(bk) bk.addEventListener('click', arList);
     AR.paint=function(){ var box=$('arSvg'); if(!box) return; var w=box.clientWidth||1000; if(window.innerWidth<=700) w=Math.max(680,w); box.innerHTML=arChart(c.mon||[], +(String(S.end||'').slice(5,7))||12, w); };
     AR.paint();
+    var lg=$('arLgd'); if(lg){ var setHl=function(k){ AR.hl=k||''; var sv=$('arSvg'); if(sv){ if(AR.hl) sv.setAttribute('data-hl',AR.hl); else sv.removeAttribute('data-hl'); }
+        lg.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-ser')===AR.hl); }); lg.classList.toggle('has', !!AR.hl); };
+      lg.addEventListener('click', function(e){ var b=e.target.closest('button[data-ser]'); if(!b) return; var k=b.getAttribute('data-ser'); setHl(AR.hl===k?'':k); });
+      setHl(AR.hl); }
   }
 
   /* ── 검색 실행 ── */
