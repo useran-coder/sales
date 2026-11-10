@@ -240,6 +240,9 @@
   .bp-nx{color:#fbbf24!important}
   .bp-dn{color:#60a5fa}
   @media (max-width:700px){ .bp-svg{overflow-x:auto} .bp-lg{margin-left:0} }
+  table.gs thead th{cursor:pointer;user-select:none}
+  table.gs thead th:hover,table.gs thead th.on{color:var(--text)}
+  table.gs th i.gsi{font-style:normal;font-size:10px;margin-left:3px}
   .ar-red{color:#f87171}
   .ar-lgd{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 8px;font-size:13px;color:var(--sub);margin-top:4px}
   .ar-ln{display:inline-block;width:22px;height:0;margin-right:6px;vertical-align:4px}
@@ -1657,7 +1660,7 @@
         '<div class="ar-lgd" id="arLgd"><button type="button" data-ser="s"><i class="ar-lg" style="background:#60a5fa"></i>매출</button><button type="button" data-ser="r"><i class="ar-lg" style="background:#34d399"></i>수금</button>'+
         '<button type="button" data-ser="b"><i class="ar-ln" style="border-top:2px solid #f87171"></i>미수(현재)</button><button type="button" data-ser="od" style="color:#c4b5fd"><i class="ar-ln" style="border-top:2px dashed #a78bfa"></i>결제일 기준 미수 ('+pdl+'일)</button></div>'+
         '<div class="co-svg" id="arSvg"></div></div>'+
-        '<div class="sbox" style="margin-bottom:14px"><table style="min-width:640px"><thead><tr><th>월</th><th class="n">매출</th><th class="n">수금</th><th class="n">월말 미수</th><th class="n">결제조건 초과</th></tr></thead><tbody>'+
+        '<div class="sbox" style="margin-bottom:14px"><table class="gs" style="min-width:640px"><thead><tr><th>월</th><th class="n">매출</th><th class="n">수금</th><th class="n">월말 미수</th><th class="n">결제조건 초과</th></tr></thead><tbody>'+
         mon.slice(0,cur).map(function(m,i){ return '<tr><td class="d">'+(i+1)+'월</td><td class="n">'+won(m.s)+'</td><td class="n">'+won(m.r)+'</td><td class="n"><b>'+won(m.b)+'</b></td><td class="n'+((+m.od||0)>0?' ar-red':'')+'">'+won(m.od)+'</td></tr>'; }).join('')+
         '</tbody><tfoot><tr><td>합계</td><td class="n">'+won(c.sales)+'</td><td class="n">'+won(c.receipts)+'</td><td class="n">'+won(bal)+'</td><td class="n">'+won(c.overduePay)+'</td></tr></tfoot></table></div>';
     }
@@ -1779,12 +1782,12 @@
     var P=BM.prods, R=BM.raws;
     if(!P.length && !R.length){ show(head('제품/원자재 검색 · '+esc(BM.q),'0건')+'<div class="snote">BOM 에서 찾지 못했습니다. 제품은 품번·품명·규격 일부(예: DB-2BH134, 십자앙카), 원자재는 이름·두께(예: EGI 1.6, STS430)로 찾아 보세요.</div>'+bomFoot()); return; }
     var LIM=300, h='';
-    if(R.length) h+='<div class="bm-sec">🧱 원자재·부자재 <b>'+R.length+'</b>건 <span class="muted">— 누르면 이 자재가 들어가는 제품</span></div><div class="sbox" style="margin-bottom:16px"><table style="min-width:1100px"><thead><tr><th>구분</th><th>자재 품번</th><th>품명</th><th>규격</th><th>단위</th><th class="n">사용 제품</th><th class="n">월평균 매입</th><th class="n">올해 매입</th><th class="n">발주주기</th><th class="n">마지막 입고</th></tr></thead><tbody>'+
+    if(R.length) h+='<div class="bm-sec">🧱 원자재·부자재 <b>'+R.length+'</b>건 <span class="muted">— 누르면 이 자재가 들어가는 제품</span></div><div class="sbox" style="margin-bottom:16px"><table class="gs" style="min-width:1100px"><thead><tr><th>구분</th><th>자재 품번</th><th>품명</th><th>규격</th><th>단위</th><th class="n">사용 제품</th><th class="n">월평균 매입</th><th class="n">올해 매입</th><th class="n">발주주기</th><th class="n">마지막 입고</th></tr></thead><tbody>'+
       R.slice(0,LIM).map(function(r,i){ var b=DATA.purch?bpSum(bpQuick(r)):null; return '<tr class="pick" data-br="'+i+'"><td>'+bomKind(r.kind)+'</td><td class="code">'+esc(r.code)+'</td><td class="nm"><b>'+esc(r.name)+'</b></td><td>'+esc(r.spec)+'</td><td class="d">'+esc(r.unit||'')+'</td><td class="n">'+r.n.toLocaleString()+'종</td>'+
-        (b&&b.n?'<td class="n">'+qa(b.mq,b.ma,r.unit)+'</td><td class="n">'+qa(b.q,b.a,r.unit)+'</td><td class="n">'+(b.gap?b.gap+'일':'—')+'</td><td class="d">'+ymd(b.last)+'</td>':'<td class="n muted" colspan="4" style="text-align:center">매입 기록 없음</td>')+'</tr>'; }).join('')+'</tbody></table></div>';
-    if(P.length) h+='<div class="bm-sec">📦 제품·반제품 <b>'+P.length+'</b>건 <span class="muted">— 누르면 이 제품에 쓰는 원자재</span></div><div class="sbox"><table style="min-width:1000px"><thead><tr><th>구분</th><th>품번</th><th>품명</th><th>규격</th><th class="n">하위 품목</th><th class="n">월평균 매출 (수량/금액)</th><th class="n">올해 매출 (수량/금액)</th></tr></thead><tbody>'+
+        (b&&b.n?'<td class="n" data-v="'+b.mq+'">'+qa(b.mq,b.ma,r.unit)+'</td><td class="n" data-v="'+b.q+'">'+qa(b.q,b.a,r.unit)+'</td><td class="n" data-v="'+(b.gap||'')+'">'+(b.gap?b.gap+'일':'—')+'</td><td class="d">'+ymd(b.last)+'</td>':'<td class="n muted" data-v="">매입 기록 없음</td><td class="n muted" data-v="">—</td><td class="n muted" data-v="">—</td><td class="d muted" data-v="">—</td>')+'</tr>'; }).join('')+'</tbody></table></div>';
+    if(P.length) h+='<div class="bm-sec">📦 제품·반제품 <b>'+P.length+'</b>건 <span class="muted">— 누르면 이 제품에 쓰는 원자재</span></div><div class="sbox"><table class="gs" style="min-width:1000px"><thead><tr><th>구분</th><th>품번</th><th>품명</th><th>규격</th><th class="n">하위 품목</th><th class="n">월평균 매출 (수량/금액)</th><th class="n">올해 매출 (수량/금액)</th></tr></thead><tbody>'+
       P.slice(0,LIM).map(function(p,i){ var v=DATA.sales?spSum(spQuick(p.code,{name:p.name,spec:p.spec})):null; return '<tr class="pick" data-bp="'+i+'"><td>'+bomKind(p.kind)+'</td><td class="code">'+esc(p.code)+'</td><td class="nm"><b>'+esc(p.name)+'</b></td><td>'+esc(p.spec)+'</td><td class="n">'+p.n+'개</td>'+
-        (v&&(v.q||v.a)?'<td class="n">'+qa(v.mq,v.ma)+'</td><td class="n">'+qa(v.q,v.a)+'</td>':'<td class="n muted" colspan="2" style="text-align:center">올해 매출 없음</td>')+'</tr>'; }).join('')+'</tbody></table></div>';
+        (v&&(v.q||v.a)?'<td class="n" data-v="'+v.ma+'">'+qa(v.mq,v.ma)+'</td><td class="n" data-v="'+v.a+'">'+qa(v.q,v.a)+'</td>':'<td class="n muted" data-v="">올해 매출 없음</td><td class="n muted" data-v="">—</td>')+'</tr>'; }).join('')+'</tbody></table></div>';
     show(head('제품/원자재 검색 · '+esc(BM.q), (P.length+R.length).toLocaleString()+'건')+h+((P.length>LIM||R.length>LIM)?'<div class="snote">각 '+LIM+'건까지만 표시합니다. 검색어를 더 좁혀 주세요.</div>':'')+'<div class="snote">월평균 = 올해 합계 ÷ 올해 지난 개월 수(이번 달 포함). 발주주기 = 입고한 날들 사이의 평균 일수(전체 기간).</div>'+bomFoot());
     $('srin').querySelectorAll('tr[data-bp]').forEach(function(tr){ tr.addEventListener('click', function(){ var c=BM.prods[+tr.getAttribute('data-bp')].code; nav(function(){ bomProd(c, true); }); }); });
     $('srin').querySelectorAll('tr[data-br]').forEach(function(tr){ tr.addEventListener('click', function(){ var c=BM.raws[+tr.getAttribute('data-br')].code; nav(function(){ bomRaw(c, true); }); }); });
@@ -1810,7 +1813,7 @@
     var h='<div class="co-card"><div class="co-row" style="border:none"><span class="co-i"><span class="muted" style="font-size:12px">품번</span>'+esc(code)+'</span><span class="co-i"><span class="muted" style="font-size:12px">품명</span><b>'+esc(inf.name)+'</b></span>'+(inf.spec?'<span class="co-i"><span class="muted" style="font-size:12px">규격</span>'+esc(inf.spec)+'</span>':'')+'<span class="co-i"><span class="muted" style="font-size:12px">원자재</span><b>'+nRaw+'</b>종</span></div></div>';
     h+=spSection(code, inf);
     h+='<div class="bm-sec">🧱 사용 원자재·부자재 <span class="muted">— 자재를 누르면 이 자재를 쓰는 다른 제품</span></div>';
-    h+=fl.length?'<div class="sbox" style="margin-bottom:16px"><table style="min-width:700px"><thead><tr><th>구분</th><th>자재 품번</th><th>품명</th><th>규격</th><th>단위</th><th>들어가는 곳</th></tr></thead><tbody>'+
+    h+=fl.length?'<div class="sbox" style="margin-bottom:16px"><table class="gs" style="min-width:700px"><thead><tr><th>구분</th><th>자재 품번</th><th>품명</th><th>규격</th><th>단위</th><th>들어가는 곳</th></tr></thead><tbody>'+
       fl.map(function(f,i){ var v=f.via.filter(function(x,j,a){ return a.indexOf(x)===j; }); return '<tr class="pick" data-fr="'+esc(f.code)+'"><td>'+bomKind(f.kind)+'</td><td class="code">'+esc(f.code)+'</td><td class="nm"><b>'+esc(f.name)+'</b></td><td>'+esc(f.spec)+'</td><td class="d">'+esc(f.unit||'')+'</td><td class="muted" style="font-size:12px">'+esc(v.slice(0,4).join(' · '))+(v.length>4?' 외 '+(v.length-4):'')+'</td></tr>'; }).join('')+'</tbody></table></div>'
       :'<div class="snote">BOM 에 원자재가 연결되어 있지 않습니다.</div>';
     h+=bpSection(fl);
@@ -1837,8 +1840,8 @@
       '<span class="co-i"><span class="muted" style="font-size:12px">직접 투입</span><b>'+direct.length+'</b>곳</span><span class="co-i"><span class="muted" style="font-size:12px">사용 제품</span><b>'+tops.length+'</b>종</span></div></div>';
     var bpx=bpSection([{code:code, name:inf.name, spec:inf.spec, kind:inf.kind}]);
     h+='<div class="bm-sec">📦 이 자재가 들어가는 제품 <span class="muted">— 제품을 누르면 그 제품의 원자재 전체</span></div>';
-    h+=tops.length?'<div class="sbox"><table style="min-width:1000px"><thead><tr><th>제품 품번</th><th>품명</th><th>규격</th><th>거쳐 가는 반제품</th><th class="n">월평균 매출 (수량/금액)</th><th class="n">올해 매출 (수량/금액)</th></tr></thead><tbody>'+
-      tops.map(function(t){ var v=DATA.sales?spSum(spQuick(t.code,{name:t.name,spec:t.spec})):null, vc=v&&(v.q||v.a)?'<td class="n">'+qa(v.mq,v.ma)+'</td><td class="n">'+qa(v.q,v.a)+'</td>':'<td class="n muted" colspan="2" style="text-align:center">올해 매출 없음</td>'; return '<tr class="pick" data-fp="'+esc(t.code)+'"><td class="code">'+esc(t.code)+'</td><td class="nm"><b>'+esc(t.name||'(이름 없음)')+'</b></td><td>'+esc(t.spec)+'</td><td class="muted" style="font-size:12px">'+esc(t.via.slice(0,4).join(' · '))+(t.via.length>4?' 외 '+(t.via.length-4):'')+'</td>'+vc+'</tr>'; }).join('')+'</tbody></table></div>'
+    h+=tops.length?'<div class="sbox"><table class="gs" style="min-width:1000px"><thead><tr><th>제품 품번</th><th>품명</th><th>규격</th><th>거쳐 가는 반제품</th><th class="n">월평균 매출 (수량/금액)</th><th class="n">올해 매출 (수량/금액)</th></tr></thead><tbody>'+
+      tops.map(function(t){ var v=DATA.sales?spSum(spQuick(t.code,{name:t.name,spec:t.spec})):null, vc=v&&(v.q||v.a)?'<td class="n" data-v="'+v.ma+'">'+qa(v.mq,v.ma)+'</td><td class="n" data-v="'+v.a+'">'+qa(v.q,v.a)+'</td>':'<td class="n muted" data-v="">올해 매출 없음</td><td class="n muted" data-v="">—</td>'; return '<tr class="pick" data-fp="'+esc(t.code)+'"><td class="code">'+esc(t.code)+'</td><td class="nm"><b>'+esc(t.name||'(이름 없음)')+'</b></td><td>'+esc(t.spec)+'</td><td class="muted" style="font-size:12px">'+esc(t.via.slice(0,4).join(' · '))+(t.via.length>4?' 외 '+(t.via.length-4):'')+'</td>'+vc+'</tr>'; }).join('')+'</tbody></table></div>'
       :'<div class="snote">이 자재를 쓰는 제품을 찾지 못했습니다.</div>';
     h+=bpx;
     show(head(esc(inf.name||code)+(inf.spec?' <span class="muted" style="font-weight:400">'+esc(inf.spec)+'</span>':'')+' · 사용 제품', tops.length+'종')+(back&&BM?'<button type="button" class="co-tab" id="bmBack" style="margin-bottom:12px">← 목록으로</button>':'')+h+bomFoot());
@@ -1928,7 +1931,7 @@
       '<div class="bp-st">매입단가 최저 <b>'+won(mn)+'원</b> <span class="muted">('+bpYmd(D[iMn].t,1)+')</span> · 최고 <b class="ar-red">'+won(mx)+'원</b> <span class="muted">('+bpYmd(D[iMx].t,1)+')</span> · 평균 <b>'+won(avg)+'원</b> · 합계 <b>'+won(ta)+'원</b> · 입고 <b>'+n+'</b>회 · 기간 '+bpYmd(D[0].t)+' ~ '+bpYmd(D[n-1].t)+'</div>'+
       (gaps.length?'<div class="bp-st">평균 구매주기 <b>'+avgGap+'일</b> · 최단 '+Math.min.apply(null,gaps)+'일 · 최장 '+Math.max.apply(null,gaps)+'일 · 최근 입고 후 <b>'+since+'일</b> 경과 · 다음 예상 <b class="bp-nx">'+bpYmd(nextT)+'</b> · '+(left>=0?left+'일 남음':(-left)+'일 지남')+'</div>':'');
     var T=D.slice().reverse();
-    h+='<div class="sbox" style="margin-top:12px"><table style="min-width:900px"><thead><tr><th class="n">순위</th><th>입고일자</th><th>매입처</th><th class="n">매입단가</th><th class="n">이전단가</th><th>인상·인하</th><th class="n">차액</th><th class="n">변동률</th><th class="n">수량</th><th class="n">매입액</th><th class="n">건수</th></tr></thead><tbody>'+
+    h+='<div class="sbox" style="margin-top:12px"><table class="gs" style="min-width:900px"><thead><tr><th class="n">순위</th><th>입고일자</th><th>매입처</th><th class="n">매입단가</th><th class="n">이전단가</th><th>인상·인하</th><th class="n">차액</th><th class="n">변동률</th><th class="n">수량</th><th class="n">매입액</th><th class="n">건수</th></tr></thead><tbody>'+
       T.map(function(x,k){ var j=n-1-k, pv=j>0?D[j-1].price:null, df=pv==null?null:x.price-pv, rt=pv?df/pv*100:null;
         var ch=pv==null?'<span class="muted">최초</span>':Math.round(df)>0?'<span class="ar-red">▲ 인상</span>':Math.round(df)<0?'<span class="bp-dn">▼ 인하</span>':'<span class="muted">- 동일</span>';
         var cl=df==null||Math.round(df)===0?'':(df>0?' ar-red':' bp-dn');
@@ -2039,6 +2042,34 @@
   }
   window.addEventListener('resize', function(){ setTimeout(function(){ if(SP&&SP.paint&&$('spSvg')) SP.paint(); }, 160); });
 
+
+  /* ── 제목 눌러 정렬(표 class="gs"): 숫자 칸은 큰 값부터, 글자 칸은 가나다순, 다시 누르면 반대. 빈 값은 늘 맨 아래 ── */
+  function gsVal(td){
+    if(!td) return null;
+    var v=td.hasAttribute('data-v') ? td.getAttribute('data-v') : td.textContent.trim();
+    if(v===''||v==='—'||v==='-') return null;
+    if(td.hasAttribute('data-v') && isFinite(+v)) return +v;
+    var t=String(v).replace(/,/g,'').trim(), m=/^([+\-]?\d+(\.\d+)?)\s*(종|일|개|건|곳|원|%|kg|KG|EA)?$/.exec(t);
+    if(m) return +m[1];
+    return String(v);
+  }
+  document.addEventListener('click', function(e){
+    var th=e.target.closest && e.target.closest('table.gs > thead th'); if(!th) return;
+    var tb=th.closest('table'), body=tb.tBodies[0]; if(!body) return;
+    var idx=[].indexOf.call(th.parentNode.children, th), num=th.classList.contains('n');
+    var dir = th.classList.contains('on') ? -(+th.getAttribute('data-dir')||1) : (num?-1:1);
+    tb.querySelectorAll('thead th').forEach(function(x){ x.classList.remove('on'); var i=x.querySelector('i.gsi'); if(i) i.remove(); });
+    th.classList.add('on'); th.setAttribute('data-dir', dir);
+    var ic=document.createElement('i'); ic.className='gsi'; ic.textContent=dir<0?'▼':'▲'; th.appendChild(ic);
+    var rows=[].slice.call(body.rows);
+    rows.sort(function(a,b){
+      var x=gsVal(a.cells[idx]), y=gsVal(b.cells[idx]);
+      if(x===null && y===null) return 0; if(x===null) return 1; if(y===null) return -1;
+      if(typeof x==='number' && typeof y==='number') return (x-y)*dir;
+      return String(x).localeCompare(String(y),'ko',{numeric:true})*dir;
+    });
+    rows.forEach(function(r){ body.appendChild(r); });
+  });
   function bomBind(){
     var bk=$('bmBack'); if(bk) bk.addEventListener('click', function(){ nav(bomList); });
     $('srin').querySelectorAll('tr[data-fr]').forEach(function(tr){ tr.addEventListener('click', function(){ var c=tr.getAttribute('data-fr'); nav(function(){ bomRaw(c, true); }); }); });
