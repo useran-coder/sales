@@ -1757,6 +1757,10 @@
     return Promise.all([bomLoad(), ensure('sales',cur).catch(function(){ return null; }), ensure('purch',cur).catch(function(){ return null; })]).then(function(){
       if(!hadS && DATA.sales) BOM_NM=null;   // 매출 품목명으로 이름 없는 BOM 품번 채우기
       var ts=terms(q), seen={}, prods=[], raws=[];
+      // «도어록보강 동방노보펌»처럼 업체명이 섞여 있으면 → 그 업체의 해당 제품 매출·매입
+      var ALL=(DATA.sales||[]).concat(DATA.purch||[]);
+      if(ALL.length){ var spl=splitTerms(ALL, ts, false);
+        if(spl.c.length){ BM={q:q, prods:[], raws:[], party:spl}; return bomParty(q, spl); } }
       function hay(cd, inf){ return norm(cd)+' '+norm(inf.name)+' '+norm(inf.spec); }
       function hit(cd, inf){ var h=hay(cd,inf); return ts.every(function(t){ return h.indexOf(t)>=0; }); }
       Object.keys(BOMD.bom).forEach(function(cd){   // 하위가 있는 품목 = 제품·반제품
@@ -1777,8 +1781,65 @@
       bomList();
     });
   }
+
+  // 업체 + 제품 : 그 업체의 매출(매입처면 매입) 제품별 요약, 줄을 누르면 거래 이력
+  function bomParty(q, spl){
+    var y=new Date().getFullYear(), sec=[], PV={};
+    [['sales','📈 매출','sp','업체'],['purch','📦 매입','pp','매입처']].forEach(function(S){
+      var R=DATA[S[0]]||[], rows=R.filter(function(r){ return r.party && hitAll(r.ck,spl.c) && (!spl.p.length || hitAll(r.pk,spl.p)); });
+      if(!rows.length) return;
+      var parties={}; rows.forEach(function(r){ parties[r.party]=(parties[r.party]||0)+(r.supply||0); });
+      var G=groupBy(rows,function(r){ return r.code+'|'+r.name+'|'+r.spec; }).map(function(g){
+        var st=stats(g.rows), f=g.rows[0], yq=0, ya=0; g.rows.forEach(function(r){ if(r.y===y){ yq+=r.qty; ya+=r.supply||0; } });
+        return {rows:g.rows, f:f, st:st, yq:yq, ya:ya, label:f.code+' '+f.name+' '+f.spec};
+      }).sort(function(a,b){ return b.st.last.t-a.st.last.t; });
+      PV[S[2]]=G;
+      var pl=Object.keys(parties).sort(function(a,b){ return parties[b]-parties[a]; });
+      var tot=G.reduce(function(a,g){ return a+g.st.amt; },0), ytot=G.reduce(function(a,g){ return a+g.ya; },0);
+      sec.push('<div class="bm-sec">'+S[1]+' · '+pl.map(function(x){ return '<b>'+esc(x)+'</b>'; }).join(', ')+' <span class="muted">— '+G.length+'개 제품 · 올해 '+won(ytot)+'원 · 전체 '+won(tot)+'원 · 줄을 누르면 거래 이력</span></div>'+
+        '<div class="sbox" style="margin-bottom:16px"><table class="gs" style="min-width:1100px"><thead><tr><th>품번</th><th>품명</th><th>규격</th><th class="n">최근 단가</th><th class="n">최근 거래</th>'+(pl.length>1?'<th>'+S[3]+'</th>':'')+'<th class="n">올해 수량</th><th class="n">올해 금액</th><th class="n">전체 수량</th><th class="n">전체 금액</th><th class="n">건수</th><th></th></tr></thead><tbody>'+
+        G.map(function(g,i){ var inB=BOMD && bomKids(g.f.code).length ? g.f.code : (BOMD ? bomFind(g.f.code) : '');
+          return '<tr class="pick" data-pv="'+S[2]+'" data-gi="'+i+'"><td class="code">'+esc(g.f.code)+'</td><td class="nm"><b>'+esc(g.f.name)+'</b></td><td>'+esc(g.f.spec)+'</td><td class="n" data-v="'+(g.st.lastP?g.st.lastP.price:'')+'"><b>'+(g.st.lastP?won(g.st.lastP.price):'—')+'</b></td><td class="d">'+ymd(g.st.last.t)+'</td>'+
+            (pl.length>1?'<td>'+esc(g.st.last.party)+'</td>':'')+'<td class="n" data-v="'+g.yq+'">'+(g.yq?num(g.yq):'—')+'</td><td class="n" data-v="'+g.ya+'">'+(g.ya?won(g.ya):'—')+'</td><td class="n">'+num(g.st.qty)+'</td><td class="n">'+won(g.st.amt)+'</td><td class="n">'+g.st.n+'</td>'+
+            '<td>'+(inB?'<button type="button" class="co-tab bm-go" data-bom="'+esc(inB)+'" style="padding:3px 10px;font-size:12px">BOM·원자재 →</button>':'')+'</td></tr>'; }).join('')+'</tbody></table></div>');
+    });
+    var ttl='제품/원자재 검색 · '+esc(q);
+    if(!sec.length){ show(head(ttl,'0건')+'<div class="snote">«'+esc(spl.c.join(' '))+'» 업체에서 «'+esc(spl.p.join(' ')||'전체')+'» 거래를 찾지 못했습니다.</div>'+bomFoot()); return; }
+    show(head(ttl)+sec.join('')+'<div class="snote">업체명과 제품명을 섞어 쓰면(순서 상관없음) 그 업체의 제품 거래만 모아 보여 줍니다. «BOM·원자재 →»를 누르면 그 제품의 원자재·매출 추이 화면으로 갑니다.</div>'+bomFoot());
+    $('srin').querySelectorAll('tr[data-pv]').forEach(function(tr){ tr.addEventListener('click', function(e){
+      var b=e.target.closest('button[data-bom]');
+      if(b){ var c=b.getAttribute('data-bom'); nav(function(){ bomProd(c, true); }); return; }
+      var mode=tr.getAttribute('data-pv'), it=PV[mode][+tr.getAttribute('data-gi')];
+      VIEW={mode:mode, q:q, year:'', party:'', sortKey:'', dir:-1, items:[], cols:[]};
+      nav(function(){ histPanel(it); },{overlay:true});
+    }); });
+  }
+  function bomHas(t){ var I=BOMD.info; for(var c in I){ var x=I[c]; if((norm(c)+' '+norm(x.name)+' '+norm(x.spec)).indexOf(t)>=0) return true; } return false; }
+
+  // 검색한 제품을 매출한 업체(올해·전체), 줄을 누르면 그 업체의 이 제품 거래
+  function custSection(rows, pTerms, title){
+    if(!rows || !rows.length) return '';
+    var y=new Date().getFullYear(), m={};
+    rows.forEach(function(r){ if(!r.party) return; var x=m[r.party]||(m[r.party]={p:r.party, yq:0, ya:0, q:0, a:0, n:0, t:0, codes:{}});
+      x.q+=r.qty||0; x.a+=r.supply||0; x.n++; if(r.y===y){ x.yq+=r.qty||0; x.ya+=r.supply||0; } if(r.t>x.t){ x.t=r.t; x.lp=r.ok?r.price:x.lp; } x.codes[r.code]=1; });
+    var L=Object.keys(m).map(function(k){ return m[k]; }).sort(function(a,b){ return b.ya-a.ya || b.a-a.a; });
+    CUSTP={L:L, p:pTerms};
+    return '<div class="bm-sec" style="margin-top:4px">🏢 '+(title||'매출한 업체')+' <b>'+L.length+'</b>곳 <span class="muted">— 업체를 누르면 그 업체의 이 제품 거래</span></div>'+
+      '<div class="sbox" style="margin-bottom:16px"><table class="gs" style="min-width:900px"><thead><tr><th>업체</th><th class="n">제품 수</th><th class="n">올해 수량</th><th class="n">올해 금액</th><th class="n">전체 수량</th><th class="n">전체 금액</th><th class="n">최근 단가</th><th class="n">최근 거래</th><th class="n">건수</th></tr></thead><tbody>'+
+      L.map(function(x,i){ return '<tr class="pick" data-cp="'+i+'"><td class="nm"><b>'+esc(x.p)+'</b></td><td class="n">'+Object.keys(x.codes).length+'</td><td class="n" data-v="'+x.yq+'">'+(x.yq?num(x.yq):'—')+'</td><td class="n" data-v="'+x.ya+'">'+(x.ya?won(x.ya):'—')+'</td><td class="n">'+num(x.q)+'</td><td class="n">'+won(x.a)+'</td><td class="n" data-v="'+(x.lp||'')+'">'+(x.lp?won(x.lp):'—')+'</td><td class="d">'+ymd(x.t)+'</td><td class="n">'+x.n+'</td></tr>'; }).join('')+
+      '</tbody></table></div>';
+  }
+  var CUSTP=null;
+  function custBind(){
+    $('srin').querySelectorAll('tr[data-cp]').forEach(function(tr){ tr.addEventListener('click', function(){
+      var x=CUSTP.L[+tr.getAttribute('data-cp')], spl={c:[norm(x.p)], p:CUSTP.p.slice()}, q=x.p+' '+(CUSTP.label||'');
+      nav(function(){ BM={q:q, prods:[], raws:[], party:spl}; bomParty(q, spl); });
+    }); });
+  }
+  function bomFind(code){ var k=bomNk(code), B=BOMD.bom; for(var c in B){ if(bomNk(c)===k) return c; } return ''; }
   function bomFoot(){ return '<div class="snote">자료: 제품별 제조원가 프로그램 '+(BOMD&&BOMD.ver?esc(BOMD.ver)+' ':'')+'BOM ('+(BOMD?BOMD.n.toLocaleString():0)+'개 품목 구성). BOM 수량은 제조원가 프로그램에 적힌 값 그대로입니다.</div>'; }
   function bomList(){
+    if(BM.party) return bomParty(BM.q, BM.party);
     var P=BM.prods, R=BM.raws;
     if(!P.length && !R.length){ show(head('제품/원자재 검색 · '+esc(BM.q),'0건')+'<div class="snote">BOM 에서 찾지 못했습니다. 제품은 품번·품명·규격 일부(예: DB-2BH134, 십자앙카), 원자재는 이름·두께(예: EGI 1.6, STS430)로 찾아 보세요.</div>'+bomFoot()); return; }
     var LIM=300, h='';
@@ -1788,7 +1849,10 @@
     if(P.length) h+='<div class="bm-sec">📦 제품·반제품 <b>'+P.length+'</b>건 <span class="muted">— 누르면 이 제품에 쓰는 원자재</span></div><div class="sbox"><table class="gs" style="min-width:1000px"><thead><tr><th>구분</th><th>품번</th><th>품명</th><th>규격</th><th class="n">하위 품목</th><th class="n">월평균 매출 (수량/금액)</th><th class="n">올해 매출 (수량/금액)</th></tr></thead><tbody>'+
       P.slice(0,LIM).map(function(p,i){ var v=DATA.sales?spSum(spQuick(p.code,{name:p.name,spec:p.spec})):null; return '<tr class="pick" data-bp="'+i+'"><td>'+bomKind(p.kind)+'</td><td class="code">'+esc(p.code)+'</td><td class="nm"><b>'+esc(p.name)+'</b></td><td>'+esc(p.spec)+'</td><td class="n">'+p.n+'개</td>'+
         (v&&(v.q||v.a)?'<td class="n" data-v="'+v.ma+'">'+qa(v.mq,v.ma)+'</td><td class="n" data-v="'+v.a+'">'+qa(v.q,v.a)+'</td>':'<td class="n muted" data-v="">올해 매출 없음</td><td class="n muted" data-v="">—</td>')+'</tr>'; }).join('')+'</tbody></table></div>';
+    if(P.length && DATA.sales){ var seenR=new Set(), cr=[]; P.slice(0,LIM).forEach(function(p){ spQuick(p.code,{name:p.name,spec:p.spec}).forEach(function(r){ if(!seenR.has(r)){ seenR.add(r); cr.push(r); } }); });
+      h+=custSection(cr, terms(BM.q), '검색한 제품을 매출한 업체'); if(CUSTP) CUSTP.label=BM.q; }
     show(head('제품/원자재 검색 · '+esc(BM.q), (P.length+R.length).toLocaleString()+'건')+h+((P.length>LIM||R.length>LIM)?'<div class="snote">각 '+LIM+'건까지만 표시합니다. 검색어를 더 좁혀 주세요.</div>':'')+'<div class="snote">월평균 = 올해 합계 ÷ 올해 지난 개월 수(이번 달 포함). 발주주기 = 입고한 날들 사이의 평균 일수(전체 기간).</div>'+bomFoot());
+    custBind();
     $('srin').querySelectorAll('tr[data-bp]').forEach(function(tr){ tr.addEventListener('click', function(){ var c=BM.prods[+tr.getAttribute('data-bp')].code; nav(function(){ bomProd(c, true); }); }); });
     $('srin').querySelectorAll('tr[data-br]').forEach(function(tr){ tr.addEventListener('click', function(){ var c=BM.raws[+tr.getAttribute('data-br')].code; nav(function(){ bomRaw(c, true); }); }); });
   }
@@ -1812,6 +1876,7 @@
     var nRaw=fl.filter(function(f){ return f.kind==='원자재'; }).length;
     var h='<div class="co-card"><div class="co-row" style="border:none"><span class="co-i"><span class="muted" style="font-size:12px">품번</span>'+esc(code)+'</span><span class="co-i"><span class="muted" style="font-size:12px">품명</span><b>'+esc(inf.name)+'</b></span>'+(inf.spec?'<span class="co-i"><span class="muted" style="font-size:12px">규격</span>'+esc(inf.spec)+'</span>':'')+'<span class="co-i"><span class="muted" style="font-size:12px">원자재</span><b>'+nRaw+'</b>종</span></div></div>';
     h+=spSection(code, inf);
+    if(SP && SP.rows){ var pc=SP.rows[0].code; h+=custSection(SP.rows, [norm(pc)], '이 제품을 매출한 업체'); if(CUSTP) CUSTP.label=inf.name+(inf.spec?' '+inf.spec:''); }
     h+='<div class="bm-sec">🧱 사용 원자재·부자재 <span class="muted">— 자재를 누르면 이 자재를 쓰는 다른 제품</span></div>';
     h+=fl.length?'<div class="sbox" style="margin-bottom:16px"><table class="gs" style="min-width:700px"><thead><tr><th>구분</th><th>자재 품번</th><th>품명</th><th>규격</th><th>단위</th><th>들어가는 곳</th></tr></thead><tbody>'+
       fl.map(function(f,i){ var v=f.via.filter(function(x,j,a){ return a.indexOf(x)===j; }); return '<tr class="pick" data-fr="'+esc(f.code)+'"><td>'+bomKind(f.kind)+'</td><td class="code">'+esc(f.code)+'</td><td class="nm"><b>'+esc(f.name)+'</b></td><td>'+esc(f.spec)+'</td><td class="d">'+esc(f.unit||'')+'</td><td class="muted" style="font-size:12px">'+esc(v.slice(0,4).join(' · '))+(v.length>4?' 외 '+(v.length-4):'')+'</td></tr>'; }).join('')+'</tbody></table></div>'
@@ -1820,7 +1885,7 @@
     h+='<div class="bm-sec">🌳 BOM 구성</div><div class="sbox"><table style="min-width:700px"><thead><tr><th>품목</th><th>구분</th><th>품번</th><th class="n">BOM 수량</th></tr></thead><tbody>'+
       rows.map(function(r){ return '<tr'+(bomIsRaw(r.kind)?' class="pick" data-fr="'+esc(r.code)+'"':'')+'><td class="nm" style="padding-left:'+(10+r.d*22)+'px">'+(r.d?'<span class="muted">└ </span>':'')+'<b>'+esc(r.name)+'</b> <span class="muted">'+esc(r.spec||'')+'</span></td><td>'+bomKind(r.kind)+'</td><td class="code">'+esc(r.code)+'</td><td class="n">'+esc(r.qty==null?'':r.qty)+' '+esc(r.unit||'')+'</td></tr>'; }).join('')+'</tbody></table></div>';
     show(head(esc(inf.name||code)+(inf.spec?' <span class="muted" style="font-weight:400">'+esc(inf.spec)+'</span>':'')+' · 사용 원자재')+(back&&BM?'<button type="button" class="co-tab" id="bmBack" style="margin-bottom:12px">← 목록으로</button>':'')+h+bomFoot());
-    bomBind(); spDraw(); bpPaintAll();
+    bomBind(); custBind(); spDraw(); bpPaintAll();
   }
   // 원자재 → 들어가는 최상위 제품(반제품 거쳐)
   function bomTops(code){
