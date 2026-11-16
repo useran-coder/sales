@@ -13,7 +13,7 @@
   :root{
     --bg:#000; --card:#111214; --card-h:#1a1c20; --line:#2a2d33;
     --text:#f2f3f5; --sub:#9aa0a8; --dim:#6b7078;
-    --sales:#3b82f6; --purchase:#10b981; --cost:#a78bfa; --team:#f472b6; --coil:#22d3ee; --new:#f59e0b;
+    --sales:#3b82f6; --purchase:#10b981; --cost:#a78bfa; --team:#f472b6; --coil:#22d3ee; --price:#fb923c; --new:#f59e0b;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--text)}
@@ -381,6 +381,7 @@
   #updNote .u-cat.purchase{color:#047857;background:#ecfdf5;border-color:#a7f3d0}
   #updNote .u-cat.cost{color:#6d28d9;background:#f5f3ff;border-color:#ddd6fe}
   #updNote .u-cat.coil{color:#0e7490;background:#ecfeff;border-color:#a5f3fc}
+  #updNote .u-cat.price{color:#c2410c;background:#fff7ed;border-color:#fed7aa}
   #updNote .u-cat.salesteam{color:#be185d;background:#fdf2f8;border-color:#fbcfe8}
   #updNote .u-cat.home{color:#b45309;background:#fffbeb;border-color:#fde68a}
   #updNote .u-d{font-weight:700;color:#1e293b;line-height:1.4;word-break:keep-all}
@@ -460,6 +461,9 @@
       url:'https://useran-coder.github.io/sales/',    repo:'sales' },
     { key:'purchase', name:'매입 분석 도구', icon:'📦', color:'var(--purchase)',
       url:'https://useran-coder.github.io/purchase/', repo:'purchase' },
+    // 단가표 만들기 = 매출 분석 도구와 같은 파일을 «단가표 전용 화면»으로 엶 → 업데이트 일자·버전은 매출 분석 도구 것
+    { key:'price',    name:'단가표 만들기',  icon:'💲', color:'var(--price)',
+      url:'https://useran-coder.github.io/price/',    repo:'sales', src:'https://useran-coder.github.io/sales/' },
     { key:'cost',     name:'가공비 견적기',  icon:'🧮', color:'var(--cost)',
       url:'https://useran-coder.github.io/cost/',     repo:'cost' },
     { key:'coil',     name:'코일 슬리팅 조합 · 발주기', icon:'🌀', color:'var(--coil)',
@@ -545,7 +549,7 @@
   function viaPages(t){
     var ctl = window.AbortController ? new AbortController() : null;
     var timer = ctl ? setTimeout(function(){ ctl.abort(); }, 15000) : null;
-    return fetch(t.url, {headers:{Range:'bytes=0-40000'}, cache:'no-store', signal: ctl?ctl.signal:undefined}).then(function(r){
+    return fetch(t.src||t.url, {headers:{Range:'bytes=0-40000'}, cache:'no-store', signal: ctl?ctl.signal:undefined}).then(function(r){
       var lm = r.headers.get('Last-Modified');
       return headText(r).then(function(s){
         if(ctl) ctl.abort();
@@ -668,7 +672,7 @@
     if(selfNew) rows.push('<div class="u-row"><span class="u-cat home">홈페이지</span><div class="u-d">업무분석도구 홈페이지 새 버전</div>'
       + '<div class="u-m">' + esc(md(new Date(selfNew))) + ' 배포</div></div>');
     TOOLS.forEach(function(t){
-      var u = pendUpd[t.key]; if(!u) return;
+      var u = pendUpd[t.key]; if(!u || t.src) return;   // 단가표 만들기는 매출 분석 도구와 같은 파일 → 알림은 매출 분석 도구 한 줄로
       var v = u.info.ver, ov = u.old && u.old.ver;
       var d = v ? ((ov && ov !== v) ? ov + ' → ' + v : v) + ' 새 버전' : '새 버전';
       rows.push('<div class="u-row"><span class="u-cat ' + t.key + '">' + esc(t.name) + '</span><div class="u-d">' + esc(d) + '</div>'
