@@ -1800,7 +1800,8 @@
     return BOMP;
   }
   // 품번 맞추기: BHIA00001_G(260610) → BHIA1, DLIAP00004_N → DLIAP4 (제조원가 제품목록은 DLIAP0004 처럼 자릿수가 다름)
-  function bomNk(c){ c=String(c||'').toUpperCase().replace(/_.*$/,''); var m=/^([A-Z]+)(\d+)$/.exec(c); return m ? m[1]+(+m[2]) : c; }
+  // 품번 맞추기: BHIA00001_N → BHIA1. TB_A1_02·IN_A6_01 처럼 밑줄이 품번의 일부인 것은 통째로(전엔 «TB» 로 잘려 상하보강이 모두 같은 매출로 보였음)
+  function bomNk(c){ c=String(c||'').toUpperCase().replace(/\s+/g,'').replace(/\(.*$/,''); var m=/^([A-Z]+)(\d+)(_.*)?$/.exec(c); return m ? m[1]+(+m[2]) : c; }
   var BOM_NM=null;
   function bomNames(){
     if(BOM_NM) return BOM_NM; var M={};
@@ -1982,12 +1983,51 @@
     var x=P.forRaw(grade,t,w);
     if(!x) return '<div class="bm-sec">'+title+'</div><div class="snote">생산일지에 이 원자재 사용 기록이 없습니다. ('+esc(P.note())+')</div>';
     var ms=P.recentMonths(12), a=P.avg(x.byYm,12);
-    return '<div class="bm-sec">'+title+' <b>'+x.list.length+'</b>종 <span class="muted">— 월평균 '+won(a)+'kg ('+esc((ms[0]||'').replace('-','.'))+'~'+esc((ms[ms.length-1]||'').replace('-','.'))+', 이번 달 제외) · 합계 '+won(x.used)+'kg · 제품을 누르면 그 제품 화면</span></div>'+
+    return plcBox(x, grade, t, w)+'<div class="bm-sec">'+title+' <b>'+x.list.length+'</b>종 <span class="muted">— 월평균 '+won(a)+'kg ('+esc((ms[0]||'').replace('-','.'))+'~'+esc((ms[ms.length-1]||'').replace('-','.'))+', 이번 달 제외) · 합계 '+won(x.used)+'kg · 제품을 누르면 그 제품 화면</span></div>'+
       '<div class="sbox" style="margin-bottom:16px"><table class="gs" style="min-width:1000px"><thead><tr><th>품번</th><th>품명</th><th>규격</th><th class="n">사용중량</th><th class="n">생산수량</th><th class="n">EA당 실사용</th><th class="n">비중</th><th class="n">건수</th><th class="n">최근</th><th class="n">올해 매출 (수량/금액)</th></tr></thead><tbody>'+
       x.list.map(function(p){ var v=DATA.sales?spSum(spQuick(p.code,{name:p.name,spec:p.spec})):null, bc=BOMD?(bomKids(p.code).length?p.code:(bomFind(p.code)||p.code)):p.code;
         return '<tr class="pick" data-fp="'+esc(bc)+'"><td class="code">'+esc(p.code)+'</td><td class="nm"><b>'+esc(p.name)+'</b></td><td>'+esc(p.spec)+'</td><td class="n" data-v="'+p.used+'">'+kg(p.used)+'</td><td class="n">'+won(p.prod)+'</td><td class="n" data-v="'+(p.prod?p.used/p.prod:'')+'">'+(p.prod>0?num(Math.round(p.used/p.prod*1000)/1000)+' kg':'—')+'</td><td class="n">'+(x.used>0?Math.round(p.used/x.used*100):0)+'%</td><td class="n">'+won(p.n)+'</td><td class="d">'+esc(p.last)+'</td>'+
           (v&&(v.q||v.a)?'<td class="n" data-v="'+v.a+'">'+qa(v.q,v.a)+'</td>':'<td class="n muted" data-v="">—</td>')+'</tr>'; }).join('')+'</tbody></table></div>';
   }
+  /* 원자재 월별 사용 추이(1~12월) — 매출 추이 그래프와 같은 모양, 자료 = 생산일지 사용중량·생산수량 */
+  var PLC=null;
+  function plcBox(x, grade, t, w){
+    var yrs={}; Object.keys(x.byYm).forEach(function(m){ yrs[+m.slice(0,4)]=1; });
+    var yl=Object.keys(yrs).map(Number).sort(function(a,b){ return b-a; }); if(!yl.length) return '';
+    PLC={x:x, label:(grade||x.grade||'')+' '+t+'x'+w, yl:yl, year:yl[0], m:'used'};
+    return '<div class="bp" id="plcBox" style="margin-bottom:14px"></div>';
+  }
+  function plcDraw(){
+    var S=PLC, box=$('plcBox'); if(!S||!box) return;
+    var P=window.PLOG, now=new Date(), cy=now.getFullYear(), cm=now.getMonth()+1, last=S.year===cy?cm:12;
+    var first=(P.months[0]||''), lastM=(P.months[P.months.length-1]||'');
+    var used=[], prod=[], vals=[], pmon={};
+    for(var i=0;i<12;i++){ var ym=S.year+'-'+('0'+(i+1)).slice(-2); used.push(S.x.byYm[ym]||0); var q=0;
+      S.x.list.forEach(function(p){ q+=(p.qYm&&p.qYm[ym])||0; var u=(p.byYm&&p.byYm[ym])||0; if(u>0) pmon[p.code||p.name]=(pmon[p.code||p.name]||{p:p,u:0}), pmon[p.code||p.name].u+=u; });
+      prod.push(q);
+      var has=ym>=first && ym<=lastM;   // 생산일지에 기록이 시작되기 전·후 달은 점 없음
+      vals.push(has?(S.m==='used'?used[i]:prod[i]):null); }
+    var tot=vals.reduce(function(a,b){ return a+(b||0); },0);
+    var use=[]; for(var k=0;k<last;k++){ if(S.year===cy && k===cm-1) continue; if(vals[k]>0) use.push(k); }
+    var avg=use.length?use.reduce(function(a,k){ return a+vals[k]; },0)/use.length:0;
+    var iMx=-1, iMn=-1; use.forEach(function(k){ if(iMx<0||vals[k]>vals[iMx]) iMx=k; if(iMn<0||vals[k]<vals[iMn]) iMn=k; });
+    var u=S.m==='used'?'kg':'EA', f=function(v){ return won(Math.round(v)); };
+    var h='<div class="bp-h"><b>📈 '+esc(S.label)+' / '+S.year+'년 · 월별 사용 추이</b>'+
+      S.yl.map(function(y){ return '<button type="button" class="chip sm'+(S.year===y?' on':'')+'" data-ply="'+y+'">'+y+'년</button>'; }).join('')+
+      '<span class="co-vw"><button type="button" class="co-vb'+(S.m==='used'?' on':'')+'" data-plm="used">사용중량</button><button type="button" class="co-vb'+(S.m==='prod'?' on':'')+'" data-plm="prod">생산수량</button></span>'+
+      '<span class="bp-sub" style="margin-left:auto">합계 <b style="color:var(--text)">'+f(tot)+'</b>'+u+' · <span style="color:#fbbf24">평균 <b>'+f(avg)+'</b>'+u+'(사용월 '+use.length+'개월)</span>'+
+      (iMx>=0?' · <span class="ar-red">최고 <b>'+f(vals[iMx])+'</b>('+(iMx+1)+'월)</span> · <span style="color:#34d399">최저 <b>'+f(vals[iMn])+'</b>('+(iMn+1)+'월)</span>':'')+'</span></div>'+
+      '<div class="bp-svg" id="plcSvg"></div>'+
+      '<div class="bp-st" style="text-align:right">자료: 원자재 사용현황(생산일지) '+esc(first.replace('-','.'))+'~'+esc(lastM.replace('-','.'))+' · 기록 없는 달은 점 없음 · '+(S.year===cy?cm+'월(진행 중)·':'')+'0인 달은 평균·최고·최저에서 제외 · <span style="color:#60a5fa">━ 실적</span> <span style="color:#fbbf24">┅ 평균</span>'+(S.year===cy?' <span class="ar-red">┆ '+cm+'월 현재</span>':'')+'</div>';
+    var pl=Object.keys(pmon).sort(function(a,b){ return pmon[b].u-pmon[a].u; });
+    if(pl.length) h+='<div class="bp-st" style="margin-top:8px">'+S.year+'년 사용 제품 '+pl.length+'종 : '+pl.slice(0,8).map(function(k){ var p=pmon[k].p; return esc(p.name+(p.spec?' '+p.spec:''))+' <b>'+won(Math.round(pmon[k].u))+'kg</b>'; }).join(' · ')+(pl.length>8?' 외 '+(pl.length-8)+'종':'')+'</div>';
+    box.innerHTML=h;
+    S.paint=function(){ var el=$('plcSvg'); if(!el) return; var W=el.clientWidth||1000; if(window.innerWidth<=700) W=Math.max(680,W); el.innerHTML=spChart(vals, last, avg, iMx, iMn, S.year===cy?cm:0, f, W); };
+    S.paint();
+    box.querySelectorAll('[data-ply]').forEach(function(b){ b.addEventListener('click', function(){ PLC.year=+b.getAttribute('data-ply'); plcDraw(); }); });
+    box.querySelectorAll('[data-plm]').forEach(function(b){ b.addEventListener('click', function(){ PLC.m=b.getAttribute('data-plm'); plcDraw(); }); });
+  }
+  window.addEventListener('resize', function(){ setTimeout(function(){ if(PLC&&PLC.paint&&$('plcSvg')) PLC.paint(); }, 160); });
   function plogProdSection(code){
     var P=window.PLOG; if(!P||!P.ok()) return '';
     var x=P.forProd(code);
@@ -2007,6 +2047,7 @@
     bomBind(); bpPaintAll(); plogBind();
   }
   function plogBind(){
+    if($('plcBox') && !$('plcBox').firstChild) plcDraw();
     $('srin').querySelectorAll('tr[data-plr]').forEach(function(tr){ if(tr.__plb) return; tr.__plb=1; tr.addEventListener('click', function(){ var a=tr.getAttribute('data-plr').split('|'); nav(function(){ plogRaw(a[0], +a[1], +a[2], true); }); }); });
   }
   function bomList(){
@@ -2268,17 +2309,18 @@
   }
   function spChart(vals, last, avg, iMx, iMn, curM, f, W){
     var H=330, L=96, R=150, T=34, B=58, iw=W-L-R, ih=H-T-B;
-    var mx=Math.max.apply(null, vals.slice(0,last).concat([avg,1])), top=mx*1.08;
+    var mx=Math.max.apply(null, vals.slice(0,last).map(function(v){ return v||0; }).concat([avg,1])), top=mx*1.08;   // null = 자료 없는 달(점·선 없음)
     var X=function(k){ return L+iw*k/11; }, Y=function(v){ return T+ih-(Math.max(0,v)/top)*ih; };
     var o='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block;font-size:12px">';
     for(var g=0;g<=4;g++){ var v=top*g/4, yy=Y(v); o+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yy+'" y2="'+yy+'" stroke="#23262c"/><text x="'+(L-8)+'" y="'+(yy+4)+'" text-anchor="end" fill="#6b7078">'+f(Math.round(v))+'</text>'; }
     if(avg>0){ var ya=Y(avg); o+='<line x1="'+L+'" x2="'+(W-R+20)+'" y1="'+ya+'" y2="'+ya+'" stroke="#f59e0b" stroke-width="1.3" stroke-dasharray="7 5"/><rect x="'+(W-R+22)+'" y="'+(ya-11)+'" width="'+(R-26)+'" height="22" rx="11" fill="#1f1606" stroke="#f59e0b"/><text x="'+(W-R+22+(R-26)/2)+'" y="'+(ya+4)+'" text-anchor="middle" fill="#fbbf24" font-weight="700" font-size="11.5">평균 '+f(avg)+'</text>'; }
     if(curM){ var xc=X(curM-1); o+='<line x1="'+xc+'" x2="'+xc+'" y1="'+T+'" y2="'+(T+ih)+'" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="5 4"/><rect x="'+(xc-38)+'" y="'+(H-22)+'" width="76" height="20" rx="10" fill="#2a0d0f" stroke="#ef4444"/><text x="'+xc+'" y="'+(H-8)+'" text-anchor="middle" fill="#fca5a5" font-weight="700" font-size="11.5">'+curM+'월 현재</text>'; }
-    var pts=[]; for(var k=0;k<last;k++) pts.push([X(k),Y(vals[k])]);
-    if(pts.length>1) o+='<path d="'+pts.map(function(p,j){ return (j?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1); }).join(' ')+'" fill="none" stroke="#3b82f6" stroke-width="2.4"/>';
+    var pts=[]; for(var k=0;k<last;k++) pts.push(vals[k]==null?null:[X(k),Y(vals[k])]);
+    var d='', pv=null; pts.forEach(function(p){ if(p) d+=(pv?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)+' '; pv=p; });
+    if(d.split('L').length>1) o+='<path d="'+d+'" fill="none" stroke="#3b82f6" stroke-width="2.4"/>';
     for(var m=0;m<12;m++){ var x=X(m), sp=m===iMx?'#f87171':m===iMn?'#34d399':(m<last?'#9aa0a8':'#4b5058');
       o+='<text x="'+x+'" y="'+(T+ih+20)+'" text-anchor="middle" fill="'+sp+'"'+(m===iMx||m===iMn?' font-weight="700"':'')+'>'+(m+1)+'월</text>'; }
-    for(var q=0;q<last;q++){ var p=pts[q], big=q===iMx||q===iMn, col=q===iMx?'#ef4444':q===iMn?'#14b8a6':'#3b82f6';
+    for(var q=0;q<last;q++){ if(!pts[q]) continue; var p=pts[q], big=q===iMx||q===iMn, col=q===iMx?'#ef4444':q===iMn?'#14b8a6':'#3b82f6';
       o+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="'+(big?6:4.5)+'" fill="'+col+'" stroke="#000" stroke-width="1.5"><title>'+(q+1)+'월 '+f(vals[q])+'</title></circle>';
       o+='<text x="'+p[0]+'" y="'+(p[1]-11)+'" text-anchor="middle" fill="'+(q===iMx?'#fca5a5':q===iMn?'#5eead4':'#e5e7eb')+'" font-weight="600">'+f(vals[q])+'</text>';
       if(big){ var lb=q===iMx?'최고':'최저'; o+='<rect x="'+(p[0]-21)+'" y="'+(p[1]+10)+'" width="42" height="19" rx="9.5" fill="'+(q===iMx?'#2a0d0f':'#06201d')+'" stroke="'+col+'"/><text x="'+p[0]+'" y="'+(p[1]+23.5)+'" text-anchor="middle" fill="'+(q===iMx?'#fca5a5':'#5eead4')+'" font-size="11" font-weight="700">'+lb+'</text>'; }
