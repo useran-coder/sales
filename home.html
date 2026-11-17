@@ -2203,6 +2203,7 @@
     var rows=S.rows.filter(function(r){ return S.year==='all' || r.y===S.year; }), D=bpDaily(rows), n=D.length;
     var vend={}; rows.forEach(function(r){ vend[r.party]=1; }); var nv=Object.keys(vend).length;
     var ps=D.map(function(x){ return x.price; }), mn=Math.min.apply(null,ps), mx=Math.max.apply(null,ps), avg=ps.reduce(function(a,b){ return a+b; },0)/Math.max(1,n);
+    var DC=D.filter(function(x){ return Math.round(x.price)>Math.round(avg); }); if(DC.length<1||n<3) DC=D;   // 그래프용
     var iMn=ps.indexOf(mn), iMx=ps.lastIndexOf(mx), tq=0, ta=0, tn=0; D.forEach(function(x){ tq+=x.qty; ta+=x.amt; tn+=x.n; });
     var gaps=[]; for(var g=1; g<n; g++) gaps.push(bpDays(D[g-1].t, D[g].t));
     var avgGap=gaps.length?Math.round(gaps.reduce(function(a,b){ return a+b; },0)/gaps.length):0;
@@ -2214,6 +2215,7 @@
       '<span class="bp-sub">왼쪽 → 오른쪽: 과거 → 최근</span><span class="bp-lg"><span class="bp-vn">매입처 '+nv+'개사</span><i style="background:#f87171"></i>인상선 <i style="background:#60a5fa"></i>인하선 <i style="background:#9aa0a8"></i>동일선</span></div>';
     if(!n){ box.innerHTML=h+'<div class="snote">이 기간에 입고 기록이 없습니다.</div>'; bpBind(i); return; }
     h+='<div class="bp-svg" id="bpSvg'+i+'"></div>'+
+      (DC!==D?'<div class="bp-st" style="color:#fbbf24">그래프에는 평균단가('+won(avg)+'원) 이하 입고 '+(n-DC.length)+'회를 빼고 '+DC.length+'회만 표시합니다 · 아래 표·통계는 전체 기준</div>':'')+
       '<div class="bp-st">매입단가 최저 <b>'+won(mn)+'원</b> <span class="muted">('+bpYmd(D[iMn].t,1)+')</span> · 최고 <b class="ar-red">'+won(mx)+'원</b> <span class="muted">('+bpYmd(D[iMx].t,1)+')</span> · 평균 <b>'+won(avg)+'원</b> · 합계 <b>'+won(ta)+'원</b> · 입고 <b>'+n+'</b>회 · 기간 '+bpYmd(D[0].t)+' ~ '+bpYmd(D[n-1].t)+'</div>'+
       (gaps.length?'<div class="bp-st">평균 구매주기 <b>'+avgGap+'일</b> · 최단 '+Math.min.apply(null,gaps)+'일 · 최장 '+Math.max.apply(null,gaps)+'일 · 최근 입고 후 <b>'+since+'일</b> 경과 · 다음 예상 <b class="bp-nx">'+bpYmd(nextT)+'</b> · '+(left>=0?left+'일 남음':(-left)+'일 지남')+'</div>':'');
     var T=D.slice().reverse();
@@ -2225,7 +2227,9 @@
           '<td class="n'+cl+'">'+(df==null?'-':(df>0?'+':'')+won(df))+'</td><td class="n'+cl+'">'+(rt==null?'-':(rt>0?'+':'')+rt.toFixed(1)+'%')+'</td><td class="n">'+num(x.qty)+'</td><td class="n">'+won(x.amt)+'</td><td class="n">'+x.n+'</td></tr>'; }).join('')+
       '</tbody><tfoot><tr><td></td><td>합계</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="n">'+num(tq)+'</td><td class="n">'+won(ta)+'</td><td class="n">'+tn+'</td></tr></tfoot></table></div>';
     box.innerHTML=h;
-    S.paint=function(){ var el=$('bpSvg'+i); if(!el) return; var w=el.clientWidth||1000; if(window.innerWidth<=700) w=Math.max(680,w); el.innerHTML=bpChart(D, avg, iMn, iMx, w); };
+    // 2026-11-18 사용자 요청: 평균단가 이하 입고는 그래프에서만 빼고(표·합계·통계는 그대로) 표시
+    var cps=DC.map(function(x){ return x.price; }), cMn=cps.indexOf(Math.min.apply(null,cps)), cMx=cps.lastIndexOf(Math.max.apply(null,cps));
+    S.paint=function(){ var el=$('bpSvg'+i); if(!el) return; var w=el.clientWidth||1000; if(window.innerWidth<=700) w=Math.max(680,w); el.innerHTML=bpChart(DC, avg, cMn, cMx, w); };
     S.paint(); bpBind(i);
   }
   function bpBind(i){
@@ -2234,7 +2238,7 @@
   }
   function bpChart(D, avg, iMn, iMx, W){
     var H=330, L=58, R=40, T=30, B=78, iw=W-L-R, ih=H-T-B, n=D.length;
-    var ps=D.map(function(x){ return x.price; }), lo=Math.min.apply(null,ps), hi=Math.max.apply(null,ps), pad=Math.max((hi-lo)*0.25, hi*0.03, 1);
+    var ps=D.map(function(x){ return x.price; }), lo=Math.min.apply(null,ps.concat([avg])), hi=Math.max.apply(null,ps), pad=Math.max((hi-lo)*0.25, hi*0.03, 1);
     var y0=lo-pad, y1=hi+pad, X=function(k){ return n===1 ? L+iw/2 : L+28+(iw-56)*k/(n-1); }, Y=function(v){ return T+ih-(v-y0)/(y1-y0)*ih; };
     var o='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block;font-size:12px">';
     for(var k=0;k<=4;k++){ var v=y0+(y1-y0)*k/4, yy=Y(v); o+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yy+'" y2="'+yy+'" stroke="#23262c"/><text x="'+(L-8)+'" y="'+(yy+4)+'" text-anchor="end" fill="#6b7078">'+won(v)+'</text>'; }
