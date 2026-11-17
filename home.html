@@ -13,7 +13,7 @@
   :root{
     --bg:#000; --card:#111214; --card-h:#1a1c20; --line:#2a2d33;
     --text:#f2f3f5; --sub:#9aa0a8; --dim:#6b7078;
-    --sales:#3b82f6; --purchase:#10b981; --cost:#a78bfa; --team:#f472b6; --coil:#22d3ee; --price:#fb923c; --new:#f59e0b;
+    --sales:#3b82f6; --purchase:#10b981; --cost:#a78bfa; --team:#f472b6; --coil:#22d3ee; --price:#fb923c; --material:#f97316; --new:#f59e0b;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--text)}
@@ -240,6 +240,7 @@
   .muted{color:var(--dim)}
   .bm-sec{font-size:14px;font-weight:600;margin:4px 0 10px}
   .bm-sec .muted{font-weight:400;font-size:12.5px}
+  .plg{color:#fb923c}
   .bm-k{display:inline-block;font-size:11.5px;font-weight:700;border:1px solid;border-radius:999px;padding:1px 8px;white-space:nowrap}
   .bp{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px 14px;margin-bottom:14px}
   .bp-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px}
@@ -381,6 +382,7 @@
   #updNote .u-cat.purchase{color:#047857;background:#ecfdf5;border-color:#a7f3d0}
   #updNote .u-cat.cost{color:#6d28d9;background:#f5f3ff;border-color:#ddd6fe}
   #updNote .u-cat.coil{color:#0e7490;background:#ecfeff;border-color:#a5f3fc}
+  #updNote .u-cat.material{color:#9a3412;background:#fff7ed;border-color:#fed7aa}
   #updNote .u-cat.price{color:#c2410c;background:#fff7ed;border-color:#fed7aa}
   #updNote .u-cat.salesteam{color:#be185d;background:#fdf2f8;border-color:#fbcfe8}
   #updNote .u-cat.home{color:#b45309;background:#fffbeb;border-color:#fde68a}
@@ -464,6 +466,9 @@
     // 단가표 만들기 = 매출 분석 도구와 같은 파일을 «단가표 전용 화면»으로 엶 → 업데이트 일자·버전은 매출 분석 도구 것
     { key:'price',    name:'단가표 만들기',  icon:'💲', color:'var(--price)',
       url:'https://useran-coder.github.io/price/',    repo:'sales', src:'https://useran-coder.github.io/sales/' },
+    // 원자재 사용현황 = 생산일지 «원자재 사용현황» 구글시트를 읽어 보여 줌(시트 수정 → 1분 안에 반영)
+    { key:'material', name:'원자재 사용현황', icon:'🧱', color:'var(--material)',
+      url:'https://useran-coder.github.io/material/', repo:'material' },
     { key:'cost',     name:'가공비 견적기',  icon:'🧮', color:'var(--cost)',
       url:'https://useran-coder.github.io/cost/',     repo:'cost' },
     { key:'coil',     name:'코일 슬리팅 조합 · 발주기', icon:'🌀', color:'var(--coil)',
@@ -538,7 +543,7 @@
     return pump();
   }
   function findVer(s){
-    var m = /APP_BUILD\s*=\s*['"](v\d+)['"]/.exec(s) || /COIL_VER\s*=\s*['"](v\d+)['"]/.exec(s) || /<title>[^<]*?(v\d+)\s*<\/title>/.exec(s);
+    var m = /APP_BUILD\s*=\s*['"](v\d+)['"]/.exec(s) || /COIL_VER\s*=\s*['"](v\d+)['"]/.exec(s) || /MAT_VER\s*=\s*['"](v\d+)['"]/.exec(s) || /<title>[^<]*?(v\d+)\s*<\/title>/.exec(s);
     return m ? m[1] : '';
   }
 
@@ -1813,10 +1818,48 @@
   function bomIsRaw(k){ return k==='원자재'||k==='부자재'||k==='스크랩'; }
   var BOM_KC={'원자재':'#fbbf24','부자재':'#93c5fd','스크랩':'#9ca3af','반제품':'#c4b5fd','제품':'#6ee7b7'};
   function bomKind(k){ var c=BOM_KC[k]||'#9aa0a8'; return '<span class="bm-k" style="color:'+c+';border-color:'+c+'55">'+esc(k||'-')+'</span>'; }
+  /* 검색어 숫자는 «숫자 단위»로 맞춤: 61 이 1.6x161·MCEGIC16136 안의 61 에 걸리지 않게 */
+  function numTerm(t){ return /^\d+(\.\d+)?t?$/.test(t); }
+  function termHit(h, t){
+    if(!numTerm(t)) return h.indexOf(t)>=0;
+    var n=t.replace(/t$/,''), re=new RegExp('(^|[^0-9.])'+n.replace(/\./g,'\\.')+'(?![0-9]|\\.[0-9])');
+    return re.test(h);
+  }
+  /* 원자재 규격 검색어: «1.6 61», «EGI 1.6x61», «1.6*61», «1.6t 61», «STS430 0.8» → {grade,t,w,rest} */
+  var RAW_GR=/^(sts\d{3}[a-z]*|sus\d{3}[a-z]*|egi(-c|-s)?|hgi|gi|ga|po|cr|hr|sgcc|secc|spcc|sphc|sglcc|al|sts)$/;
+  function rawQ(ts){
+    var g='', nums=[], rest=[];
+    ts.forEach(function(t){
+      var m=/^(\d+(?:\.\d+)?)t?[x*×](\d+(?:\.\d+)?)$/.exec(t);
+      if(m){ nums.push(+m[1], +m[2]); return; }
+      if(/^\d+(\.\d+)?t?$/.test(t)){ nums.push(parseFloat(t)); return; }
+      if(!g && RAW_GR.test(t)){ g=t; return; }
+      rest.push(t);
+    });
+    if(!nums.length || nums.length>2) return null;
+    var t=nums[0], w=nums.length>1?nums[1]:null;
+    if(!(t>0 && t<=12)) return null;          // 두께가 아니면 원자재 규격 검색이 아님
+    if(w!=null && !(w>=5 && w<=2600)) return null;
+    if(w==null && !g && !/\./.test(String(t))) return null;   // «134» 같은 숫자 하나는 품번·규격 검색으로
+    return {grade:g.toUpperCase(), t:t, w:w, rest:rest};
+  }
+  function rawSpecOf(code, inf){
+    var P=window.PLOG; if(P&&P.parseRaw){ var r=P.parseRaw(inf.name, inf.spec, code); if(r) return r; }
+    var m=/(\d+(?:\.\d+)?)\s*t?\s*[x*×]\s*(\d+(?:\.\d+)?)/i.exec(String(inf.spec||'')+' '+String(inf.name||''));
+    return m?{grade:String(inf.name||'').toUpperCase().replace(/\s+/g,''), t:+m[1], w:+m[2]}:null;
+  }
+  function rawQHit(RQ, sp, nameForGrade){
+    if(!sp || Math.abs(sp.t-RQ.t)>1e-9) return false;
+    if(RQ.w!=null && Math.abs(sp.w-RQ.w)>1e-9) return false;
+    if(RQ.grade){ var P=window.PLOG, g=sp.grade||nameForGrade||''; if(!g) return false;
+      if(P&&P.gradeHit){ if(!P.gradeHit(RQ.grade, g)) return false; } else if(String(g).toUpperCase().indexOf(RQ.grade)<0) return false; }
+    return true;
+  }
+  var PLWAIT='', PLCUR=null;
   function runBom(q, cur){
     show(head('제품/원자재 검색 검색 중…')+'<div class="snote">제품별 제조원가 프로그램에서 BOM 을 읽고 있습니다.</div>');
     var hadS=!!DATA.sales;
-    return Promise.all([bomLoad(), ensure('sales',cur).catch(function(){ return null; }), ensure('purch',cur).catch(function(){ return null; })]).then(function(){
+    return Promise.all([bomLoad().catch(function(e){ if(window.PLOG&&PLOG.ok()){ BOMD=BOMD||{bom:{},alias:{},info:{},parents:{},isChild:{},ver:'',n:0}; return BOMD; } throw e; }), ensure('sales',cur).catch(function(){ return null; }), ensure('purch',cur).catch(function(){ return null; }), plogReady(cur)]).then(function(){
       if(!hadS && DATA.sales) BOM_NM=null;   // 매출 품목명으로 이름 없는 BOM 품번 채우기
       var ts=terms(q), seen={}, prods=[], raws=[];
       // «도어록보강 동방노보펌»처럼 업체명이 섞여 있으면 → 그 업체의 해당 제품 매출·매입
@@ -1824,22 +1867,35 @@
       if(ALL.length){ var spl=splitTerms(ALL, ts, false);
         if(spl.c.length){ BM={q:q, prods:[], raws:[], party:spl}; return bomParty(q, spl); } }
       function hay(cd, inf){ return norm(cd)+' '+norm(inf.name)+' '+norm(inf.spec); }
-      function hit(cd, inf){ var h=hay(cd,inf); return ts.every(function(t){ return h.indexOf(t)>=0; }); }
+      function hit(cd, inf){ var h=hay(cd,inf); return ts.every(function(t){ return termHit(h,t); }); }
+      var RQ=rawQ(ts);   // «1.6 61» 같은 원자재 규격 검색이면 두께·폭을 숫자로 정확히 비교
       Object.keys(BOMD.bom).forEach(function(cd){   // 하위가 있는 품목 = 제품·반제품
         var inf=bomInfo(cd); if(!hit(cd,inf)) return; seen[cd]=1;
         prods.push({code:cd, name:inf.name, spec:inf.spec, kind:BOMD.isChild[cd]?(inf.kind||'반제품'):'제품', n:bomKids(cd).length});
       });
       var rk={};
       Object.keys(BOMD.parents).forEach(function(cd){
-        if(seen[cd]) return; var inf=bomInfo(cd); if(!bomIsRaw(inf.kind)) return; if(!hit(cd,inf)) return;
+        if(seen[cd]) return; var inf=bomInfo(cd); if(!bomIsRaw(inf.kind)) return;
+        if(RQ){ var sp=rawSpecOf(cd,inf); if(sp){ if(!rawQHit(RQ,sp,inf.name)) return; var hh=hay(cd,inf); if(!RQ.rest.every(function(t){ return termHit(hh,t); })) return; } else if(!hit(cd,inf)) return; }
+        else if(!hit(cd,inf)) return;
         var key=cd; if(rk[key]) return; rk[key]=1;
         raws.push({code:cd, name:inf.name, spec:inf.spec, kind:inf.kind, unit:inf.unit, n:bomTops(cd).length});
       });
+      /* 생산일지에만 있는 제품(BOM 에 없음)도 제품 목록에 */
+      var PL=window.PLOG, praws=[];
+      if(PL&&PL.ok()){
+        var bk={}; prods.forEach(function(p){ bk[bomNk(p.code)]=1; });
+        PL.prodList().forEach(function(x){ var k=bomNk(x.code); if(!x.code||bk[k]) return; if(!hit(x.code,{name:x.name,spec:x.spec})) return; bk[k]=1;
+          prods.push({code:x.code, name:x.name, spec:x.spec, kind:'제품', n:0, plogOnly:true}); });
+        praws=PL.rawList().filter(function(r){ if(RQ) return !RQ.rest.length && rawQHit(RQ, r, r.grade); var h=norm(r.grade+' '+r.t+'x'+r.w); return ts.every(function(t){ return termHit(h,t); }); });
+      }
       prods.sort(function(a,b){ return (a.kind==='제품'?0:1)-(b.kind==='제품'?0:1) || String(a.name).localeCompare(String(b.name),'ko') || String(a.spec).localeCompare(String(b.spec),'ko'); });
       raws.sort(function(a,b){ return ({'원자재':0,'부자재':1,'스크랩':2}[a.kind]||3)-({'원자재':0,'부자재':1,'스크랩':2}[b.kind]||3) || b.n-a.n || String(a.name).localeCompare(String(b.name),'ko'); });
-      BM={q:q, prods:prods, raws:raws};
-      var all=prods.length+raws.length;
-      if(all===1) return prods.length ? bomProd(prods[0].code) : bomRaw(raws[0].code);
+      BM={q:q, prods:prods, raws:raws, praws:praws};
+      var all=prods.length+raws.length+praws.length;
+      if(PL && !PL.ok() && !PL.noSrv){ PLWAIT=q; PLCUR=cur; } else PLWAIT='';
+      if(RQ && !prods.length && raws.length===1){ var s1=rawSpecOf(raws[0].code, raws[0]); if(s1 && praws.every(function(r){ return Math.abs(r.t-s1.t)<1e-9 && Math.abs(r.w-s1.w)<1e-9; })) return bomRaw(raws[0].code); }
+      if(all===1) return prods.length ? bomProd(prods[0].code) : raws.length ? bomRaw(raws[0].code) : plogRaw(praws[0].grade, praws[0].t, praws[0].w);
       bomList();
     });
   }
@@ -1899,24 +1955,79 @@
     }); });
   }
   function bomFind(code){ var k=bomNk(code), B=BOMD.bom; for(var c in B){ if(bomNk(c)===k) return c; } return ''; }
-  function bomFoot(){ return '<div class="snote">자료: 제품별 제조원가 프로그램 '+(BOMD&&BOMD.ver?esc(BOMD.ver)+' ':'')+'BOM ('+(BOMD?BOMD.n.toLocaleString():0)+'개 품목 구성). BOM 수량은 제조원가 프로그램에 적힌 값 그대로입니다.</div>'; }
+  function bomFoot(){ return '<div class="snote">자료: 제품별 제조원가 프로그램 '+(BOMD&&BOMD.ver?esc(BOMD.ver)+' ':'')+'BOM ('+(BOMD?BOMD.n.toLocaleString():0)+'개 품목 구성). BOM 수량은 제조원가 프로그램에 적힌 값 그대로입니다.'+(window.PLOG?'<br><span class="plg">🏭 '+esc(PLOG.note())+'</span> — 강종·두께·폭이 같은 소재를 실제로 쓴 품번(손실 포함 사용중량)':'')+'</div>'; }
+
+  /* ── 생산일지 «원자재 사용현황» (PLOG) : 실제로 쓴 원자재 ↔ 제품 ── */
+  var PLTOK='';
+  function plogReady(cur){
+    var P=window.PLOG; if(!P) return Promise.resolve();
+    if(cur&&cur.token) PLTOK=cur.token;
+    if(!P.opt){ P.init({call:function(p){ return post(p, PLTOK); }, ready:function(){ return !!PLTOK; }, gap:function(){ return $('sr').classList.contains('on')?60000:600000; }});
+      // 생산일지가 늦게 도착하면(서버 응답 지연) 보고 있던 검색 결과를 다시 그림
+      P.on(function(){ if(PLWAIT && P.ok() && BM && BM.q===PLWAIT && $('sr').classList.contains('on')){ var q=PLWAIT; PLWAIT=''; runBom(q, PLCUR); } }); }
+    if(P.ok() && Date.now()-P.last<600000) return Promise.resolve();
+    var s=P.sync();
+    return P.ok() ? Promise.resolve() : Promise.race([s, new Promise(function(r){ setTimeout(r,5000); })]);   // 처음엔 5초까지만 기다리고, 늦으면 도착할 때 다시 그림
+  }
+  function kg(v){ return won(v)+'<span class="muted" style="font-size:11px"> kg</span>'; }
+  function plogRawTable(L, tag){
+    var P=window.PLOG;
+    return '<div class="bm-sec">🏭 생산일지 원자재 <b>'+L.length+'</b>건 <span class="muted">— 누르면 이 원자재를 실제로 쓴 제품 (원자재 사용현황)</span></div><div class="sbox" style="margin-bottom:16px"><table class="gs" style="min-width:900px"><thead><tr><th>강종</th><th>두께×폭</th><th class="n">사용 제품</th><th class="n">월평균 사용</th><th class="n">사용중량 합계</th><th class="n">생산수량</th><th class="n">건수</th><th class="n">최근</th></tr></thead><tbody>'+
+      L.slice(0,300).map(function(r,i){ var x=P.forRaw(r.grade,r.t,r.w), a=x?P.avg(x.byYm,12):0;
+        return '<tr class="pick" data-plr="'+esc(r.grade+'|'+r.t+'|'+r.w)+'"><td><b class="plg">'+esc(r.grade)+'</b></td><td class="nm"><b>'+esc(r.t+' x '+r.w)+'</b></td><td class="n">'+(x?x.list.length:0)+'종</td><td class="n" data-v="'+a+'">'+kg(a)+'</td><td class="n" data-v="'+r.used+'">'+kg(r.used)+'</td><td class="n">'+won(r.prod)+'</td><td class="n">'+won(r.n)+'</td><td class="d">'+esc(r.last)+'</td></tr>'; }).join('')+'</tbody></table></div>';
+  }
+  function plogUseSection(grade, t, w, title){
+    var P=window.PLOG; if(!P) return '';
+    if(!P.ok()) return '<div class="bm-sec">'+title+'</div><div class="snote">'+esc(P.note())+'</div>';
+    var x=P.forRaw(grade,t,w);
+    if(!x) return '<div class="bm-sec">'+title+'</div><div class="snote">생산일지에 이 원자재 사용 기록이 없습니다. ('+esc(P.note())+')</div>';
+    var ms=P.recentMonths(12), a=P.avg(x.byYm,12);
+    return '<div class="bm-sec">'+title+' <b>'+x.list.length+'</b>종 <span class="muted">— 월평균 '+won(a)+'kg ('+esc((ms[0]||'').replace('-','.'))+'~'+esc((ms[ms.length-1]||'').replace('-','.'))+', 이번 달 제외) · 합계 '+won(x.used)+'kg · 제품을 누르면 그 제품 화면</span></div>'+
+      '<div class="sbox" style="margin-bottom:16px"><table class="gs" style="min-width:1000px"><thead><tr><th>품번</th><th>품명</th><th>규격</th><th class="n">사용중량</th><th class="n">생산수량</th><th class="n">EA당 실사용</th><th class="n">비중</th><th class="n">건수</th><th class="n">최근</th><th class="n">올해 매출 (수량/금액)</th></tr></thead><tbody>'+
+      x.list.map(function(p){ var v=DATA.sales?spSum(spQuick(p.code,{name:p.name,spec:p.spec})):null, bc=BOMD?(bomKids(p.code).length?p.code:(bomFind(p.code)||p.code)):p.code;
+        return '<tr class="pick" data-fp="'+esc(bc)+'"><td class="code">'+esc(p.code)+'</td><td class="nm"><b>'+esc(p.name)+'</b></td><td>'+esc(p.spec)+'</td><td class="n" data-v="'+p.used+'">'+kg(p.used)+'</td><td class="n">'+won(p.prod)+'</td><td class="n" data-v="'+(p.prod?p.used/p.prod:'')+'">'+(p.prod>0?num(Math.round(p.used/p.prod*1000)/1000)+' kg':'—')+'</td><td class="n">'+(x.used>0?Math.round(p.used/x.used*100):0)+'%</td><td class="n">'+won(p.n)+'</td><td class="d">'+esc(p.last)+'</td>'+
+          (v&&(v.q||v.a)?'<td class="n" data-v="'+v.a+'">'+qa(v.q,v.a)+'</td>':'<td class="n muted" data-v="">—</td>')+'</tr>'; }).join('')+'</tbody></table></div>';
+  }
+  function plogProdSection(code){
+    var P=window.PLOG; if(!P||!P.ok()) return '';
+    var x=P.forProd(code);
+    if(!x) return '<div class="bm-sec">🏭 생산일지 실제 투입 원자재</div><div class="snote">생산일지에 이 품번 생산 기록이 없습니다. ('+esc(P.note())+')</div>';
+    return '<div class="bm-sec">🏭 생산일지 실제 투입 원자재 <b>'+x.raws.length+'</b>종 <span class="muted">— 생산 '+won(x.prod)+'EA · 사용중량 '+won(x.used)+'kg · 최근 '+esc(x.last)+' · 원자재를 누르면 그 원자재를 쓴 다른 제품</span></div>'+
+      '<div class="sbox" style="margin-bottom:16px"><table class="gs" style="min-width:800px"><thead><tr><th>강종</th><th>두께×폭</th><th class="n">사용중량</th><th class="n">생산수량</th><th class="n">EA당 실사용</th><th class="n">건수</th><th class="n">최근</th></tr></thead><tbody>'+
+      x.raws.map(function(r){ return '<tr class="pick" data-plr="'+esc(r.grade+'|'+r.t+'|'+r.w)+'"><td><b class="plg">'+esc(r.grade)+'</b></td><td class="nm"><b>'+esc(r.t+' x '+r.w)+'</b></td><td class="n">'+kg(r.used)+'</td><td class="n">'+won(r.prod)+'</td><td class="n">'+(r.prod>0?num(Math.round(r.used/r.prod*1000)/1000)+' kg':'—')+'</td><td class="n">'+won(r.n)+'</td><td class="d">'+esc(r.last)+'</td></tr>'; }).join('')+'</tbody></table></div>';
+  }
+  function plogRaw(grade, t, w, back){
+    var P=window.PLOG, x=P&&P.forRaw(grade,t,w);
+    var h='<div class="co-card"><div class="co-row" style="border:none"><span class="co-i"><span class="muted" style="font-size:12px">강종</span><b class="plg">'+esc(grade)+'</b></span><span class="co-i"><span class="muted" style="font-size:12px">두께×폭</span><b>'+esc(t+' x '+w)+'</b></span>'+
+      (x?'<span class="co-i"><span class="muted" style="font-size:12px">사용 제품</span><b>'+x.list.length+'</b>종</span><span class="co-i"><span class="muted" style="font-size:12px">월평균 사용</span><b>'+won(P.avg(x.byYm,12))+'</b>kg</span>':'')+'</div></div>';
+    h+=plogUseSection(grade, t, w, '📦 이 원자재를 실제로 쓴 제품');
+    var bpx=bpSection([{code:'', name:grade, spec:t+'x'+w, kind:'원자재'}]);
+    h+=bpx;
+    show(head(esc(grade+' '+t+'x'+w)+' · 생산일지 사용 제품', x?x.list.length+'종':'0종')+(back&&BM?'<button type="button" class="co-tab" id="bmBack" style="margin-bottom:12px">← 목록으로</button>':'')+h+bomFoot());
+    bomBind(); bpPaintAll(); plogBind();
+  }
+  function plogBind(){
+    $('srin').querySelectorAll('tr[data-plr]').forEach(function(tr){ if(tr.__plb) return; tr.__plb=1; tr.addEventListener('click', function(){ var a=tr.getAttribute('data-plr').split('|'); nav(function(){ plogRaw(a[0], +a[1], +a[2], true); }); }); });
+  }
   function bomList(){
     if(BM.party) return bomParty(BM.q, BM.party);
-    var P=BM.prods, R=BM.raws;
-    if(!P.length && !R.length){ show(head('제품/원자재 검색 · '+esc(BM.q),'0건')+'<div class="snote">BOM 에서 찾지 못했습니다. 제품은 품번·품명·규격 일부(예: DB-2BH134, 십자앙카), 원자재는 이름·두께(예: EGI 1.6, STS430)로 찾아 보세요.</div>'+bomFoot()); return; }
+    var P=BM.prods, R=BM.raws, PRW=BM.praws||[];
+    if(!P.length && !R.length && !PRW.length){ show(head('제품/원자재 검색 · '+esc(BM.q),'0건')+'<div class="snote">BOM 에서 찾지 못했습니다. 제품은 품번·품명·규격 일부(예: DB-2BH134, 십자앙카), 원자재는 이름·두께(예: EGI 1.6, STS430)로 찾아 보세요.</div>'+bomFoot()); return; }
     var LIM=300, h='';
     if(R.length) h+='<div class="bm-sec">🧱 원자재·부자재 <b>'+R.length+'</b>건 <span class="muted">— 누르면 이 자재가 들어가는 제품</span></div><div class="sbox" style="margin-bottom:16px"><table class="gs" style="min-width:1100px"><thead><tr><th>구분</th><th>자재 품번</th><th>품명</th><th>규격</th><th>단위</th><th class="n">사용 제품</th><th class="n">월평균 매입</th><th class="n">올해 매입</th><th class="n">발주주기</th><th class="n">마지막 입고</th></tr></thead><tbody>'+
       R.slice(0,LIM).map(function(r,i){ var b=DATA.purch?bpSum(bpQuick(r)):null; return '<tr class="pick" data-br="'+i+'"><td>'+bomKind(r.kind)+'</td><td class="code">'+esc(r.code)+'</td><td class="nm"><b>'+esc(r.name)+'</b></td><td>'+esc(r.spec)+'</td><td class="d">'+esc(r.unit||'')+'</td><td class="n">'+r.n.toLocaleString()+'종</td>'+
         (b&&b.n?'<td class="n" data-v="'+b.mq+'">'+qa(b.mq,b.ma,r.unit)+'</td><td class="n" data-v="'+b.q+'">'+qa(b.q,b.a,r.unit)+'</td><td class="n" data-v="'+(b.gap||'')+'">'+(b.gap?b.gap+'일':'—')+'</td><td class="d">'+ymd(b.last)+'</td>':'<td class="n muted" data-v="">매입 기록 없음</td><td class="n muted" data-v="">—</td><td class="n muted" data-v="">—</td><td class="d muted" data-v="">—</td>')+'</tr>'; }).join('')+'</tbody></table></div>';
+    if(PRW.length) h+=plogRawTable(PRW, 'pr');
     if(P.length) h+='<div class="bm-sec">📦 제품·반제품 <b>'+P.length+'</b>건 <span class="muted">— 누르면 이 제품에 쓰는 원자재</span></div><div class="sbox"><table class="gs" style="min-width:1000px"><thead><tr><th>구분</th><th>품번</th><th>품명</th><th>규격</th><th class="n">하위 품목</th><th class="n">월평균 매출 (수량/금액)</th><th class="n">올해 매출 (수량/금액)</th></tr></thead><tbody>'+
-      P.slice(0,LIM).map(function(p,i){ var v=DATA.sales?spSum(spQuick(p.code,{name:p.name,spec:p.spec})):null; return '<tr class="pick" data-bp="'+i+'"><td>'+bomKind(p.kind)+'</td><td class="code">'+esc(p.code)+'</td><td class="nm"><b>'+esc(p.name)+'</b></td><td>'+esc(p.spec)+'</td><td class="n">'+p.n+'개</td>'+
+      P.slice(0,LIM).map(function(p,i){ var v=DATA.sales?spSum(spQuick(p.code,{name:p.name,spec:p.spec})):null; return '<tr class="pick" data-bp="'+i+'"><td>'+bomKind(p.kind)+'</td><td class="code">'+esc(p.code)+'</td><td class="nm"><b>'+esc(p.name)+'</b></td><td>'+esc(p.spec)+'</td><td class="n">'+(p.plogOnly?'<span class="plg" title="BOM 에 없고 생산일지에만 있는 품번">🏭 생산일지</span>':p.n+'개')+'</td>'+
         (v&&(v.q||v.a)?'<td class="n" data-v="'+v.ma+'">'+qa(v.mq,v.ma)+'</td><td class="n" data-v="'+v.a+'">'+qa(v.q,v.a)+'</td>':'<td class="n muted" data-v="">올해 매출 없음</td><td class="n muted" data-v="">—</td>')+'</tr>'; }).join('')+'</tbody></table></div>';
     if(P.length && DATA.sales){ var seenR=new Set(), cr=[]; P.slice(0,LIM).forEach(function(p){ spQuick(p.code,{name:p.name,spec:p.spec}).forEach(function(r){ if(!seenR.has(r)){ seenR.add(r); cr.push(r); } }); });
       h+=custSection(cr, terms(BM.q), '검색한 제품을 매출한 업체'); if(CUSTP) CUSTP.label=BM.q; }
-    show(head('제품/원자재 검색 · '+esc(BM.q), (P.length+R.length).toLocaleString()+'건')+h+((P.length>LIM||R.length>LIM)?'<div class="snote">각 '+LIM+'건까지만 표시합니다. 검색어를 더 좁혀 주세요.</div>':'')+'<div class="snote">월평균 = 올해 합계 ÷ 올해 지난 개월 수(이번 달 포함). 발주주기 = 입고한 날들 사이의 평균 일수(전체 기간).</div>'+bomFoot());
+    show(head('제품/원자재 검색 · '+esc(BM.q), (P.length+R.length+PRW.length).toLocaleString()+'건')+h+((P.length>LIM||R.length>LIM)?'<div class="snote">각 '+LIM+'건까지만 표시합니다. 검색어를 더 좁혀 주세요.</div>':'')+'<div class="snote">월평균 = 올해 합계 ÷ 올해 지난 개월 수(이번 달 포함). 발주주기 = 입고한 날들 사이의 평균 일수(전체 기간).</div>'+bomFoot());
     custBind();
     $('srin').querySelectorAll('tr[data-bp]').forEach(function(tr){ tr.addEventListener('click', function(){ var c=BM.prods[+tr.getAttribute('data-bp')].code; nav(function(){ bomProd(c, true); }); }); });
     $('srin').querySelectorAll('tr[data-br]').forEach(function(tr){ tr.addEventListener('click', function(){ var c=BM.raws[+tr.getAttribute('data-br')].code; nav(function(){ bomRaw(c, true); }); }); });
+    plogBind();
   }
   // 제품 → 구성(반제품 펼침) + 원자재 모아보기
   function bomProd(code, back){
@@ -1943,11 +2054,12 @@
     h+=fl.length?'<div class="sbox" style="margin-bottom:16px"><table class="gs" style="min-width:700px"><thead><tr><th>구분</th><th>자재 품번</th><th>품명</th><th>규격</th><th>단위</th><th>들어가는 곳</th></tr></thead><tbody>'+
       fl.map(function(f,i){ var v=f.via.filter(function(x,j,a){ return a.indexOf(x)===j; }); return '<tr class="pick" data-fr="'+esc(f.code)+'"><td>'+bomKind(f.kind)+'</td><td class="code">'+esc(f.code)+'</td><td class="nm"><b>'+esc(f.name)+'</b></td><td>'+esc(f.spec)+'</td><td class="d">'+esc(f.unit||'')+'</td><td class="muted" style="font-size:12px">'+esc(v.slice(0,4).join(' · '))+(v.length>4?' 외 '+(v.length-4):'')+'</td></tr>'; }).join('')+'</tbody></table></div>'
       :'<div class="snote">BOM 에 원자재가 연결되어 있지 않습니다.</div>';
+    h+=plogProdSection(code);
     h+=bpSection(fl);
     h+='<div class="bm-sec">🌳 BOM 구성</div><div class="sbox"><table style="min-width:700px"><thead><tr><th>품목</th><th>구분</th><th>품번</th><th class="n">BOM 수량</th></tr></thead><tbody>'+
       rows.map(function(r){ return '<tr'+(bomIsRaw(r.kind)?' class="pick" data-fr="'+esc(r.code)+'"':'')+'><td class="nm" style="padding-left:'+(10+r.d*22)+'px">'+(r.d?'<span class="muted">└ </span>':'')+'<b>'+esc(r.name)+'</b> <span class="muted">'+esc(r.spec||'')+'</span></td><td>'+bomKind(r.kind)+'</td><td class="code">'+esc(r.code)+'</td><td class="n">'+esc(r.qty==null?'':r.qty)+' '+esc(r.unit||'')+'</td></tr>'; }).join('')+'</tbody></table></div>';
     show(head(esc(inf.name||code)+(inf.spec?' <span class="muted" style="font-weight:400">'+esc(inf.spec)+'</span>':'')+' · 사용 원자재')+(back&&BM?'<button type="button" class="co-tab" id="bmBack" style="margin-bottom:12px">← 목록으로</button>':'')+h+bomFoot());
-    bomBind(); custBind(); spDraw(); bpPaintAll();
+    bomBind(); custBind(); spDraw(); bpPaintAll(); plogBind();
   }
   // 원자재 → 들어가는 최상위 제품(반제품 거쳐)
   function bomTops(code){
@@ -1970,9 +2082,11 @@
     h+=tops.length?'<div class="sbox"><table class="gs" style="min-width:1000px"><thead><tr><th>제품 품번</th><th>품명</th><th>규격</th><th>거쳐 가는 반제품</th><th class="n">월평균 매출 (수량/금액)</th><th class="n">올해 매출 (수량/금액)</th></tr></thead><tbody>'+
       tops.map(function(t){ var v=DATA.sales?spSum(spQuick(t.code,{name:t.name,spec:t.spec})):null, vc=v&&(v.q||v.a)?'<td class="n" data-v="'+v.ma+'">'+qa(v.mq,v.ma)+'</td><td class="n" data-v="'+v.a+'">'+qa(v.q,v.a)+'</td>':'<td class="n muted" data-v="">올해 매출 없음</td><td class="n muted" data-v="">—</td>'; return '<tr class="pick" data-fp="'+esc(t.code)+'"><td class="code">'+esc(t.code)+'</td><td class="nm"><b>'+esc(t.name||'(이름 없음)')+'</b></td><td>'+esc(t.spec)+'</td><td class="muted" style="font-size:12px">'+esc(t.via.slice(0,4).join(' · '))+(t.via.length>4?' 외 '+(t.via.length-4):'')+'</td>'+vc+'</tr>'; }).join('')+'</tbody></table></div>'
       :'<div class="snote">이 자재를 쓰는 제품을 찾지 못했습니다.</div>';
+    var pr0=window.PLOG&&PLOG.parseRaw(inf.name, inf.spec, code);
+    h+=pr0?plogUseSection(pr0.grade, pr0.t, pr0.w, '🏭 생산일지에서 이 원자재('+(pr0.grade||'')+' '+pr0.t+'x'+pr0.w+')를 실제로 쓴 제품'):'';
     h+=bpx;
     show(head(esc(inf.name||code)+(inf.spec?' <span class="muted" style="font-weight:400">'+esc(inf.spec)+'</span>':'')+' · 사용 제품', tops.length+'종')+(back&&BM?'<button type="button" class="co-tab" id="bmBack" style="margin-bottom:12px">← 목록으로</button>':'')+h+bomFoot());
-    bomBind(); bpPaintAll();
+    bomBind(); bpPaintAll(); plogBind();
   }
   function bomReach(top, mid){   // top 아래에 mid 가 있는지
     var st=[top], seen={}, g=0;
@@ -2225,6 +2339,164 @@
       });
     }).catch(function(err){ show(head('검색하지 못했습니다')+'<div class="snote" style="color:#f87171">'+esc(err&&err.message||err)+'</div>'); });
   }
+})();
+</script>
+<script id="plog-v1">
+/* ══ 생산일지 «원자재 사용현황» 공용 모듈 (PLOG v1) ══
+   자료: 매출분석 로그인 서버 rawuse.gs(ruGet) — 원자재 사용현황 홈페이지(material)와 같은 시트
+   - 같은 주소(useran-coder.github.io)의 페이지끼리 localStorage «prodLogC1» 로 받아 둔 자료를 함께 씀
+   - 원자재 사용현황 페이지가 받아 둔 «ruCacheV1» 이 있으면 그것부터 바로 씀
+   - forRaw(강종,두께,폭) : 그 원자재를 실제로 쓴 제품 / forProd(품번) : 그 제품이 실제로 쓴 원자재 */
+(function(){
+'use strict';
+if(window.PLOG)return;
+var LS='prodLogC1';
+var P={ver:'plog-v1',rev:'',at:0,rows:[],months:[],R:null,PR:null,busy:false,last:0,noSrv:false,err:'',subs:[],opt:null};
+window.PLOG=P;
+function nrm(h){return String(h||'').replace(/\s+/g,'').replace(/\(.*?\)/g,'');}
+function num(x){ if(typeof x==='number')return isFinite(x)?x:0; var t=String(x==null?'':x).replace(/[,\s%원]/g,''); if(!t||t==='-')return 0; var v=parseFloat(t); return isFinite(v)?v:0; }
+function ymOf(x){ var m=/(\d{4})[-.\/](\d{1,2})/.exec(String(x||'')); return m?(m[1]+'-'+('0'+m[2]).slice(-2)):''; }
+function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(_e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(_e){ return false; } }
+/* 강종 → 앞부분 (EGI-C → EGI, STS304-C 2B → STS304, SUS304 → STS304) */
+function gk(g){ var s=String(g||'').toUpperCase().replace(/\s+/g,'').split('-')[0].replace(/\(.*$/,''); return s.replace(/^SUS/,'STS'); }
+function gradeHit(a,b){ a=gk(a); b=gk(b); if(!a||!b)return true; if(a===b)return true;
+  var L=a.length>b.length?a:b, S=a.length>b.length?b:a; return L.indexOf(S)===0&&/^\d/.test(L.slice(S.length)); }
+/* 품번 맞추기: BHIA00001_G(260610) → BHIA1, DLIAP0004 → DLIAP4. TB_A1_02 · IN_A2_01 처럼 밑줄이 품번의 일부인 것은 그대로 */
+function nk(c){ c=String(c||'').toUpperCase().replace(/\s+/g,''); var m=/^([A-Z]+)(\d+)(?:_[A-Z0-9]{0,3})?(?:\(.*\))?$/.exec(c); return m?m[1]+(+m[2]):c.replace(/\(.*$/,''); }
+function tw(t,w){ return (+t)+'x'+(+w); }
+P.gk=gk; P.nk=nk; P.gradeHit=gradeHit;
+P.compact=function(head,rows){
+  var H=(head||[]).map(nrm);
+  var all=function(n){var a=[];H.forEach(function(h,i){if(h===n)a.push(i);});return a;};
+  var one=function(n){return H.indexOf(n);};
+  var st=function(n){for(var i=0;i<H.length;i++)if(H[i].indexOf(n)===0)return i;return -1;};
+  var g=all('강종'),t=all('두께'),w=all('폭');
+  var I={d:one('사용일자'),code:one('품번'),name:one('품명'),spec:one('규격'),bg:g[0],mg:g[g.length-1],bt:t[0],mt:t[t.length-1],bw:w[0],mw:w[w.length-1],
+    prod:st('생산수량'),used:st('사용중량'),lot:st('원자재Lot')};
+  if(!(I.d>=0&&I.code>=0&&I.used>=0))throw new Error('생산일지 머리글(사용일자·품번·사용중량)을 찾지 못했습니다.');
+  var gv=function(r,i){return (i>=0&&i<r.length)?r[i]:'';};
+  var out=[];
+  (rows||[]).forEach(function(r){
+    var ym=ymOf(gv(r,I.d)); if(!ym)return;
+    var code=String(gv(r,I.code)||'').trim(), name=String(gv(r,I.name)||'').trim(); if(!code&&!name)return;
+    var gr=String(gv(r,I.mg)||gv(r,I.bg)||'').trim().toUpperCase().replace(/\s+/g,''), tt=num(gv(r,I.mt))||num(gv(r,I.bt)), ww=num(gv(r,I.mw))||num(gv(r,I.bw));
+    if(!gr||!(tt>0)||!(ww>0))return;
+    out.push([ym,code,name,String(gv(r,I.spec)||'').trim(),gr,tt,ww,num(gv(r,I.used)),num(gv(r,I.prod)),String(gv(r,I.lot)||'').trim()]);
+  });
+  return out;
+};
+function build(){
+  var R={}, PR={}, months={};
+  P.rows.forEach(function(r){
+    var k=tw(r[5],r[6]), g=gk(r[4]);
+    var x=R[k]||(R[k]={}), G=x[g]||(x[g]={grade:g,t:r[5],w:r[6],used:0,prod:0,n:0,last:'',byYm:{},prods:{}});
+    G.used+=r[7]; G.prod+=r[8]; G.n++; if(r[0]>G.last)G.last=r[0]; G.byYm[r[0]]=(G.byYm[r[0]]||0)+r[7];
+    var pk=r[1]?nk(r[1]):('('+r[2]+')'), p=G.prods[pk]||(G.prods[pk]={code:r[1],name:r[2],spec:r[3],used:0,prod:0,n:0,last:'',byYm:{},qYm:{}});
+    p.used+=r[7]; p.prod+=r[8]; p.n++; if(r[0]>p.last){ p.last=r[0]; if(r[2])p.name=r[2]; if(r[3])p.spec=r[3]; }
+    p.byYm[r[0]]=(p.byYm[r[0]]||0)+r[7]; p.qYm[r[0]]=(p.qYm[r[0]]||0)+r[8];
+    var q=PR[pk]||(PR[pk]={code:r[1],name:r[2],spec:r[3],used:0,prod:0,n:0,last:'',raws:{}});
+    q.used+=r[7]; q.prod+=r[8]; q.n++; if(r[0]>q.last){ q.last=r[0]; if(r[2])q.name=r[2]; if(r[3])q.spec=r[3]; }
+    var rk=g+'|'+k, m=q.raws[rk]||(q.raws[rk]={grade:g,t:r[5],w:r[6],used:0,prod:0,n:0,last:'',byYm:{}});
+    m.used+=r[7]; m.prod+=r[8]; m.n++; if(r[0]>m.last)m.last=r[0]; m.byYm[r[0]]=(m.byYm[r[0]]||0)+r[7];
+    months[r[0]]=1;
+  });
+  P.R=R; P.PR=PR; P.months=Object.keys(months).sort();
+}
+function list(o){ return Object.keys(o).map(function(k){ return o[k]; }); }
+P.ok=function(){ return !!(P.R&&P.rows.length); };
+/* 원자재(강종·두께·폭) → 실제로 쓴 제품 묶음. grade 가 비면 강종 상관없이 */
+P.forRaw=function(grade,t,w){
+  if(!P.R||!(+t>0)||!(+w>0))return null;
+  var x=P.R[tw(t,w)]; if(!x)return null;
+  var hit=null;
+  Object.keys(x).forEach(function(g){ if(grade&&!gradeHit(grade,g))return; var G=x[g];
+    if(!hit)hit={grades:[],t:+t,w:+w,used:0,prod:0,n:0,last:'',byYm:{},prods:{}};
+    hit.grades.push(g); hit.used+=G.used; hit.prod+=G.prod; hit.n+=G.n; if(G.last>hit.last)hit.last=G.last;
+    Object.keys(G.byYm).forEach(function(m){ hit.byYm[m]=(hit.byYm[m]||0)+G.byYm[m]; });
+    Object.keys(G.prods).forEach(function(pk){ var p=G.prods[pk], q=hit.prods[pk];
+      if(!q)q=hit.prods[pk]={code:p.code,name:p.name,spec:p.spec,used:0,prod:0,n:0,last:'',byYm:{},qYm:{}};
+      q.used+=p.used; q.prod+=p.prod; q.n+=p.n; if(p.last>q.last)q.last=p.last;
+      Object.keys(p.byYm).forEach(function(m){ q.byYm[m]=(q.byYm[m]||0)+p.byYm[m]; q.qYm[m]=(q.qYm[m]||0)+(p.qYm[m]||0); }); });
+  });
+  if(hit){ hit.list=list(hit.prods).sort(function(a,b){ return b.used-a.used; }); hit.grade=hit.grades.join('/'); }
+  return hit;
+};
+/* 원자재 이름·규격 글자에서 강종·두께·폭 찾기 (EGI-C 1.6x61, PO 3.0*155*C, EGI 1.6T X 66 …) */
+P.parseRaw=function(){
+  var s=Array.prototype.slice.call(arguments).map(function(v){ return String(v==null?'':v); }).join(' ').toUpperCase();
+  var gm=/(?:^|[^A-Z])(STS\s*\d{3}|SUS\s*\d{3}|SGCC|SECC|SPCC|SPHC|SGLCC|HGI|EGI|GA|GI|PO|CR|HR)(?=$|[^A-Z])/.exec(s);
+  var s2=s.replace(/[×＊*Ｘ]/g,'X').replace(/\s+/g,'');
+  var m=/(\d+(?:\.\d+)?)T?X(\d+(?:\.\d+)?)/.exec(s2);
+  if(!m)return null; var t=parseFloat(m[1]), w=parseFloat(m[2]);
+  if(!(t>0&&t<=12&&w>=5&&w<=2600))return null;
+  return {grade:gm?gm[1].replace(/\s+/g,''):'',t:t,w:w};
+};
+/* 품번 → 그 제품이 실제로 쓴 원자재 */
+P.forProd=function(code){ if(!P.PR)return null; var q=P.PR[nk(code)]; if(!q)return null;
+  var o={code:q.code,name:q.name,spec:q.spec,used:q.used,prod:q.prod,n:q.n,last:q.last,raws:list(q.raws).sort(function(a,b){ return b.used-a.used; })}; return o; };
+/* 원자재 검색용 목록 (강종 두께x폭) */
+P.rawList=function(){ if(!P.R)return []; var a=[]; Object.keys(P.R).forEach(function(k){ var x=P.R[k]; Object.keys(x).forEach(function(g){ var G=x[g]; a.push({grade:g,t:G.t,w:G.w,used:G.used,prod:G.prod,n:G.n,last:G.last,nProd:Object.keys(G.prods).length,label:g+' '+G.t+'x'+G.w}); }); });
+  return a.sort(function(a,b){ return b.used-a.used; }); };
+P.prodList=function(){ return P.PR?list(P.PR):[]; };
+/* 최근 n개월(진행 중인 이번 달 제외) 월평균 */
+P.recentMonths=function(n){ var now=new Date(), cur=now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2);
+  var a=P.months.filter(function(m){ return m<cur; }); if(!a.length)a=P.months.slice(); return a.slice(-(n||12)); };
+P.avg=function(byYm,n){ var ms=P.recentMonths(n||12); if(!ms.length)return 0; var s=0; ms.forEach(function(m){ s+=(byYm&&byYm[m])||0; }); return s/ms.length; };
+P.kg=function(v){ try{ return Math.round(v).toLocaleString('ko-KR'); }catch(_e){ return String(Math.round(v)); } };
+P.note=function(){
+  if(P.ok()){ var d=new Date(P.at||Date.now()), hm=(d.getMonth()+1)+'/'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+    return '생산일지 «원자재 사용현황» '+(P.months[0]||'').replace('-','.')+'~'+(P.months[P.months.length-1]||'').replace('-','.')+' · '+P.rows.length.toLocaleString('ko-KR')+'줄 · '+hm+' 확인'; }
+  if(P.noSrv)return '생산일지: 서버에 원자재 사용현황 기능(rawuse.gs)이 없음';
+  if(P.err)return '생산일지: 받지 못함 — '+P.err;
+  return '생산일지: 불러오는 중…';
+};
+P.on=function(fn){ P.subs.push(fn); };
+function fire(){ P.subs.forEach(function(fn){ try{ fn(P); }catch(_e){} }); }
+function setRows(rev,at,rows){ P.rev=rev||''; P.at=at||Date.now(); P.rows=rows||[]; build(); }
+/* 받아 둔 자료 먼저 (이 페이지 · 원자재 사용현황 페이지) */
+function seed(){
+  var c=lsGet(LS);
+  if(c&&c.rows&&c.rows.length){ setRows(c.rev,c.at,c.rows); return true; }
+  var m=lsGet('ruCacheV1');
+  if(m&&m.head&&m.rows&&m.rows.length){ try{ var rows=P.compact(m.head,m.rows); if(rows.length){ setRows(m.rev,Date.now()-3600000,rows); return true; } }catch(_e){} }
+  return false;
+}
+P.sync=function(){
+  var o=P.opt; if(!o||P.busy)return Promise.resolve(false);
+  if(o.ready&&!o.ready())return Promise.resolve(false);
+  P.busy=true; P.last=Date.now();
+  /* 다른 페이지가 더 새로 받아 둔 게 있으면 그것부터 */
+  var c=lsGet(LS); if(c&&c.rows&&c.rows.length&&c.rev&&c.rev!==P.rev&&(c.at||0)>(P.at||0)){ setRows(c.rev,c.at,c.rows); fire(); }
+  return Promise.resolve().then(function(){ return o.call({action:'ruGet',rev:P.ok()?P.rev:''}); }).then(function(d){
+    if(!d||!d.ru){ P.noSrv=true; return false; }
+    if(d.ok===false)throw new Error(d.error||'서버 오류');
+    P.noSrv=false; P.err='';
+    if(d.unchanged){ P.at=Date.now(); var c2=lsGet(LS); if(c2&&c2.rev===P.rev){ c2.at=P.at; lsSet(LS,c2); } fire(); return false; }
+    var rows=P.compact(d.head,d.rows); setRows(d.rev,Date.now(),rows);
+    lsSet(LS,{rev:P.rev,at:P.at,rows:rows});
+    fire(); return true;
+  }).catch(function(e){
+    var m=String(e&&e.message||e);
+    if(/unknown|알 ?수 ?없는|지원하지|없는 ?action|invalid action/i.test(m))P.noSrv=true; else P.err=m.slice(0,80);
+    return false;
+  }).then(function(r){ P.busy=false; return r; });
+};
+/* opt: {call(payload)→Promise<응답>, ready()→로그인 여부, gap: 확인 간격(ms, 기본 10분)} */
+P.init=function(opt){
+  if(P.opt)return; P.opt=opt||{};
+  if(seed())setTimeout(fire,0);
+  setInterval(function(){
+    try{
+      if(document.visibilityState!=='visible')return;
+      if(P.opt.ready&&!P.opt.ready())return;
+      var gap=Date.now()-P.last, need=(typeof P.opt.gap==='function'?P.opt.gap():P.opt.gap)||600000;
+      if(P.noSrv&&gap<30*60000)return;
+      if(!P.last||gap>need)P.sync();
+    }catch(_e){}
+  },5000);
+  window.addEventListener('storage',function(e){ if(e.key===LS){ var c=lsGet(LS); if(c&&c.rows&&c.rev!==P.rev){ setRows(c.rev,c.at,c.rows); fire(); } } });
+};
 })();
 </script>
 </body>
