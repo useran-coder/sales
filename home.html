@@ -250,6 +250,11 @@
   .bp-lg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px}
   .bp-vn{border:1px solid #a16207;color:#fcd34d;border-radius:999px;padding:2px 10px;font-weight:600}
   .bp-svg{margin-top:6px}
+  .bp-svg .bpk{cursor:pointer}
+  .bp-svg .bpk:hover circle{stroke:#fff}
+  .bp tr.bp-on td{background:#3b2f0a !important;color:#fde68a}
+  .bp tr.bp-on td b{color:#fde68a}
+  .bp .bp-pt-on{stroke:#fbbf24 !important;stroke-width:3 !important}
   .bp-st{font-size:12.5px;color:var(--sub);margin-top:6px;font-variant-numeric:tabular-nums}
   .bp-st b{color:var(--text)}
   .bp-nx{color:#fbbf24!important}
@@ -2223,7 +2228,7 @@
       T.map(function(x,k){ var j=n-1-k, pv=j>0?D[j-1].price:null, df=pv==null?null:x.price-pv, rt=pv?df/pv*100:null;
         var ch=pv==null?'<span class="muted">최초</span>':Math.round(df)>0?'<span class="ar-red">▲ 인상</span>':Math.round(df)<0?'<span class="bp-dn">▼ 인하</span>':'<span class="muted">- 동일</span>';
         var cl=df==null||Math.round(df)===0?'':(df>0?' ar-red':' bp-dn');
-        return '<tr><td class="n">'+(k+1)+'</td><td class="d">'+bpYmd(x.t)+'</td><td>'+esc(x.vendor)+'</td><td class="n"><b>'+won(x.price)+'</b></td><td class="n">'+(pv==null?'-':won(pv))+'</td><td>'+ch+'</td>'+
+        return '<tr data-bpt="'+x.t+'"><td class="n">'+(k+1)+'</td><td class="d">'+bpYmd(x.t)+'</td><td>'+esc(x.vendor)+'</td><td class="n"><b>'+won(x.price)+'</b></td><td class="n">'+(pv==null?'-':won(pv))+'</td><td>'+ch+'</td>'+
           '<td class="n'+cl+'">'+(df==null?'-':(df>0?'+':'')+won(df))+'</td><td class="n'+cl+'">'+(rt==null?'-':(rt>0?'+':'')+rt.toFixed(1)+'%')+'</td><td class="n">'+num(x.qty)+'</td><td class="n">'+won(x.amt)+'</td><td class="n">'+x.n+'</td></tr>'; }).join('')+
       '</tbody><tfoot><tr><td></td><td>합계</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="n">'+num(tq)+'</td><td class="n">'+won(ta)+'</td><td class="n">'+tn+'</td></tr></tfoot></table></div>';
     box.innerHTML=h;
@@ -2235,6 +2240,16 @@
   function bpBind(i){
     var box=$('bp'+i); if(!box) return;
     box.querySelectorAll('[data-bpy]').forEach(function(b){ b.addEventListener('click', function(){ var v=b.getAttribute('data-bpy'); BP[i].year=v==='all'?'all':+v; bpDraw(i); }); });
+    // 그래프의 점·금액을 누르면 아래 표의 같은 입고일 행을 표시(다시 누르면 해제), 행을 누르면 그래프 점 표시
+    if(!box.__bpk){ box.__bpk=1; box.addEventListener('click', function(e){
+      var g=e.target.closest&&e.target.closest('.bpk, tr[data-bpt]'); if(!g||!box.contains(g)) return;
+      var t=g.getAttribute('data-bpt'), tr=box.querySelector('tr[data-bpt="'+t+'"]'), on=tr&&tr.classList.contains('bp-on');
+      box.querySelectorAll('tr.bp-on').forEach(function(r){ r.classList.remove('bp-on'); });
+      box.querySelectorAll('.bp-pt-on').forEach(function(c){ c.classList.remove('bp-pt-on'); });
+      if(on) return;
+      if(tr){ tr.classList.add('bp-on'); if(g.tagName.toLowerCase()==='g') tr.scrollIntoView({block:'center', behavior:'smooth'}); }
+      var pt=box.querySelector('.bpk[data-bpt="'+t+'"] circle'); if(pt) pt.classList.add('bp-pt-on');
+    }); }
   }
   function bpChart(D, avg, iMn, iMx, W){
     var H=330, L=58, R=40, T=30, B=78, iw=W-L-R, ih=H-T-B, n=D.length;
@@ -2247,11 +2262,13 @@
       o+='<line x1="'+X(j-1)+'" y1="'+Y(D[j-1].price)+'" x2="'+X(j)+'" y2="'+Y(D[j].price)+'" stroke="'+c+'" stroke-width="2.2"/>'; }
     var by=T+ih+20, cy=H-16;
     D.forEach(function(x,k){ var cx=X(k), py=Y(x.price), big=k===iMx||k===iMn, col=k===iMx&&n>1?'#f87171':'#34d399';
-      o+='<circle cx="'+cx+'" cy="'+py+'" r="'+(big?5.5:4)+'" fill="'+(k===iMx&&n>1?'#f87171':'#10b981')+'" stroke="#000" stroke-width="1.5"><title>'+bpYmd(x.t)+' · '+esc(x.vendor)+' · '+won(x.price)+'원 · '+num(x.qty)+'</title></circle>';
-      o+='<text x="'+cx+'" y="'+(py-11)+'" text-anchor="middle" fill="'+(k===iMx&&n>1?'#fca5a5':'#e5e7eb')+'" font-weight="600">'+won(x.price)+'</text>';
+      o+='<g class="bpk" data-bpt="'+x.t+'"><rect x="'+(cx-22)+'" y="'+(py-26)+'" width="44" height="36" fill="transparent"/><circle cx="'+cx+'" cy="'+py+'" r="'+(big?5.5:4)+'" fill="'+(k===iMx&&n>1?'#f87171':'#10b981')+'" stroke="#000" stroke-width="1.5"><title>'+bpYmd(x.t)+' · '+esc(x.vendor)+' · '+won(x.price)+'원 · '+num(x.qty)+' (누르면 아래 표에서 표시)</title></circle>';
+      o+='<text x="'+cx+'" y="'+(py-11)+'" text-anchor="middle" fill="'+(k===iMx&&n>1?'#fca5a5':'#e5e7eb')+'" font-weight="600">'+won(x.price)+'</text></g>';
       if(n>1 && (k===iMx||k===iMn)){ var lb=k===iMx?'최고':'최저', ty=py+(k===iMx?20:20); o+='<rect x="'+(cx-20)+'" y="'+(ty-11)+'" width="40" height="18" rx="9" fill="'+(k===iMx?'#3b1215':'#0c2a22')+'" stroke="'+col+'"/><text x="'+cx+'" y="'+(ty+2)+'" text-anchor="middle" fill="'+col+'" font-size="11" font-weight="700">'+lb+'</text>'; }
       var anchor=n>1&&k===0?'start':n>1&&k===n-1?'end':'middle';
-      o+='<text x="'+cx+'" y="'+by+'" text-anchor="'+anchor+'" fill="#9aa0a8">'+bpYmd(x.t,1)+'</text>';
+      var stepL=n>1?Math.ceil(64/Math.max(1,(iw-56)/(n-1))):1;   // 날짜 글자가 겹치면 건너뛰어 표시(마지막은 항상)
+      if(k%stepL===0 && (k===n-1 || n-1-k>=stepL || k===0)) o+='<text x="'+cx+'" y="'+by+'" text-anchor="'+anchor+'" fill="#9aa0a8">'+bpYmd(x.t,1)+'</text>';
+      else if(k===n-1) o+='<text x="'+cx+'" y="'+by+'" text-anchor="'+anchor+'" fill="#9aa0a8">'+bpYmd(x.t,1)+'</text>';
       if(k>0){ var gx=(X(k-1)+cx)/2, gd=bpDays(D[k-1].t,x.t), gc=gd>=60?'#fbbf24':gd<=14?'#60a5fa':'#9aa0a8';
         o+='<line x1="'+gx+'" x2="'+gx+'" y1="'+(T+ih+4)+'" y2="'+(cy-12)+'" stroke="#23262c"/><rect x="'+(gx-22)+'" y="'+(cy-11)+'" width="44" height="18" rx="9" fill="#0d0e10" stroke="'+gc+'88"/><text x="'+gx+'" y="'+(cy+2)+'" text-anchor="middle" fill="'+gc+'" font-size="11">'+gd+'일</text>'; }
     });
