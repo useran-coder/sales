@@ -2076,16 +2076,20 @@
       return {code:pn, name:i.name, spec:i.spec, via:via.filter(function(x,j,a){ return a.indexOf(x)===j; })}; })
       .sort(function(a,b){ return (!!b.name-!!a.name) || String(a.name).localeCompare(String(b.name),'ko') || String(a.spec).localeCompare(String(b.spec),'ko'); });
     var h='<div class="co-card"><div class="co-row" style="border:none"><span class="co-i"><span class="muted" style="font-size:12px">구분</span>'+bomKind(inf.kind)+'</span><span class="co-i"><span class="muted" style="font-size:12px">자재 품번</span>'+esc(code)+'</span><span class="co-i"><span class="muted" style="font-size:12px">품명</span><b>'+esc(inf.name)+'</b></span>'+(inf.spec?'<span class="co-i"><span class="muted" style="font-size:12px">규격</span>'+esc(inf.spec)+'</span>':'')+
-      '<span class="co-i"><span class="muted" style="font-size:12px">직접 투입</span><b>'+direct.length+'</b>곳</span><span class="co-i"><span class="muted" style="font-size:12px">사용 제품</span><b>'+tops.length+'</b>종</span></div></div>';
+      '';
+    // 2026-11-17 사용자 요청: BOM «이 자재가 들어가는 제품» 표는 빼고 생산일지(실제 투입) 기준으로 보여 줌.
+    //  단 생산일지에 기록이 없는 자재(부자재 등)는 BOM 표를 대신 보여 줌
+    var pr0=window.PLOG&&PLOG.parseRaw(inf.name, inf.spec, code), px=pr0&&PLOG.ok()?PLOG.forRaw(pr0.grade,pr0.t,pr0.w):null, useBom=!pr0||(PLOG.ok()&&!px);
+    var cnt=useBom?tops.length:(px?px.list.length:0);
+    h+=(useBom?'<span class="co-i"><span class="muted" style="font-size:12px">직접 투입</span><b>'+direct.length+'</b>곳</span>':'')+'<span class="co-i"><span class="muted" style="font-size:12px">사용 제품</span><b>'+cnt+'</b>종</span>'+(px?'<span class="co-i"><span class="muted" style="font-size:12px">월평균 사용</span><b>'+won(PLOG.avg(px.byYm,12))+'</b>kg</span>':'')+'</div></div>';
     var bpx=bpSection([{code:code, name:inf.name, spec:inf.spec, kind:inf.kind}]);
-    h+='<div class="bm-sec">📦 이 자재가 들어가는 제품 <span class="muted">— 제품을 누르면 그 제품의 원자재 전체</span></div>';
+    if(useBom){ h+='<div class="bm-sec">📦 이 자재가 들어가는 제품 <span class="muted">— 제조원가 BOM 기준 (생산일지 기록 없음) · 제품을 누르면 그 제품의 원자재 전체</span></div>';
     h+=tops.length?'<div class="sbox"><table class="gs" style="min-width:1000px"><thead><tr><th>제품 품번</th><th>품명</th><th>규격</th><th>거쳐 가는 반제품</th><th class="n">월평균 매출 (수량/금액)</th><th class="n">올해 매출 (수량/금액)</th></tr></thead><tbody>'+
       tops.map(function(t){ var v=DATA.sales?spSum(spQuick(t.code,{name:t.name,spec:t.spec})):null, vc=v&&(v.q||v.a)?'<td class="n" data-v="'+v.ma+'">'+qa(v.mq,v.ma)+'</td><td class="n" data-v="'+v.a+'">'+qa(v.q,v.a)+'</td>':'<td class="n muted" data-v="">올해 매출 없음</td><td class="n muted" data-v="">—</td>'; return '<tr class="pick" data-fp="'+esc(t.code)+'"><td class="code">'+esc(t.code)+'</td><td class="nm"><b>'+esc(t.name||'(이름 없음)')+'</b></td><td>'+esc(t.spec)+'</td><td class="muted" style="font-size:12px">'+esc(t.via.slice(0,4).join(' · '))+(t.via.length>4?' 외 '+(t.via.length-4):'')+'</td>'+vc+'</tr>'; }).join('')+'</tbody></table></div>'
-      :'<div class="snote">이 자재를 쓰는 제품을 찾지 못했습니다.</div>';
-    var pr0=window.PLOG&&PLOG.parseRaw(inf.name, inf.spec, code);
-    h+=pr0?plogUseSection(pr0.grade, pr0.t, pr0.w, '🏭 생산일지에서 이 원자재('+(pr0.grade||'')+' '+pr0.t+'x'+pr0.w+')를 실제로 쓴 제품'):'';
+      :'<div class="snote">이 자재를 쓰는 제품을 찾지 못했습니다.</div>'; }
+    if(pr0 && !(useBom&&PLOG.ok())) h+=plogUseSection(pr0.grade, pr0.t, pr0.w, '📦 이 원자재를 실제로 쓴 제품 <span class="muted" style="font-weight:400">(원자재 사용현황 · '+esc((pr0.grade||'')+' '+pr0.t+'x'+pr0.w)+')</span>');
     h+=bpx;
-    show(head(esc(inf.name||code)+(inf.spec?' <span class="muted" style="font-weight:400">'+esc(inf.spec)+'</span>':'')+' · 사용 제품', tops.length+'종')+(back&&BM?'<button type="button" class="co-tab" id="bmBack" style="margin-bottom:12px">← 목록으로</button>':'')+h+bomFoot());
+    show(head(esc(inf.name||code)+(inf.spec?' <span class="muted" style="font-weight:400">'+esc(inf.spec)+'</span>':'')+' · 사용 제품', cnt+'종')+(back&&BM?'<button type="button" class="co-tab" id="bmBack" style="margin-bottom:12px">← 목록으로</button>':'')+h+bomFoot());
     bomBind(); bpPaintAll(); plogBind();
   }
   function bomReach(top, mid){   // top 아래에 mid 가 있는지
