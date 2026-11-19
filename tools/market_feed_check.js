@@ -23,6 +23,8 @@ Object.keys(U).forEach(k=>{
     if(a.length!==b.length)console.log('… '+k+' 줄 수 '+a.length+' → '+b.length+' (확인)');
   }
 });
+/* 좁은 칸(기간·기준일)에 긴 문구가 들어가면 표가 옆으로 늘어남 */
+if(U.stTrade)String(U.stTrade).split('\n').forEach(l=>{ const c=l.split('|'); if(c[3]&&c[3].length>30)err('stTrade «기간» 칸은 30자 이내(긴 설명은 마지막 «우리 영향» 칸으로): '+c[3]); });
 if(o)Object.keys(P).forEach(k=>{ if(!(k in U))console.log('… '+k+' 이번에 빠짐(이전 값 유지됨)'); });
 if(n.hkeys)Object.keys(n.hkeys).forEach(k=>{ if(U[k]&&String(U[k]).indexOf(n.hkeys[k])!==0)err(k+' 는 «'+n.hkeys[k]+'» 로 시작해야 함'); });
 console.log(bad?('검사 실패 '+bad+'건'):'✓ 검사 통과 · 항목 '+Object.keys(U).length+'개 · tag '+n.tag);
