@@ -13,7 +13,7 @@
   :root{
     --bg:#000; --card:#111214; --card-h:#1a1c20; --line:#2a2d33;
     --text:#f2f3f5; --sub:#9aa0a8; --dim:#6b7078;
-    --sales:#3b82f6; --purchase:#10b981; --cost:#a78bfa; --team:#f472b6; --coil:#22d3ee; --price:#fb923c; --material:#f97316; --codematch:#38bdf8; --new:#f59e0b;
+    --sales:#3b82f6; --purchase:#10b981; --cost:#a78bfa; --team:#f472b6; --coil:#22d3ee; --price:#fb923c; --material:#f97316; --codematch:#38bdf8; --subul:#a3e635; --new:#f59e0b;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--text)}
@@ -48,7 +48,26 @@
   footer button{background:none;border:1px solid var(--line);color:var(--sub);border-radius:8px;
                 padding:5px 12px;cursor:pointer;font:inherit;margin-left:8px}
   footer button:hover{color:var(--text)}
+  /* 2026-11-19 사용자 요청: 도구 버튼을 약 50% 작게 + 여러 칸으로 배열 (넓은 화면 3칸, 보통 2칸, 휴대폰 1칸) */
+  header{margin-bottom:26px}
+  main#list{width:min(1180px,100%);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  @media (max-width:1100px){ main#list{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  #list .row{display:block}
+  #list a.btn{height:100%;flex-wrap:wrap;gap:6px 10px;padding:11px 14px;border-radius:11px}
+  #list a.btn:hover{transform:translateY(-1px)}
+  #list .ico{font-size:20px}
+  #list .name{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #list .url{font-size:11px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #list .tx{flex:1 1 0}
+  #list .arrow{font-size:16px}
+  #list .upd{order:3;flex:1 1 100%;border-left:none;border-top:1px solid var(--line);flex-direction:row;flex-wrap:wrap;
+       align-items:baseline;justify-content:flex-start;gap:2px 8px;padding:6px 0 0}
+  #list .upd .lb{font-size:11px}
+  #list .upd .dt{font-size:12.5px;margin-top:0}
+  #list .upd .meta{font-size:11px;margin-top:0}
+  #list .badge{font-size:10px;padding:0 5px}
   @media (max-width:600px){
+    main#list{grid-template-columns:minmax(0,1fr);gap:8px}
     body{padding-top:36px}
     h1{font-size:24px}
     .row{flex-direction:column;gap:0}
@@ -388,6 +407,7 @@
   #updNote .u-cat.cost{color:#6d28d9;background:#f5f3ff;border-color:#ddd6fe}
   #updNote .u-cat.coil{color:#0e7490;background:#ecfeff;border-color:#a5f3fc}
   #updNote .u-cat.codematch{color:#0369a1;background:#f0f9ff;border-color:#bae6fd}
+  #updNote .u-cat.subul{color:#3f6212;background:#f7fee7;border-color:#d9f99d}
   #updNote .u-cat.material{color:#9a3412;background:#fff7ed;border-color:#fed7aa}
   #updNote .u-cat.price{color:#c2410c;background:#fff7ed;border-color:#fed7aa}
   #updNote .u-cat.salesteam{color:#be185d;background:#fdf2f8;border-color:#fbcfe8}
@@ -483,7 +503,10 @@
       url:'https://useran-coder.github.io/salesteam/', repo:'salesteam' },
     // 출고현황 Code Match = 출고현황 개별번호 매칭(매출분석 로그인·서버 동기화). 버전(SM_VER)은 파일 뒤쪽이라 커밋 메시지 vN 으로 읽음
     { key:'codematch', name:'출고현황 Code Match', icon:'🔗', color:'var(--codematch)',
-      url:'https://useran-coder.github.io/codematch/', repo:'codematch' }
+      url:'https://useran-coder.github.io/codematch/', repo:'codematch' },
+    // 수불관리 = 생산1·2·3파트 수불현황(내부보강·레이저·부자재·유통/OEM). 수주·출고는 Code Match 자료를 자동으로 받음. 버전은 <meta name="su-ver">
+    { key:'subul', name:'수불관리', icon:'🏭', color:'var(--subul)',
+      url:'https://useran-coder.github.io/subul/', repo:'subul' }
   ];
   var CACHE_KEY = 'dbfHomeUpd_v3';
   var CACHE_MS = 10 * 60 * 1000;   // 10분 안에는 다시 묻지 않음 (GitHub 무료 조회 한도 보호)
@@ -552,7 +575,7 @@
     return pump();
   }
   function findVer(s){
-    var m = /APP_BUILD\s*=\s*['"](v\d+)['"]/.exec(s) || /COIL_VER\s*=\s*['"](v\d+)['"]/.exec(s) || /SM_VER\s*=\s*['"](v\d+)['"]/.exec(s) || /MAT_VER\s*=\s*['"](v\d+)['"]/.exec(s) || /<title>[^<]*?(v\d+)\s*<\/title>/.exec(s);
+    var m = /APP_BUILD\s*=\s*['"](v\d+)['"]/.exec(s) || /COIL_VER\s*=\s*['"](v\d+)['"]/.exec(s) || /SM_VER\s*=\s*['"](v\d+)['"]/.exec(s) || /MAT_VER\s*=\s*['"](v\d+)['"]/.exec(s) || /name="su-ver" content="(v\d+)"/.exec(s) || /<title>[^<]*?(v\d+)\s*<\/title>/.exec(s);
     return m ? m[1] : '';
   }
 
