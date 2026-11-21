@@ -2789,6 +2789,9 @@ P.init=function(opt){
     document.getElementById('stlSub').textContent='유통가 천원/톤 · 카드 누르면 추이';
     document.getElementById('stlUpd').innerHTML='🕒 업데이트<b>'+E(ymd(D.asOf||D.stAsOf))+'</b>';
     /* 순서: 강판(후판 제외) → STS304 오른쪽에 STS430·STS201 → 맨 오른쪽 고철(생철A) */
+    /* 11.22 사용자 요청: PO 는 CR 바로 왼쪽 */
+    (function(){ var pi=-1; R.forEach(function(r,i){ if(r[0]==='PO')pi=i; }); if(pi<0)return; var po=R.splice(pi,1)[0], ci=-1;
+      R.forEach(function(r,i){ if(ci<0&&r[0]==='CR')ci=i; }); if(ci<0)R.splice(pi,0,po); else R.splice(ci,0,po); })();
     var sc=scRow(), h=[], have={};
     R.forEach(function(r){ have[r[0]]=1; });
     function extras(){ XTRA.forEach(function(x){ if(have[x.n]){ R.forEach(function(r){ if(r[0]===x.n)h.push(steelCard(r)); }); } else h.push(naCard(x)); }); }
