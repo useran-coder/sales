@@ -421,6 +421,41 @@
   #updNote .u-later{background:#fff;color:#475569;border:1px solid #cbd5e1}
   #updNote .u-ft .u-later:hover{background:#f1f5f9}
 </style>
+<style id="home-steel-v1">
+/* 철강시세 카드 줄 (매출분석도구 market_feed.json) — 검색줄 구분선 바로 아래 */
+.stl{width:min(1300px,100%);margin:-26px 0 26px;padding:10px 12px 12px;border:1px solid var(--line);border-radius:12px;background:#08090a}
+.stl-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:0 2px 8px}
+.stl-h b{font-size:14px}
+.stl-h span{font-size:12px;color:var(--sub)}
+.stl-h a{margin-left:auto;font-size:12px;color:var(--sub);text-decoration:none;border:1px solid var(--line);border-radius:7px;padding:3px 9px}
+.stl-h a:hover{color:var(--text);background:var(--card-h)}
+.stl-g{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
+@media (max-width:1100px){ .stl-g{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@media (max-width:600px){ .stl-g{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.stc{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--c);border-radius:10px;padding:8px 9px 7px;min-width:0;cursor:pointer;
+     transition:background .15s,transform .15s;font:inherit;color:var(--text);text-align:left}
+.stc:hover,.stc:focus-visible{background:var(--card-h);transform:translateY(-1px);outline:none}
+.stc.on{box-shadow:0 0 0 2px var(--cl);background:var(--card-h)}
+.stc-t{display:flex;justify-content:space-between;align-items:center;gap:3px;margin-bottom:2px}
+.stc-n{font-size:13px;font-weight:800;color:var(--cl);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stc-g{font-size:10.5px;font-weight:800;padding:1px 5px;border-radius:4px;white-space:nowrap}
+.stc-v{font-size:19px;font-weight:900;line-height:1.15;letter-spacing:-.02em}
+.stc-s,.stc-k{font-size:11px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stc-s b,.stc-k b{color:var(--sub);font-weight:700;margin-left:3px}
+.stc-k b{color:#f87171}
+.stc-d{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:4px;white-space:nowrap}
+.stc svg{display:block;width:100%;height:30px;margin-top:5px}
+.stt{margin-top:10px;padding:10px 12px 8px;background:var(--card);border:1px solid var(--line);border-radius:11px}
+.stt-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.stt-h b{font-size:14px}
+.stt-h span{font-size:12px;color:var(--sub)}
+.stt-h button{margin-left:auto;border:1px solid var(--line);background:#0d0e10;color:var(--sub);border-radius:7px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}
+.stt-h button:hover{color:var(--text)}
+.stt-n{font-size:12px;color:var(--sub);margin:2px 0 6px}
+.stt-m{font-size:11.5px;color:var(--dim);margin-top:6px}
+.stt svg{display:block;width:100%;height:auto}
+@media (max-width:960px){ .stl{margin-top:-14px} }
+</style>
 </head>
 <body>
 <button class="hb" id="hb" type="button" aria-label="메뉴 열기">
@@ -467,6 +502,11 @@
     </div>
   </div>
 </div>
+<section class="stl" id="stl" aria-label="철강시세" hidden>
+  <div class="stl-h"><b>🪙 철강시세</b><span id="stlSub">유통가 천원/톤</span><a href="https://useran-coder.github.io/sales/" target="_blank" rel="noopener">매출분석 철강 시황 ›</a></div>
+  <div class="stl-g" id="stlG"></div>
+  <div id="stlT"></div>
+</section>
 <header>
   <p class="co">(주)동방파스텍</p>
   <h1>업무분석도구</h1>
@@ -2591,6 +2631,113 @@ P.init=function(opt){
   },5000);
   window.addEventListener('storage',function(e){ if(e.key===LS){ var c=lsGet(LS); if(c&&c.rows&&c.rev!==P.rev){ setRows(c.rev,c.at,c.rows); fire(); } } });
 };
+})();
+</script>
+<script id="home-steel-v1-js">
+/* 철강시세 카드 + 카드 클릭 시 아래에 월별 추이(이전 24개월·이후 12개월)
+   자료: 매출분석도구 sales/market_feed.json (매주 목 자동 갱신) → 실패 시 저장본 → 내장본 */
+(function(){
+  var EMB={"tag": "2026-11-20b", "stAsOf": "2026-11-20", "stCard": "PO|#059669|940|-1.3|유통가|2026.7.22|소비자가|1,030|하락|973.6,970.3,972.3,965.9,967.5,964.2,959.9,961.4,955.9,957.0,952.3,950.5,951.1,952.2,944.9,943.7,944.9,945.3,940.0\nEGI|#d97706|1,050|+0.0|유통가|2026.7.22|소비자가|1,145|보합|1049,1054,1046,1053,1048,1047,1047,1048,1053,1047,1051,1051,1049,1050,1046,1046,1048,1052,1050.0\nHGI|#2563eb|1,145|+6.5|유통가|2026.10.19|소비자가|1,245|보합|1038,1039,1040,1046,1048,1046,1051,1053,1058,1059,1058,1066,1061,1065,1071,1068,1073,1075.0,1145\nCR|#6366f1|975|+2.6|유통가|2026.10.19|소비자가|1,040|보합|985.1,981.7,982.1,975.8,976.8,974.1,972.0,969.1,970.1,969.0,963.4,962.9,956.3,959.3,957.0,957.7,954.4,950.0,975\nHR|#dc2626|920|-0.5|유통가|2026.11.17|소비자가|1,040|보합|991.4,986.3,983.1,979.9,982.7,974.9,973.0,971.4,972.3,963.4,963.5,961.5,961.3,958.0,955.6,950.0,915,925,920\n후판|#0891b2|990|-1.5|유통가|2026.8.21|수입재|960|하락|1029,1027,1029,1027,1018,1016,1014,1012,1012,1011,1006,1002,1003,1000,999.4,1000,996.0,992.3,990.0\nSTS304|#7c3aed|3,850|-1.3|유통가|2026.6.23|소비자가|4,000|하락|3986,3959,3978,3967,3963,3953,3933,3926,3910,3919,3894,3887,3884,3876,3874,3858,3849,3846,3850.0\n생철A|#ea580c|452|-2.2|매입가|2026.11.10|제강사 정책|10차 인하 예고(11.17)|하락|503.9,501.6,498.5,497.6,496.7,495.5,493.3,494.9,494.2,490.8,489.6,486.8,485.6,485.2,483.6,484.5,482.0,462,452", "stFcast": "PO 산세강판|940|935~950|935~955|보합|열연 90만 초중반 반등 vs 냉연 할인 이력·철광석 약세. 최신 공급사 견적 우선\nEGI 전기아연도금|1,055|1,040~1,060|1,040~1,065|보합|국내 아연 판매가 -37.4만원·수입경쟁이 하방 · 환율 반등이 상방\nHGI 용융아연도금|1,145|1,140~1,165|1,140~1,175|강보합|중국산(냉연소재) AD 확정 절차 → 상단 · 열연소재 HGI 저가 유입은 하단\nCR 냉연강판|975|965~980|965~985|보합|명목 유지·실거래 할인 · 열연 반등이 하단 지지\nHR 열연강판|920|915~935|920~945|보합|고로 개수·설비보수 공급감소(내년 1분기까지) vs 철근·스크랩 약세 · 수입재 80만 후반\nSTS304|3,750|3,650~3,750|3,650~3,750|보합|니켈 $16,025로 반등 · 건설 수요 부진\n컬러강판|인상 고시 기준|+1~2%|+2~3%|상승|AD 최종 긍정판정 반영 · 실구매 견적으로 확인\n생철A|452|435~455|455~480|계절 변동|10차 인하 예고 → 11월말~12월 저점 · 1월부터 동절기 반등"};
+  var URL='https://useran-coder.github.io/sales/market_feed.json', LS='dbfHomeSteelV1';
+  var D=null, KEY='';
+  function E(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function rows(k){ return String((D&&D[k])||'').split('\n').map(function(l){return l.trim();}).filter(Boolean).map(function(l){return l.split('|').map(function(c){return c.trim();});}); }
+  function num(v){ var n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
+  function rng(v){ var m=String(v||'').replace(/[, ]/g,'').match(/(-?[\d.]+)~(-?[\d.]+)/);
+    if(m)return {lo:+m[1],hi:+m[2],mid:(+m[1]+ +m[2])/2}; var o=num(v); return o==null?null:{lo:o,hi:o,mid:o}; }
+  function light(c){ return 'color-mix(in srgb,'+c+' 62%,#fff)'; }
+  function fcFor(name){ var key=String(name||'').replace(/\s+/g,'').toUpperCase(), R=rows('stFcast');
+    for(var i=0;i<R.length;i++){ var h=String(R[i][0]||'').replace(/\s+/g,'').toUpperCase(); if(h.indexOf(key)===0||key.indexOf(h.split('(')[0])===0)return R[i]; } return null; }
+  function chip(p){ var n=parseFloat(p);
+    if(isNaN(n)||Math.abs(n)<0.05)return '<span class="stc-g" style="background:#1c1e22;color:#9aa0a8">— 0.0%</span>';
+    return n>0?'<span class="stc-g" style="background:#052e1f;color:#34d399">▲'+Math.abs(n).toFixed(1)+'%</span>'
+              :'<span class="stc-g" style="background:#0c1a3a;color:#60a5fa">▼'+Math.abs(n).toFixed(1)+'%</span>'; }
+  function dir(d){ var M={'상승':['#f87171','#2a1212','↗ 상승추세'],'하락':['#60a5fa','#0c1a3a','↘ 하락추세'],'보합':['#9aa0a8','#1c1e22','→ 보합']}; var t=M[d]||M['보합'];
+    return '<span class="stc-d" style="background:'+t[1]+';color:'+t[0]+'">'+t[2]+'</span>'; }
+  function spark(list,c){ var v=String(list||'').split(',').map(parseFloat).filter(function(x){return !isNaN(x);}); if(v.length<2)return '';
+    var W=200,H=30,mn=Math.min.apply(null,v),mx=Math.max.apply(null,v),rg=(mx-mn)||1;
+    var pts=v.map(function(k,i){ return (W/(v.length-1)*i).toFixed(1)+','+(H-3-(k-mn)/rg*(H-6)).toFixed(1); }).join(' ');
+    return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none"><polygon points="0,'+H+' '+pts+' '+W+','+H+'" fill="'+c+'" opacity=".16"/>'+
+      '<polyline points="'+pts+'" fill="none" stroke="'+light(c)+'" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>'; }
+  function series(card){
+    var cur=num(card[2]); if(cur==null)return null;
+    var sp=String(card[9]||'').split(',').map(parseFloat).filter(function(x){return !isNaN(x);}), P=24, F=12, past=[], i;
+    if(sp.length>=2){ for(i=0;i<P;i++){ var t=i/(P-1)*(sp.length-1), a=Math.floor(t), b=Math.min(sp.length-1,a+1); past.push(sp[a]+(sp[b]-sp[a])*(t-a)); }
+      var gap=cur-past[P-1]; past=past.map(function(v,j){ return v+gap*(j/(P-1)); }); }
+    else for(i=0;i<P;i++)past.push(cur);
+    var fc=fcFor(card[0]), s3=fc?rng(fc[2]):null, s12=fc?rng(fc[3]):null, fut=[], lo=[], hi=[];
+    for(var m=1;m<=F;m++){ var v,l,h;
+      if(s3&&s12){ if(m<=3){ var w=m/3; v=cur+(s3.mid-cur)*w; l=cur+(s3.lo-cur)*w; h=cur+(s3.hi-cur)*w; }
+        else { var w2=(m-3)/(F-3); v=s3.mid+(s12.mid-s3.mid)*w2; l=s3.lo+(s12.lo-s3.lo)*w2; h=s3.hi+(s12.hi-s3.hi)*w2; } }
+      else { v=cur; l=cur*0.98; h=cur*1.02; }
+      fut.push(v); lo.push(l); hi.push(h); }
+    return {past:past,fut:fut,lo:lo,hi:hi,cur:cur,fc:fc};
+  }
+  function trend(){
+    if(!KEY)return ''; var card=null; rows('stCard').forEach(function(r){ if(r[0]===KEY)card=r; }); if(!card)return '';
+    var c=card[1]||'#0f766e', cl=light(c), S=series(card); if(!S)return '';
+    var now=new Date(), Y=now.getFullYear(), M=now.getMonth()+1, labs=[], k;
+    for(k=-23;k<=12;k++){ var mm=M+k, yy=Y+Math.floor((mm-1)/12); mm=((mm-1)%12+12)%12+1; labs.push({y:yy,m:mm}); }
+    var all=S.past.concat(S.fut,S.lo,S.hi), mn=Math.min.apply(null,all), mx=Math.max.apply(null,all), pad=(mx-mn)*0.18||10; mn-=pad; mx+=pad;
+    var W=1400,H=330,P={t:26,r:20,b:40,l:66}, pw=W-P.l-P.r, ph=H-P.t-P.b, n=36;
+    function X(i){ return (P.l+pw/(n-1)*i).toFixed(1); } function Yv(v){ return (P.t+ph-(v-mn)/(mx-mn)*ph).toFixed(1); }
+    function fm(v){ return Math.round(v).toLocaleString('ko-KR'); }
+    var g='<rect x="'+X(23)+'" y="'+P.t+'" width="'+(X(35)-X(23)).toFixed(1)+'" height="'+ph+'" fill="#16181c"/>';
+    for(k=0;k<=4;k++){ var gv=mn+(mx-mn)*k/4, gy=Yv(gv);
+      g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+gy+'" y2="'+gy+'" stroke="#22252a"/><text x="'+(P.l-8)+'" y="'+(+gy+4)+'" text-anchor="end" font-size="12" fill="#6b7078">'+fm(gv)+'</text>'; }
+    var up=S.hi.map(function(v,i){ return X(24+i)+','+Yv(v); }), dn=S.lo.map(function(v,i){ return X(24+i)+','+Yv(v); }).reverse(), c0=X(23)+','+Yv(S.cur);
+    g+='<polygon points="'+c0+' '+up.concat(dn).join(' ')+' '+c0+'" fill="'+c+'" opacity=".22"/>';
+    g+='<polyline points="'+S.past.map(function(v,i){ return X(i)+','+Yv(v); }).join(' ')+'" fill="none" stroke="'+cl+'" stroke-width="2.8" stroke-linejoin="round"/>';
+    S.past.forEach(function(v,i){ if(i%3||i===23)return;
+      g+='<circle cx="'+X(i)+'" cy="'+Yv(v)+'" r="2.8" fill="#000" stroke="'+cl+'" stroke-width="1.8"/><text x="'+X(i)+'" y="'+(Yv(v)-9)+'" text-anchor="middle" font-size="11.5" font-weight="700" fill="'+cl+'">'+fm(v)+'</text>'; });
+    g+='<polyline points="'+c0+' '+S.fut.map(function(v,i){ return X(24+i)+','+Yv(v); }).join(' ')+'" fill="none" stroke="'+cl+'" stroke-width="2.6" stroke-dasharray="7 5" stroke-linejoin="round"/>';
+    g+='<line x1="'+X(23)+'" x2="'+X(23)+'" y1="'+P.t+'" y2="'+(P.t+ph)+'" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="6 4"/>'+
+       '<circle cx="'+X(23)+'" cy="'+Yv(S.cur)+'" r="5" fill="#000" stroke="'+cl+'" stroke-width="3"/>'+
+       '<text x="'+X(23)+'" y="'+(Yv(S.cur)-12)+'" text-anchor="middle" font-size="13.5" font-weight="800" fill="#fff">'+fm(S.cur)+'</text>'+
+       '<text x="'+X(23)+'" y="'+(P.t-8)+'" text-anchor="middle" font-size="12" font-weight="800" fill="#f59e0b">현재</text>';
+    [3,6,12].forEach(function(mo){ var i=23+mo, v=S.fut[mo-1];
+      g+='<circle cx="'+X(i)+'" cy="'+Yv(v)+'" r="3.6" fill="#000" stroke="'+cl+'" stroke-width="2"/><text x="'+X(i)+'" y="'+(Yv(v)-10)+'" text-anchor="middle" font-size="12" font-weight="700" fill="'+cl+'">'+fm(v)+'</text>'; });
+    labs.forEach(function(L,i){ if(i%3&&i!==23)return;
+      g+='<text x="'+X(i)+'" y="'+(P.t+ph+18)+'" text-anchor="middle" font-size="12" fill="'+(i===23?'#f59e0b':'#6b7078')+'" font-weight="'+(i===23?800:400)+'">'+String(L.y).slice(2)+'.'+String(L.m).padStart(2,'0')+'</text>'; });
+    g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+(P.t+ph)+'" y2="'+(P.t+ph)+'" stroke="#2a2d33"/>';
+    var fc=S.fc, note=fc?('단기(3개월) '+E(fc[2]||'-')+' · 중기(6~12개월) '+E(fc[3]||'-')+' · '+E(fc[4]||'')+(fc[5]?' — '+E(fc[5]):'')):'전망표에 없는 품목 → 현재가 유지선으로 표시';
+    return '<div class="stt" id="sttBox"><div class="stt-h"><b style="color:'+cl+'">'+E(card[0])+' 월별 추이</b><span>이전 24개월 · 이후 12개월 · 단위 천원/톤 (기준일 '+E(card[5]||'')+')</span>'+
+      '<button type="button" data-stx="1">✕ 닫기</button></div><div class="stt-n">'+note+'</div>'+
+      '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="font-family:inherit">'+g+'</svg>'+
+      '<div class="stt-m">※ 과거는 카드의 시세 흐름을 월 단위로 펼쳐 현재가에 맞춘 선, 점선은 가격 전망표 범위를 이은 시나리오 · 실제 계약단가는 공급사 견적 기준</div></div>';
+  }
+  function paint(){
+    var R=rows('stCard'), box=document.getElementById('stl'); if(!box)return;
+    if(!R.length){ box.hidden=true; return; }
+    box.hidden=false;
+    document.getElementById('stlSub').textContent='유통가 천원/톤'+(D.stAsOf?' · '+D.stAsOf+' 기준':'')+' · 카드 누르면 추이';
+    document.getElementById('stlG').innerHTML=R.map(function(r){ var c=r[1]||'#64748b';
+      return '<button type="button" class="stc'+(KEY===r[0]?' on':'')+'" data-stk="'+E(r[0])+'" style="--c:'+E(c)+';--cl:'+light(E(c))+'" title="'+E(r[0])+' 월별 추이 보기 · 다시 누르면 닫힘">'+
+        '<div class="stc-t"><span class="stc-n">'+E(r[0])+'</span>'+chip(r[3])+'</div>'+
+        '<div class="stc-v">'+E(r[2])+'</div>'+
+        '<div class="stc-s">'+E(r[4])+'<b>'+E(r[5])+'</b></div>'+
+        '<div class="stc-k">'+E(r[6])+'<b>'+E(r[7])+'</b></div>'+dir(r[8])+spark(r[9],c)+'</button>'; }).join('');
+    document.getElementById('stlT').innerHTML=trend();
+  }
+  function use(u,tag){ if(!u||!u.stCard)return false; D={tag:tag||'',stAsOf:u.stAsOf||'',stCard:u.stCard,stFcast:u.stFcast||''}; return true; }
+  var saved=null; try{ saved=JSON.parse(localStorage.getItem(LS)||'null'); }catch(_e){}
+  if(!(saved&&saved.tag>=EMB.tag&&use(saved,saved.tag)))use(EMB,EMB.tag);
+  paint();
+  function load(){
+    if(!window.fetch)return;
+    fetch(URL+'?t='+Math.floor(Date.now()/36e5),{cache:'no-cache'}).then(function(r){ if(!r.ok)throw 0; return r.json(); }).then(function(j){
+      if(!j||!j.update||!j.update.stCard||!(String(j.tag||'')>=String(D&&D.tag||'')))return;
+      if(use(j.update,String(j.tag||''))){ try{ localStorage.setItem(LS,JSON.stringify(D)); }catch(_s){} paint(); }
+    }).catch(function(){});
+  }
+  load(); setInterval(load,3*36e5);
+  document.addEventListener('click',function(ev){
+    var t=ev.target&&ev.target.closest; if(!t)return;
+    var x=ev.target.closest('#stl [data-stx]'); if(x){ KEY=''; paint(); return; }
+    var c=ev.target.closest('#stl [data-stk]'); if(!c)return;
+    var k=c.getAttribute('data-stk')||''; KEY=(KEY===k)?'':k; paint();
+    if(KEY)setTimeout(function(){ var el=document.getElementById('sttBox'); if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest',behavior:'smooth'}); },40);
+  });
 })();
 </script>
 </body>
