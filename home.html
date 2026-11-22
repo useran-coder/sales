@@ -151,6 +151,24 @@
   .mbody td{padding:9px 8px;border-bottom:1px solid #1f2227}
   .mbody td.no{color:var(--dim);width:36px;font-variant-numeric:tabular-nums}
   .mbody td.id{font-weight:700;font-family:ui-monospace,Consolas,monospace}
+  /* 계정 관리(관리자) — 매출분석도구 계정관리와 같은 서버 요청 */
+  .mbox.wide{width:820px}
+  .am-add{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px}
+  .am-add input,.am-add select,.am-sel{background:#000;border:1px solid var(--line);border-radius:7px;color:var(--text);padding:6px 8px;font:inherit;font-size:13px}
+  .am-add input{width:118px}
+  .am-add button{background:#0f2e2a;border:1px solid #14b8a6;color:#5eead4;border-radius:7px;padding:6px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .am-msg{font-size:12.5px;min-height:18px;margin:0 0 8px;white-space:pre-line}
+  .am-sel{padding:3px 6px;font-size:12.5px}
+  .am-b{background:none;border:1px solid var(--line);color:var(--sub);border-radius:6px;padding:3px 7px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+  .am-b:hover{color:var(--text);background:var(--card-h)}
+  .am-b.pw{border-color:#1d4ed8;color:#93c5fd}
+  .am-b.off{border-color:#a16207;color:#fcd34d}
+  .am-b.on{border-color:#15803d;color:#86efac}
+  .am-b.del{border-color:#7f1d1d;color:#fca5a5}
+  .am-b.ok{border-color:#0d9488;color:#5eead4}
+  .mbody td.act{white-space:nowrap;text-align:right}
+  .mbody tr.dim td{opacity:.5}
+  .mbody tr.dim td.act{opacity:1}
   .tag{display:inline-block;font-size:11px;border-radius:5px;padding:1px 6px;margin-left:6px;border:1px solid var(--line);color:var(--sub)}
   .tag.adm{color:#fbbf24;border-color:#78591a}
   .tag.off{color:#f87171;border-color:#7f2d2d}
@@ -988,28 +1006,100 @@
   // 회원 표: 제목(#·아이디·이름·마지막 로그인)을 누르면 정렬, 한 번 더 누르면 반대로
   var MS={list:[], k:'_no', dir:1};
   var MCOLS=[{k:'_no',h:'#'},{k:'id',h:'아이디'},{k:'name',h:'이름'},{k:'_ll',h:'마지막 로그인'}];
+  var ADM=function(){ return !!(cur&&cur.role==='admin'); };
+  function roleSel(u,attr){ return '<select class="am-sel" '+attr+'="'+esc(u.id)+'" data-cur="'+esc(u.role||'user')+'">'+['admin','uploader','user'].map(function(r){ return '<option value="'+r+'"'+((u.role||'user')===r?' selected':'')+'>'+ROLE[r]+'</option>'; }).join('')+'</select>'; }
+  function addForm(){ return '<div class="am-add"><input id="amId" placeholder="아이디" autocomplete="off"><input id="amNm" placeholder="이름" autocomplete="off"><input id="amPw" placeholder="비밀번호" autocomplete="new-password">'+
+    '<select id="amRole"><option value="user">일반</option><option value="uploader">업로더</option><option value="admin">관리자</option></select><button type="button" id="amAdd">＋ 계정 추가</button></div><div class="am-msg" id="amMsg"></div>'; }
   function drawMem(){
     var all=MS.list.slice(), k=MS.k, dir=MS.dir;
     all.sort(function(a,b){ var x=a[k], y=b[k];
       if(k==='_no'||k==='_ll') return ((x||0)-(y||0))*dir || (a._no-b._no);
       return String(x||a.id||'').localeCompare(String(y||b.id||''),'ko')*dir; });
     {
-      body(acctCard()+'<table><thead><tr>'+MCOLS.map(function(c){ var on=MS.k===c.k; return '<th class="msrt'+(on?' on':'')+'" data-mk="'+c.k+'">'+c.h+'<i>'+(on?(MS.dir>0?'▲':'▼'):'')+'</i></th>'; }).join('')+'</tr></thead><tbody>'+
+      var adm=ADM(); var mb=document.querySelector('#memModal .mbox'); if(mb) mb.classList.toggle('wide',adm);
+      var heads=MCOLS.map(function(c){ var on=MS.k===c.k; return '<th class="msrt'+(on?' on':'')+'" data-mk="'+c.k+'">'+c.h+'<i>'+(on?(MS.dir>0?'▲':'▼'):'')+'</i></th>'; });
+      if(adm){ heads.splice(3,0,'<th>권한</th>'); heads.push('<th style="text-align:right">관리</th>'); }
+      body(acctCard()+(adm?addForm():'')+'<table><thead><tr>'+heads.join('')+'</tr></thead><tbody>'+
         all.map(function(u,i){
           var tags='';
           if(u.pending) tags+='<span class="tag pend">승인 대기</span>';
           else if(u.active===false) tags+='<span class="tag off">사용중지</span>';
-          if(u.role==='admin') tags+='<span class="tag adm">관리자</span>';
+          if(adm){} else if(u.role==='admin') tags+='<span class="tag adm">관리자</span>';
           else if(u.role==='uploader') tags+='<span class="tag">업로더</span>';
+          if(adm){
+            var act = u.pending
+              ? roleSel(u,'data-amprole')+' <button class="am-b ok" data-amok="'+esc(u.id)+'">승인</button> <button class="am-b del" data-amno="'+esc(u.id)+'">거절</button>'
+              : '<button class="am-b pw" data-ampw="'+esc(u.id)+'">비번변경</button> <button class="am-b '+(u.active===false?'on':'off')+'" data-amact="'+esc(u.id)+'">'+(u.active===false?'사용재개':'사용중지')+'</button> <button class="am-b del" data-amdel="'+esc(u.id)+'">삭제</button>';
+            return '<tr'+(u.active===false?' class="dim"':'')+'><td class="no">'+u._no+'</td><td class="id">'+esc(u.id)+'</td><td>'+esc(u.name||'')+tags+'</td>'+
+              '<td>'+(u.pending?'':roleSel(u,'data-amrole'))+'</td><td class="ll">'+lastLogin(u.lastLogin)+'</td><td class="act">'+act+'</td></tr>';
+          }
           return '<tr><td class="no">'+u._no+'</td><td class="id">'+esc(u.id)+'</td><td>'+esc(u.name||'')+tags+'</td><td class="ll">'+lastLogin(u.lastLogin)+'</td></tr>';
         }).join('')+'</tbody></table>'+
-        '<div class="note" style="margin-top:10px">계정 추가·삭제·권한 변경은 매출분석도구 관리자 메뉴에서 합니다. 제목을 누르면 정렬됩니다.</div>');
-      bindAcct();
+        '<div class="note" style="margin-top:10px">'+(adm?'권한 — <b>관리자</b>: 전부 + 계정 관리 · <b>업로더</b>: 매출자료 올리기·설정 저장 · <b>일반</b>: 받기·보기만. 매출분석도구 계정관리와 같은 서버라 바로 반영됨. 제목을 누르면 정렬.':'계정 추가·삭제·권한 변경은 관리자만 할 수 있음. 제목을 누르면 정렬.')+'</div>');
+      bindAcct(); if(adm) bindAdmin();
       $('memBody').querySelectorAll('th[data-mk]').forEach(function(th){ th.addEventListener('click', function(){
         var k=th.getAttribute('data-mk'); if(MS.k===k) MS.dir=-MS.dir; else { MS.k=k; MS.dir=(k==='_ll')?-1:1; } drawMem(); }); });
     }
   }
 
+  /* 관리자 계정 관리 : 매출분석도구 auAdminBind 와 같은 요청(auAdd·auSet·auPw·auToggle·auDel·auApprove·auReject) */
+  function amMsg(t,c){ var e=$('amMsg'); if(e){ e.style.color=c||'#5eead4'; e.textContent=t||''; } }
+  function acall(p){ p.token=cur&&cur.token; return call(p); }
+  function relist(msg,c){ return acall({action:'auList',fresh:Date.now()}).then(function(d){
+      var all=(d&&d.users)||[]; all.sort(function(a,b){ return (b.pending?1:0)-(a.pending?1:0) || String(a.name||a.id).localeCompare(String(b.name||b.id),'ko'); });
+      all.forEach(function(u,i){ u._no=i+1; var t=u.lastLogin?new Date(String(u.lastLogin)).getTime():NaN; u._ll=isNaN(t)?-1:t; });
+      MS.list=all; $('memCnt').textContent=all.length+'명'; drawMem(); if(msg) amMsg(msg,c); }); }
+  function roleOf(id){ return acall({action:'auList',fresh:Date.now()}).then(function(d){ var r=''; ((d&&d.users)||[]).forEach(function(u){ if(String(u.id)===String(id)) r=String(u.role||''); }); return r; }); }
+  function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+  function setRole(id,role){   /* 저장 후 서버 값을 다시 읽어 확인, 안 바뀌면 auApprove(forceRole) 한 번 더 */
+    var err='';
+    return acall({action:'auSet',targetId:id,role:role}).catch(function(e){ err=e.message; })
+      .then(function(){ return wait(200); }).then(function(){ return roleOf(id); })
+      .then(function(got){ if(got===role) return got;
+        return acall({action:'auApprove',targetId:id,role:role,forceRole:true}).catch(function(){}).then(function(){ return wait(300); }).then(function(){ return roleOf(id); })
+          .then(function(g2){ if(g2!==role) throw new Error('권한 변경이 서버에 저장되지 않음 (서버 값: '+(ROLE[g2]||g2||'확인 안 됨')+')'+(err?'\n'+err:'')); return g2; }); });
+  }
+  function bindAdmin(){
+    var B=$('memBody');
+    var add=$('amAdd'); if(add) add.onclick=function(){
+      var id=$('amId').value.trim(), nm=$('amNm').value.trim(), pw=$('amPw').value, role=$('amRole').value;
+      if(!id||!pw) return amMsg('아이디와 비밀번호를 입력','#f87171');
+      add.disabled=true; amMsg('추가 중…','#9aa0a8');
+      acall({action:'auAdd',newId:id,name:nm||id,pw:pw,role:role}).then(function(){ return relist('「'+id+'」 계정 추가됨'); })
+        .catch(function(e){ amMsg(e.message,'#f87171'); }).then(function(){ var a=$('amAdd'); if(a) a.disabled=false; });
+    };
+    B.querySelectorAll('[data-amrole]').forEach(function(sel){ sel.onchange=function(){
+      var id=sel.getAttribute('data-amrole'), role=sel.value, old=sel.getAttribute('data-cur');
+      sel.disabled=true; amMsg('「'+id+'」 권한 저장 중… · 서버 재확인','#9aa0a8');
+      setRole(id,role).then(function(){
+        if(cur && String(cur.id)===String(id)){ cur.role=role; if(cur.src==='own') setOwn(cur); renderWho(); }
+        return relist('「'+id+'」 권한 → '+ROLE[role]+' · 서버 저장 확인됨');
+      }).catch(function(e){ sel.value=old; sel.disabled=false; amMsg('「'+id+'」 권한 변경 실패\n'+e.message,'#f87171'); });
+    }; });
+    B.querySelectorAll('[data-ampw]').forEach(function(b){ b.onclick=function(){
+      var id=b.getAttribute('data-ampw'), pw=prompt('「'+id+'」 새 비밀번호'); if(!pw) return;
+      acall({action:'auPw',targetId:id,pw:pw}).then(function(){ amMsg('「'+id+'」 비밀번호 변경됨'); }).catch(function(e){ amMsg(e.message,'#f87171'); });
+    }; });
+    B.querySelectorAll('[data-amact]').forEach(function(b){ b.onclick=function(){
+      var id=b.getAttribute('data-amact'), stop=b.textContent==='사용중지';
+      if(stop && !confirm('「'+id+'」 계정을 사용중지할까요?\n중지하면 로그인할 수 없음')) return;
+      acall({action:'auToggle',targetId:id}).then(function(){ return relist('「'+id+'」 '+(stop?'사용중지':'사용재개')+'됨'); }).catch(function(e){ amMsg(e.message,'#f87171'); });
+    }; });
+    B.querySelectorAll('[data-amdel]').forEach(function(b){ b.onclick=function(){
+      var id=b.getAttribute('data-amdel');
+      if(cur && String(cur.id)===String(id)) return amMsg('지금 로그인한 계정은 삭제할 수 없음','#f87171');
+      if(!confirm('「'+id+'」 계정을 삭제할까요?\n삭제하면 즉시 접속이 차단됨')) return;
+      acall({action:'auDel',targetId:id}).then(function(){ return relist('「'+id+'」 삭제됨'); }).catch(function(e){ amMsg(e.message,'#f87171'); });
+    }; });
+    B.querySelectorAll('[data-amok]').forEach(function(b){ b.onclick=function(){
+      var id=b.getAttribute('data-amok'), sel=B.querySelector('[data-amprole="'+id+'"]'), role=sel?sel.value:'user';
+      acall({action:'auApprove',targetId:id,role:role}).then(function(){ return relist('「'+id+'」 승인 완료 · 이제 로그인 가능'); }).catch(function(e){ amMsg(e.message,'#f87171'); });
+    }; });
+    B.querySelectorAll('[data-amno]').forEach(function(b){ b.onclick=function(){
+      var id=b.getAttribute('data-amno'); if(!confirm('「'+id+'」 신청을 거절할까요?\n계정이 삭제됨')) return;
+      acall({action:'auReject',targetId:id}).then(function(){ return relist('「'+id+'」 거절함'); }).catch(function(e){ amMsg(e.message,'#f87171'); });
+    }; });
+  }
   // 지금 로그인 상태 찾기: 이 화면 로그인 → 매출분석도구 로그인 순서
   function resolveLogin(){
     var own=getOwn();
