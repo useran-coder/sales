@@ -153,6 +153,7 @@
   .mbody td.id{font-weight:700;font-family:ui-monospace,Consolas,monospace}
   /* 계정 관리(관리자) — 매출분석도구 계정관리와 같은 서버 요청 */
   .mbox.wide{width:740px}
+  .mbox.login{width:400px}
   .mbox.wide .mbody td.ll,.mbox.wide .mbody td.act{width:1%}
   .mbox.wide .mbody td.ll{padding-right:14px}
   .am-sel.adm{border-color:#a16207;color:#fcd34d}
@@ -962,6 +963,7 @@
 
   function body(h){ $('memBody').innerHTML = h; }
   function showLogin(msg){
+    var mbx=document.querySelector('#memModal .mbox'); if(mbx){ mbx.classList.remove('wide'); mbx.classList.add('login'); }
     $('memCnt').textContent=''; $('memFoot').style.display='none';
     body('<div class="note">'+(msg?esc(msg)+'<br>':'')+
       '매출분석도구와 같은 아이디로 로그인하세요. 관리자 계정만 목록을 볼 수 있습니다.</div>'+
@@ -1019,7 +1021,7 @@
       if(k==='_no'||k==='_ll') return ((x||0)-(y||0))*dir || (a._no-b._no);
       return String(x||a.id||'').localeCompare(String(y||b.id||''),'ko')*dir; });
     {
-      var adm=ADM(); var mb=document.querySelector('#memModal .mbox'); if(mb) mb.classList.toggle('wide',adm);
+      var adm=ADM(); var mb=document.querySelector('#memModal .mbox'); if(mb){ mb.classList.remove('login'); mb.classList.toggle('wide',adm); }
       var heads=MCOLS.map(function(c){ var on=MS.k===c.k; return '<th class="msrt'+(on?' on':'')+'" data-mk="'+c.k+'">'+c.h+'<i>'+(on?(MS.dir>0?'▲':'▼'):'')+'</i></th>'; });
       if(adm){ heads.splice(3,0,'<th>권한</th>'); heads.push('<th style="text-align:right">관리</th>'); }
       body(acctCard()+(adm?addForm():'')+'<table><thead><tr>'+heads.join('')+'</tr></thead><tbody>'+
