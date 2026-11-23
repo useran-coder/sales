@@ -4,6 +4,10 @@
 `market_feed.json` 을 받아 화면 자료를 덮어쓴다(index.html 의 `script#v1540-market-feed`).
 주간 갱신은 **market_feed.json 만** 고쳐 올린다. index.html·APP_BUILD 는 건드리지 않는다.
 
+## 화면 원본 (2026-11-23~)
+- 세 화면(건설동향·방화문시장 분석·철강시세 전망)의 원본은 홈페이지 저장소 bookmark/market.html. 매출분석도구 세 메뉴(v1708)와 홈페이지 탭 화면 모두 이 페이지를 불러옴.
+- 자료는 그대로 이 저장소의 market_feed.json 만 고치면 됨(market.html 이 ../sales/market_feed.json 을 받음). HTML 은 건드리지 않음.
+
 ## 파일 형식
 
 ```json

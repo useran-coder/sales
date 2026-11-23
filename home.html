@@ -636,7 +636,7 @@
 <div class="mkv" id="mkv" role="region" aria-label="시장 동향"><div class="mkv-in"><div class="mkv-top"><div class="mkv-tabs" role="tablist">
   <button type="button" role="tab" data-mkt="market-con">🏗️ 건설동향</button><button type="button" role="tab" data-mkt="market-fd">🚪 방화문시장 분석</button><button type="button" role="tab" data-mkt="market-steel">🪙 철강시세 전망</button></div>
   <span class="mkv-st" id="mkvSt"></span><button type="button" class="x" id="mkvX" aria-label="닫기">×</button></div>
-  <div class="mkv-body"><div class="mkv-ld" id="mkvLd"><i></i>시장 자료 여는 중…<small>매출분석도구와 같은 로그인 사용</small></div><iframe id="mkvF" title="시장 동향" loading="eager"></iframe></div></div></div>
+  <div class="mkv-body"><div class="mkv-ld" id="mkvLd"><i></i>시장 자료 여는 중…<small>매출분석도구와 같은 로그인</small></div><iframe id="mkvF" title="시장 동향" loading="eager"></iframe></div></div></div>
 <div class="fdm" id="fdm" role="dialog" aria-modal="true" aria-labelledby="fdmT"><div class="fdm-box"><div class="fdm-hd"><b id="fdmT">방화문 시장 동향</b><button type="button" class="x" id="fdmX" aria-label="닫기">×</button></div><div class="fdm-bd" id="fdmB"></div></div></div>
 
 <footer>
@@ -3068,18 +3068,18 @@ P.init=function(opt){
 </script>
 <script id="home-mkview-v1">
 /* 11.23 시장 동향 창 — 매출분석도구의 건설동향·방화문시장 분석·철강시세 전망을 이 페이지 안에서 탭으로 봄
-   매출분석도구(?embed=market, v1706)를 iframe 으로 넣고 탭은 postMessage({type:'mkAct'}) 로 바꿈 · 같은 주소라 로그인 공유 */
+   원본 market.html 을 iframe 으로 넣고 탭은 postMessage({type:'mkAct'}) 로 바꿈 · 같은 주소라 로그인 공유 */
 (function(){
   var V=document.getElementById('mkv'), F=document.getElementById('mkvF'), ST=document.getElementById('mkvSt'); if(!V||!F)return;
-  /* 같은 주소(origin)여야 로그인 공유·탭 전환이 됨 — 배포(github.io)·시험(localhost) 모두 이 페이지 기준 /sales/ */
-  var BASE=/^https?:/.test(location.protocol)?location.origin+'/sales/':'https://useran-coder.github.io/sales/';
+  /* 원본 = 이 홈페이지의 market.html(시장 화면만 · 자료는 sales/market_feed.json) — 같은 주소라 로그인 공유 */
+  var PAGE=/^https?:/.test(location.protocol)?'market.html':'https://useran-coder.github.io/bookmark/market.html';
   var cur='market-fd', ready=false, loaded=false;
   function tabs(){ V.querySelectorAll('[data-mkt]').forEach(function(b){ var on=b.getAttribute('data-mkt')===cur; b.classList.toggle('on',on); b.setAttribute('aria-selected',on?'true':'false'); }); }
-  function send(){ try{ F.contentWindow.postMessage({type:'mkAct',act:cur},BASE.indexOf(location.origin)===0?location.origin:'*'); }catch(_){} }
+  function send(){ try{ F.contentWindow.postMessage({type:'mkAct',act:cur},location.origin); }catch(_){} }
   var TB=document.getElementById('topbar');
   function place(){ try{ var b=TB?TB.getBoundingClientRect().bottom:70; V.style.top=Math.max(0,Math.round(b))+'px'; }catch(_){} }
   /* 미리 받기 — iframe 을 화면 밖에서 먼저 열어 두면 누를 때 바로 보임 */
-  function load(){ if(loaded)return; loaded=true; ST.textContent='불러오는 중'; F.src=BASE+'?embed=market#'+cur; }
+  function load(){ if(loaded)return; loaded=true; ST.textContent='불러오는 중'; F.src=PAGE+'#'+cur; }
   function open(act){
     cur=act||cur; tabs(); place(); V.classList.add('on'); document.documentElement.style.overflow='hidden';
     if(!loaded)load(); else if(ready)send();
@@ -3088,21 +3088,20 @@ P.init=function(opt){
   window.addEventListener('resize',function(){ if(V.classList.contains('on'))place(); });
   ['mouseover','touchstart','focusin'].forEach(function(t){ document.addEventListener(t,function(ev){ if(!loaded&&ev.target&&ev.target.closest&&ev.target.closest('[data-mkopen]'))load(); },{passive:true}); });
   /* 페이지 열고 잠시 뒤 매출분석도구 파일을 브라우저 캐시에 받아 둠(실행은 안 함) */
-  setTimeout(function(){ try{ var l=document.createElement('link'); l.rel='prefetch'; l.href=BASE+'?embed=market'; document.head.appendChild(l); }catch(_){} },1500);
+  setTimeout(function(){ try{ var l=document.createElement('link'); l.rel='prefetch'; l.href=PAGE; document.head.appendChild(l); }catch(_){} },1500);
   function close(fromPop){ V.classList.remove('on'); document.documentElement.style.overflow='';
     if(!fromPop&&location.hash==='#market'){ try{ history.back(); }catch(_){} } }
   window.addEventListener('message',function(ev){ var d=ev.data||{};
     if(ev.source!==F.contentWindow)return;
-    if(d.type==='mkReady'){ ready=true; V.classList.add('ready'); ST.textContent='매출분석도구 시장 자료'; if(d.act!==cur)send(); } });
+    if(d.type==='mkReady'){ ready=true; V.classList.add('ready'); ST.textContent=''; if(d.act!==cur)send(); }
+    else if(d.type==='mkGate'){ V.classList.add('ready'); ST.textContent='로그인 필요'; } });
   window.addEventListener('popstate',function(){ if(V.classList.contains('on')&&location.hash!=='#market')close(true); });
   document.addEventListener('click',function(ev){ if(!ev.target||!ev.target.closest)return;
     var o=ev.target.closest('[data-mkopen]'); if(o){ ev.preventDefault(); open(o.getAttribute('data-mkopen')); return; }
     var t=ev.target.closest('#mkv [data-mkt]'); if(t){ cur=t.getAttribute('data-mkt'); tabs(); if(ready)send(); return; }
     if(ev.target.closest('#mkvX'))close(); });
   document.addEventListener('keydown',function(ev){ var sr=document.getElementById('sr'); if(ev.key==='Escape'&&V.classList.contains('on')&&!(sr&&getComputedStyle(sr).display!=='none')){ ev.stopPropagation(); close(); } },true);
-  /* 로그인 창이 iframe 안에 보이면 로딩 가림막을 걷어 바로 로그인할 수 있게 */
-  F.addEventListener('load',function(){ setTimeout(function(){ if(!ready){ try{ var g=F.contentDocument&&F.contentDocument.getElementById('auGate'); if(g&&g.getBoundingClientRect().width>0){ V.classList.add('ready'); ST.textContent='로그인 필요'; } }catch(_){ } } },2500); });
-  F.addEventListener('load',function(){ setTimeout(function(){ if(!ready)V.classList.add('ready'); },20000); });
+  F.addEventListener('load',function(){ setTimeout(function(){ if(!ready)V.classList.add('ready'); },8000); });
 })();
 </script>
 </body>
