@@ -491,6 +491,19 @@
 .fdn-sum{font-size:13px;line-height:1.6;color:#d4d6da;background:var(--card);border:1px solid var(--line);border-left:3px solid #f59e0b;border-radius:9px;padding:9px 12px;margin:0 0 9px;cursor:pointer}
 .fdn-sum:hover{background:var(--card-h)}
 .fdn-sum b{color:#fcd34d}
+.fdn-up[hidden]{display:none!important}
+.fdn-up{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:4px}
+@media (max-width:900px){ .fdn-up{grid-template-columns:1fr} }
+.fdu{display:block;text-align:left;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-top:2px solid var(--uc);border-radius:9px;padding:9px 11px;cursor:pointer;min-width:0}
+.fdu:hover{background:var(--card-h)}
+.fdu-h{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:12.5px;font-weight:700;color:var(--text)}
+.fdu-h .dt{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--sub);white-space:nowrap}
+.fdu-h .nw{font-size:10px;font-weight:800;color:#000;background:#facc15;border-radius:5px;padding:1px 5px;letter-spacing:.3px}
+.fdu-s{font-size:12.5px;line-height:1.55;color:#c9ccd1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.fdu-s b{color:#fde68a;font-weight:700}
+.fdu-s .tn{font-size:11px;font-weight:700;margin-right:4px}
+.fdu-s+.fdu-s{margin-top:3px}
+.fdu-n .fdu-s{-webkit-line-clamp:2}
 .fdn-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 @media (max-width:1100px){ .fdn-g{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:600px){ .fdn-g{grid-template-columns:1fr} }
@@ -630,6 +643,7 @@
 <main id="list"></main>
 <section class="fdn" id="fdn" aria-label="방화문 시장 동향" hidden>
   <div class="fdn-h"><a class="fdn-t" href="https://useran-coder.github.io/sales/?act=market-fd" data-mkopen="market-fd" title="건설동향 · 방화문시장 분석 · 철강시세 전망 보기">📰 방화문 시장 동향 <i>›</i></a><span>누르면 건설동향 · 방화문시장 분석 · 철강시세 전망</span><span class="upd2" id="fdnUpd"></span></div>
+  <div class="fdn-up" id="fdnUp" hidden></div>
   <div class="fdn-sum" id="fdnSum" hidden></div>
   <div class="fdn-g" id="fdnG" hidden></div>
 </section>
@@ -3029,10 +3043,22 @@ P.init=function(opt){
   function paintNews(){
     var box=document.getElementById('fdn'); if(!box)return;
     var R=rows('fdNews'); if(!R.length){ box.hidden=true; return; } box.hidden=false;
-    document.getElementById('fdnUpd').innerHTML='🕒 업데이트<b>'+E(ymd(D.fdAsOf||D.asOf))+'</b>';
+    document.getElementById('fdnUpd').innerHTML='🕒 업데이트<b>'+E(ymd([D.fdAsOf||'',D.asOf||'',D.stAsOf||''].sort().pop()))+'</b>';
     var sm=String(D.summary||''), m=sm.match(/^<b>(.*?)<\/b>/);
     document.getElementById('fdnSum').innerHTML=sm?('🧭 '+(m?'<b>'+E(plain(m[1]))+'</b> ':'')+E(plain(sm.replace(/^<b>.*?<\/b>\.?\s*/,'')).split('. ')[0])+' · <span style="color:var(--sub)">자세히 ›</span>'):'';
     document.getElementById('fdnSum').style.display=sm?'':'none';
+    /* 11.24 제목 아래 세 화면 최근 업데이트(feed history·fdNews·stHistory 맨 앞 줄) — 누르면 그 탭으로 */
+    (function(){ var up=document.getElementById('fdnUp'); if(!up)return;
+      function line(v){ var x=String(v||'').split('\n')[0], i=x.indexOf('|'); return i>0?{d:x.slice(0,i),t:x.slice(i+1)}:null; }
+      var now=new Date(Date.now()+9*36e5).toISOString().slice(0,10);
+      function hd(icon,name,d){ var nw=String(d||'').slice(0,10)>=now; return '<div class="fdu-h">'+icon+' '+name+(nw?'<span class="nw">NEW</span>':'')+'<span class="dt">'+E(ymd(d))+'</span></div>'; }
+      var h=line(D.history), st=line(D.stHistory), out='';
+      if(h) out+='<button type="button" class="fdu" style="--uc:#38bdf8" data-mkopen="market-con" title="누르면 건설동향">'+hd('🏗️','건설동향',h.d)+'<div class="fdu-s">'+B(h.t)+'</div></button>';
+      var R=rows('fdNews').slice(0,2);
+      if(R.length) out+='<button type="button" class="fdu fdu-n" style="--uc:#f59e0b" data-mkopen="market-fd" title="누르면 방화문시장 분석">'+hd('🚪','방화문시장 분석',D.fdAsOf)+
+        R.map(function(r){ var t=TONE[r[1]]||TONE['중립']; return '<div class="fdu-s"><span class="tn" style="color:'+t[0]+'">'+t[2]+'</span><b>'+E(plain(r[2]))+'</b> '+B(headOf(r[3]))+'</div>'; }).join('')+'</button>';
+      if(st) out+='<button type="button" class="fdu" style="--uc:#a78bfa" data-mkopen="market-steel" title="누르면 철강시세 전망">'+hd('🪙','철강시세 전망',st.d)+'<div class="fdu-s">'+B(st.t)+'</div></button>';
+      up.innerHTML=out; up.hidden=!out; })();
     document.getElementById('fdnG').innerHTML=R.map(function(r,i){ var t=TONE[r[1]]||TONE['중립'];
       return '<button type="button" class="fdc" data-fdi="'+i+'" style="--tc:'+t[0]+'" title="누르면 자세히">'+
         '<div class="fdc-t"><span class="tn" style="background:'+t[1]+';color:'+t[0]+'">'+t[2]+'</span><span class="ct">'+E(r[2])+'</span><span class="dt">'+E(r[0])+'</span></div>'+
@@ -3045,7 +3071,7 @@ P.init=function(opt){
     if(ev.target.id==='fdm'||ev.target.closest('#fdmX')) document.getElementById('fdm').classList.remove('on'); });
   document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'){ var m=document.getElementById('fdm'); if(m&&m.classList.contains('on')){ m.classList.remove('on'); ev.stopPropagation(); } } },true);
   function use(u,tag,asOf){ if(!u||!u.stCard)return false;
-    D={tag:tag||'',asOf:asOf||u.asOf||'',stAsOf:u.stAsOf||'',stCard:u.stCard,stFcast:u.stFcast||'',stScCard:u.stScCard||'',stScSp1F:u.stScSp1F||'',stPrice:u.stPrice||'',stRawCard:u.stRawCard||'',stFx:u.stFx||'',fdAsOf:[u.fdNewsAsOf||'',u.fdAsOf||u.asOf||''].sort().pop(),fdNews:u.fdNews||'',summary:u.summary||'',policy:u.policy||'',srcline:u.srcline||'',checkTbl:u.checkTbl||''}; return true; }
+    D={tag:tag||'',asOf:asOf||u.asOf||'',stAsOf:u.stAsOf||'',stCard:u.stCard,stFcast:u.stFcast||'',stScCard:u.stScCard||'',stScSp1F:u.stScSp1F||'',stPrice:u.stPrice||'',stRawCard:u.stRawCard||'',stFx:u.stFx||'',fdAsOf:[u.fdNewsAsOf||'',u.fdAsOf||u.asOf||''].sort().pop(),fdNews:u.fdNews||'',summary:u.summary||'',policy:u.policy||'',srcline:u.srcline||'',checkTbl:u.checkTbl||'',history:u.history||'',stHistory:u.stHistory||''}; return true; }
   var saved=null; try{ saved=JSON.parse(localStorage.getItem(LS)||'null'); }catch(_e){}
   if(!(saved&&saved.tag>=EMB.tag&&use(saved,saved.tag,saved.asOf)))use(EMB,EMB.tag,EMB.asOf);
   paint();
