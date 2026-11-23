@@ -456,6 +456,24 @@
 .stl-h span{font-size:12px;color:var(--sub)}
 .stl-h .upd2{margin-left:auto;font-size:12px;color:var(--sub);border:1px solid var(--line);border-radius:7px;padding:3px 9px;white-space:nowrap}
 .stl-h .upd2 b{color:var(--text);font-weight:700;margin-left:4px}
+.mkv{position:fixed;inset:0;z-index:80;background:#000;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .18s}
+.mkv.on{opacity:1;pointer-events:auto}
+.mkv-top{display:flex;align-items:center;gap:10px;height:56px;padding:0 14px;border-bottom:1px solid var(--line);background:#000;flex:0 0 auto}
+.mkv-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.mkv-tabs button{background:#0d0e10;border:1px solid var(--line);color:var(--sub);border-radius:9px;padding:8px 14px;font:inherit;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer}
+.mkv-tabs button:hover{color:var(--text);background:var(--card-h)}
+.mkv-tabs button.on{background:#1e3a8a;border-color:#3b82f6;color:#fff}
+.mkv-st{margin-left:auto;font-size:12px;color:var(--dim);white-space:nowrap}
+.mkv-top .x{background:none;border:1px solid var(--line);color:var(--sub);border-radius:9px;width:38px;height:38px;font-size:22px;line-height:1;cursor:pointer;flex:0 0 auto}
+.mkv-top .x:hover{color:var(--text);background:var(--card-h)}
+.mkv-body{position:relative;flex:1 1 auto;background:#f8fafc}
+.mkv-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+.mkv-ld{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#000;color:var(--sub);font-size:14px}
+.mkv-ld small{color:var(--dim);font-size:12px}
+.mkv-ld i{width:28px;height:28px;border-radius:50%;border:3px solid #2a2d33;border-top-color:#3b82f6;animation:mkvSp 0.9s linear infinite}
+@keyframes mkvSp{to{transform:rotate(360deg)}}
+.mkv.ready .mkv-ld{display:none}
+@media (max-width:600px){ .mkv-tabs button{padding:7px 10px;font-size:13px} .mkv-st{display:none} }
 .fdn{width:min(1300px,100%);margin:26px 0 0;padding:12px 12px 12px;border:1px solid var(--line);border-radius:12px;background:#08090a}
 .fdn-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:0 2px 8px}
 /* 11.23 사용자 요청: 제목 줄만 남기고 요약·카드 숨김 */
@@ -610,10 +628,14 @@
 
 <main id="list"></main>
 <section class="fdn" id="fdn" aria-label="방화문 시장 동향" hidden>
-  <div class="fdn-h"><a class="fdn-t" href="https://useran-coder.github.io/sales/?act=market-fd" target="_blank" rel="noopener" title="매출분석도구 «방화문시장 분석» 화면 열기">📰 방화문 시장 동향 <i>›</i></a><span>누르면 매출분석도구 방화문시장 분석 화면</span><span class="upd2" id="fdnUpd"></span></div>
+  <div class="fdn-h"><a class="fdn-t" href="https://useran-coder.github.io/sales/?act=market-fd" data-mkopen="market-fd" title="건설동향 · 방화문시장 분석 · 철강시세 전망 보기">📰 방화문 시장 동향 <i>›</i></a><span>누르면 건설동향 · 방화문시장 분석 · 철강시세 전망</span><span class="upd2" id="fdnUpd"></span></div>
   <div class="fdn-sum" id="fdnSum" hidden></div>
   <div class="fdn-g" id="fdnG" hidden></div>
 </section>
+<div class="mkv" id="mkv" role="dialog" aria-modal="true" aria-label="시장 동향"><div class="mkv-top"><div class="mkv-tabs" role="tablist">
+  <button type="button" role="tab" data-mkt="market-con">🏗️ 건설동향</button><button type="button" role="tab" data-mkt="market-fd">🚪 방화문시장 분석</button><button type="button" role="tab" data-mkt="market-steel">🪙 철강시세 전망</button></div>
+  <span class="mkv-st" id="mkvSt"></span><button type="button" class="x" id="mkvX" aria-label="닫기">×</button></div>
+  <div class="mkv-body"><div class="mkv-ld" id="mkvLd"><i></i>시장 자료 여는 중…<small>매출분석도구와 같은 로그인 사용 · 처음 열 때 몇 초 걸림</small></div><iframe id="mkvF" title="시장 동향" loading="eager"></iframe></div></div>
 <div class="fdm" id="fdm" role="dialog" aria-modal="true" aria-labelledby="fdmT"><div class="fdm-box"><div class="fdm-hd"><b id="fdmT">방화문 시장 동향</b><button type="button" class="x" id="fdmX" aria-label="닫기">×</button></div><div class="fdm-bd" id="fdmB"></div></div></div>
 
 <footer>
@@ -3041,6 +3063,38 @@ P.init=function(opt){
     var k=c.getAttribute('data-stk')||''; KEY=(KEY===k)?'':k; paint();
     if(KEY)setTimeout(function(){ var el=document.getElementById('sttBox'); if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest',behavior:'smooth'}); },40);
   });
+})();
+</script>
+<script id="home-mkview-v1">
+/* 11.23 시장 동향 창 — 매출분석도구의 건설동향·방화문시장 분석·철강시세 전망을 이 페이지 안에서 탭으로 봄
+   매출분석도구(?embed=market, v1706)를 iframe 으로 넣고 탭은 postMessage({type:'mkAct'}) 로 바꿈 · 같은 주소라 로그인 공유 */
+(function(){
+  var V=document.getElementById('mkv'), F=document.getElementById('mkvF'), ST=document.getElementById('mkvSt'); if(!V||!F)return;
+  /* 같은 주소(origin)여야 로그인 공유·탭 전환이 됨 — 배포(github.io)·시험(localhost) 모두 이 페이지 기준 /sales/ */
+  var BASE=/^https?:/.test(location.protocol)?location.origin+'/sales/':'https://useran-coder.github.io/sales/';
+  var cur='market-fd', ready=false, loaded=false;
+  function tabs(){ V.querySelectorAll('[data-mkt]').forEach(function(b){ var on=b.getAttribute('data-mkt')===cur; b.classList.toggle('on',on); b.setAttribute('aria-selected',on?'true':'false'); }); }
+  function send(){ try{ F.contentWindow.postMessage({type:'mkAct',act:cur},BASE.indexOf(location.origin)===0?location.origin:'*'); }catch(_){} }
+  function open(act){
+    cur=act||cur; tabs(); V.classList.add('on'); document.documentElement.style.overflow='hidden';
+    if(!loaded){ loaded=true; ST.textContent='불러오는 중'; F.src=BASE+'?embed=market&act='+encodeURIComponent(cur)+'&t='+Date.now(); }
+    else send();
+    try{ history.pushState({mkv:1},'',location.pathname+location.search+'#market'); }catch(_){}
+  }
+  function close(fromPop){ V.classList.remove('on'); document.documentElement.style.overflow='';
+    if(!fromPop&&location.hash==='#market'){ try{ history.back(); }catch(_){} } }
+  window.addEventListener('message',function(ev){ var d=ev.data||{};
+    if(ev.source!==F.contentWindow)return;
+    if(d.type==='mkReady'){ ready=true; V.classList.add('ready'); ST.textContent='매출분석도구 시장 자료'; if(d.act!==cur)send(); } });
+  window.addEventListener('popstate',function(){ if(V.classList.contains('on')&&location.hash!=='#market')close(true); });
+  document.addEventListener('click',function(ev){ if(!ev.target||!ev.target.closest)return;
+    var o=ev.target.closest('[data-mkopen]'); if(o){ ev.preventDefault(); open(o.getAttribute('data-mkopen')); return; }
+    var t=ev.target.closest('#mkv [data-mkt]'); if(t){ cur=t.getAttribute('data-mkt'); tabs(); if(ready)send(); return; }
+    if(ev.target.closest('#mkvX'))close(); });
+  document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'&&V.classList.contains('on')){ ev.stopPropagation(); close(); } },true);
+  /* 로그인 창이 iframe 안에 보이면 로딩 가림막을 걷어 바로 로그인할 수 있게 */
+  F.addEventListener('load',function(){ setTimeout(function(){ if(!ready){ try{ var g=F.contentDocument&&F.contentDocument.getElementById('auGate'); if(g&&g.getBoundingClientRect().width>0){ V.classList.add('ready'); ST.textContent='로그인 필요'; } }catch(_){ } } },2500); });
+  F.addEventListener('load',function(){ setTimeout(function(){ if(!ready)V.classList.add('ready'); },20000); });
 })();
 </script>
 </body>
