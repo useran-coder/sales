@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1710';
+<script>window.APP_BUILD='v1711';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }</script>
@@ -49843,21 +49843,24 @@ function calcKeysV1608(k){ var a=String(k||'').split('|'); if(a.length!==5)retur
   var out=[]; ['*',''].forEach(function(Q){ var x=[a[0],'*',a[2],Q,a[4]].join('|'); if(x!==k&&out.indexOf(x)<0)out.push(x); }); return out; }
 function edCloseV1596(){ var d=document.getElementById('irEdV1596'); if(d)d.remove(); }
 /* v1654 : 규격화 표기 수정 목록 머리줄 — 품명규격·업체명·품번·건수 눌러 정렬(다시 누르면 반대) · 이 PC 기억 */
-function pkSortGetV1654(){ try{ var o=JSON.parse(localStorage.getItem('pkSortV1654')||'null'); if(o&&o.k)return o; }catch(_e){} return {k:'std',d:1}; }
-function pkSortSetV1654(o){ try{ localStorage.setItem('pkSortV1654',JSON.stringify(o)); }catch(_e){} }
+function pkSortGetV1654(){ try{ var o=JSON.parse(localStorage.getItem('pkSortV1654')||'null'); if(o&&o.k){ if(o.k==='std'&&!o.n1711)return {k:'tp',d:o.d}; return o; } }catch(_e){} return {k:'tp',d:1}; }   /* v1711 : 기본 = 품명 순(예전 «품명규격» 정렬도 품명 순으로) */
+function pkSortSetV1654(o){ try{ o=Object.assign({},o,{n1711:1}); localStorage.setItem('pkSortV1654',JSON.stringify(o)); }catch(_e){} }
 function pkCuKeyV1654(x){ var cu=x.cu||[]; return cu.length===1?String(cu[0][0]||''):(cu.length?'\uffff'+String(cu.length).padStart(5,'0'):'\uffff\uffff'); }
 function pkSortV1654(F){ var o=pkSortGetV1654(), d=o.d<0?-1:1, sc=function(a,b){ return String(a).localeCompare(String(b),'ko',{numeric:true}); }, f;
   if(o.k==='n')f=function(a,b){ return ((a.n||0)-(b.n||0))*d||sc(a.std,b.std); };
   else if(o.k==='q')f=function(a,b){ return ((a.q||0)-(b.q||0))*d||sc(a.std,b.std); };   /* v1695 */
   else if(o.k==='pc')f=function(a,b){ return sc(a.pc||'',b.pc||'')*d||sc(a.std,b.std); };
+  else if(o.k==='tp')f=function(a,b){ return sc(pkTp1689(a.std),pkTp1689(b.std))*d||sc(pkRest1711(a.std),pkRest1711(b.std)); };   /* v1711 */
+  else if(o.k==='std')f=function(a,b){ return sc(pkRest1711(a.std),pkRest1711(b.std))*d||sc(pkTp1689(a.std),pkTp1689(b.std)); };
   else if(o.k==='cu')f=function(a,b){ return sc(pkCuKeyV1654(a),pkCuKeyV1654(b))*d||((b.n||0)-(a.n||0)); };
   else f=function(a,b){ return sc(a.std,b.std)*d; };
   return F.slice().sort(f); }
 function pkHdV1654(A){ var o=pkSortGetV1654(), hasCu=(A||[]).some(function(x){ return !!x.cu; }), ar=function(k){ return o.k===k?(o.d<0?' ▼':' ▲'):''; }, b=function(k,t,c){ return '<button type="button" class="'+c+(o.k===k?' on':'')+'" data-pks="'+k+'" title="눌러서 정렬 (다시 누르면 반대로)">'+t+ar(k)+'</button>'; };
-  return '<div class="pkHdV1654'+(hasCu?' cuV':'')+'"><span></span>'+b('std','품명규격','s')+(hasCu?b('cu','업체명','c'):'')+b('pc','품번','p')+b('n','건수','n')+b('q','수량','n')+'</div>'; }
+  return '<div class="pkHdV1654'+(hasCu?' cuV':'')+'"><span></span>'+b('tp','품명','s')+b('std','규격','s')+(hasCu?b('cu','업체명','c'):'')+b('pc','품번','p')+b('n','건수','n')+b('q','수량','n')+'</div>'; }
 /* v1689 : 규격화 수정 오른쪽(업체) 목록 — 타입(TBC-A1·TBC-K1·TBC-A11…)·규격(1.6x38.5·1.6x43.5…) 고르기. 고른 값은 다른 규격·업체로 다시 열어도 유지, 그 업체에 없는 값이면 전체로 봄 */
 var SZR1690=/^\d+(?:\.\d+)?\s*[x×*]\s*\d+(?:\.\d+)?/i;
 function pkTp1689(sx){ var m=String(sx||'').trim().match(/^[^\s(]+/); return (m&&!SZR1690.test(m[0]))?m[0]:''; }   /* v1690 : 이너프레임처럼 규격이 치수로 시작하면(1.6x38.5 (무타)) 타입 없음 */
+function pkRest1711(sx){ var t=String(sx||'').replace(/\s+/g,' ').trim(), tp=pkTp1689(t); if(tp)t=t.slice(tp.length).trim(); return t.replace(/^\(\s*([\d.]+\s*[x×*]\s*[\d.]+(?:\s*[x×*]\s*[\d.]+)?)\s*\)/i,'$1')||'-'; }   /* v1711 : 규격 = 품명(타입) 뺀 나머지, 맨 앞 치수 괄호는 벗김 — TBC-A1 (1.6x38.5) 가스홀2 → 1.6x38.5 가스홀2 */
 function pkSz1689(sx){ var t=String(sx||'').trim(), m=t.match(/\(\s*([\d.]+\s*[x×*]\s*[\d.]+(?:\s*[x×*]\s*[\d.]+)?)\s*\)/i)||t.match(/^([\d.]+\s*[x×*]\s*[\d.]+)/i); return m?m[1].replace(/\s+/g,'').replace(/[×*]/g,'x').toLowerCase():''; }   /* v1690 : 괄호 안 치수, 없으면 맨 앞 치수 */
 function pkF1689(A){ var F0=window.__pkFV1689||{t:'',s:''}, t=F0.t||'', s=F0.s||''; if(t&&!A.some(function(x){ return pkTp1689(x.std)===t; }))t=''; if(s&&!A.some(function(x){ return pkSz1689(x.std)===s&&(!t||pkTp1689(x.std)===t); }))s=''; return {t:t,s:s}; }
 function pkFHtml1689(A,PF){ var E2=function(v){ return esc(String(v==null?'':v)); }, ct=new Map(), cs=new Map(), n=function(v){ var m=String(v).match(/[\d.]+/g)||[]; return m.map(Number); };
@@ -49897,7 +49900,8 @@ function edOpenV1596(key,anchor,ext){ edCloseV1596(); var o=null; if(ext)o={g:ex
       var F=q?A.filter(function(x){ var h=nzq(x.std+' '+x.pc); return qT.every(function(t){ return h.indexOf(t)>=0; }); }):A; if(FXO)F=F.filter(function(x){ return isFx(x.std); }); else if(FXH)F=F.filter(function(x){ return !isFx(x.std); });
       if(e[0]==='me'){ var PF=pkF1689(A); F=F.filter(function(x){ return (!PF.t||pkTp1689(x.std)===PF.t)&&(!PF.s||pkSz1689(x.std)===PF.s); }); var ci2=d.querySelector('[data-a=csi]'); if(ci2&&EC)ci2.textContent='규격 '+((PF.t||PF.s)?F.length+' / ':'')+A.length+'개'; var pf=d.querySelector('[data-a=pkf]'); if(pf){ var ph=EC&&A.length?pkFHtml1689(A,PF):''; if(pf.__h!==ph){ pf.__h=ph; pf.innerHTML=ph; } } }   /* v1689 : 오른쪽 업체 목록 타입·규격 고르기 */
       F=pkSortV1654(F);   /* v1654 : 머리줄 정렬 */
-      box.innerHTML=pkHdV1654(A)+(F.length?F.map(function(x){ var sl=SEL.has(x.std)&&x.std!==v; return '<button type="button" class="pkI'+(x.cu?' cuV':'')+(x.std===v?' on':'')+(x.std===g.std?' cur':'')+(sl?' sel':'')+'" data-std="'+E(x.std)+'" title="'+E(x.std)+'"><span class="ckV1636'+(sl?' on':'')+(x.std===v?' tg':'')+'" data-ck="'+E(x.std)+'" title="'+(x.std===v?'기준 규격':'체크 = 기준 규격으로 바꿀 대상 (여러 개 가능)')+'">'+(x.std===v?'★':(sl?'✓':''))+'</span><b>'+E(x.std)+(x.chO&&(x.chO.length+(x.own?1:0))>1?'<em class="mcV1647" title="'+E('합친 품목 '+(x.chO.length+(x.own?1:0))+'개\n'+(x.own?x.std+' (기준)\n':'')+x.chO.join('\n'))+'">'+(x.chO.length+(x.own?1:0))+'</em>':'')+(x.std===v?'<em class="tgV1636">기준</em>':'')+'<em class="fxV1644'+(isFx(x.std)?' on':'')+'" data-fix="'+E(x.std)+'" title="'+(isFx(x.std)?'확정됨 (제품명으로 정함) — 누르면 확정 취소':'누르면 이 품명규격을 제품명으로 확정')+'">'+(isFx(x.std)?'✔ 확정':'확정')+'</em>'+((x.chO&&x.chO.length&&(x.chO.length+(x.own?1:0))<=1)||(x.chP&&!(x.chO&&x.chO.length))?'<em class="chgV1646" title="'+E((x.chO&&x.chO.length?'원래 규격 :\n'+x.chO.join('\n'):'')+(x.chP?(x.chO&&x.chO.length?'\n':'')+'품번 변경 : '+x.chP:''))+'">'+(x.chO&&(x.chO.length+(x.own?1:0))>1?'합침 '+(x.chO.length+(x.own?1:0))+'→1':(x.chO&&x.chO.length?'규격 변경':'품번 변경'))+'</em>':'')+((ext&&ext.raw&&ext.raw()&&x.raw&&x.raw.length)?'<small class="rwV1643" title="'+E(x.raw.join('\n'))+'">원본 : '+E(x.raw.slice(0,4).join(' · '))+(x.raw.length>4?' 외 '+(x.raw.length-4):'')+'</small>':'')+'</b>'+(x.cu&&window.cuHtmlV1652?window.cuHtmlV1652(x,e[0]):'')+'<code title="'+E(x.pc||'')+'">'+E(x.pc||'')+'</code><i'+(x.cu?' class="shpV1663" data-shp="'+E(x.std)+'" data-shl="'+e[0]+'" title="누르면 출고내역"':'')+'>'+won(x.n)+'건</i><u class="qV1695" title="출고 수량 합계">'+(x.q!=null?won(Math.round(x.q)):'-')+'</u></button>'; }).join(''):'<div class="pkN">'+(e[0]==='me'&&!EC?'열린 업체 없음':(q?'검색에 맞는 규격 없음':'규격 없음'))+'</div>');
+      box.innerHTML=pkHdV1654(A)+(F.length?F.map(function(x){ var sl=SEL.has(x.std)&&x.std!==v; return '<button type="button" class="pkI'+(x.cu?' cuV':'')+(x.std===v?' on':'')+(x.std===g.std?' cur':'')+(sl?' sel':'')+'" data-std="'+E(x.std)+'" title="'+E(x.std)+'"><span class="ckV1636'+(sl?' on':'')+(x.std===v?' tg':'')+'" data-ck="'+E(x.std)+'" title="'+(x.std===v?'기준 규격':'체크 = 기준 규격으로 바꿀 대상 (여러 개 가능)')+'">'+(x.std===v?'★':(sl?'✓':''))+'</span><i class="pnV1711" title="품명">'+E(pkTp1689(x.std)||'-')+'</i><b>'+E(pkRest1711(x.std))+(x.chO&&(x.chO.length+(x.own?1:0))>1?'<em class="mcV1647" title="'+E('합친 품목 '+(x.chO.length+(x.own?1:0))+'개\n'+(x.own?x.std+' (기준)\n':'')+x.chO.join('\n'))+'">'+(x.chO.length+(x.own?1:0))+'</em>':'')+(x.std===v?'<em class="tgV1636">기준</em>':'')+'<em class="fxV1644'+(isFx(x.std)?' on':'')+'" data-fix="'+E(x.std)+'" title="'+(isFx(x.std)?'확정됨 (제품명으로 정함) — 누르면 확정 취소':'누르면 이 품명규격을 제품명으로 확정')+'">'+(isFx(x.std)?'✔ 확정':'확정')+'</em>'+((x.chO&&x.chO.length&&(x.chO.length+(x.own?1:0))<=1)||(x.chP&&!(x.chO&&x.chO.length))?'<em class="chgV1646" title="'+E((x.chO&&x.chO.length?'원래 규격 :\n'+x.chO.join('\n'):'')+(x.chP?(x.chO&&x.chO.length?'\n':'')+'품번 변경 : '+x.chP:''))+'">'+(x.chO&&(x.chO.length+(x.own?1:0))>1?'합침 '+(x.chO.length+(x.own?1:0))+'→1':(x.chO&&x.chO.length?'규격 변경':'품번 변경'))+'</em>':'')+((ext&&ext.raw&&ext.raw()&&x.raw&&x.raw.length)?'<small class="rwV1643" title="'+E(x.raw.join('\n'))+'">원본 : '+E(x.raw.slice(0,4).join(' · '))+(x.raw.length>4?' 외 '+(x.raw.length-4):'')+'</small>':'')+'</b>'+(x.cu&&window.cuHtmlV1652?window.cuHtmlV1652(x,e[0]):'')+'<code title="'+E(x.pc||'')+'">'+E(x.pc||'')+'</code><i'+(x.cu?' class="shpV1663" data-shp="'+E(x.std)+'" data-shl="'+e[0]+'" title="누르면 출고내역"':'')+'>'+won(x.n)+'건</i><u class="qV1695" title="출고 수량 합계">'+(x.q!=null?won(Math.round(x.q)):'-')+'</u></button>'; }).join(''):'<div class="pkN">'+(e[0]==='me'&&!EC?'열린 업체 없음':(q?'검색에 맞는 규격 없음':'규격 없음'))+'</div>');
+      try{ var pmx=0, pAny=false; box.querySelectorAll('.pkI .pnV1711').forEach(function(c){ if(c.textContent!=='-')pAny=true; var w=c.scrollWidth; if(w>pmx)pmx=w; }); box.classList.toggle('pnOffV1711',!pAny&&!!box.querySelector('.pkI')); box.style.setProperty('--pnW',Math.max(44,Math.min(160,Math.ceil(pmx)+2))+'px'); }catch(_e){}   /* v1711 : 품명 열 폭 = 가장 긴 품명, 품명이 하나도 없으면(이너프레임 치수형) 열 숨김 */
       try{ var cmx=0; box.querySelectorAll('.pkI .cuV1652').forEach(function(c){ var w=c.scrollWidth; if(w>cmx)cmx=w; }); box.style.setProperty('--cuW',Math.max(70,Math.min(260,Math.ceil(cmx)+2))+'px'); }catch(_e){}   /* v1699 : 업체명 열 = 목록에서 가장 긴 업체명 폭(줄임표 없이) */
       var on=box.querySelector('.pkI.on'); if(on&&!box.__sc){ box.__sc=1; try{ on.scrollIntoView({block:'nearest'}); }catch(_e){} } });
     var fxb=d.querySelector('[data-a=fxo]'); if(fxb){ var nF=L.filter(function(x){ return isFx(x.std); }).length; fxb.textContent=FXO?'✔ 확정만 보는 중 ('+nF+') · 전체 보기':'확정 '+nF+'개'+(nF?' · 확정만 보기':''); fxb.classList.toggle('on',FXO); } var fhb=d.querySelector('[data-a=fxh]'); if(fhb){ var nH=L.filter(function(x){ return isFx(x.std); }).length; fhb.textContent=FXH?'✔ 확정 숨김 ('+nH+') · 보이기':'확정 숨기기'; fhb.classList.toggle('on',FXH); }
@@ -60913,6 +60917,17 @@ html.ptV1486 #result#result .setPmBtnV1473:not(:disabled):not(.on):not(.pmOnV147
 #irEdV1596 .pkHdV1654{grid-template-columns:22px minmax(0,1fr) auto 40px 50px}
 #irEdV1596 .pkHdV1654.cuV{grid-template-columns:22px minmax(0,1fr) var(--cuW,98px) 104px 40px 50px}
 #irEdV1596 .pkI b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* v1711 : 품명(타입)·규격 열 나눔 */
+#irEdV1596 .pkI{grid-template-columns:auto var(--pnW,84px) minmax(0,1fr) auto 40px 50px}
+#irEdV1596 .pkI.cuV{grid-template-columns:auto var(--pnW,84px) minmax(0,1fr) var(--cuW,98px) 104px 40px 50px}
+#irEdV1596 .pkHdV1654{grid-template-columns:22px var(--pnW,84px) minmax(0,1fr) auto 40px 50px}
+#irEdV1596 .pkHdV1654.cuV{grid-template-columns:22px var(--pnW,84px) minmax(0,1fr) var(--cuW,98px) 104px 40px 50px}
+#irEdV1596 .pkI .pnV1711{display:block;justify-self:stretch;text-align:left!important;margin:0!important;padding:0!important;font-style:normal;font-size:12px;font-weight:700;color:#1e3a5f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#irEdV1596 .pnOffV1711 .pkI .pnV1711,#irEdV1596 .pnOffV1711 .pkHdV1654 [data-pks=tp]{display:none}
+#irEdV1596 .pnOffV1711 .pkI{grid-template-columns:auto minmax(0,1fr) auto 40px 50px}
+#irEdV1596 .pnOffV1711 .pkI.cuV{grid-template-columns:auto minmax(0,1fr) var(--cuW,98px) 104px 40px 50px}
+#irEdV1596 .pnOffV1711 .pkHdV1654{grid-template-columns:22px minmax(0,1fr) auto 40px 50px}
+#irEdV1596 .pnOffV1711 .pkHdV1654.cuV{grid-template-columns:22px minmax(0,1fr) var(--cuW,98px) 104px 40px 50px}
 #irEdV1596 .pkI b small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #irEdV1596 .pkI .cuV1652{max-width:none;overflow:visible;text-overflow:clip;font-size:11px;padding:1px 6px}
 #irEdV1596 .pkI b{font-size:12px}   /* v1699 : 품명규격 12px */
