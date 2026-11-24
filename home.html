@@ -138,6 +138,13 @@
   .who.in::before{background:#22c55e;opacity:1}
   .who .rl:empty{display:none}
   .who .rl{font-size:10.5px;font-weight:700;color:#fbbf24;border:1px solid #57461a;border-radius:5px;padding:0 5px;line-height:16px}
+  /* 11.24 아이콘만: 사람 아이콘 원형 버튼, 관리자는 노란 ★ 배지 · 이름은 마우스 올리면(title) */
+  .who{width:36px;height:36px;padding:0;justify-content:center;border-radius:50%;top:17px}
+  .who::before{width:17px;height:17px}
+  .who .nmt{display:none}
+  .who .rl{display:none}
+  .who[data-role="admin"]::after{content:'★';position:absolute;right:-4px;top:-4px;width:16px;height:16px;border-radius:50%;background:#fbbf24;color:#111;
+    font-size:10px;line-height:16px;text-align:center;font-weight:900;border:2px solid #000}
   .acct{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:14px}
   .acct .av{width:40px;height:40px;border-radius:50%;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
   .acct .nm{font-weight:700}
@@ -218,7 +225,7 @@
   .sf button.go:hover{color:var(--text);border-color:#4b5563}
   .sf button.go svg{width:18px;height:18px}
   body{padding-top:110px}
-  .hb{top:14px} .who{top:18px}
+  .hb{top:14px} .who{top:17px}
   /* 검색 결과 창 */
   .sr{position:fixed;top:70px;left:0;right:0;bottom:0;z-index:24;background:#000;display:none;overflow:auto}
   .sr.on{display:block}
@@ -1221,10 +1228,12 @@
       $('whoAv').textContent=initial(cur.name||cur.id);
       $('whoName').textContent=cur.name||cur.id;
       $('whoRole').textContent=ROLE[cur.role]||'';
-      w.title=(cur.name||cur.id)+' ('+cur.id+') 로그인 중'+(cur.src==='sales'?' · 매출분석도구 로그인 사용':'');
+      w.setAttribute('data-role',cur.role||'');
+      w.title=(cur.name||cur.id)+' ('+(ROLE[cur.role]||cur.id)+') 로그인 중 · 누르면 계정'+(cur.src==='sales'?' · 매출분석도구 로그인 사용':'');
     }else{
       w.classList.remove('in');
-      $('whoAv').textContent='?'; $('whoName').textContent='로그인'; $('whoRole').textContent=''; w.title='로그인하지 않음';
+      w.setAttribute('data-role','');
+      $('whoAv').textContent='?'; $('whoName').textContent='로그인'; $('whoRole').textContent=''; w.title='로그인';
     }
   }
   function refreshWho(){ return resolveLogin().then(function(c){ cur=c; renderWho(); return c; }); }
