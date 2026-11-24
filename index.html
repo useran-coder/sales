@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1713';
+<script>window.APP_BUILD='v1714';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }</script>
@@ -60770,6 +60770,8 @@ html.ptV1486 #result#result .setPmBtnV1473:not(:disabled):not(.on):not(.pmOnV147
 #pcOvV1516 .xlV1645{margin-left:auto;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;border:1px solid #16a34a;border-radius:7px;background:linear-gradient(180deg,#fff 0%,#f0fdf4 100%);color:#15803d;font:inherit;font-size:13px;font-weight:800;cursor:pointer;box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(15,23,42,.12);white-space:nowrap}
 #pcOvV1516 .xlV1645::before{content:'X';display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:#16a34a;color:#fff;font-size:11px;font-weight:900}
 #pcOvV1516 .xlV1645:hover{background:#dcfce7}
+#pcOvV1516 .xrV1714{margin-left:auto}
+#pcOvV1516 .xrV1714 + .xlV1645{margin-left:6px}
 #pcOvV1516 .xlV1645:active{transform:translateY(1px);box-shadow:inset 0 2px 3px rgba(15,23,42,.18)}
 #pcOvV1516 .tabV1642 button{padding:6px 14px;font-size:13.5px}
 #pcOvV1516 .tabV1642 button.on{background:#1e3a5f;color:#fff}
@@ -61234,6 +61236,17 @@ function lgList(){ var out=[]; curGs().forEach(function(o){ var bs=o._bases||[o]
   return out.sort(function(a,b){ return b.items.length-a.items.length||b.n-a.n; }); }
 function lgFx(L){ var M=state.nsStdEdit||{}; return !!M['FIX│'+(L.o.name||'')+'│'+L.o.std]; }   /* v1644 */
 /* v1645 : 엑셀 내보내기 — 규격 목록 + 합친 내역 */
+/* v1714 : 원본 내보내기 — 지금 보는 품명(탭)·표시 기간·스위치 기준 출고 원본 한 줄씩 + 그 줄이 묶인 규격화 표기·제안 품번 */
+function rawExport1714(){ try{ if(typeof XLSX==='undefined'){ alert('엑셀 모듈을 불러오지 못함 · 잠시 후 다시 시도'); return; }
+  var g=G(), M=state.nsStdEdit||{}, gs=curGs(), out=[], h=['출고일','업체명','품명','원래 규격','비고','원래 품번','수량','단가','금액','규격화 표기','제안 품번','확정'];
+  gs.forEach(function(o){ var fx=M['FIX│'+(o.name||'')+'│'+o.std]?'확정':''; (o.rows||[]).forEach(function(r){ var dv=r.d||r.date||r.ym||'', dd=(dv instanceof Date&&!isNaN(dv))?dv.getFullYear()+'-'+String(dv.getMonth()+1).padStart(2,'0')+'-'+String(dv.getDate()).padStart(2,'0'):String(dv).slice(0,10); out.push([dd,String(r.cust||''),String(r.name||o.name||''),String(r.spec||''),String(r.bigo||''),String(r.code||''),+r.qty||0,+r.price||0,+(r.supply||r.total||0),o.std,o.pcode||o.code||'',fx]); }); });
+  out.sort(function(a,b){ return String(a[9]).localeCompare(String(b[9]),'ko',{numeric:true})||(a[0]<b[0]?1:(a[0]>b[0]?-1:0)); });
+  var aoa=[h].concat(out), ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=h.map(function(t,i){ var m=String(t).length*2+2; for(var j=1;j<aoa.length&&j<800;j++){ var v=String(aoa[j][i]==null?'':aoa[j][i]), Ln=0; for(var k=0;k<v.length;k++)Ln+=v.charCodeAt(k)>255?2:1; if(Ln+2>m)m=Ln+2; } return {wch:Math.min(Math.max(m,6),60)}; });
+  if(aoa.length>1)ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:aoa.length-1,c:h.length-1}})};
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'출고 원본');
+  var dt=new Date(), ds=dt.getFullYear()+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0'), nm=S.ui.stdN||(g==='if'?'이너프레임':'상하보강');
+  XLSX.writeFile(wb,'규격화원본_'+nm+'_'+ds+'.xlsx'); try{ if(typeof toast==='function')toast('원본 내보냄 : '+nm+' 출고 '+out.length.toLocaleString()+'줄'); }catch(_e){} }catch(err){ console.warn('v1714 raw xls',err); alert('원본 내보내기 실패 : '+(err&&err.message||err)); } }
 function lgExport(){ try{ if(typeof XLSX==='undefined'){ alert('엑셀 모듈을 불러오지 못함 · 잠시 후 다시 시도'); return; }
   var g=G(), sc=SC(), M=state.nsStdEdit||{}, fx=function(nm,sx){ return M['FIX│'+(nm||'')+'│'+sx]?'확정':''; }, d10=function(x){ return String(x||'').slice(0,10); };
   var gs=curGs().slice().sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||''),'ko')||String(a.std).localeCompare(String(b.std),'ko',{numeric:true}); });
@@ -61421,7 +61434,7 @@ document.addEventListener('change',function(e){ var t=e.target; if(!t||!t.matche
 document.addEventListener('click',function(e){ var t=e.target; if(!t||!t.closest||!t.closest('#pcOvV1516 [data-rggo1652]'))return; e.preventDefault(); e.stopPropagation(); var w=t.closest('.rgV1652'), a=w.querySelector('[data-rgs1652]'), b=w.querySelector('[data-rge1652]');
   if(!a.value||!b.value){ try{ toast('시작일과 끝일을 모두 고르세요'); }catch(_e){} return; } if(a.value>b.value){ try{ toast('끝일이 시작일보다 앞임'); }catch(_e){} return; } rgApply({p:'custom',s:a.value,e:b.value}); },true);
 function stdRender(force){ var ov=document.getElementById('pcOvV1516'); if(!ov)return; var g=G(), sc=SC();
-  if(!ov.querySelector('.pcStdPV1640'))ov.innerHTML='<div class="pcP pcStdPV1640"><div class="pcH"><b class="tt">규격화 수정</b><span class="tabsV1653"><span class="sw pgS"><i class="th"></i><button type="button" data-pg="hb">상하보강</button><button type="button" data-pg="if">이너프레임</button><span class="gnV1651"></span></span><button type="button" class="gnM" data-gnmore title="한 줄에 안 들어간 품명 탭" style="display:none">더보기</button><button type="button" class="gnA" data-gnadd title="품명 골라서 규격화 수정 추가">+</button></span><span class="nmV1640"></span><button type="button" class="pcX" title="닫기" style="margin-left:auto">✕</button></div><div class="rw2V1652"><span class="setRgV1348 rgV1652"></span><span class="sw tabV1642"><button type="button" data-st="ed">규격 합치기</button><button type="button" data-st="log">합친 내역 <b class="nV1642"></b></button></span><span class="tipV1640"></span><button type="button" class="xlV1645" data-xl1645 title="지금 보는 규격 목록·합친 내역을 엑셀로">엑셀 내보내기</button></div><div class="stdHV1640"></div></div>';
+  if(!ov.querySelector('.pcStdPV1640'))ov.innerHTML='<div class="pcP pcStdPV1640"><div class="pcH"><b class="tt">규격화 수정</b><span class="tabsV1653"><span class="sw pgS"><i class="th"></i><button type="button" data-pg="hb">상하보강</button><button type="button" data-pg="if">이너프레임</button><span class="gnV1651"></span></span><button type="button" class="gnM" data-gnmore title="한 줄에 안 들어간 품명 탭" style="display:none">더보기</button><button type="button" class="gnA" data-gnadd title="품명 골라서 규격화 수정 추가">+</button></span><span class="nmV1640"></span><button type="button" class="pcX" title="닫기" style="margin-left:auto">✕</button></div><div class="rw2V1652"><span class="setRgV1348 rgV1652"></span><span class="sw tabV1642"><button type="button" data-st="ed">규격 합치기</button><button type="button" data-st="log">합친 내역 <b class="nV1642"></b></button></span><span class="tipV1640"></span><button type="button" class="xlV1645 xrV1714" data-xr1714 title="지금 보는 품명·표시 기간의 출고 원본 줄(원래 규격·품번·비고·수량·단가)을 규격화 표기와 함께 엑셀로">원본 내보내기</button><button type="button" class="xlV1645" data-xl1645 title="지금 보는 규격 목록·합친 내역을 엑셀로">엑셀 내보내기</button></div><div class="stdHV1640"></div></div>';
   var GN=S.ui.stdN&&gnTabs().indexOf(S.ui.stdN)>=0?S.ui.stdN:''; if(!GN)S.ui.stdN='';
   Array.prototype.forEach.call(ov.querySelectorAll('.pgS [data-pg]'),function(b){ b.classList.toggle('on',!GN&&b.dataset.pg===g); }); Array.prototype.forEach.call(ov.querySelectorAll('.pgS .gnT'),function(b){ b.classList.toggle('on',b.dataset.gn===GN); }); var pgS=ov.querySelector('.pgS'); if(pgS){ pgS.classList.toggle('r',g==='if'); }
   var gnw=ov.querySelector('.gnV1651'); if(gnw){ var gh=gnTabs().map(function(n){ return '<button type="button" class="gnT'+(n===GN?' on':'')+'" data-gn="'+esc(n)+'">'+esc(n)+'<i data-gnx="'+esc(n)+'" title="이 품명 탭 빼기 (수정 기록은 그대로)">×</i></button>'; }).join(''); if(gnw.__h!==gh){ gnw.innerHTML=gh; gnw.__h=gh; } gnFit(); pgSlide(); }
@@ -62018,6 +62031,7 @@ document.addEventListener('click',function(e){ var t=e.target; if(!t||!t.closest
   var b=t.closest('button.pcBtnV1516'); if(b){ e.preventDefault(); e.stopPropagation(); open(b.dataset.pc); return; }
   var ov=document.getElementById('pcOvV1516'); if(!ov||!ov.contains(t))return;
   if(t.closest('#irEdV1596'))return;   /* v1640 : 페이지 안 규격화 수정 화면은 자체 처리 */
+  if(t.closest('[data-xr1714]')){ rawExport1714(); return; }   /* v1714 */
   if(t.closest('[data-xl1645]')){ lgExport(); return; }   /* v1645 */
   if(t.closest('.pcStdPV1640')){ var gx=t.closest('[data-gnx]'); if(gx){ var nx=gx.dataset.gnx; if(confirm('«'+nx+'» 탭을 뺄까요?\n(이 품명 규격 수정·합친 기록은 그대로 남음)')){ var M1=state.nsStdEdit||{}; delete M1['TAB│'+nx]; try{ if(typeof saveSettings==='function')saveSettings(); }catch(_e){} if(S.ui.stdN===nx)S.ui.stdN=''; sv(S); stdRender(true); } return; }
     var gb=t.closest('[data-gn]'); if(gb){ if(gb.classList.contains('on'))return; S.ui.stdN=gb.dataset.gn; sv(S); pgPick(gb,function(){ stdRender(true); }); return; }   /* v1653 */
