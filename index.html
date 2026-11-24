@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1714';
+<script>window.APP_BUILD='v1715';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }</script>
@@ -61251,10 +61251,11 @@ function lgExport(){ try{ if(typeof XLSX==='undefined'){ alert('엑셀 모듈을
   var g=G(), sc=SC(), M=state.nsStdEdit||{}, fx=function(nm,sx){ return M['FIX│'+(nm||'')+'│'+sx]?'확정':''; }, d10=function(x){ return String(x||'').slice(0,10); };
   var gs=curGs().slice().sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||''),'ko')||String(a.std).localeCompare(String(b.std),'ko',{numeric:true}); });
   var tpX=function(sx){ var m=String(sx||'').trim().match(/^[^\s(]+/); return (m&&!/^\d+(?:\.\d+)?\s*[x×*]\s*\d+(?:\.\d+)?/i.test(m[0]))?m[0]:''; }, rsX=function(sx){ var t=String(sx||'').replace(/\s+/g,' ').trim(), tp=tpX(t); if(tp)t=t.slice(tp.length).trim(); return t.replace(/^\(\s*([\d.]+\s*[x×*]\s*[\d.]+(?:\s*[x×*]\s*[\d.]+)?)\s*\)/i,'$1'); };   /* v1713 : 규격화 표기를 품명(타입)·규격으로 나눈 열 */
-  var h1=['업체명','품명','규격화 표기','품명(타입)','규격','품번','확정','출고건수','업체수','최근 출고','묶인 원래 규격 수','직접 합침','원래 규격'], a1=[h1];
+  var spX=function(sx){ var t=String(sx||'').replace(/\s+/g,' ').trim(), i=t.indexOf(')'); return i>=0?t.slice(0,i+1).trim():t; }, bgX=function(sx){ var t=String(sx||'').replace(/\s+/g,' ').trim(), i=t.indexOf(')'); return i>=0?t.slice(i+1).trim():''; };   /* v1715 : 사용자 양식 — 규격 = 첫 «)» 까지(TBC-A1 (1.6x38.5) · 1.2x38.5 (A1_94.5)), 비고 = 나머지(가스홀2/국산오) */
+  var h1=['업체명','품명','규격','비고','확정','출고건수','업체수','최근 출고','묶인 원래 규격 수','직접 합침','원래 규격'], a1=[h1];
   gs.forEach(function(o){ var bs=o._bases||[o], so=[], cs=new Set(), cn={}, last=''; bs.forEach(function(b){ var t=b.stdOrig||b.std; if(so.indexOf(t)<0)so.push(t); }); (o.rows||[]).forEach(function(r){ var c=String(r.cust||'').trim(); if(c){ c=aliasOf(c)||c; cs.add(c); cn[c]=(cn[c]||0)+1; } var dd=String(r.date||r.ym||''); if(dd>last)last=dd; });
     var cuNm=Object.keys(cn).sort(function(a,b){ return cn[b]-cn[a]||a.localeCompare(b,'ko'); }).join(', ');   /* v1710 : 품명 왼쪽 업체명(여러 곳이면 출고 많은 순으로 모두) */
-    a1.push([cuNm,o.name||'',o.std,tpX(o.std),rsX(o.std),o.pcode||o.code||'',fx(o.name,o.std),(o.rows||[]).length,cs.size,d10(last),so.length,bs.some(function(b){ return b.edited; })?'O':'',so.filter(function(t){ return t!==o.std; }).join(' · ')]); });
+    a1.push([cuNm,o.name||'',spX(o.std),bgX(o.std),fx(o.name,o.std),(o.rows||[]).length,cs.size,d10(last),so.length,bs.some(function(b){ return b.edited; })?'O':'',so.filter(function(t){ return t!==o.std; }).join(' · ')]); });
   var h2=['합친 규격','품번','확정','구분','원래 품명규격','원래 품번','출고건수','업체수','최근 출고'], a2=[h2];
   lgList().forEach(function(L){ L.items.forEach(function(e){ a2.push([L.o.std,L.o.pcode||'',fx(L.o.name,L.o.std),e.ed?'합침':(e.so===L.o.std?'기준':'자동 묶음'),e.so,e.pc,e.n,e.cs.size,d10(e.last)]); }); });
   var mk=function(aoa,hd){ var ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=hd.map(function(h,i){ var m=String(h).length*2+2; for(var j=1;j<aoa.length&&j<600;j++){ var v=String(aoa[j][i]==null?'':aoa[j][i]), Ln=0; for(var k=0;k<v.length;k++)Ln+=v.charCodeAt(k)>255?2:1; if(Ln+2>m)m=Ln+2; } return {wch:Math.min(Math.max(m,6),70)}; }); if(aoa.length>1)ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:aoa.length-1,c:hd.length-1}})}; return ws; };
