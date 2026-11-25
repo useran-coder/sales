@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1716';
+<script>window.APP_BUILD='v1717';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }</script>
@@ -9734,12 +9734,12 @@ function setPricingView(prSeg){
       <td class="num"><button class="setdel" data-i="${i}" title="${it.name?'제외: 아래 «제외제품»으로 옮김(복원 가능)':'빈 줄 지우기'}" style="border:1px solid #fecaca;background:#fff5f5;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px;font-weight:600;padding:3px 9px;white-space:nowrap">제외</button></td></tr>`; };
   const tot=setTotals(d.items);
   const draftTbl=`<style>.setTblV1316 th,.setTblV1316 td{padding:5px 5px!important}.setTblV1316 td:first-child,.setTblV1316 th:first-child{padding-left:10px!important}.setTblV1316 th.setSkV1318:hover{color:#1d4ed8;background:#e0ecff}</style><div class="tablewrap setTblV1316 ${setCostOnV1323()?"costOnV1323":""} ${(window.setBigoOnV1389&&setBigoOnV1389())?"":"bigoOffV1389"}"><table>${setSortHeadV1318()}<tbody>${d.items.map(rowHtml).join('')}<tr class="total-row"><td class="l" colspan="${(window.setBigoOnV1389&&setBigoOnV1389())?4:3}">합 계 (${d.items.filter(x=>x.name).length}품목)</td><td class="num c-qty" id="setTqty">${won(tot.qty)}</td><td></td><td class="num" id="setTamt" style="font-weight:800;color:#1e3a5f">${won(tot.amt)}</td><td class="c-ld"></td><td class="c-min"></td><td class="c-max"></td><td class="num c-mavg">${won(setSalesSumV1323(d.items,"m"))}</td><td class="num c-ysale">${won(setSalesSumV1323(d.items,"y"))}</td><td class="num c-cost" id="setTcost">${won(tot.cost)}</td><td class="num c-pf" id="setTpf" title="이윤액 합계">${won(tot.pfAmt)}</td><td></td></tr></tbody></table></div>`;
-  const savedRows=state.priceSets.length?state.priceSets.map((s,i)=>{ const t=setTotals(s.items); return `<tr class="setsrow" data-id="${esc(s.id)}" style="cursor:pointer"><td style="text-align:center;color:#94a3b8">${i+1}</td><td class="l" style="font-weight:700">${esc(s.title)} ${s.cust?`<span style="font-size:11px;font-weight:600;color:#0f766e;background:#ccfbf1;border-radius:999px;padding:1px 8px;margin-left:4px">🏢 ${esc(s.cust)}</span>`:''} <span class="sub2">▾</span></td><td class="num">${won(s.items.filter(x=>x.name).length)}품목</td><td class="bdV1716" style="text-align:center;white-space:nowrap">${s.baseDate?`<span style="display:inline-block;font-size:12px;font-weight:700;color:#1e3a5f;background:#eef2ff;border:1px solid #c7d2fe;border-radius:999px;padding:1px 9px">${esc(s.baseDate)}</span>`:'<span class="sub2">-</span>'}</td><td class="sub2" style="text-align:right;white-space:nowrap">${esc(s.savedAt||'')}${s.by?' · '+esc(s.by):''}</td><td style="text-align:center;white-space:nowrap" onclick="event.stopPropagation()"><button class="setload" title="이 단가표를 불러와서 수정" data-id="${esc(s.id)}" style="border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:6px;font-size:12px;font-weight:700;padding:4px 7px;cursor:pointer;white-space:nowrap">불러오기</button> <button class="setpvV1466" data-id="${esc(s.id)}" title="이 단가표를 출력 모양으로 미리 봄 (지금 작성 중인 표는 그대로)" style="border:1px solid #bae6fd;background:#f0f9ff;color:#0369a1;border-radius:6px;font-size:12px;font-weight:700;padding:4px 7px;cursor:pointer;white-space:nowrap">👁️ 미리보기</button> <button class="setprV1466" data-id="${esc(s.id)}" title="이 단가표를 업체 발송용 엑셀로 출력 (지금 작성 중인 표는 그대로)" style="border:1px solid #1e3a5f;background:#1e3a5f;color:#fff;border-radius:6px;font-size:12px;font-weight:700;padding:4px 7px;cursor:pointer;white-space:nowrap">🖨️ 출력</button> <button class="setremove" data-id="${esc(s.id)}" style="border:1px solid #fecaca;background:#fff5f5;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px;font-weight:600;padding:3px 9px;white-space:nowrap">삭제</button></td></tr>`; }).join(''):'<tr><td colspan="6" class="sub2" style="text-align:center;padding:14px">저장된 단가표가 없습니다.</td></tr>';
+  const savedRows=state.priceSets.length?state.priceSets.map((s,i)=>{ const t=setTotals(s.items); return `<tr class="setsrow" data-id="${esc(s.id)}" style="cursor:pointer"><td style="text-align:center;color:#94a3b8">${i+1}</td><td class="l ttV1717" style="font-weight:700"><div class="t1">${esc(s.title)} <span class="sub2">▾</span></div>${s.cust?`<div class="t2"><span style="font-size:11px;font-weight:600;color:#0f766e;background:#ccfbf1;border-radius:999px;padding:1px 8px">🏢 ${esc(s.cust)}</span></div>`:''}</td><td class="num">${won(s.items.filter(x=>x.name).length)}품목</td><td class="bdV1716" style="text-align:center;white-space:nowrap">${s.baseDate?`<span style="display:inline-block;font-size:12px;font-weight:700;color:#1e3a5f;background:#eef2ff;border:1px solid #c7d2fe;border-radius:999px;padding:1px 9px">${esc(s.baseDate)}</span>`:(String(s.savedAt||'').slice(0,10)?`<span class="bdOldV1717" title="기준일 저장 전 단가표 — 저장일 표시. 불러와서 다시 저장하면 기준일 저장">${esc(String(s.savedAt).slice(0,10))}</span>`:'<span class="sub2">-</span>')}</td><td class="sub2" style="text-align:right;white-space:nowrap">${esc(s.savedAt||'')}${s.by?' · '+esc(s.by):''}</td><td style="text-align:center;white-space:nowrap" onclick="event.stopPropagation()"><button class="setload" title="이 단가표를 불러와서 수정" data-id="${esc(s.id)}" style="border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:6px;font-size:12px;font-weight:700;padding:4px 7px;cursor:pointer;white-space:nowrap">불러오기</button> <button class="setpvV1466" data-id="${esc(s.id)}" title="이 단가표를 출력 모양으로 미리 봄 (지금 작성 중인 표는 그대로)" style="border:1px solid #bae6fd;background:#f0f9ff;color:#0369a1;border-radius:6px;font-size:12px;font-weight:700;padding:4px 7px;cursor:pointer;white-space:nowrap">👁️ 미리보기</button> <button class="setprV1466" data-id="${esc(s.id)}" title="이 단가표를 업체 발송용 엑셀로 출력 (지금 작성 중인 표는 그대로)" style="border:1px solid #1e3a5f;background:#1e3a5f;color:#fff;border-radius:6px;font-size:12px;font-weight:700;padding:4px 7px;cursor:pointer;white-space:nowrap">🖨️ 출력</button> <button class="setremove" data-id="${esc(s.id)}" style="border:1px solid #fecaca;background:#fff5f5;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px;font-weight:600;padding:3px 9px;white-space:nowrap">삭제</button></td></tr>`; }).join(''):'<tr><td colspan="6" class="sub2" style="text-align:center;padding:14px">저장된 단가표가 없습니다.</td></tr>';
   const savedTbl=`<div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>#</th><th class="l">단가표 제목</th><th class="num">품목수</th><th style="text-align:center">기준일</th><th class="num" style="text-align:right">저장일/저장자</th><th style="text-align:center">관리</th></tr></thead><tbody>${savedRows}</tbody></table></div>`;
   const html=`${nameDl}<div class="rhead" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div class="title">단가표 만들기</div><span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto"><span class="setQWrapV1361"><b style="font-size:12px">표 검색</b><input id="setQV1361" type="search" autocomplete="off" placeholder="품번 · 품명 · 규격 · 비고 (띄어쓰기로 여러 개)" value="${esc(String(state.setQV1361||''))}"><button type="button" id="setQClrV1361" class="btn ghost">✕ 지우기</button><span id="setQCntV1361" class="sub2" style="font-size:11.5px"></span></span><button id="setXlsx" class="btn ghost" style="background:#dcfce7;color:#15803d;border-color:#86efac">📥 엑셀 내보내기</button></span></div>
     <div id="setStkV1470"><div class="ctrlbar" style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">${/* v1552 : 단가표 만들기에서는 «단가표 기준 업체별·제품별» 삭제 — 거래단가 탭과 같은 화면(priceTable cust/prod)이라 겹침 */''}${setCustFieldV1553(d)}${window.setRangeHtmlV1348?setRangeHtmlV1348():''}<span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:6px"><button id="setIrBtnV1333" type="button" class="btn" style="background:#ede9fe;color:#5b21b6;border-color:#ddd6fe" title="내부보강 사양의 «규격화 제안 표기»를 골라 단가표에 넣기">📏 내부보강 단가 만들기</button>
       <button id="setLsBtnV1338" type="button" class="btn" style="background:#ffedd5;color:#c2410c;border-color:#fed7aa" title="레이저 품목규격화 대상의 «규격화 제안 표기»를 골라 단가표에 넣기">🔶 레이저 단가 만들기</button>
-      <label class="setBdV1550" title="단가표 미리보기·인쇄·엑셀·PDF 의 «기준일». 비우면 출력하는 날짜"><b>기준일</b><input type="date" id="setBaseDateV1550" value="${esc(String(d._baseDateV1547||''))}"></label>
+      <label class="setBdV1550" title="단가표 미리보기·인쇄·엑셀·PDF 의 «기준일». 비우면 출력하는 날짜"><b>기준일</b><input type="date" id="setBaseDateV1550" value="${esc(String(d._baseDateV1547||''))}"></label>${window.setBdVerBtnV1717?setBdVerBtnV1717(d):''}
       <button id="setSndTglV1553" type="button" class="btn${state.setSndOpenV1553?' on':''}" title="단가표 출력에 들어가는 수신(담당자·연락처)·발신 정보 고치기 — 누르면 아래 줄에 열림">수/발신 수정</button>
       <button id="setPrevV1318" class="btn" style="background:#f0f9ff;color:#0369a1;border-color:#bae6fd" title="출력될 단가표를 화면에서 미리 봄">👁️ 단가표 미리보기</button>
       <button id="setPrintV1315" class="btn" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f" title="업체 발송용 단가표 엑셀(No·품번·품명·규격·단가·비고, 발신 정보·직인 자리)">🖨️ 단가표 출력</button>
@@ -9775,8 +9775,8 @@ function setPricingView(prSeg){
     const addB=root.querySelector('#setAddRow'); addB&&addB.addEventListener('click',()=>{ state.setDraft.items.push({name:'',spec:'',code:'',bigo:'',qty:1,price:'',cost:''}); setPricingView(prSeg); });
     const clrB=root.querySelector('#setClear'); clrB&&clrB.addEventListener('click',async()=>{ if(!await uiConfirm('현재 입력 중인 내용을 모두 지울까요?'))return; state.setDraft={title:'',items:[{name:'',spec:'',code:'',bigo:'',qty:1,price:'',cost:''}]}; setPricingView(prSeg); });
     const xB=root.querySelector('#setXlsx'); xB&&xB.addEventListener('click',()=>{ const d=state.setDraft; const aoa=[['품번','품명','규격','비고','수량','단가',(window.setMatOnV1384&&setMatOnV1384())?'재료비':'제조원가','이윤율%','금액']]; d.items.filter(x=>x.name).forEach(it=>{ const pf=setProfitPct(it); aoa.push([it.code||'',it.name||'',it.spec||'',it.bigo||'',+it.qty||0,Math.round(+it.price||0),Math.round(+(window.setCVV1384?setCVV1384(it):it.cost)||0),pf==null?'':+pf.toFixed(1),(Math.round(+it.price||0))*(+it.qty||0)]); }); const t=setTotals(d.items); aoa.push(['합계','','','',t.qty,'','','',t.amt]); dlXLSX('pricing_table_'+(d.title||'untitled')+'.xlsx','단가표',aoa); });
-    const saveB=root.querySelector('#setSave'); saveB&&saveB.addEventListener('click',async()=>{ const d=state.setDraft; if(!d.title||!d.title.trim()){ await uiConfirm('단가표 제목을 입력하세요.'); return; } if(!d.items.some(x=>x.name)){ await uiConfirm('품목을 1개 이상 입력하세요.'); return; } const id='set_'+Date.now(); const now=new Date(); const savedAt=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); const by=(state.gsync&&state.gsync.user)||'관리자'; const ex=state.priceSets.findIndex(s=>s.title===d.title.trim()); if(!/^\d{4}-\d{2}-\d{2}$/.test(String(d._baseDateV1547||'')))d._baseDateV1547=savedAt.slice(0,10);   /* v1716 : 기준일은 꼭 같이 저장 — 비어 있으면 저장한 날 */ const rec={id,title:d.title.trim(),baseDate:String(d._baseDateV1547),cust:String(d.cust||'').trim(),rcvName:String(d.rcvName||'').trim(),rcvTel:String(d.rcvTel||'').trim(),rcvMob:String(d.rcvMob||'').trim(),snd:(()=>{ const v=cplSenderGetV1313(); delete v.sel; delete v.items; return v; })(),items:JSON.parse(JSON.stringify(d.items.filter(x=>x.name))),excluded:JSON.parse(JSON.stringify((d.excluded||[]).filter(x=>x&&x.name))),savedAt,by,ts:Date.now()}; if(ex>=0)rec.id=state.priceSets[ex].id,state.priceSets[ex]=rec; else state.priceSets.push(rec); logEdit('단가표',`${ex>=0?'수정':'저장'}: ${rec.title} (${rec.items.length}품목)`); saveSettings(); if(window.__setClrAfterSaveV1399){ window.__setClrAfterSaveV1399=0; state.setDraft={title:'',items:[{name:'',spec:'',code:'',bigo:'',qty:1,price:'',cost:''}]}; } else { try{ if(typeof toast==='function')toast('💾 «'+rec.title+'» 저장했습니다'); }catch(_e){} }   /* v1399 : 저장 뒤에도 지금 화면 그대로 */ setPricingView(prSeg); });
-    root.querySelectorAll('.setload').forEach(b=>b.addEventListener('click',()=>{ const s=state.priceSets.find(x=>x.id===b.dataset.id); if(!s)return; state.setSortV1318=null; try{ const cs=cplSenderGetV1313(); if(s.snd&&!String(cs.tel||'').trim()&&!String(cs.fax||'').trim()&&!String(cs.email||'').trim()){ localStorage.setItem('cplSenderV1313',JSON.stringify(Object.assign({},cs,s.snd))); } }catch(_e){} state.setDraft={title:s.title,cust:s.cust||'',rcvName:s.rcvName||'',rcvTel:s.rcvTel||'',rcvMob:s.rcvMob||'',items:JSON.parse(JSON.stringify(s.items)),excluded:JSON.parse(JSON.stringify(s.excluded||[]))}; if(/^\d{4}-\d{2}-\d{2}$/.test(String(s.baseDate||'')))state.setDraft._baseDateV1547=s.baseDate;   /* v1716 : 불러오면 저장한 기준일도 */ setPricingView(prSeg); window.scrollTo({top:0,behavior:'smooth'}); }));
+    const saveB=root.querySelector('#setSave'); saveB&&saveB.addEventListener('click',async()=>{ const d=state.setDraft; if(!d.title||!d.title.trim()){ await uiConfirm('단가표 제목을 입력하세요.'); return; } if(!d.items.some(x=>x.name)){ await uiConfirm('품목을 1개 이상 입력하세요.'); return; } const id='set_'+Date.now(); const now=new Date(); const savedAt=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); const by=(state.gsync&&state.gsync.user)||'관리자'; const bdV=/^\d{4}-\d{2}-\d{2}$/.test(String(d._baseDateV1547||''))?String(d._baseDateV1547):savedAt.slice(0,10), ttV=d.title.trim(); let ex=state.priceSets.findIndex(s=>s.title===ttV&&String(s.baseDate||'')===bdV);   /* v1717 : 같은 제목이라도 기준일이 다르면 따로 저장(기준일별 보관) */ if(ex<0){ const leg=state.priceSets.findIndex(s=>s.title===ttV&&!/^\d{4}-\d{2}-\d{2}$/.test(String(s.baseDate||''))); if(leg>=0)ex=leg; else { const oth=state.priceSets.filter(s=>s.title===ttV); if(oth.length){ const src=oth.find(s=>s.id===d._srcIdV1717)||oth.slice().sort((a,b)=>(+b.ts||0)-(+a.ts||0))[0]; const ch=window.setBdSaveAskV1717?await window.setBdSaveAskV1717(src,bdV):'new'; if(!ch)return; if(ch==='replace')ex=state.priceSets.indexOf(src); } } } d._baseDateV1547=bdV;   /* v1716 : 기준일은 꼭 같이 저장 — 비어 있으면 저장한 날 */ const rec={id,title:d.title.trim(),baseDate:String(d._baseDateV1547),cust:String(d.cust||'').trim(),rcvName:String(d.rcvName||'').trim(),rcvTel:String(d.rcvTel||'').trim(),rcvMob:String(d.rcvMob||'').trim(),snd:(()=>{ const v=cplSenderGetV1313(); delete v.sel; delete v.items; return v; })(),items:JSON.parse(JSON.stringify(d.items.filter(x=>x.name))),excluded:JSON.parse(JSON.stringify((d.excluded||[]).filter(x=>x&&x.name))),savedAt,by,ts:Date.now()}; if(ex>=0)rec.id=state.priceSets[ex].id,state.priceSets[ex]=rec; else state.priceSets.push(rec); d._srcIdV1717=rec.id; logEdit('단가표',`${ex>=0?'수정':'저장'}: ${rec.title} · 기준일 ${rec.baseDate} (${rec.items.length}품목)`); saveSettings(); if(window.__setClrAfterSaveV1399){ window.__setClrAfterSaveV1399=0; state.setDraft={title:'',items:[{name:'',spec:'',code:'',bigo:'',qty:1,price:'',cost:''}]}; } else { try{ if(typeof toast==='function')toast('💾 «'+rec.title+'» 저장했습니다'); }catch(_e){} }   /* v1399 : 저장 뒤에도 지금 화면 그대로 */ setPricingView(prSeg); });
+    root.querySelectorAll('.setload').forEach(b=>b.addEventListener('click',()=>{ const s=state.priceSets.find(x=>x.id===b.dataset.id); if(!s)return; state.setSortV1318=null; try{ const cs=cplSenderGetV1313(); if(s.snd&&!String(cs.tel||'').trim()&&!String(cs.fax||'').trim()&&!String(cs.email||'').trim()){ localStorage.setItem('cplSenderV1313',JSON.stringify(Object.assign({},cs,s.snd))); } }catch(_e){} state.setDraft={title:s.title,cust:s.cust||'',rcvName:s.rcvName||'',rcvTel:s.rcvTel||'',rcvMob:s.rcvMob||'',items:JSON.parse(JSON.stringify(s.items)),excluded:JSON.parse(JSON.stringify(s.excluded||[]))}; if(/^\d{4}-\d{2}-\d{2}$/.test(String(s.baseDate||'')))state.setDraft._baseDateV1547=s.baseDate;   /* v1716 : 불러오면 저장한 기준일도 */ state.setDraft._srcIdV1717=s.id; setPricingView(prSeg); window.scrollTo({top:0,behavior:'smooth'}); }));
     root.querySelectorAll('.setremove').forEach(b=>b.addEventListener('click',async()=>{ if(!await uiConfirm('이 단가표를 삭제할까요?'))return; state.priceSets=state.priceSets.filter(x=>x.id!==b.dataset.id); try{ if(window.psDelV1323)window.psDelV1323(b.dataset.id); }catch(_d1323){} saveSettings(); setPricingView(prSeg); }));
     // click saved row -> expand detail with 이윤합계 + 저장일/저장자 + 닫기
     root.querySelectorAll('.setsrow').forEach(tr=>tr.addEventListener('click',()=>{ const id=tr.dataset.id; const s=state.priceSets.find(x=>x.id===id); if(!s)return; const nx=tr.nextElementSibling; if(nx&&nx.classList.contains('setdetail')){ nx.remove(); return; } root.querySelectorAll('.setdetail').forEach(x=>x.remove()); const t=setTotals(s.items); const dr=document.createElement('tr'); dr.className='setdetail'; const td=document.createElement('td'); td.colSpan=6; td.style.background='#f8fafc'; td.style.padding='10px 14px'; td.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="font-size:13px">${esc(s.title)} · 상세</b><button class="setdclose" style="border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer;font-size:11px;padding:3px 10px">닫기 ✕</button></div><div class="sub2" style="margin-bottom:6px">저장일 <b>${esc(s.savedAt||'-')}</b> · 저장자 <b>${esc(s.by||'-')}</b> · 합계금액 <b>${won(t.amt)}</b> · 제조원가합계 <b>${won(t.cost)}</b> · <span style="color:#16a34a">이윤합계 <b>${won(t.pfAmt)}</b></span></div><div class="tablewrap"><table style="font-size:11.5px"><thead><tr><th class="l">품번</th><th class="l">품명</th><th class="l">규격</th><th class="l">비고</th><th class="num">수량</th><th class="num">단가</th><th class="num">제조원가</th><th class="num">이윤율</th><th class="num">금액</th></tr></thead><tbody>${s.items.map(it=>{const pf=setProfitPct(it);return `<tr><td class="l">${esc(it.code||'')}</td><td class="l">${esc(it.name||'')}</td><td class="l">${esc(it.spec||'')}</td><td class="l">${esc(it.bigo||'')}</td><td class="num">${won(+it.qty||0)}</td><td class="num">${won(Math.round(+it.price||0))}</td><td class="num">${won(Math.round(+it.cost||0))}</td><td class="num">${pf==null?'-':pf.toFixed(1)+'%'}</td><td class="num">${won((Math.round(+it.price||0))*(+it.qty||0))}</td></tr>`;}).join('')}</tbody></table></div>`; dr.appendChild(td); tr.after(dr); dr.querySelector('.setdclose').addEventListener('click',e=>{ e.stopPropagation(); dr.remove(); }); }));
@@ -50091,7 +50091,7 @@ document.addEventListener('click',function(e){ try{ var h=e.target&&e.target.clo
 function E(v){ return esc(String(v==null?'':v)); }
 function norm(arr){ return JSON.stringify((arr||[]).filter(function(x){ return x&&x.name; }).map(function(x){ return [x.code||'',x.name||'',x.spec||'',x.bigo||'',String(x.qty==null?'':x.qty),String(x.price==null?'':x.price).replace(/[^0-9.-]/g,''),String(x.cost==null?'':x.cost).replace(/[^0-9.-]/g,''),String(x.mat==null?'':x.mat).replace(/[^0-9.-]/g,'')]; })); }
 function isEmpty(d){ return !d||(!String(d.title||'').trim()&&!String(d.cust||'').trim()&&!((d.items||[]).some(function(x){return x&&x.name;}))&&!((d.excluded||[]).length)); }
-function savedOf(d){ var t=String(d.title||'').trim(); return t?(state.priceSets||[]).find(function(s){ return s.title===t; })||null:null; }
+function savedOf(d){ if(window.setSavedOfV1717)return window.setSavedOfV1717(d); var t=String(d.title||'').trim(); return t?(state.priceSets||[]).find(function(s){ return s.title===t; })||null:null; }
 function unsaved(d){ if(isEmpty(d))return false; var s=savedOf(d); if(!s)return true;
   return norm(s.items)!==norm(d.items)||norm(s.excluded)!==norm(d.excluded)||String(s.cust||'')!==String(d.cust||'').trim(); }
 window.setUnsavedV1336=function(){ return unsaved(state.setDraft); };
@@ -50137,9 +50137,10 @@ function custItems(c){ var cs=custSet(c), m=new Map();
   try{ CUR.forEach(function(r){ if(cs.indexOf(r.cust)<0||!r.name)return; var q=+r.qty||0; if(q<=0)return; var p=+r.price||0; if(!(p>0))p=(+(r.supply||r.total)||0)/q; if(!(p>0))return;
     var k=r.name+'\u0001'+(r.spec||''), t=tOf(r), o=m.get(k); if(!o){ o={name:r.name,spec:r.spec||'',code:r.code||'',n:0,t:0,p:0}; m.set(k,o); } o.n++; if(t>=o.t){ o.t=t; o.p=p; if(r.code)o.code=r.code; } }); }catch(_e){}
   return Array.from(m.values()).sort(function(a,b){ return String(a.name).localeCompare(String(b.name),'ko')||String(a.spec).localeCompare(String(b.spec),'ko'); }); }
-function setsOf(c){ var cs=custSet(c); return (state.priceSets||[]).filter(function(s){ return s&&cs.indexOf(String(s.cust||'').trim())>=0; }).sort(function(a,b){ return (+b.ts||0)-(+a.ts||0); }); }
+function bdK(s){ return /^\d{4}-\d{2}-\d{2}$/.test(String(s&&s.baseDate||''))?s.baseDate:String(s&&s.savedAt||'').slice(0,10); }
+function setsOf(c){ var cs=custSet(c); return (state.priceSets||[]).filter(function(s){ return s&&cs.indexOf(String(s.cust||'').trim())>=0; }).sort(function(a,b){ var x=bdK(a), y=bdK(b); return x<y?1:x>y?-1:((+b.ts||0)-(+a.ts||0)); }); }   /* v1717 : 기준일 최근 순 */
 function isEmpty(d){ return !d||(!((d.items||[]).some(function(x){return x&&x.name;}))&&!((d.excluded||[]).length)); }
-function loadSet(s){ var b=document.querySelector('.setload[data-id="'+(window.CSS&&CSS.escape?CSS.escape(s.id):s.id)+'"]'); if(b){ b.click(); return; }
+function loadSet(s){ if(window.setLoadSetV1717){ window.setLoadSetV1717(s); return; } var b=document.querySelector('.setload[data-id="'+(window.CSS&&CSS.escape?CSS.escape(s.id):s.id)+'"]'); if(b){ b.click(); return; }
   state.setSortV1318=null; state.setDraft={title:s.title,cust:s.cust||'',rcvName:s.rcvName||'',rcvTel:s.rcvTel||'',rcvMob:s.rcvMob||'',items:JSON.parse(JSON.stringify(s.items||[])),excluded:JSON.parse(JSON.stringify(s.excluded||[]))}; try{ priceTable(); }catch(_e){} }
 function fromSales(c){ var its=custItems(c); var tel=''; try{ tel=(setRcvContactsV1320(c).coTel||''); }catch(_e){}
   var d=state.setDraft||{}; state.setSortV1318=null;
@@ -50151,10 +50152,10 @@ function ask(c,was){
   close(); var sets=setsOf(c), its=custItems(c);
   var w=document.createElement('div'); w.id='custLoadV1337';
   w.style.cssText='position:fixed;inset:0;z-index:2147482600;background:rgba(15,23,42,.4);display:flex;align-items:center;justify-content:center;padding:16px';
-  var srows=sets.map(function(s,i){ return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;margin-top:6px"><div style="flex:1;min-width:0"><b style="font-size:13px">'+E(s.title)+'</b><div class="sub2" style="font-size:11.5px">'+((s.items||[]).length)+'품목'+(s.baseDate?' · 기준일 '+E(s.baseDate):'')+' · '+E(s.savedAt||'')+(s.by?' · '+E(s.by):'')+'</div></div><button type="button" class="btn cl1337" data-i="'+i+'" style="font-size:12px;padding:5px 12px;background:#eef2ff;color:#3730a3;border-color:#c7d2fe">📂 불러오기</button></div>'; }).join('');
+  var srows=sets.map(function(s,i){ return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;margin-top:6px">'+(window.setBdPillV1717?setBdPillV1717(s):'')+'<div style="flex:1;min-width:0"><b style="font-size:13px">'+E(s.title)+'</b><div class="sub2" style="font-size:11.5px">'+((s.items||[]).filter(function(x){return x&&x.name;}).length)+'품목 · 저장 '+E(s.savedAt||'')+(s.by?' · '+E(s.by):'')+'</div></div><button type="button" class="btn cl1337" data-i="'+i+'" style="font-size:12px;padding:5px 12px;background:#eef2ff;color:#3730a3;border-color:#c7d2fe">📂 불러오기</button></div>'; }).join('');
   w.innerHTML='<div style="background:#fff;border-radius:14px;width:min(520px,96vw);max-height:86vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:18px 20px">'
     +'<div style="font-size:16px;font-weight:800;color:#1e3a5f">🏢 '+E(c)+' 선택됨</div><div class="sub2" style="font-size:12px;margin:4px 0 6px">이 업체 내용으로 표를 바꿀지 고르세요'+(window.setUnsavedV1336&&window.setUnsavedV1336()?' · <b style="color:#b45309">지금 표에 저장 안 된 내용 있음</b>':'')+'</div>'
-    +(sets.length?'<div style="font-size:12.5px;font-weight:700;color:#334155;margin-top:8px">📑 이 업체 저장된 단가표 ('+sets.length+')</div>'+srows:'<div class="sub2" style="font-size:12px;margin-top:8px">이 업체로 저장된 단가표 없음</div>')
+    +(sets.length?'<div style="font-size:12.5px;font-weight:700;color:#334155;margin-top:8px">📑 이 업체 저장된 단가표 ('+sets.length+')'+(sets.length>1?' <span class="sub2" style="font-weight:600">· 기준일 골라 불러오기</span>':'')+'</div>'+srows:'<div class="sub2" style="font-size:12px;margin-top:8px">이 업체로 저장된 단가표 없음</div>')
     +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap"><button type="button" id="clKeep1337" class="btn">지금 표 유지 (업체만 바꿈)</button>'
     +'<button type="button" id="clSales1337" class="btn" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;font-weight:700"'+(its.length?'':' disabled title="출고 기록 없음"')+'>🧾 출고 품목 '+its.length+'개로 새로 만들기</button></div></div>';
   document.body.appendChild(w);
@@ -50168,7 +50169,7 @@ document.addEventListener('focusin',function(e){ if(e.target&&e.target.id==='set
 window.custPickedV1337=function(c,was){
   c=String(c||'').trim(); if(!c||c===String(was||'').trim())return;
   var d=state.setDraft;
-  if(isEmpty(d)){ var sets=setsOf(c); if(sets.length)loadSet(sets[0]); else if(custItems(c).length)fromSales(c); return; }
+  if(isEmpty(d)){ var sets=setsOf(c); if(sets.length>1){ ask(c,was); return; } if(sets.length)loadSet(sets[0]); else if(custItems(c).length)fromSales(c); return; }   /* v1717 : 저장본 여러 개면 기준일 골라 불러오기 */
   ask(c,was);
 };
 document.addEventListener('change',function(e){ if(!e.target||e.target.id!=='setCust')return; var c=String(e.target.value||'').trim(), was=prev; prev=c;
@@ -50176,6 +50177,90 @@ document.addEventListener('change',function(e){ if(!e.target||e.target.id!=='set
 })();
 </script>
 
+<style id="v1717-bd-ver-css">
+#bdVerV1717{height:32px;padding:0 10px;font-size:12px;white-space:nowrap}
+#bdVerV1717 .n{display:inline-block;min-width:16px;padding:0 5px;margin-left:3px;border-radius:999px;background:#1e3a5f;color:#fff;font-size:11px;line-height:16px;text-align:center}
+#bdVerPopV1717{position:fixed;z-index:2147482000;background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 12px 32px rgba(15,23,42,.22);padding:6px;width:min(460px,94vw);max-height:60vh;overflow:auto;font-size:12.5px}
+#bdVerPopV1717 .h{padding:6px 8px 8px;font-weight:800;color:#1e3a5f;border-bottom:1px solid #eef2f7;margin-bottom:4px}
+#bdVerPopV1717 .h span{font-weight:600;color:#64748b;margin-left:4px}
+#bdVerPopV1717 .r{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px}
+#bdVerPopV1717 .r:hover{background:#f8fafc}
+#bdVerPopV1717 .r.on{background:#eff6ff}
+#bdVerPopV1717 .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;color:#0f172a}
+#bdVerPopV1717 .t small{display:block;font-weight:500;color:#64748b;font-size:11.5px}
+#bdVerPopV1717 em{font-style:normal;font-size:11.5px;font-weight:700;color:#1d4ed8;white-space:nowrap}
+#bdVerPopV1717 .r button{border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:6px;font-size:12px;font-weight:700;padding:4px 9px;cursor:pointer;white-space:nowrap}
+.bdPillV1717{display:inline-block;font-size:12px;font-weight:700;color:#1e3a5f;background:#eef2ff;border:1px solid #c7d2fe;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.bdPillV1717.old,.bdOldV1717{display:inline-block;font-size:12px;font-weight:600;color:#94a3b8;background:#fff;border:1px dashed #cbd5e1;border-radius:999px;padding:1px 9px;white-space:nowrap}
+#svDrV1470{width:min(960px,96vw)!important}
+#svDrV1470 td.ttV1717{white-space:nowrap}
+#svDrV1470 td.ttV1717 .t2{margin-top:3px}
+#bdAskV1717{position:fixed;inset:0;z-index:2147482600;background:rgba(15,23,42,.4);display:flex;align-items:center;justify-content:center;padding:16px}
+#bdAskV1717 .bx{background:#fff;border-radius:14px;width:min(460px,96vw);box-shadow:0 20px 60px rgba(0,0,0,.3);padding:18px 20px}
+#bdAskV1717 .bx b.h{display:block;font-size:15.5px;color:#1e3a5f;margin-bottom:8px}
+#bdAskV1717 .bx p{margin:4px 0;font-size:13px;color:#334155}
+#bdAskV1717 .bt{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+#bdAskV1717 .bt button{height:36px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid #cbd5e1;background:#fff;color:#334155}
+#bdAskV1717 .bt button.p{background:#1e3a5f;border-color:#1e3a5f;color:#fff}
+</style>
+<script id="v1717-bd-ver">
+/* v1717 : 단가표 기준일별 저장본
+   - 같은 제목이라도 기준일이 다르면 따로 저장(같은 제목+같은 기준일은 덮어씀) → 미저장 판정도 제목+기준일
+   - 기준일 칸 옆 «저장된 기준일 N ▾» : 이 업체(또는 같은 제목) 저장본을 기준일 최근 순으로 보고 골라 불러오기 */
+(function(){
+function E(v){ return esc(String(v==null?'':v)); }
+function okD(v){ return /^\d{4}-\d{2}-\d{2}$/.test(String(v||'')); }
+function bdOf(s){ return s&&okD(s.baseDate)?s.baseDate:''; }
+function nIt(s){ return ((s&&s.items)||[]).filter(function(x){ return x&&x.name; }).length; }
+window.setBdPillV1717=function(s){ var b=bdOf(s); return b?'<span class="bdPillV1717">'+E(b)+'</span>':'<span class="bdPillV1717 old" title="기준일 저장 전 단가표 — 저장일 표시">'+E(String(s&&s.savedAt||'').slice(0,10)||'기준일 없음')+'</span>'; };
+window.setSavedOfV1717=function(d){ d=d||{}; var t=String(d.title||'').trim(); if(!t)return null;
+  var L=(state.priceSets||[]).filter(function(s){ return s&&s.title===t; }); if(!L.length)return null;
+  var bd=okD(d._baseDateV1547)?d._baseDateV1547:'';
+  if(bd)return L.find(function(s){ return bdOf(s)===bd; })||null;   /* 기준일을 바꾸면 «저장 안 됨» → 저장 버튼 켜짐 */
+  return L.find(function(s){ return s.id===d._srcIdV1717; })||L.find(function(s){ return !bdOf(s); })||L.slice().sort(function(a,b){ return (+b.ts||0)-(+a.ts||0); })[0]; };
+window.setVersionsV1717=function(d){ d=d||{}; var c=String(d.cust||'').trim(), t=String(d.title||'').trim();
+  return (state.priceSets||[]).filter(function(s){ return s&&((c&&String(s.cust||'').trim()===c)||(t&&s.title===t)); }).sort(function(a,b){
+    var x=bdOf(a)||String(a.savedAt||'').slice(0,10), y=bdOf(b)||String(b.savedAt||'').slice(0,10); return x<y?1:x>y?-1:((+b.ts||0)-(+a.ts||0)); }); };
+window.setBdVerBtnV1717=function(d){ var L=window.setVersionsV1717(d); if(!L.length)return '';
+  return '<button type="button" id="bdVerV1717" class="btn" title="이 업체로 저장된 단가표의 기준일 보기 · 골라서 불러오기">저장된 기준일<span class="n">'+L.length+'</span> ▾</button>'; };
+window.setLoadSetV1717=function(s){ if(!s)return;
+  var b=document.querySelector('.setload[data-id="'+(window.CSS&&CSS.escape?CSS.escape(s.id):s.id)+'"]'); if(b){ b.click(); return; }
+  state.setSortV1318=null;
+  state.setDraft={title:s.title,cust:s.cust||'',rcvName:s.rcvName||'',rcvTel:s.rcvTel||'',rcvMob:s.rcvMob||'',items:JSON.parse(JSON.stringify(s.items||[])),excluded:JSON.parse(JSON.stringify(s.excluded||[]))};
+  if(okD(s.baseDate))state.setDraft._baseDateV1547=s.baseDate; state.setDraft._srcIdV1717=s.id;
+  try{ if(typeof runAct==='function')runAct(); else priceTable(); }catch(_e){} };
+/* 저장 때 같은 제목·다른 기준일 저장본이 있으면 : 새 기준일로 따로 저장 / 그 저장본의 기준일 바꿈 / 취소 */
+window.setBdSaveAskV1717=function(src,bd){ return new Promise(function(res){
+  var o=document.getElementById('bdAskV1717'); if(o)o.remove();
+  var w=document.createElement('div'); w.id='bdAskV1717';
+  w.innerHTML='<div class="bx"><b class="h">기준일 '+E(bd)+' 로 저장</b>'
+    +'<p>«'+E(src.title)+'» 은 기준일 <b>'+E(bdOf(src)||'-')+'</b> 로 저장되어 있음</p><p class="sub2" style="font-size:12px">따로 저장하면 두 기준일 단가표 모두 보관</p>'
+    +'<div class="bt"><button type="button" class="p" data-v="new">새 기준일('+E(bd)+')로 따로 저장</button>'
+    +'<button type="button" data-v="replace">기존 '+E(bdOf(src)||'')+' 단가표를 '+E(bd)+' 로 바꿔 저장</button>'
+    +'<button type="button" data-v="">취소</button></div></div>';
+  document.body.appendChild(w);
+  function done(v){ w.remove(); res(v||null); }
+  w.addEventListener('mousedown',function(e){ if(e.target===w)done(null); });
+  w.querySelectorAll('button[data-v]').forEach(function(b){ b.onclick=function(){ done(b.dataset.v); }; });
+}); };
+function close(){ var p=document.getElementById('bdVerPopV1717'); if(p)p.remove(); }
+function open(btn){ close(); var d=state.setDraft||{}, L=window.setVersionsV1717(d), cur=window.setSavedOfV1717(d);
+  var p=document.createElement('div'); p.id='bdVerPopV1717';
+  p.innerHTML='<div class="h">저장된 기준일<span>'+E(d.cust||d.title||'')+' · '+L.length+'개</span></div>'+L.map(function(s,i){ var on=cur&&cur.id===s.id;
+    return '<div class="r'+(on?' on':'')+'">'+window.setBdPillV1717(s)+'<span class="t">'+E(s.title)+'<small>'+nIt(s)+'품목 · 저장 '+E(s.savedAt||'')+(s.by?' · '+E(s.by):'')+'</small></span>'+(on?'<em>지금 표</em>':'<button type="button" data-i="'+i+'">불러오기</button>')+'</div>'; }).join('');
+  document.body.appendChild(p); var r=btn.getBoundingClientRect();
+  p.style.top=Math.min(r.bottom+4,innerHeight-p.offsetHeight-8)+'px'; p.style.left=Math.max(8,Math.min(r.left,innerWidth-p.offsetWidth-8))+'px';
+  p.addEventListener('click',async function(e){ var b=e.target.closest('button[data-i]'); if(!b)return; var s=L[+b.dataset.i]; close();
+    try{ if(window.setUnsavedV1336&&window.setUnsavedV1336()&&!(await uiConfirm('지금 표에 저장 안 된 내용 있음\n불러오면 사라짐. 불러올까요?')))return; }catch(_e){}
+    window.setLoadSetV1717(s); try{ if(typeof toast==='function')toast('기준일 '+(bdOf(s)||String(s.savedAt||'').slice(0,10))+' 단가표 불러옴'); }catch(_e){} });
+}
+document.addEventListener('click',function(e){ var t=e.target; if(!t||!t.closest)return; var b=t.closest('#bdVerV1717');
+  if(b){ e.preventDefault(); if(document.getElementById('bdVerPopV1717'))close(); else open(b); return; }
+  if(!t.closest('#bdVerPopV1717'))close(); },true);
+document.addEventListener('keydown',function(e){ if(e.key==='Escape')close(); },true);
+window.addEventListener('scroll',function(){ close(); },{passive:true});
+})();
+</script>
 <script id="v1338-laser-price-pick">
 /* v1338 : 단가표 «🔶 레이저 단가 만들기» — 레이저 «품목규격화 대상»(규격란 비규격)의 «규격화 제안 표기»를 골라 단가표에 넣기
    - 넣은 품목 : 품번 = 제안 품번, 품명 = 레이저 품명(…(L)), 규격 = 규격화 제안 표기
@@ -59954,7 +60039,7 @@ function run(){ try{
 }catch(_e){} }
 setInterval(run,250);
 var t=setInterval(function(){ var f=window.setUnsavedV1336; if(typeof f!=='function'||f.__v1494)return; clearInterval(t);
-  var g=function(){ var u=f.apply(this,arguments); if(!u)return u; try{ var d=state.setDraft, ti=String(d.title||'').trim(), sv=ti&&(state.priceSets||[]).find(function(x){ return x.title===ti; });
+  var g=function(){ var u=f.apply(this,arguments); if(!u)return u; try{ var d=state.setDraft, ti=String(d.title||'').trim(), sv=ti&&(window.setSavedOfV1717?window.setSavedOfV1717(d):(state.priceSets||[]).find(function(x){ return x.title===ti; }));
     if(sv&&d._autoSigV1494&&d._autoSigV1494===rows(d.items)&&bag(sv.items)===bag(d.items)&&rows(sv.excluded)===rows(d.excluded)&&String(sv.cust||'')===String(d.cust||'').trim())return false; }catch(_e){} return u; };
   g.__v1494=1; window.setUnsavedV1336=g; },300);
 })();
