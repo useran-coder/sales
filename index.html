@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1719';
+<script>window.APP_BUILD='v1720';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }</script>
@@ -22139,10 +22139,10 @@ window.arDetailHtmlV1231=function(cust){
       var hasPend=S.pend.some(function(v){ return v>0; });
       if(hasPend&&S.lastM>=0){
         var pts=[]; for(var i=0;i<=S.lastM&&i<12;i++){ var bal=+(a[i]&&a[i].balance)||0; pts.push({i:i,x:xf(i),y:yf(bal+S.pend[i]),v:bal+S.pend[i],b:bal,p:S.pend[i],n:S.pendN[i]}); }
-        g+='<polyline points="'+pts.map(function(p){ return p.x+','+p.y; }).join(' ')+'" fill="none" stroke="#ea580c" stroke-width="1.8" stroke-linejoin="round"/>';
+        g+='<polyline points="'+pts.map(function(p){ return p.x+','+p.y; }).join(' ')+'" fill="none" stroke="#ea580c" stroke-width="0.9" stroke-linejoin="round"/>';
         pts.forEach(function(p){
           g+='<g><title>'+(p.i+1)+'월 말 미수(어음 포함) '+W(p.v)+'원\n= 미수(현재) '+W(p.b)+'원 + 만기 전 어음 '+p.n+'건 '+W(p.p)+'원</title>'
-            +'<rect x="'+(p.x-3)+'" y="'+(p.y-3)+'" width="6" height="6" fill="#ea580c"/>'
+            +'<rect x="'+(p.x-2)+'" y="'+(p.y-2)+'" width="4" height="4" fill="#ea580c"/>'
             +(p.p>0?'<text x="'+p.x+'" y="'+Math.max(10,p.y-7)+'" text-anchor="middle" style="fill:#c2410c;font-size:9px;font-weight:800">'+M(p.v)+'</text>':'')+'</g>';
         });
       }
@@ -22159,23 +22159,23 @@ window.arDetailHtmlV1231=function(cust){
       }
       /* 범례 (왼쪽 위) */
       var lg='<g transform="translate('+(L+4)+',7)" style="font-size:11px">', lx=0;
-      if(hasPend){ lg+='<line x1="'+lx+'" y1="5" x2="'+(lx+16)+'" y2="5" stroke="#ea580c" stroke-width="2"/><rect x="'+(lx+5)+'" y="2" width="6" height="6" fill="#ea580c"/><text x="'+(lx+21)+'" y="9" style="fill:#c2410c">미수(어음 포함)</text>'; lx+=118; }
+      if(hasPend){ lg+='<line x1="'+lx+'" y1="5" x2="'+(lx+16)+'" y2="5" stroke="#ea580c" stroke-width="1"/><rect x="'+(lx+6)+'" y="3" width="4" height="4" fill="#ea580c"/><text x="'+(lx+21)+'" y="9" style="fill:#c2410c">미수(어음 포함)</text>'; lx+=118; }
       lg+='<line x1="'+lx+'" y1="5" x2="'+(lx+16)+'" y2="5" stroke="#0891b2" stroke-width="2" stroke-dasharray="5 3"/><text x="'+(lx+21)+'" y="9" style="fill:#0e7490">수금예상(결제일 기준)</text>'; lx+=150;
       lg+='<text x="'+lx+'" y="9" style="fill:#b45309">◆ 어음 수취 · ◇ 만기 (그래프 아래)</text></g>';
       g+=lg;
       /* ③ 어음 수취·만기 줄 (아래로 늘림) */
       var add=34, r1=H+6, r2=H+22, rows='';
-      rows+='<text x="'+(L-6)+'" y="'+r1+'" text-anchor="end" style="fill:#92400e;font-size:10px;font-weight:700">어음수취</text>';
-      rows+='<text x="'+(L-6)+'" y="'+r2+'" text-anchor="end" style="fill:#92400e;font-size:10px;font-weight:700">어음만기</text>';
+      rows+='<text x="'+(L-6)+'" y="'+r1+'" text-anchor="end" style="fill:#92400e;font-size:9px;font-weight:700">어음수취</text>';
+      rows+='<text x="'+(L-6)+'" y="'+r2+'" text-anchor="end" style="fill:#92400e;font-size:9px;font-weight:700">어음만기</text>';
       var tip=function(list){ return list.slice(0,25).map(function(b){ return md(b.d)+' 수취 · '+(S.one?'':b.c+' · ')+W(b.a)+'원 · 만기 '+(b.due||'미입력')+(b.bank?' · '+b.bank:''); }).join('\n')+(list.length>25?'\n… 외 '+(list.length-25)+'건':''); };
       for(var m=0;m<12;m++){
         var x=xf(m), rl=S.recv[m], dl=S.due[m];
         if(rl.length){ var rs=rl.reduce(function(t,b){ return t+b.a; },0);
           var rt=(S.one&&rl.length===1)?('◆'+md(rl[0].d)+' '+M(rs)):('◆'+rl.length+'건 '+M(rs));
-          rows+='<g><title>'+(m+1)+'월 받은 어음 '+rl.length+'건 '+W(rs)+'원\n'+X(tip(rl))+'</title><text x="'+x+'" y="'+r1+'" text-anchor="middle" style="fill:#b45309;font-size:9.5px;font-weight:800">'+X(rt)+'</text></g>'; }
+          rows+='<g><title>'+(m+1)+'월 받은 어음 '+rl.length+'건 '+W(rs)+'원\n'+X(tip(rl))+'</title><text x="'+x+'" y="'+r1+'" text-anchor="middle" style="fill:#b45309;font-size:8.5px;font-weight:800">'+X(rt)+'</text></g>'; }
         if(dl.length){ var dsum=dl.reduce(function(t,b){ return t+b.a; },0), fut=dl.filter(function(b){ return b.due>S.end; }), done=fut.length===0;
           var dt=(S.one&&dl.length===1)?('◇'+md(dl[0].due)+' '+M(dsum)):('◇'+dl.length+'건 '+M(dsum));
-          rows+='<g><title>'+(m+1)+'월 만기 어음 '+dl.length+'건 '+W(dsum)+'원'+(fut.length?' · 만기 전 '+fut.length+'건':' · 만기 지남')+'\n'+X(tip(dl))+'</title><text x="'+x+'" y="'+r2+'" text-anchor="middle" style="fill:'+(done?'#94a3b8':'#b45309')+';font-size:9.5px;font-weight:'+(done?'600':'800')+'">'+X(dt)+'</text></g>'; }
+          rows+='<g><title>'+(m+1)+'월 만기 어음 '+dl.length+'건 '+W(dsum)+'원'+(fut.length?' · 만기 전 '+fut.length+'건':' · 만기 지남')+'\n'+X(tip(dl))+'</title><text x="'+x+'" y="'+r2+'" text-anchor="middle" style="fill:'+(done?'#94a3b8':'#b45309')+';font-size:8.5px;font-weight:'+(done?'600':'800')+'">'+X(dt)+'</text></g>'; }
       }
       g+=rows+'</g>';
       svg=svg.replace(/viewBox="0 0 (\d+) (\d+)"/,'viewBox="0 0 $1 '+(H+add)+'"').replace(/<\/svg>\s*$/,g+'</svg>');
