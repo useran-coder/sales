@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1722';
+<script>window.APP_BUILD='v1723';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }</script>
@@ -22169,22 +22169,22 @@ window.arDetailHtmlV1231=function(cust){
       if(S.exp.some(function(v){ return v>0; })){ lg+=lgi('exp','수금예상(결제일 기준)',146)+'<line x1="'+lx+'" y1="5" x2="'+(lx+16)+'" y2="5" stroke="#0891b2" stroke-width="2" stroke-dasharray="5 3"/><text x="'+(lx+21)+'" y="9" style="fill:#0e7490">수금예상(결제일 기준)</text></g>'; lx+=150; }
       lg+='<text x="'+lx+'" y="9" style="fill:#b45309">◆ 어음 수취 · ◇ 만기 (그래프 아래)</text></g>';
       g+=lg;
-      /* ③ 어음 수취·만기 줄 (아래로 늘림) */
-      var add=34, r1=H+6, r2=H+22, rows='<g class="ser-v1222 s-inc s-billrow">';
-      rows+='<text x="'+(L-6)+'" y="'+r1+'" text-anchor="end" style="fill:#92400e;font-size:9px;font-weight:700">어음수취</text>';
-      rows+='<text x="'+(L-6)+'" y="'+r2+'" text-anchor="end" style="fill:#92400e;font-size:9px;font-weight:700">어음만기</text>';
+      /* ③ 어음 수취·만기 줄 → v1723 : 그래프 아래 HTML 배지(요약 줄과 같은 12px, 달 위치에 맞춤) */
+      g+='</g>';
+      svg=svg.replace(/<\/svg>\s*$/,g+'</svg>');
+      var vbW=(function(){ var mm=/viewBox="0 0 (\d+(?:\.\d+)?) /.exec(svg); return mm?+mm[1]:1200; })();
       var tip=function(list){ return list.slice(0,25).map(function(b){ return md(b.d)+' 수취 · '+(S.one?'':b.c+' · ')+W(b.a)+'원 · 만기 '+(b.due||'미입력')+(b.bank?' · '+b.bank:''); }).join('\n')+(list.length>25?'\n… 외 '+(list.length-25)+'건':''); };
+      var row1='',row2='',hasR=false;
       for(var m=0;m<12;m++){
-        var x=xf(m), rl=S.recv[m], dl=S.due[m];
-        if(rl.length){ var rs=rl.reduce(function(t,b){ return t+b.a; },0);
-          var rt=(S.one&&rl.length===1)?('◆'+md(rl[0].d)+' '+M(rs)):('◆'+rl.length+'건 '+M(rs));
-          rows+='<g><title>'+(m+1)+'월 받은 어음 '+rl.length+'건 '+W(rs)+'원\n'+X(tip(rl))+'</title><text x="'+x+'" y="'+r1+'" text-anchor="middle" style="fill:#b45309;font-size:8.5px;font-weight:800">'+X(rt)+'</text></g>'; }
-        if(dl.length){ var dsum=dl.reduce(function(t,b){ return t+b.a; },0), fut=dl.filter(function(b){ return b.due>S.end; }), done=fut.length===0;
-          var dt=(S.one&&dl.length===1)?('◇'+md(dl[0].due)+' '+M(dsum)):('◇'+dl.length+'건 '+M(dsum));
-          rows+='<g><title>'+(m+1)+'월 만기 어음 '+dl.length+'건 '+W(dsum)+'원'+(fut.length?' · 만기 전 '+fut.length+'건':' · 만기 지남')+'\n'+X(tip(dl))+'</title><text x="'+x+'" y="'+r2+'" text-anchor="middle" style="fill:'+(done?'#94a3b8':'#b45309')+';font-size:8.5px;font-weight:'+(done?'600':'800')+'">'+X(dt)+'</text></g>'; }
+        var lp=(xf(m)/vbW*100).toFixed(3)+'%', rl=S.recv[m], dl=S.due[m];
+        if(rl.length){ hasR=true; var rs=rl.reduce(function(t,b){ return t+b.a; },0);
+          var rt=(S.one&&rl.length===1)?(md(rl[0].d)+' '+M(rs)):(rl.length+'건 '+M(rs));
+          row1+='<span class="bg rcv" style="left:'+lp+'" title="'+X((m+1)+'월 받은 어음 '+rl.length+'건 '+W(rs)+'원\n'+tip(rl))+'">◆ '+X(rt)+'</span>'; }
+        if(dl.length){ hasR=true; var dsum=dl.reduce(function(t,b){ return t+b.a; },0), fut=dl.filter(function(b){ return b.due>S.end; }), done=fut.length===0;
+          var dt=(S.one&&dl.length===1)?(md(dl[0].due)+' '+M(dsum)):(dl.length+'건 '+M(dsum));
+          row2+='<span class="bg due'+(done?' done':'')+'" style="left:'+lp+'" title="'+X((m+1)+'월 만기 어음 '+dl.length+'건 '+W(dsum)+'원'+(fut.length?' · 만기 전 '+fut.length+'건':' · 만기 지남')+'\n'+tip(dl))+'">◇ '+X(dt)+'</span>'; }
       }
-      g+=rows+'</g></g>';
-      svg=svg.replace(/viewBox="0 0 (\d+) (\d+)"/,'viewBox="0 0 $1 '+(H+add)+'"').replace(/<\/svg>\s*$/,g+'</svg>');
+      var billRows=hasR?('<div class="arBillRowsV1723"><div class="rw"><span class="lb" style="width:'+(L/vbW*100).toFixed(2)+'%">어음수취</span>'+row1+'</div><div class="rw"><span class="lb" style="width:'+(L/vbW*100).toFixed(2)+'%">어음만기</span>'+row2+'</div></div>'):'';
       /* 그래프 아래 요약 줄 */
       var lm=S.lastM, bal=lm>=0?(+(a[lm]&&a[lm].balance)||0):0, pe=lm>=0?S.pend[lm]:0, pn=lm>=0?S.pendN[lm]:0;
       var nx=[]; for(var j=Math.max(0,lm);j<12;j++){ var fl=S.due[j].filter(function(b){ return b.due>S.end; }); if(fl.length)nx.push((j+1)+'월 '+fl.length+'건 '+M(fl.reduce(function(t,b){ return t+b.a; },0))); }
@@ -22197,12 +22197,41 @@ window.arDetailHtmlV1231=function(cust){
         +(ex.length?'<span class="it exp"><i class="dash"></i>수금예상(결제일 기준) <b>'+X(ex.join(' · '))+'</b></span>':'')
         +'</div>';
       var fcs=state.ar&&state.ar._chartFocusV1222;
-      if(fcs){ if(svg.indexOf('data-focus=')<0)svg=svg.replace('<svg class="ar-svg"','<svg class="ar-svg" data-focus="'+fcs+'"'); sum=sum.replace('<div class="arBillSumV1719"','<div class="arBillSumV1719" data-focus="'+fcs+'"'); }
-      return svg+sum;
+      if(fcs){ if(svg.indexOf('data-focus=')<0)svg=svg.replace('<svg class="ar-svg"','<svg class="ar-svg" data-focus="'+fcs+'"'); sum=sum.replace('<div class="arBillSumV1719"','<div class="arBillSumV1719" data-focus="'+fcs+'"'); billRows=billRows.replace('<div class="arBillRowsV1723"','<div class="arBillRowsV1723" data-focus="'+fcs+'"'); }
+      return svg+billRows+sum;
     }catch(_e){ try{ console.warn('v1719',_e); }catch(_c){} return svg; }
   };
+  /* v1723 : «현재 미수금» 선택 상세 — 만기 전 어음이 있는 업체도 함께, 만기 전 어음·미수(어음 포함) 열 */
+  (function(){
+    var baseCD=arCardDetail;
+    arCardDetail=function(model){
+      if(state.ar.card!=='balance')return baseCD.apply(this,arguments);
+      try{
+        var S=calc(model), end=S.end, pm={};
+        S.bills.forEach(function(b){ if(b.due&&b.due>end){ var o=pm[b.c]||(pm[b.c]={a:0,n:0,first:''}); o.a+=b.a; o.n++; if(!o.first||b.due<o.first)o.first=b.due; } });
+        var only=!!state.ar._cdBillOnlyV1723;
+        var all=model.customers.filter(function(o){ return arHideEst(o)&&(o.balance>0||(pm[o.cust]&&pm[o.cust].a>0)); });
+        var nB=all.filter(function(o){ return pm[o.cust]&&pm[o.cust].a>0; }).length;
+        var arr=all.filter(function(o){ return !only||(pm[o.cust]&&pm[o.cust].a>0); }).sort(function(a,b){ var pa=pm[a.cust]?pm[a.cust].a:0, pb=pm[b.cust]?pm[b.cust].a:0; return (b.balance+pb)-(a.balance+pa); });
+        var tb=0,tp=0; arr.forEach(function(o){ tb+=Math.max(0,o.balance); tp+=pm[o.cust]?pm[o.cust].a:0; });
+        var body='<thead><tr><th>#</th><th>업체·담당자</th><th>등급</th><th>미수금</th><th>만기 전 어음</th><th>미수(어음 포함)</th><th>90일 초과</th><th>위험</th></tr></thead><tbody>'+arr.map(function(o,i){
+          var p=pm[o.cust];
+          return '<tr data-cust="'+esc(o.cust)+'"'+(p?' class="cdBillV1723"':'')+'><td class="c">'+(i+1)+'</td><td class="l"><b>'+esc(o.cust)+'</b><br><span class="ar-muted">'+esc(o.manager||'미배정')+'</span> <span class="ar-paytag">· 결제일 '+esc(arPayText(o.cust))+'</span></td><td class="c">'+gradeBadge(o.grade)+'</td>'
+            +'<td>'+arMoney(o.balance)+'<div class="ar-subpay">결제일 '+arMoney(o.overduePay)+'</div></td>'
+            +'<td class="pb">'+(p?arMoney(p.a)+'<div class="ar-subpay">'+p.n+'건 · 첫 만기 '+md(p.first)+'</div>':'<span class="ar-muted">-</span>')+'</td>'
+            +'<td class="pi"><b>'+arMoney(o.balance+(p?p.a:0))+'</b></td>'
+            +'<td>'+arMoney(o.long90)+'<div class="ar-subpay">결제일 '+arMoney(o.long90Pay)+'</div></td><td class="c">'+arRiskBadge(o.risk)+'</td></tr>';
+        }).join('')+'</tbody>';
+        var bar='<div class="cdBarV1723"><button type="button" class="ar-btn'+(only?'':' on')+'" data-cd-bill="0">전체 '+all.length+'개</button><button type="button" class="ar-btn'+(only?' on':'')+'" data-cd-bill="1">만기 전 어음 있는 업체 '+nB+'개</button><span class="ar-muted">합계 미수 '+W(tb)+'원 · 만기 전 어음 '+W(tp)+'원 · 어음 포함 <b style="color:#c2410c">'+W(tb+tp)+'원</b> ('+end+' 기준)</span></div>';
+        return '<div class="ar-card ar-card-detail"><div class="ar-card-title">선택 상세 · 현재 미수금 (어음 포함)<button class="ar-btn" data-ar-card="balance">닫기</button></div>'+bar+'<div class="ar-tablewrap" style="max-height:330px"><table class="ar-table" style="min-width:900px">'+body+'</table></div></div>';
+      }catch(_e){ try{ console.warn('v1723',_e); }catch(_c){} return baseCD.apply(this,arguments); }
+    };
+    document.addEventListener('click',function(e){ var b=e.target&&e.target.closest?e.target.closest('[data-cd-bill]'):null; if(!b)return; e.preventDefault(); state.ar._cdBillOnlyV1723=b.getAttribute('data-cd-bill')==='1'; try{ arRender(); }catch(_e){} });
+  })();
   /* ④ «현재 미수금» 카드에 어음 포함 금액 */
-  function kpi(){
+  function fitK(){ try{ document.querySelectorAll('svg.ar-svg').forEach(function(sv){ var vb=sv.viewBox&&sv.viewBox.baseVal, w=sv.getBoundingClientRect().width; if(vb&&vb.width&&w>50)sv.style.setProperty('--arK',(vb.width/w).toFixed(4)); }); document.querySelectorAll('.arBillRowsV1723').forEach(function(r){ var cw=r.getBoundingClientRect().width/12; if(cw>0){ r.classList.toggle('sm',cw<104); r.classList.toggle('xs',cw<84); } }); }catch(_e){} }
+  window.addEventListener('resize',function(){ fitK(); });
+  function kpi(){ fitK();
     try{
       document.querySelectorAll('.arBillSumV1719').forEach(function(sm){
         var root=sm.closest('#result')||sm.closest('.ar-page')||document; var pe=+sm.dataset.pend||0, bal=+sm.dataset.bal||0, pn=+sm.dataset.pn||0;
@@ -63033,6 +63062,26 @@ svg.ar-svg[data-focus="inc"] .ar-lg-v1222[data-s="inc"],svg.ar-svg[data-focus="e
 </style>
 <script id="v1722-ar-focus">/* v1722 : 범례 누를 때 요약 줄도 같이 부각 (v1222 클릭 처리 뒤에 실행) */
 document.addEventListener('click',function(e){ var g=e.target&&e.target.closest?e.target.closest('.ar-svg .ar-lg-v1222'):null; if(!g)return;
-  setTimeout(function(){ var f=(typeof state!=='undefined'&&state.ar&&state.ar._chartFocusV1222)||''; document.querySelectorAll('.arBillSumV1719').forEach(function(d){ if(f)d.setAttribute('data-focus',f); else d.removeAttribute('data-focus'); }); },0); });
+  setTimeout(function(){ var f=(typeof state!=='undefined'&&state.ar&&state.ar._chartFocusV1222)||''; document.querySelectorAll('.arBillSumV1719,.arBillRowsV1723').forEach(function(d){ if(f)d.setAttribute('data-focus',f); else d.removeAttribute('data-focus'); }); },0); });
 </script>
+<style id="v1723-ar-css">
+svg.ar-svg text.ser-v1222,svg.ar-svg .ser-v1222 text,svg.ar-svg .ar-od-line-v1220 text{font-size:calc(12px * var(--arK,1))!important}
+svg.ar-svg[data-focus] .ser-v1222 text.lb,svg.ar-svg[data-focus="bal"] text.s-bal,svg.ar-svg[data-focus="od"] .s-od text{font-size:calc(13.5px * var(--arK,1))!important}
+.arBillRowsV1723{margin:2px 0 0;font-size:12px;transition:opacity .18s}
+.arBillRowsV1723 .rw{position:relative;height:24px}
+.arBillRowsV1723 .lb{position:absolute;left:0;top:3px;text-align:right;padding-right:4px;box-sizing:border-box;font-weight:800;color:#92400e;white-space:nowrap;font-size:12px}
+.arBillRowsV1723 .bg{position:absolute;top:1px;transform:translateX(-50%);white-space:nowrap;font-size:12px;line-height:18px;padding:0 7px;border-radius:9px;font-weight:700;cursor:default;letter-spacing:-.2px}
+.arBillRowsV1723 .bg.rcv{background:#fff7ed;border:1px solid #fdba74;color:#9a3412}
+.arBillRowsV1723 .bg.due{background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
+.arBillRowsV1723 .bg.due.done{background:#f8fafc;border-color:#e2e8f0;color:#94a3b8;font-weight:600}
+.arBillRowsV1723 .bg:hover{box-shadow:0 0 0 2px #fed7aa;z-index:2}
+.arBillRowsV1723[data-focus]:not([data-focus="inc"]){opacity:.35}
+.arBillRowsV1723[data-focus="inc"] .bg:not(.done){box-shadow:0 0 0 1px #ea580c}
+.cdBarV1723{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px;font-size:12px}
+.cdBarV1723 .ar-btn.on{background:#0f172a;color:#fff;border-color:#0f172a}
+.ar-table tr.cdBillV1723 td.pb{background:#fff7ed;color:#9a3412;font-weight:700}
+.ar-table td.pi b{color:#c2410c}
+.arBillRowsV1723.sm .bg{font-size:11px;padding:0 4px;letter-spacing:-.4px}.arBillRowsV1723.sm .lb{font-size:11px;letter-spacing:-.5px}
+.arBillRowsV1723.xs .bg{font-size:10px;padding:0 3px}.arBillRowsV1723.xs .lb{font-size:10px}
+</style>
 </html>
