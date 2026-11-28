@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1760';
+<script>window.APP_BUILD='v1761';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -63851,6 +63851,39 @@ watch(); window.addEventListener('resize',function(){ requestAnimationFrame(fit)
 /* v1742 : 신용등급별 매출 표 글자 13px — 배지(고객관리·업체구분·신용상태 등 색 칩)는 그대로 12px */
 html #result.crV1738 table#tbl tbody td,html #result.crV1738 table#tbl tfoot td,html #result.crV1738 table#tbl tbody td>b,html #result.crV1738 table#tbl tfoot td>b,html #result.crV1738 table#tbl tbody td>input.payedit,html #result.crV1738 table#tbl tbody td>select.gradeedit,html #result.crV1738 table#tbl tbody td>.sub2{font-size:13px!important}
 </style>
+<style id="v1761-cal-nav-row-css">
+/* v1761 : 달력 기간 이동(연·월·주·일 · ‹ 기간 › · 기준일) = 카드 줄 왼쪽, 카드 4개 = 남는 폭 4등분 */
+.arCalV1725 .kpRowV1761{display:flex;align-items:stretch;gap:10px;margin-bottom:10px}
+.arCalV1725 .kpRowV1761>.calNavV1761{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.arCalV1725 .kpRowV1761>.calNavV1761 .nv{display:flex;align-items:center;gap:6px}
+.arCalV1725 .kpRowV1761>.calNavV1761 .nv b{min-width:118px;text-align:center;white-space:nowrap}
+.arCalV1725 .kpRowV1761>.kp{flex:1 1 auto;min-width:0;margin-bottom:0;grid-template-columns:repeat(4,minmax(0,1fr))}
+.arCalV1725 .kpRowV1761>.kp .k{min-width:0;align-items:center;padding:6px 10px;gap:6px}
+.arCalV1725 .kpRowV1761>.kp .k span{white-space:nowrap}
+.arCalV1725 .kpRowV1761>.kp .k b{white-space:nowrap;font-size:14.5px}
+.arCalV1725 .kpRowV1761>.kp .k em,.arCalV1725 .kpRowV1761>.kp .k small{white-space:nowrap}
+/* 달력 일~토 머리 배경 조금 진하게 */
+.arCalV1725 .mg .hd{background:#e9eef5!important;border-bottom-color:#d5dde8!important}
+.arCalV1725 .mg .hd div{color:#475569}
+@media(max-width:1400px){.arCalV1725 .kpRowV1761{flex-wrap:wrap}.arCalV1725 .kpRowV1761>.kp{flex-basis:100%}}
+</style>
+<script id="v1761-cal-nav-row">
+/* v1761 : 달력을 다시 그릴 때마다 .top 안 .sg(연·월·주·일)·.nv(‹ 기간 › 기준일)를 카드 줄(.kp) 왼쪽 묶음으로 옮김 (바뀔 때만) */
+(function(){
+function fix(){
+  var cal=document.querySelector('#result .arCalV1725'); if(!cal)return;
+  var top=cal.querySelector(':scope>.top'), kp=cal.querySelector(':scope>.kp'); if(!top||!kp)return;
+  var sg=top.querySelector(':scope>.sg'), nv=top.querySelector(':scope>.nv'); if(!sg&&!nv)return;
+  var row=document.createElement('div'); row.className='kpRowV1761';
+  var nav=document.createElement('div'); nav.className='calNavV1761';
+  if(sg)nav.appendChild(sg); if(nv)nav.appendChild(nv);
+  kp.parentNode.insertBefore(row,kp); row.appendChild(nav); row.appendChild(kp);
+}
+function watch(){ var r=document.getElementById('result'); if(!r){ setTimeout(watch,500); return; }
+  new MutationObserver(function(){ try{ fix(); }catch(_e){} }).observe(r,{childList:true,subtree:true}); try{ fix(); }catch(_e){} }
+watch();
+})();
+</script>
 <style id="v1758-badge-pop-css">
 .bkV1758 .app-class-icon,.bkV1758 .app-credit-icon{cursor:pointer;transition:box-shadow .12s,transform .12s}
 .bkV1758 .app-class-icon:hover,.bkV1758 .app-credit-icon:hover{box-shadow:0 0 0 2px rgba(30,58,95,.35);transform:translateY(-1px)}
