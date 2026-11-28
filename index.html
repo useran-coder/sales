@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1740';
+<script>window.APP_BUILD='v1741';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -53268,6 +53268,79 @@ function install(){ var o=window.setPriceDrawerV1317; if(typeof o!=='function'||
       return res; }catch(_e){ return o.apply(this,arguments); } };
   Object.keys(o).forEach(function(k){ try{ w[k]=o[k]; }catch(_e){} }); w.__v1467=1; try{ setPriceDrawerV1317=w; }catch(_e){} window.setPriceDrawerV1317=w; }
 install(); setTimeout(install,0); setInterval(install,2500);
+})();
+</script>
+<style id="v1741-ar-head-css">
+/* v1741 : 미수관리 전용 화면 — 머리줄 📅 연도·🖥 PC 화면·🔑 비밀번호 숨김(📅 연도는 신용등급별 매출 화면에서만 보임) */
+html.arOnlyV1739:not(.arCrV1741) #headerPeriodBtn,html.arOnlyV1739 #deskBtnV1302,html.arOnlyV1739 #hdrPwBtnV1041{display:none!important}
+/* 📤 미수자료 올리기 = 메뉴 줄 맨 오른쪽 */
+html.arOnlyV1739 #topMenu{display:flex;flex-wrap:wrap;align-items:center}
+html.arOnlyV1739 #arUpBtnV1739{margin-left:auto!important}
+/* 제목 옆 업체검색 (종합현황 검색과 같은 자동완성 목록) · 탭 안 검색칸은 숨김 */
+.arTtlRowV1741{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.arHsV1741{min-width:260px;width:300px}
+.arHsV1741>input{height:34px;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:0 10px;font:inherit;font-size:13px;color:#0f172a;background:#fff}
+.arHsV1741>input:focus{outline:none;border-color:#1e3a5f;box-shadow:0 0 0 2px rgba(30,58,95,.15)}
+.arHsV1741.on>input{border-color:#1d4ed8;background:#eff6ff;font-weight:700}
+.arHsV1741>input::-webkit-search-cancel-button{display:none}
+.arHsV1741 .x{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#64748b;font-size:14px;cursor:pointer;display:none}
+.arHsV1741.on .x{display:block}
+html.arOnlyV1739 .ar-toolbar .ar-searchbox:not(.arHsV1741),html.arOnlyV1739 #arSearchBtn,html.arOnlyV1739 #arCalQV1725{display:none!important}
+</style>
+<script id="v1741-ar-head">
+/* v1741 : 미수관리 전용 화면 — «💰 미수관리» 제목 오른쪽 업체검색칸
+   - 고르거나 Enter → 모든 탭 같은 검색어(state.ar.search · 달력 업체명)로 다시 그림, ✕ 로 지움
+   - 미수 화면을 다시 그릴 때(#result 자식 교체)만 칸을 붙임 · 신용등급별 매출 화면이면 html.arCrV1741 (📅 연도 보임) */
+(function(){
+if(!window.__AR_ONLY_V1739)return;
+function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+var NM={k:'',list:[]};
+function names(){
+  var a=(state.ar&&state.ar.receipts)||[], c=(typeof CUR!=='undefined'&&CUR)||[], k=a.length+'|'+c.length;
+  if(NM.k===k)return NM.list;
+  var s=new Set(); a.forEach(function(r){ if(r&&r.cust)s.add(String(r.cust).trim()); }); c.forEach(function(r){ if(r&&r.cust)s.add(String(r.cust).trim()); });
+  try{ Object.keys(state.ar.balances||{}).forEach(function(k2){ var p=k2.indexOf('|'); if(p>0)s.add(k2.slice(p+1)); }); }catch(_e){}
+  NM={k:k,list:Array.from(s).filter(Boolean).sort(function(x,y){ return x.localeCompare(y,'ko'); })}; return NM.list;
+}
+function cur(){ try{ return String((state.ar&&state.ar.search)||'').trim(); }catch(_e){ return ''; } }
+function apply(v){
+  v=String(v||'').trim();
+  try{ state.ar.search=v; state.ar.card=''; var c=state.ar.calV1725||(state.ar.calV1725={}); c.q=v; if(typeof arSave==='function')arSave(); }catch(_e){}
+  try{ state.act='ar'; window.runAct(); }catch(_e){}
+}
+function put(){
+  if(state.act!=='ar')return;
+  var head=document.querySelector('#result .ar-head'); if(!head||head.querySelector('.arHsV1741'))return;
+  var ttl=head.querySelector('.ar-title'); if(!ttl)return;
+  var row=document.createElement('div'); row.className='arTtlRowV1741'; ttl.parentNode.insertBefore(row,ttl); row.appendChild(ttl);
+  var v=cur(), box=document.createElement('span'); box.className='ar-searchbox arHsV1741'+(v?' on':'');
+  box.innerHTML='<input id="arHsV1741" type="search" autocomplete="off" placeholder="업체명 검색" value="'+esc(v)+'"><button type="button" class="x" title="검색 지우기">✕</button><span class="ar-suggest" id="arHsListV1741"></span>';
+  row.appendChild(box);
+  var inp=box.querySelector('input'), list=box.querySelector('.ar-suggest'), ai=-1;
+  function fill(){ var q=(inp.value||'').trim().toLowerCase(), a=names().filter(function(n){ return !q||n.toLowerCase().indexOf(q)>=0; }).slice(0,80); ai=-1;
+    list.innerHTML=a.map(function(n){ return '<button type="button" data-hs="'+esc(n)+'">'+esc(n)+'</button>'; }).join('')||'<span style="display:block;padding:8px;color:#94a3b8;font-size:12px">일치하는 업체 없음</span>';
+    list.classList.add('open'); }
+  inp.addEventListener('focus',fill); inp.addEventListener('input',fill);
+  inp.addEventListener('blur',function(){ setTimeout(function(){ list.classList.remove('open'); },150); });
+  inp.addEventListener('search',function(){ if(!inp.value&&cur())apply(''); });
+  inp.addEventListener('keydown',function(e){
+    var bs=list.querySelectorAll('button[data-hs]');
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); if(!bs.length)return; ai=(ai+(e.key==='ArrowDown'?1:-1)+bs.length)%bs.length; bs.forEach(function(b,i){ b.classList.toggle('active',i===ai); }); bs[ai].scrollIntoView({block:'nearest'}); }
+    else if(e.key==='Enter'){ e.preventDefault(); apply(ai>=0&&bs[ai]?bs[ai].getAttribute('data-hs'):inp.value); }
+    else if(e.key==='Escape'){ list.classList.remove('open'); }
+  });
+  list.addEventListener('mousedown',function(e){ var b=e.target.closest('button[data-hs]'); if(!b)return; e.preventDefault(); inp.value=b.getAttribute('data-hs'); list.classList.remove('open'); apply(inp.value); });
+  box.querySelector('.x').addEventListener('click',function(){ apply(''); });
+}
+var crOn=null;
+function sync(){
+  try{ var c=state.act==='credit'; if(c!==crOn){ crOn=c; document.documentElement.classList.toggle('arCrV1741',c); } }catch(_e){}
+  /* 달력 업체명은 제목 옆 검색어를 따름(탭 바꿀 때 검색어가 지워지면 달력도 같이 비움) */
+  try{ var a=state.ar; if(a&&state.act==='ar'){ var c=a.calV1725, s=cur(); if(c&&String(c.q||'')!==s){ c.q=s; if(a.tab==='cal'){ window.runAct(); return; } } } }catch(_e){}
+  try{ put(); }catch(_e){}
+}
+function watch(){ var r=document.getElementById('result'); if(!r){ setTimeout(watch,500); return; } new MutationObserver(sync).observe(r,{childList:true}); sync(); }
+watch(); setInterval(sync,1000);
 })();
 </script>
 <style id="v1739-ar-only-css">
