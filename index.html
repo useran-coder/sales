@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1743';
+<script>window.APP_BUILD='v1745';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -63751,6 +63751,30 @@ svg.ar-svg[data-focus] .ser-v1222 text.lb,svg.ar-svg[data-focus="bal"] text.s-ba
 <style id="v1724-ar-exp-css">
 svg.ar-svg[data-focus="exp"] .s-exp text{paint-order:stroke;stroke:#fff;stroke-width:calc(3.5px * var(--arK,1));stroke-linejoin:round}
 </style>
+<style id="v1744-cr-mgrbadge-css">
+/* v1744 : 신용등급별 매출 표 — 고객관리·기술개발 배지 = 업체구분 배지와 같은 높이·글자(12px · 위아래 1px · 모서리 9px) */
+html #result.crV1738 table#tbl tbody .mgrbadge{font-size:12px!important;padding:1px 9px!important;border-width:1px!important;border-radius:9px!important;line-height:normal!important;height:22px!important;box-sizing:border-box!important;vertical-align:middle;gap:4px}
+</style>
+<script id="v1745-ar-sum-align">
+/* v1745 : 미수 월별 추이 그래프 아래 범례(— 미수(어음 미포함) …) 시작 위치 = 위 줄 «어음만기» 글자 시작 위치
+   (어음 줄 이름칸은 오른쪽 정렬이라 화면 폭마다 글자 시작이 달라짐 → 글자 위치를 재서 맞춤 · 바뀔 때만 씀) */
+(function(){
+function fit(){ try{
+  document.querySelectorAll('.arBillSumV1719').forEach(function(sm){
+    var rows=sm.previousElementSibling; if(!rows||!rows.classList||!rows.classList.contains('arBillRowsV1723'))return;
+    var lbs=rows.querySelectorAll('.lb'), lb=lbs[lbs.length-1]; if(!lb||!lb.firstChild)return;
+    var rg=document.createRange(); rg.selectNodeContents(lb); var tl=rg.getBoundingClientRect().left;
+    var it=sm.querySelector('.it'); if(!it||!tl)return;
+    var d=tl-it.getBoundingClientRect().left; if(Math.abs(d)<0.5)return;
+    var cur=parseFloat(sm.style.marginLeft); if(isNaN(cur))cur=parseFloat(getComputedStyle(sm).marginLeft)||0;
+    sm.style.marginLeft=Math.max(0,cur+d).toFixed(1)+'px';
+  });
+}catch(_e){} }
+window.arSumAlignV1745=fit;
+function watch(){ var r=document.getElementById('result'); if(!r){ setTimeout(watch,500); return; } new MutationObserver(function(){ requestAnimationFrame(fit); }).observe(r,{childList:true}); fit(); }
+watch(); window.addEventListener('resize',function(){ requestAnimationFrame(fit); }); setInterval(function(){ if(document.querySelector('.arBillSumV1719'))fit(); },1500);
+})();
+</script>
 <style id="v1742-cr-font-css">
 /* v1742 : 신용등급별 매출 표 글자 13px — 배지(고객관리·업체구분·신용상태 등 색 칩)는 그대로 12px */
 html #result.crV1738 table#tbl tbody td,html #result.crV1738 table#tbl tfoot td,html #result.crV1738 table#tbl tbody td>b,html #result.crV1738 table#tbl tfoot td>b,html #result.crV1738 table#tbl tbody td>input.payedit,html #result.crV1738 table#tbl tbody td>select.gradeedit,html #result.crV1738 table#tbl tbody td>.sub2{font-size:13px!important}
