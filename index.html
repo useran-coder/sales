@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1731';
+<script>window.APP_BUILD='v1732';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }</script>
@@ -8713,7 +8713,8 @@ function creditSales(){
   const segBy=`<div class="seg" id="crBySeg"><button data-v="cust" class="${by==='cust'?'on':''}" style="${by==='cust'?'background:#0f172a;color:#fff;border-color:#0f172a':'color:#0f172a;border-color:#0f172a55'}">업체별</button><button data-v="status" class="${by==='status'?'on':''}" style="${by==='status'?'background:#1e3a5f;color:#fff;border-color:#1e3a5f':'color:#1e3a5f;border-color:#1e3a5f55'}">신용상태별</button><button data-v="grade" class="${by==='grade'?'on':''}" style="${by==='grade'?'background:#7c3aed;color:#fff;border-color:#7c3aed':'color:#7c3aed;border-color:#7c3aed55'}">신용등급별</button><button data-v="pay" class="${by==='pay'?'on':''}" style="${by==='pay'?'background:#0d9488;color:#fff;border-color:#0d9488':'color:#0d9488;border-color:#0d948855'}">결제일별</button></div>`;
   const _cl=[...new Set(periodRows().map(r=>r.cust))]; const _ccnt=c=>c==='전체'?_cl.length:_cl.filter(cu=>catOf(cu)===c).length;
   const ctrl=`<div class="ctrlbar" style="flex-wrap:wrap;gap:6px"><b style="font-size:12px">표 기준</b> ${segBy} <b style="font-size:12px;margin-left:6px">상태 필터</b> <div class="seg" id="crSeg">${cats.map(c=>{const _cc={'전체':'#1e3a5f','정상':'#16a34a','관리':'#c2410c','주의':'#d97706','위험':'#dc2626','선결제':'#1d4ed8','거래제한':'#7e22ce','거래중지':'#334155','계약조건':'#0f766e'}[c]||'#475569'; const on=((cat||'전체')===c); return `<button data-v="${c}" class="hvbtn${on?' on':''}" style="--hc:${_cc};border-color:${_cc}55">${c} <span style="opacity:.7;font-weight:700">(${_ccnt(c)})</span></button>`;}).join('')}</div></div>${gradeCritLegend()}${saleSizeLegend()}`;
-  const bind=()=>{ $('#result').querySelectorAll('#crBySeg button').forEach(b=>b.addEventListener('click',()=>{ state.credit.cat=null; state.credit.by=b.dataset.v; creditSales(); })); $('#result').querySelectorAll('#crSeg button').forEach(b=>b.addEventListener('click',()=>{ state.credit.cat=b.dataset.v==='전체'?null:b.dataset.v; creditSales(); })); };
+  const bind=()=>{ try{ /* v1732 : 기준표 두 개를 제목줄 바로 아래로 */ const _r=$('#result'), _rh=_r&&_r.querySelector(':scope > .rhead'); if(_rh){ let _a=_rh; [..._r.querySelectorAll(':scope > details')].forEach(d=>{ _a.after(d); _a=d; }); } }catch(_e){}
+    $('#result').querySelectorAll('#crBySeg button').forEach(b=>b.addEventListener('click',()=>{ state.credit.cat=null; state.credit.by=b.dataset.v; creditSales(); })); $('#result').querySelectorAll('#crSeg button').forEach(b=>b.addEventListener('click',()=>{ state.credit.cat=b.dataset.v==='전체'?null:b.dataset.v; creditSales(); })); };
   if(by==='cust'){
     /* v1719 : 업체별 — 전체 거래처를 한 표로(상태 필터 적용), 신용등급·상태·결제일 바로 수정 */
     const src=cat?periodRows().filter(r=>catOf(r.cust)===cat):periodRows();
@@ -63454,5 +63455,9 @@ svg.ar-svg[data-focus="od"] .ar-od-line-v1220 text{paint-order:stroke;stroke:#ff
 <style id="v1731-credit-table-css">
 /* 신용등급별 매출 표 : 내용 글자·배지·선택칸 12px */
 #result:has(#crBySeg) table tbody td,#result:has(#crBySeg) table tbody td *,#result:has(#crBySeg) table tfoot td,#result:has(#crBySeg) table tfoot td *{font-size:12px!important}
+</style>
+<style id="v1732-credit-details-css">
+#result:has(#crBySeg) > .rhead + details{margin-top:2px}
+#result:has(#crBySeg) > details + .ctrlbar{margin-top:8px}
 </style>
 </html>
