@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1742';
+<script>window.APP_BUILD='v1743';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -53509,7 +53509,10 @@ watch(); setInterval(sync,1000);
 /* v1742 : 미수 전용 화면 — 🗓️ 달력보기 버튼(미수관리 바로 오른쪽) */
 #arCalBtnV1742{background:#f1f5f9;color:#1e3a5f;border-color:#e2e8f0}
 #arCalBtnV1742.active{background:#1e3a5f;color:#fff;border-color:#1e3a5f}
-html.arCalOnV1742 #arMenuTop.section-active{background:#f1f5f9!important;color:#1e3a5f!important;border-color:#e2e8f0!important;box-shadow:none!important}
+/* v1743 : 📊 차트 버튼(달력보기 오른쪽) */
+#arGtBtnV1743{background:#f1f5f9;color:#1e3a5f;border-color:#e2e8f0}
+#arGtBtnV1743.active{background:#1e3a5f;color:#fff;border-color:#1e3a5f}
+html.arCalOnV1742 #arMenuTop.section-active,html.arGtOnV1743 #arMenuTop.section-active{background:#f1f5f9!important;color:#1e3a5f!important;border-color:#e2e8f0!important;box-shadow:none!important}
 html.arOnlyV1739 #arMenuDrop{display:none!important}
 </style>
 <script id="v1742-ar-menu">
@@ -53528,7 +53531,7 @@ function go(tab){
 /* 미수관리(=이 페이지의 홈) 누름 : 다른 PC 수정이 있으면 받아서 반영(매출분석도구 «홈 들어갈 때 업데이트»와 같은 역할) */
 function pull(){ try{ if(typeof window.fcCheckUpdateV1104!=='function'||typeof window.fcUpdateNowV1104!=='function')return; window.fcCheckUpdateV1104(true).then(function(has){ if(has)window.fcUpdateNowV1104('home'); }); }catch(_e){} }
 document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&&e.target.closest('#arMenuTop'); if(!t)return; e.preventDefault(); e.stopImmediatePropagation(); go('dash'); pull(); },true);
-var calOn=null;
+var calOn=null, gtOn=null;
 function tick(){
   var g=document.getElementById('arMenuGrp'); if(!g)return;
   var top=document.getElementById('arMenuTop'); if(top&&top.textContent!=='💰 미수관리')top.textContent='💰 미수관리';
@@ -53538,6 +53541,13 @@ function tick(){
   if(g.nextSibling!==cb)g.parentNode.insertBefore(cb,g.nextSibling);
   var on=false; try{ on=state.act==='ar'&&state.ar&&state.ar.tab==='cal'; }catch(_e){}
   if(on!==calOn){ calOn=on; cb.classList.toggle('active',on); document.documentElement.classList.toggle('arCalOnV1742',on); }
+  /* v1743 : 📊 차트 = 달력보기 바로 오른쪽 */
+  var gb=document.getElementById('arGtBtnV1743');
+  if(!gb){ gb=document.createElement('button'); gb.type='button'; gb.className='tm-direct'; gb.id='arGtBtnV1743'; gb.textContent='\uD83D\uDCCA 차트';
+    gb.onclick=function(e){ e.stopPropagation(); go('gantt'); }; }
+  if(cb.nextSibling!==gb)cb.parentNode.insertBefore(gb,cb.nextSibling);
+  var gon=false; try{ gon=state.act==='ar'&&state.ar&&state.ar.tab==='gantt'; }catch(_e){}
+  if(gon!==gtOn){ gtOn=gon; gb.classList.toggle('active',gon); document.documentElement.classList.toggle('arGtOnV1743',gon); }
 }
 tick(); setInterval(tick,1000);
 document.addEventListener('click',function(e){ if(e.target&&e.target.closest&&e.target.closest('#topMenu,#result'))setTimeout(tick,30); });
@@ -53545,7 +53555,7 @@ document.addEventListener('click',function(e){ if(e.target&&e.target.closest&&e.
 </script>
 <style id="v1739-ar-only-css">
 /* v1739 : 미수관리 전용 화면 — 위 메뉴는 «💰 미수관리 ▾»와 «💳 신용등급별 매출»만 */
-html.arOnlyV1739 #topMenu>*:not(#arMenuGrp):not(#arCalBtnV1742):not(#arCrBtnV1739):not(#arUpBtnV1739){display:none!important}
+html.arOnlyV1739 #topMenu>*:not(#arMenuGrp):not(#arCalBtnV1742):not(#arGtBtnV1743):not(#arCrBtnV1739):not(#arUpBtnV1739){display:none!important}
 html.arOnlyV1739 header #headerProductSearch,html.arOnlyV1739 header .hsel1193{display:none!important}
 html.arOnlyV1739 header .header-title h1{font-size:0!important}
 html.arOnlyV1739 header .header-title h1::after{content:'Receivables';font-size:20px}
