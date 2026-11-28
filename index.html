@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1733';
+<script>window.APP_BUILD='v1734';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }</script>
@@ -22319,7 +22319,7 @@ window.arDetailHtmlV1231=function(cust){
       side+='<div class="sc"><div class="st">기준일 뒤 30일 일정 <span>'+A+' 기준</span></div>'+['due','exp'].map(function(k){ var t=TY.find(function(x){ return x[0]===k; }), l=up[k]; if(!c.types[k])return '';
         return '<div class="grp"><div class="gh '+k+'"><i></i>'+t[1]+' <span>'+l.length+'건</span><b>'+W(l.reduce(function(s,o){ return s+o.it.a; },0))+'원</b></div>'+(l.length?l.slice(0,10).map(function(o){ return '<div class="it '+k+'" data-cal-go="'+o.d+'"><i></i><div class="tx"><b>'+X(o.it.c)+'</b><span>'+(+o.d.slice(5,7))+'/'+(+o.d.slice(8,10))+' ('+DOW[pd(o.d).getDay()]+')</span></div><div class="am">'+W(o.it.a)+'</div></div>'; }).join('')+(l.length>10?'<div class="more">… 외 '+(l.length-10)+'건</div>':''):'<div class="none">없음</div>')+'</div>'; }).join('')+'</div>';
       side+='<div class="nt">입금예정 = 월 매출 · 월말 마감 + 업체 결제일 수<br>결제일이 없거나 선결인 업체는 입금예정에서 뺌</div>';
-      return '<div class="arCalV1725" id="arCalV1725"><div class="top">'+seg+nav+tg+srch+'</div>'+kp+'<div class="body"><div class="main">'+main+'</div><aside class="side">'+side+'</aside></div>'+(function(){ try{ return chartsV1726(E,c,A); }catch(_e){ try{ console.warn('v1726',_e); }catch(_c){} return ''; } })()+'</div>';
+      return '<div class="arCalV1725" id="arCalV1725"><div class="top">'+seg+nav+tg+srch+'</div>'+kp+'<div class="body"><div class="main">'+main+(function(){ try{ return chartsV1726(E,c,A); }catch(_e){ try{ console.warn('v1726',_e); }catch(_c){} return ''; } })()+'</div><aside class="side">'+side+'</aside></div></div>';
     }
     /* v1726 : 달력 아래 그래프 — ① 이번 달 일별(실적: 입금+어음수취 / 예정: 입금예정+어음만기) ② 이번 달부터 앞으로 월별 + 월합계 표 */
     function chartsV1726(E,c,A){
@@ -22330,7 +22330,7 @@ window.arDetailHtmlV1231=function(cust){
       /* ① 일별 */
       var days=[], mt={dep:0,exp:0,rcv:0,due:0}, dmax=1;
       for(var d=1;d<=nd;d++){ var k=ds(new Date(y,m,d)), x=dayOf(E,k,c), o={k:k,d:d}; ['dep','exp','rcv','due'].forEach(function(t){ o[t]=sum(x[t]); mt[t]+=o[t]; }); o.n=x; days.push(o); dmax=Math.max(dmax,pos(o.dep)+pos(o.rcv),pos(o.exp)+pos(o.due)); }
-      var W1=800,H1=260,L=58,R=12,T=16,B=34,pw=W1-L-R,ph=H1-T-B, st1=tick(dmax), top1=Math.ceil(dmax/st1)*st1, cw=pw/nd, bw=Math.min(12,cw*0.36);
+      var W1=1200,H1=250,L=58,R=12,T=16,B=34,pw=W1-L-R,ph=H1-T-B, st1=tick(dmax), top1=Math.ceil(dmax/st1)*st1, cw=pw/nd, bw=Math.min(12,cw*0.36);
       var yf=function(v){ return T+ph-(v/top1)*ph; };
       var g='<svg class="cvg" viewBox="0 0 '+W1+' '+H1+'">';
       for(var tv=0;tv<=top1+1;tv+=st1){ var yy=yf(tv); g+='<line x1="'+L+'" x2="'+(W1-R)+'" y1="'+yy+'" y2="'+yy+'" stroke="#eef1f5"/><text x="'+(L-6)+'" y="'+(yy+4)+'" text-anchor="end" class="ax">'+M(tv)+'</text>'; }
@@ -22354,7 +22354,7 @@ window.arDetailHtmlV1231=function(cust){
         for(var dd=1;dd<=ne;dd++){ var x2=dayOf(E,ds(new Date(o2.y,o2.m,dd)),c); ['dep','exp','rcv','due'].forEach(function(t){ o2[t]+=sum(x2[t]); }); }
         mons.push(o2); }
       var mmax=1; mons.forEach(function(o){ ['dep','exp','rcv','due'].forEach(function(t){ if(c.types[t])mmax=Math.max(mmax,pos(o[t])); }); });
-      var W2=800,H2=280,T2=26,B2=34,ph2=H2-T2-B2,pw2=W2-L-R, st2=tick(mmax), top2=Math.ceil(mmax/st2)*st2, gw=pw2/mons.length, ser=['dep','rcv','exp','due'].filter(function(t){ return c.types[t]; }), bw2=Math.min(34,gw*0.8/Math.max(1,ser.length));
+      var W2=1200,H2=270,T2=26,B2=34,ph2=H2-T2-B2,pw2=W2-L-R, st2=tick(mmax), top2=Math.ceil(mmax/st2)*st2, gw=pw2/mons.length, ser=['dep','rcv','exp','due'].filter(function(t){ return c.types[t]; }), bw2=Math.min(40,gw*0.8/Math.max(1,ser.length));
       var yf2=function(v){ return T2+ph2-(v/top2)*ph2; };
       var g2='<svg class="cvg" viewBox="0 0 '+W2+' '+H2+'">';
       for(var tv2=0;tv2<=top2+1;tv2+=st2){ var y2=yf2(tv2); g2+='<line x1="'+L+'" x2="'+(W2-R)+'" y1="'+y2+'" y2="'+y2+'" stroke="#eef1f5"/><text x="'+(L-6)+'" y="'+(y2+4)+'" text-anchor="end" class="ax">'+M(tv2)+'</text>'; }
@@ -22408,7 +22408,9 @@ window.arDetailHtmlV1231=function(cust){
       var tmp=document.createElement('div'); tmp.innerHTML=html(lastModel); el.replaceWith(tmp.firstChild);
       if(f){ var q=document.getElementById('arCalQV1725'); if(q){ q.focus(); try{ q.setSelectionRange(pos,pos); }catch(_e){} } } }
     var baseC=arContent;
-    arContent=function(model){ if(state.ar.tab==='cal'){ lastModel=model; try{ return html(model); }catch(_e){ try{ console.warn('v1725',_e); }catch(_c){} return '<div class="ar-empty">달력을 그리지 못함</div>'; } } return baseC.apply(this,arguments); };
+    var openedV1734=false;
+    document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&&e.target.closest('[data-ar-tab="cal"],[data-artab="cal"]'); if(t){ var c=st(); c.sel=asOf(); } },true);
+    arContent=function(model){ if(state.ar.tab==='cal'){ if(!openedV1734){ openedV1734=true; st().sel=asOf(); } lastModel=model; try{ return html(model); }catch(_e){ try{ console.warn('v1725',_e); }catch(_c){} return '<div class="ar-empty">달력을 그리지 못함</div>'; } } return baseC.apply(this,arguments); };
     document.addEventListener('click',function(e){
       var t=e.target; if(!t||!t.closest||!t.closest('#arCalV1725'))return; var c=st(), b;
       if((b=t.closest('[data-cal-cust]'))){ state.ar.selectedCust=b.getAttribute('data-cal-cust'); state.ar.tab='detail'; try{ arRender(); window.scrollTo(0,0); }catch(_e){} return; }
@@ -63459,5 +63461,8 @@ svg.ar-svg[data-focus="od"] .ar-od-line-v1220 text{paint-order:stroke;stroke:#ff
 <style id="v1732-credit-details-css">
 #result:has(#crBySeg) > .rhead + details{margin-top:2px}
 #result:has(#crBySeg) > details + .ctrlbar{margin-top:8px}
+</style>
+<style id="v1734-ar-cal-layout-css">
+.arCalV1725 .main .chs{grid-template-columns:1fr!important}
 </style>
 </html>
