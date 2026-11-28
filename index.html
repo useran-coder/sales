@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1746';
+<script>window.APP_BUILD='v1747';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -53556,6 +53556,30 @@ function tick(){
 }
 tick(); setInterval(tick,1000);
 document.addEventListener('click',function(e){ if(e.target&&e.target.closest&&e.target.closest('#topMenu,#result'))setTimeout(tick,30); });
+})();
+</script>
+<style id="v1747-ar-sticky-css">
+/* v1747 : 미수 전용 화면 — 제목·검색 줄 + 탭 줄을 위 메뉴(#topMenu, sticky) 바로 아래에 고정 (top 값은 아래 script 가 높이 재서 씀) */
+html.arOnlyV1739 #result .ar-head{position:sticky;top:var(--arStkA,52px);z-index:45;background:var(--arStkBg,#fff);margin-top:0;padding-top:6px;padding-bottom:6px}
+html.arOnlyV1739 #result .ar-tabs{position:sticky;top:var(--arStkB,98px);z-index:44;background:var(--arStkBg,#fff);padding-bottom:6px}
+html.arOnlyV1739.arStkOnV1747 #result .ar-tabs{box-shadow:0 6px 8px -8px rgba(15,23,42,.35)}
+</style>
+<script id="v1747-ar-sticky">
+/* v1747 : 고정 줄 위치 = 위 메뉴 높이 · 제목 줄 높이 (바뀔 때만 CSS 변수 씀) */
+(function(){
+if(!window.__AR_ONLY_V1739)return;
+var last='', on=null;
+function bgOf(el){ while(el&&el!==document.documentElement){ var b=getComputedStyle(el).backgroundColor; if(b&&b!=='transparent'&&!/rgba\([^)]*,\s*0\)$/.test(b))return b; el=el.parentElement; } return '#fff'; }
+function fit(){ try{
+  var tm=document.getElementById('topMenu'), hd=document.querySelector('#result .ar-head'); if(!tm||!hd)return;
+  var a=Math.round(tm.getBoundingClientRect().height), b=a+Math.round(hd.getBoundingClientRect().height), bg=bgOf(hd.parentElement);
+  var k=a+'|'+b+'|'+bg; if(k!==last){ last=k; var s=document.documentElement.style; s.setProperty('--arStkA',a+'px'); s.setProperty('--arStkB',b+'px'); s.setProperty('--arStkBg',bg); }
+  var o=window.scrollY>40; if(o!==on){ on=o; document.documentElement.classList.toggle('arStkOnV1747',o); }
+}catch(_e){} }
+window.addEventListener('scroll',function(){ var o=window.scrollY>40; if(o!==on){ on=o; document.documentElement.classList.toggle('arStkOnV1747',o); } },{passive:true});
+window.addEventListener('resize',fit);
+function watch(){ var r=document.getElementById('result'); if(!r){ setTimeout(watch,500); return; } new MutationObserver(function(){ requestAnimationFrame(fit); }).observe(r,{childList:true}); fit(); }
+watch(); setInterval(fit,1000);
 })();
 </script>
 <style id="v1739-ar-only-css">
