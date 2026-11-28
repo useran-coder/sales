@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1748';
+<script>window.APP_BUILD='v1749';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -22457,7 +22457,7 @@ window.arDetailHtmlV1231=function(cust){
        · 자료 기간보다 앞에서 넘어온 미수는 «이월 미수»(빗금)
        · 받은 어음 = 수취일~만기일 주황 가는 막대, 입금 = 초록 점
        · 업체별 조치 : 연체 90일↑ 채권보전 검토 · 60일↑ 출고 보류·방문 · 30일↑ 독촉 · 연체 시작 입금 확인 · 7일 안 예정 사전 안내 · 14일 안 어음 만기 확인 */
-    function gtSt(){ var g=state.ar.gtV1742||(state.ar.gtV1742={}); if(!g.u)g.u='month'; if(!g.sel)g.sel=asOf(); if(!g.f)g.f='all'; if(!g.s)g.s='pri'; if(!g.n)g.n=50; return g; }
+    function gtSt(){ var g=state.ar.gtV1742||(state.ar.gtV1742={}); if(!g.u||g.v1749!==1){ g.u='year'; g.v1749=1; } if(g.k==null)g.k=''; if(!g.sel)g.sel=asOf(); if(!g.f)g.f='all'; if(!g.s)g.s='pri'; if(!g.n)g.n=50; return g; }
     function gtDays(a,b){ return Math.round((pd(a)-pd(b))/864e5); }
     function gtRange(g){ var s=pd(g.sel||asOf());
       if(g.u==='year')return [new Date(s.getFullYear(),0,1),new Date(s.getFullYear(),11,31)];
@@ -22504,10 +22504,12 @@ window.arDetailHtmlV1231=function(cust){
     function gtHtml(model){
       var g=gtSt(), E=events(model), A=asOf(), all=gtData(model,E), r=gtRange(g), R0=ds(r[0]), R1=ds(r[1]), N=gtDays(R1,R0)+1;
       function P(d){ return (gtDays(d,R0))/N*100; }
+      var A30k=(function(){ var d0=pd(A); d0.setDate(d0.getDate()+30); return ds(d0); })();   /* v1749 */
       function seg(a,b,cls,lab,tip,top,hh){ if(b<R0||a>R1)return ''; var l=Math.max(0,P(a)), rr=Math.min(100,P(b)+100/N), w=rr-l; if(w<=0)return '';
         return '<b class="'+cls+(a<R0?' cl':'')+(b>R1?' cr':'')+'" style="left:'+l.toFixed(3)+'%;width:'+w.toFixed(3)+'%;top:'+top+'px;height:'+hh+'px" title="'+X(tip)+'">'+(lab&&w>(g.u==='year'?5:7)?'<em>'+X(lab)+'</em>':'')+'</b>'; }
       /* 거르기 */
       var rows=all.filter(function(x){
+        if(g.k==='od')return x.od>0; if(g.k==='up')return x.up30>0; if(g.k==='nt')return x.on>0;   /* v1749 : 카드 선택 */
         if(g.f==='over')return x.od>0;
         if(g.f==='due')return x.ch.some(function(c2){ return c2.due>=R0&&c2.due<=R1; })||x.notes.some(function(n){ return n.due>=R0&&n.due<=R1; });
         if(g.f==='note')return x.on>0;
@@ -22515,15 +22517,15 @@ window.arDetailHtmlV1231=function(cust){
         return true; });
       var S={pri:function(a,b){ return b.pri-a.pri; },od:function(a,b){ return b.od-a.od||b.B-a.B; },bal:function(a,b){ return b.B-a.B; },days:function(a,b){ return b.maxD-a.maxD||b.od-a.od; },
              next:function(a,b){ var x=a.next?a.next.due:'9', y=b.next?b.next.due:'9'; return x<y?-1:x>y?1:b.B-a.B; },name:function(a,b){ return a.c.localeCompare(b.c,'ko'); }};
-      rows.sort(S[g.s]||S.pri);
+      rows.sort(g.k==='od'?S.od:g.k==='up'?function(a,b){ var x=a.next?a.next.due:'9', y=b.next?b.next.due:'9'; return x<y?-1:x>y?1:b.up30-a.up30; }:g.k==='nt'?function(a,b){ var x=a.nn?a.nn.due:'9', y=b.nn?b.nn.due:'9'; return x<y?-1:x>y?1:b.on-a.on; }:(S[g.s]||S.pri));
       /* 요약 */
       var tB=0,tO=0,nO=0,bk=[0,0,0,0],u30=0,tN=0,n30=0; all.forEach(function(x){ tB+=x.B; tO+=x.od; if(x.od>0)nO++; x.bk.forEach(function(v,i){ bk[i]+=v; }); u30+=x.up30; tN+=x.on; x.notes.forEach(function(n){ if(n.due>=A&&gtDays(n.due,A)<=30)n30+=n.a; }); });
       var bt=Math.max(1,bk[0]+bk[1]+bk[2]+bk[3]), BC=['#fca5a5','#f87171','#dc2626','#7f1d1d'], BL=['1~30일','31~60일','61~90일','90일 초과'];
-      var kp='<div class="gk"><div class="k"><span>총 미수금</span><b>'+W(tB)+'원</b><em>'+all.filter(function(x){ return x.B>=1; }).length+'개 업체</em></div>'
-        +'<div class="k od"><span>결제일 지난 연체</span><b>'+W(tO)+'원</b><em>'+nO+'개 업체 · 미수의 '+(tB?Math.round(tO/tB*100):0)+'%</em></div>'
+      var kp='<div class="gk"><div class="k tb'+(g.k?'':' on')+'" data-gt-k="" title="누르면 전체 보기"><span>총 미수금</span><b>'+W(tB)+'원</b><em>'+all.filter(function(x){ return x.B>=1; }).length+'개 업체</em></div>'
+        +'<div class="k od'+(g.k==='od'?' on':'')+'" data-gt-k="od" title="누르면 연체만 차트에 (다시 누르면 전체)"><span>결제일 지난 연체</span><b>'+W(tO)+'원</b><em>'+nO+'개 업체 · 미수의 '+(tB?Math.round(tO/tB*100):0)+'%</em></div>'
         +'<div class="k ag"><span>연체 기간</span><div class="sb">'+bk.map(function(v,i){ return v?'<i style="width:'+(v/bt*100).toFixed(1)+'%;background:'+BC[i]+'" title="'+BL[i]+' '+W(v)+'원"></i>':''; }).join('')+'</div><div class="sl">'+bk.map(function(v,i){ return '<span><i style="background:'+BC[i]+'"></i>'+BL[i]+' <b>'+M(v)+'</b></span>'; }).join('')+'</div></div>'
-        +'<div class="k up"><span>30일 안 결제예정</span><b>'+W(u30)+'원</b><em>매출월 말+결제일 기준</em></div>'
-        +'<div class="k nt"><span>미도래 어음</span><b>'+W(tN)+'원</b><em>30일 안 만기 '+M(n30)+'</em></div></div>';
+        +'<div class="k up'+(g.k==='up'?' on':'')+'" data-gt-k="up" title="누르면 30일 안 결제예정만 차트에 (다시 누르면 전체)"><span>30일 안 결제예정</span><b>'+W(u30)+'원</b><em>매출월 말+결제일 기준</em></div>'
+        +'<div class="k nt'+(g.k==='nt'?' on':'')+'" data-gt-k="nt" title="누르면 미도래 어음만 차트에 (다시 누르면 전체)"><span>미도래 어음</span><b>'+W(tN)+'원</b><em>30일 안 만기 '+M(n30)+'</em></div></div>';
       var top='<div class="top"><div class="sg">'+[['year','연'],['month','월'],['week','주']].map(function(u){ return '<button type="button" data-gt-u="'+u[0]+'" class="'+(g.u===u[0]?'on':'')+'">'+u[1]+'</button>'; }).join('')+'</div>'
         +'<div class="nv"><button type="button" data-gt-nav="-1" title="이전">‹</button><b>'+gtTitle(g)+'</b><button type="button" data-gt-nav="1" title="다음">›</button><button type="button" class="td" data-gt-today="1">오늘</button></div>'
         +'<div class="sg f">'+[['all','전체'],['act','조치 필요'],['over','연체'],['due','이 기간 결제·만기'],['note','어음 보유']].map(function(f){ return '<button type="button" data-gt-f="'+f[0]+'" class="'+(g.f===f[0]?'on':'')+'">'+f[1]+'</button>'; }).join('')+'</div>'
@@ -22540,21 +22542,22 @@ window.arDetailHtmlV1231=function(cust){
       shown.forEach(function(x){
         var lanes=[], bars='', LH=15, ovs=x.ch.filter(function(c2){ return c2.due<A; }).sort(function(a,b){ return a.due<b.due?-1:1; }), ups=x.ch.filter(function(c2){ return c2.due>=A; }).sort(function(a,b){ return a.st<b.st?-1:1; });
         /* ① 연체 = 한 줄 : 가장 오래된 결제예정일 ~ 오늘, 색 = 최장 연체일, 눈금 = 매출월별 결제예정일 */
-        if(ovs.length){ lanes.push(A); var tp0=5, n0=x.maxD, oc=n0>90?4:n0>60?3:n0>30?2:1, s0=ovs[0].carry?R0:ovs[0].due;
+        var ovOn=ovs.length&&g.k!=='up'&&g.k!=='nt';   /* v1749 */
+        if(ovOn){ lanes.push(A); var tp0=5, n0=x.maxD, oc=n0>90?4:n0>60?3:n0>30?2:1, s0=ovs[0].carry?R0:ovs[0].due;
           var tip0='연체 '+W(x.od)+'원 · 최장 '+n0+'일'+ovs.map(function(c2){ return '\n· '+(c2.carry?'이월 미수':c2.y+'년 '+c2.m+'월 매출')+' '+W(c2.a)+'원'+(c2.carry?'':' · 결제예정 '+c2.due+' · '+gtDays(A,c2.due)+'일 지남'); }).join('');
           bars+=seg(s0<R0?R0:s0,A,(ovs[0].carry?'cr':'o o'+oc),'연체 '+M(x.od)+' · 최장 '+n0+'일',tip0,tp0,LH-2);
           ovs.forEach(function(c2){ if(c2.carry||c2.due<R0||c2.due>R1)return; bars+='<i class="tk" style="left:'+P(c2.due).toFixed(3)+'%;top:'+tp0+'px;height:'+(LH-2)+'px" title="'+X(c2.y+'년 '+c2.m+'월 매출 '+W(c2.a)+'원 · 결제예정 '+c2.due+' · '+gtDays(A,c2.due)+'일 지남')+'"></i>'; }); }
         /* ② 결제 전 미수 = 매출월별 막대 (매출월 1일 ~ 결제예정일), 겹치면 아래 줄 */
-        ups.forEach(function(c2){ var li=ovs.length?1:0; while(lanes[li]&&lanes[li]>=c2.st)li++; lanes[li]=c2.due; var tp=5+li*LH;
+        ups.forEach(function(c2){ if(g.k==='od'||g.k==='nt')return; if(g.k==='up'&&c2.due>A30k)return; var li=ovOn?1:0; while(lanes[li]&&lanes[li]>=c2.st)li++; lanes[li]=c2.due; var tp=5+li*LH;
           var tip=c2.y+'년 '+c2.m+'월 매출 중 남은 미수 '+W(c2.a)+'원'+(c2.a<c2.full?' (매출 '+W(c2.full)+'원)':'')+'\n청구 '+c2.bill+' · 결제예정 '+c2.due+(x.pdy?' (월말+'+x.pdy+'일)':' (결제일 없음 → 월말)')+' · D-'+gtDays(c2.due,A);
           bars+=seg(c2.st,c2.due,'w',c2.m+'월 '+M(c2.a)+' · '+(+c2.due.slice(5,7))+'/'+(+c2.due.slice(8,10))+' 결제',tip,tp,LH-3);
           if(c2.due>=R0&&c2.due<=R1)bars+='<i class="dd" style="left:'+P(c2.due).toFixed(3)+'%;top:'+(tp-1)+'px;height:'+(LH-1)+'px" title="'+X('결제예정 '+c2.due+' · '+W(c2.a)+'원')+'"></i>'; });
         var nl=Math.max(1,lanes.length), nTop=5+nl*LH;
-        var nts=x.notes.filter(function(nn){ return nn.due&&nn.due>=R0&&nn.rd<=R1; });
-        nts.forEach(function(nn){ bars+=seg(nn.rd,nn.due,'nt'+(nn.due<A?' pa':''),'','받을어음 '+W(nn.a)+'원 · 수취 '+nn.rd+' → 만기 '+nn.due+(nn.bank?' · '+nn.bank:''),nTop,5);
-          if(nn.due>=R0&&nn.due<=R1)bars+='<i class="nd" style="left:'+(P(nn.due)+50/N).toFixed(3)+'%;top:'+(nTop-3)+'px" title="'+X('어음만기 '+nn.due+' · '+W(nn.a)+'원')+'"></i>'; });
+        var nts=x.notes.filter(function(nn){ return nn.due&&nn.due>=R0&&nn.rd<=R1&&g.k!=='od'&&g.k!=='up'&&(g.k!=='nt'||nn.due>=A); });
+        nts.forEach(function(nn){ bars+=seg(nn.rd,nn.due,'nt'+(nn.due<A?' pa':'')+(g.k==='nt'?' big':''),(g.k==='nt'?'어음 '+M(nn.a)+' · '+(+nn.due.slice(5,7))+'/'+(+nn.due.slice(8,10))+' 만기':''),'받을어음 '+W(nn.a)+'원 · 수취 '+nn.rd+' → 만기 '+nn.due+(nn.bank?' · '+nn.bank:''),nTop+(g.k==='nt'?(nts.indexOf(nn)*LH):0),(g.k==='nt'?LH-3:5));
+          if(nn.due>=R0&&nn.due<=R1)bars+='<i class="nd" style="left:'+(P(nn.due)+50/N).toFixed(3)+'%;top:'+(nTop-3+(g.k==='nt'?(nts.indexOf(nn)*LH+5):0))+'px" title="'+X('어음만기 '+nn.due+' · '+W(nn.a)+'원')+'"></i>'; });
         x.deps.forEach(function(dp){ if(dp.d<R0||dp.d>R1)return; bars+='<i class="dp" style="left:'+(P(dp.d)+50/N).toFixed(3)+'%" title="'+X('입금 '+dp.d+' · '+W(dp.a)+'원'+(dp.m?' · '+dp.m:''))+'"></i>'; });
-        var hh=nTop+(nts.length?9:2);
+        var hh=nTop+(nts.length?(g.k==='nt'?nts.length*LH+2:9):2);
         var gb=x.gr?'<span class="gr">'+X(typeof gradeDisp==='function'?gradeDisp(x.gr):x.gr)+'</span>':'';
         body+='<div class="gr2 a'+x.act.l+'"><div class="lf" style="min-height:'+hh+'px"><div class="nm"><b data-gt-cust="'+X(x.c)+'" title="눌러서 업체별 상세">'+X(x.c)+'</b>'+gb+'</div>'
           +'<div class="mt"><span>미수 <b>'+M(x.B)+'</b></span>'+(x.od?'<span class="r">연체 <b>'+M(x.od)+'</b> · '+x.maxD+'일</span>':'')+(x.next?'<span class="n">다음 '+(+x.next.due.slice(5,7))+'/'+(+x.next.due.slice(8,10))+' '+M(x.next.a)+'</span>':'')+(x.on?'<span class="h">어음 '+M(x.on)+'</span>':'')+'</div>'
@@ -22564,6 +22567,8 @@ window.arDetailHtmlV1231=function(cust){
       var more=rows.length>shown.length?'<button type="button" class="more" data-gt-more="1">더 보기 ('+shown.length+'/'+rows.length+')</button>':'';
       var leg='<div class="lg"><span><b class="w"></b>남은 미수 (매출월 1일 ~ 결제예정일)</span><span><b class="o o1"></b><b class="o o2"></b><b class="o o3"></b><b class="o o4"></b>연체 합계 (가장 오래된 결제예정일~오늘 · 색 = 최장 30·60·90일↑ · 흰 눈금 = 매출월별 결제예정일)</span><span><b class="cr"></b>이월 미수</span><span><b class="nt"></b>받을어음 (수취~만기)</span><span><i class="dp"></i>입금</span><span><s class="now"></s>오늘</span></div>';
       var note='<div class="nt2">남은 미수는 현재 미수금을 가장 최근 매출월부터 거꾸로 채워 나눈 것(오래된 매출부터 수금된 것으로 보는 FIFO) · 결제예정일 = 매출월 말일 + 업체 결제일 · 업체명 누르면 업체별 상세</div>';
+      var kn={od:'🔴 결제일 지난 연체만 표시',up:'🔵 30일 안('+A30k+'까지) 결제예정만 표시',nt:'🟠 미도래 어음만 표시 (수취~만기)'}[g.k];   /* v1749 */
+      if(kn)leg='<div class="kf">'+kn+' · '+rows.length+'개 업체 <button type="button" data-gt-k="">✕ 전체 보기</button></div>'+leg;
       return '<div class="arGtV1742" id="arGtV1742">'+top+kp+leg+'<div class="gw"><div class="gh"><div class="lf">업체 · 미수 · 조치 <span>'+rows.length+'개</span></div><div class="tl">'+hd+'</div></div>'+(body||'<div class="none">해당 업체 없음</div>')+'</div>'+more+note+'</div>';
     }
     var gtModel=null;
@@ -22572,7 +22577,8 @@ window.arDetailHtmlV1231=function(cust){
       var t=e.target; if(!t||!t.closest||!t.closest('#arGtV1742'))return; var g=gtSt(), b;
       if((b=t.closest('[data-gt-cust]'))){ state.ar.selectedCust=b.getAttribute('data-gt-cust'); state.ar.tab='detail'; try{ arRender(); window.scrollTo(0,0); }catch(_e){} return; }
       if((b=t.closest('[data-gt-u]'))){ g.u=b.getAttribute('data-gt-u'); return gtRedraw(); }
-      if((b=t.closest('[data-gt-f]'))){ g.f=b.getAttribute('data-gt-f'); g.n=50; return gtRedraw(); }
+      if((b=t.closest('[data-gt-k]'))){ var kk=b.getAttribute('data-gt-k'); g.k=(kk&&g.k===kk)?'':kk; g.f='all'; g.n=50; return gtRedraw(); }   /* v1749 : 카드 선택 */
+      if((b=t.closest('[data-gt-f]'))){ g.f=b.getAttribute('data-gt-f'); g.k=''; g.n=50; return gtRedraw(); }
       if((b=t.closest('[data-gt-nav]'))){ var n=+b.getAttribute('data-gt-nav'), s=pd(g.sel||asOf());
         if(g.u==='year')s=new Date(s.getFullYear()+n,s.getMonth(),1); else if(g.u==='month')s=new Date(s.getFullYear(),s.getMonth()+n,1); else s.setDate(s.getDate()+7*n);
         g.sel=ds(s); return gtRedraw(); }
@@ -53549,7 +53555,7 @@ function tick(){
   /* v1743 : 📊 차트 = 달력보기 바로 오른쪽 */
   var gb=document.getElementById('arGtBtnV1743');
   if(!gb){ gb=document.createElement('button'); gb.type='button'; gb.className='tm-direct'; gb.id='arGtBtnV1743'; gb.textContent='\uD83D\uDCCA 차트';
-    gb.onclick=function(e){ e.stopPropagation(); go('gantt'); }; }
+    gb.onclick=function(e){ e.stopPropagation(); try{ var g0=state.ar.gtV1742||(state.ar.gtV1742={}); g0.u='year'; g0.sel=''; g0.v1749=1; }catch(_e){} go('gantt'); };   /* v1749 : 차트 = 연간 보기로 열림 */ }
   if(cb.nextSibling!==gb)cb.parentNode.insertBefore(gb,cb.nextSibling);
   var gon=false; try{ gon=state.act==='ar'&&state.ar&&state.ar.tab==='gantt'; }catch(_e){}
   if(gon!==gtOn){ gtOn=gon; gb.classList.toggle('active',gon); document.documentElement.classList.toggle('arGtOnV1743',gon); }
@@ -63807,6 +63813,19 @@ watch(); window.addEventListener('resize',function(){ requestAnimationFrame(fit)
 <style id="v1742-cr-font-css">
 /* v1742 : 신용등급별 매출 표 글자 13px — 배지(고객관리·업체구분·신용상태 등 색 칩)는 그대로 12px */
 html #result.crV1738 table#tbl tbody td,html #result.crV1738 table#tbl tfoot td,html #result.crV1738 table#tbl tbody td>b,html #result.crV1738 table#tbl tfoot td>b,html #result.crV1738 table#tbl tbody td>input.payedit,html #result.crV1738 table#tbl tbody td>select.gradeedit,html #result.crV1738 table#tbl tbody td>.sub2{font-size:13px!important}
+</style>
+<style id="v1749-ar-gantt-card-css">
+/* v1749 : 차트 요약 카드 선택 */
+.arGtV1742 .gk .k[data-gt-k]{cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.arGtV1742 .gk .k[data-gt-k]:hover{box-shadow:0 2px 8px rgba(15,23,42,.12)}
+.arGtV1742 .gk .k.on{border-width:2px;padding:8px 11px;border-color:#1e3a5f;box-shadow:0 0 0 3px rgba(30,58,95,.12)}
+.arGtV1742 .gk .k.od.on{border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.15)}
+.arGtV1742 .gk .k.up.on{border-color:#0e7490;background:#ecfeff;box-shadow:0 0 0 3px rgba(14,116,144,.15)}
+.arGtV1742 .gk .k.nt.on{border-color:#d97706;background:#fffbeb;box-shadow:0 0 0 3px rgba(217,119,6,.15)}
+.arGtV1742 .kf{display:flex;align-items:center;gap:10px;margin:0 0 6px;padding:6px 10px;border-radius:8px;background:#f1f5f9;font-weight:700;font-size:12.5px;color:#0f172a}
+.arGtV1742 .kf button{margin-left:auto;border:1px solid #cbd5e1;background:#fff;border-radius:7px;padding:3px 10px;font:inherit;font-size:12px;cursor:pointer}
+.arGtV1742 b.nt.big{background:#fdba74;border:1px solid #f59e0b;border-radius:4px}
+.arGtV1742 .tl>b.nt.big em{color:#7c2d12}
 </style>
 <style id="v1742-ar-year-gantt-css">
 /* v1742 : 달력 연 보기 */
