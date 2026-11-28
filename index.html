@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1749';
+<script>window.APP_BUILD='v1750';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -22315,8 +22315,9 @@ window.arDetailHtmlV1231=function(cust){
       var srch='<input class="qs" id="arCalQV1725" placeholder="업체명" value="'+X(c.q)+'">';
       /* 기간 합계 */
       var tot={dep:[],exp:[],rcv:[],due:[]};
-      for(var d=new Date(r[0]);d<=r[1];d.setDate(d.getDate()+1)){ var x=dayOf(E,ds(d),c); TY.forEach(function(t){ tot[t[0]]=tot[t[0]].concat(x[t[0]]); }); }
-      var kp='<div class="kp">'+TY.map(function(t){ var l=tot[t[0]]; return '<div class="k '+t[0]+(c.types[t[0]]?'':' off')+'"><span><i></i>'+t[1]+'</span><b title="'+M(sum(l))+'">'+W(sum(l))+'원</b><em>'+l.length+'건</em></div>'; }).join('')+'</div>';   /* v1748 : 원 단위 */
+      var cAllV1750={q:c.q,types:{dep:1,exp:1,rcv:1,due:1}}, dlV1750=[];   /* v1750 : 카드 합계 = 종류 선택과 상관없이 */
+      for(var d=new Date(r[0]);d<=r[1];d.setDate(d.getDate()+1)){ var dk=ds(d), x=dayOf(E,dk,cAllV1750); TY.forEach(function(t){ tot[t[0]]=tot[t[0]].concat(x[t[0]]); }); if(c.fk&&x[c.fk])x[c.fk].forEach(function(it){ dlV1750.push({d:dk,it:it}); }); }
+      var kp='<div class="kp">'+TY.map(function(t){ var l=tot[t[0]]; return '<div class="k '+t[0]+(c.types[t[0]]?'':' off')+(c.fk===t[0]?' fk':'')+'" data-cal-k="'+t[0]+'" title="'+(c.fk===t[0]?'다시 누르면 전체':'누르면 '+t[1]+'만 보기')+'"><span><i></i>'+t[1]+'</span><b title="'+M(sum(l))+'">'+W(sum(l))+'원</b><em>'+l.length+'건</em></div>'; }).join('')+'</div>';   /* v1748 : 원 단위 */
       var main='';
       if(c.mode==='year'){ main=yearViewV1742(E,c,A); }   /* v1742 : 연간 달력 */
       else if(c.mode==='month'){
@@ -22340,6 +22341,11 @@ window.arDetailHtmlV1231=function(cust){
       }
       /* 오른쪽 : 고른 날 상세 + 기준일 뒤 30일 어음만기·입금예정 */
       var sd=pd(sel), side='';
+      if(c.fk){ var tF=TY.find(function(x){ return x[0]===c.fk; }), lF=dlV1750.slice().sort(function(a,b){ return a.d<b.d?-1:a.d>b.d?1:b.it.a-a.it.a; }), LIM=c.fkAll?99999:40;   /* v1750 */
+        side+='<div class="sc fkV1750"><div class="st">'+title(c)+' '+tF[1]+' 내역 <span>'+lF.length+'건</span><button type="button" data-cal-k="'+c.fk+'" title="전체 보기">✕</button></div><div class="grp"><div class="gh '+c.fk+'"><i></i>'+tF[1]+' <span>'+lF.length+'건</span><b>'+W(lF.reduce(function(s,o){ return s+o.it.a; },0))+'원</b></div>'
+          +(lF.length?lF.slice(0,LIM).map(function(o){ var it=o.it, dd=pd(o.d), sub=c.fk==='dep'?(it.m||''):c.fk==='exp'?(it.sm+' 매출 · 결제 '+it.pd+'일'):c.fk==='rcv'?('만기 '+(it.due||'미입력')+(it.bank?' · '+it.bank:'')):('수취 '+(it.rd||'')+(it.bank?' · '+it.bank:''));
+            return '<div class="it '+c.fk+'" data-cal-go="'+o.d+'"><i></i><div class="tx"><b>'+X(it.c)+'</b><span>'+(dd.getMonth()+1)+'/'+dd.getDate()+' ('+DOW[dd.getDay()]+')'+(sub?' · '+X(sub):'')+'</span></div><div class="am">'+W(it.a)+'</div></div>'; }).join('')
+            +(lF.length>LIM?'<button type="button" class="more fkMoreV1750" data-cal-fkall="1">… 외 '+(lF.length-LIM)+'건 모두 보기</button>':''):'<div class="none">내역 없음</div>')+'</div></div>'; }
       if(c.mode!=='day')side+='<div class="sc"><div class="st">'+(sd.getMonth()+1)+'월 '+sd.getDate()+'일 ('+DOW[sd.getDay()]+') 내역</div>'+listBlock(dayOf(E,sel,c),12)+'</div>';
       var up={due:[],exp:[]}, a0=pd(A), a1=new Date(a0); a1.setDate(a1.getDate()+30);
       for(var d4=new Date(a0);d4<=a1;d4.setDate(d4.getDate()+1)){ if(ds(d4)===A)continue; var x4=dayOf(E,ds(d4),c); ['due','exp'].forEach(function(k){ x4[k].forEach(function(it){ up[k].push({d:ds(d4),it:it}); }); }); }
@@ -22598,6 +22604,11 @@ window.arDetailHtmlV1231=function(cust){
     document.addEventListener('click',function(e){
       var t=e.target; if(!t||!t.closest||!t.closest('#arCalV1725'))return; var c=st(), b;
       if((b=t.closest('[data-cal-cust]'))){ state.ar.selectedCust=b.getAttribute('data-cal-cust'); state.ar.tab='detail'; try{ arRender(); window.scrollTo(0,0); }catch(_e){} return; }
+      if((b=t.closest('[data-cal-k]'))){ var kk=b.getAttribute('data-cal-k'); c.fkAll=0;   /* v1750 : 카드 선택 → 그 종류만 */
+        if(c.fk===kk){ c.fk=''; c.types=c.prevTypesV1750||{dep:1,exp:1,rcv:1,due:1}; }
+        else { if(!c.fk)c.prevTypesV1750=Object.assign({},c.types); c.fk=kk; c.types={dep:0,exp:0,rcv:0,due:0}; c.types[kk]=1; }
+        return redraw(); }
+      if(t.closest('[data-cal-fkall]')){ c.fkAll=1; return redraw(); }
       if((b=t.closest('[data-cal-mode]'))){ c.mode=b.getAttribute('data-cal-mode'); return redraw(); }
       if((b=t.closest('[data-cal-nav]'))){ var n=+b.getAttribute('data-cal-nav'), s=pd(c.sel||asOf());
         if(c.mode==='year'){ s=new Date(s.getFullYear()+n,s.getMonth(),Math.min(s.getDate(),28)); }   /* v1742 */
@@ -22610,7 +22621,7 @@ window.arDetailHtmlV1231=function(cust){
       if((b=t.closest('[data-cal-day]'))){ var k=b.getAttribute('data-cal-day'); if(c.sel===k&&e.detail>=2){ c.mode='day'; } c.sel=k; return redraw(); }
     });
     document.addEventListener('dblclick',function(e){ var b=e.target&&e.target.closest?e.target.closest('#arCalV1725 [data-cal-day]'):null; if(!b)return; var c=st(); c.sel=b.getAttribute('data-cal-day'); c.mode='day'; redraw(); });
-    document.addEventListener('change',function(e){ var t=e.target; if(!t||!t.matches||!t.matches('#arCalV1725 [data-cal-type]'))return; var c=st(); c.types[t.getAttribute('data-cal-type')]=t.checked?1:0; redraw(); });
+    document.addEventListener('change',function(e){ var t=e.target; if(!t||!t.matches||!t.matches('#arCalV1725 [data-cal-type]'))return; var c=st(); c.types[t.getAttribute('data-cal-type')]=t.checked?1:0; c.fk=''; redraw(); });   /* v1750 : 직접 고르면 카드 선택 해제 */
     document.addEventListener('input',function(e){ var t=e.target; if(!t||t.id!=='arCalQV1725')return; st().q=t.value; clearTimeout(redraw._t); redraw._t=setTimeout(redraw,250); });
     window.arCalEventsV1725=events;
   })();
@@ -63813,6 +63824,17 @@ watch(); window.addEventListener('resize',function(){ requestAnimationFrame(fit)
 <style id="v1742-cr-font-css">
 /* v1742 : 신용등급별 매출 표 글자 13px — 배지(고객관리·업체구분·신용상태 등 색 칩)는 그대로 12px */
 html #result.crV1738 table#tbl tbody td,html #result.crV1738 table#tbl tfoot td,html #result.crV1738 table#tbl tbody td>b,html #result.crV1738 table#tbl tfoot td>b,html #result.crV1738 table#tbl tbody td>input.payedit,html #result.crV1738 table#tbl tbody td>select.gradeedit,html #result.crV1738 table#tbl tbody td>.sub2{font-size:13px!important}
+</style>
+<style id="v1750-ar-cal-card-css">
+/* v1750 : 달력 카드 선택 */
+.arCalV1725 .kp .k[data-cal-k]{cursor:pointer;transition:box-shadow .15s}
+.arCalV1725 .kp .k[data-cal-k]:hover{box-shadow:0 2px 8px rgba(15,23,42,.12)}
+.arCalV1725 .kp .k.fk{opacity:1;box-shadow:0 0 0 2px #1e3a5f;border-color:#1e3a5f}
+.arCalV1725 .kp .k.dep.fk{box-shadow:0 0 0 2px #16a34a}.arCalV1725 .kp .k.exp.fk{box-shadow:0 0 0 2px #0891b2}
+.arCalV1725 .kp .k.rcv.fk{box-shadow:0 0 0 2px #ea580c}.arCalV1725 .kp .k.due.fk{box-shadow:0 0 0 2px #ca8a04}
+.arCalV1725 .fkV1750 .st{display:flex;align-items:center;gap:6px}
+.arCalV1725 .fkV1750 .st button{margin-left:auto;border:1px solid #cbd5e1;background:#fff;border-radius:6px;width:24px;height:24px;cursor:pointer;font-size:12px}
+.arCalV1725 .fkV1750 .fkMoreV1750{display:block;width:100%;border:0;background:#f8fafc;border-radius:6px;padding:6px;font:inherit;font-size:12px;color:#475569;cursor:pointer;margin-top:4px}
 </style>
 <style id="v1749-ar-gantt-card-css">
 /* v1749 : 차트 요약 카드 선택 */
