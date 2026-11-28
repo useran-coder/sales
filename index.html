@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1747';
+<script>window.APP_BUILD='v1748';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -22316,7 +22316,7 @@ window.arDetailHtmlV1231=function(cust){
       /* 기간 합계 */
       var tot={dep:[],exp:[],rcv:[],due:[]};
       for(var d=new Date(r[0]);d<=r[1];d.setDate(d.getDate()+1)){ var x=dayOf(E,ds(d),c); TY.forEach(function(t){ tot[t[0]]=tot[t[0]].concat(x[t[0]]); }); }
-      var kp='<div class="kp">'+TY.map(function(t){ var l=tot[t[0]]; return '<div class="k '+t[0]+(c.types[t[0]]?'':' off')+'"><span><i></i>'+t[1]+'</span><b>'+M(sum(l))+'</b><em>'+l.length+'건</em></div>'; }).join('')+'</div>';
+      var kp='<div class="kp">'+TY.map(function(t){ var l=tot[t[0]]; return '<div class="k '+t[0]+(c.types[t[0]]?'':' off')+'"><span><i></i>'+t[1]+'</span><b title="'+M(sum(l))+'">'+W(sum(l))+'원</b><em>'+l.length+'건</em></div>'; }).join('')+'</div>';   /* v1748 : 원 단위 */
       var main='';
       if(c.mode==='year'){ main=yearViewV1742(E,c,A); }   /* v1742 : 연간 달력 */
       else if(c.mode==='month'){
@@ -22392,7 +22392,7 @@ window.arDetailHtmlV1231=function(cust){
       g+='<line x1="'+L+'" x2="'+(W1-R)+'" y1="'+(T+ph)+'" y2="'+(T+ph)+'" stroke="#cbd5e1"/></svg>';
       var leg='<div class="lg"><span><i style="background:'+COL.dep+'"></i>입금</span><span><i style="background:'+COL.rcv+'"></i>어음수취</span><em>왼쪽 막대 = 실적</em><span><i style="background:'+COL.exp+'"></i>입금예정</span><span><i style="background:'+COL.due+'"></i>어음만기</span><em>오른쪽 막대 = 예정</em></div>';
       var sumc=function(o){ return '<div class="ms">'+['dep','rcv','exp','due'].map(function(t){ return '<div class="mi" style="--c:'+COL[t]+'"><span>'+NM[t]+'</span><b>'+W(o[t])+'원</b></div>'; }).join('')+'</div>'; };
-      var h1='<div class="cc"><div class="ct"><b>'+y+'년 '+(m+1)+'월 일별</b><span>막대를 누르면 그 날짜로 이동</span></div>'+sumc(mt)+leg+'<div class="cvw">'+g+'</div></div>';
+      var h1='<div class="cc"><div class="ct"><b>'+y+'년 '+(m+1)+'월 일별</b><span>막대를 누르면 그 날짜로 이동</span></div>'+leg+'<div class="cvw">'+g+'</div></div>';
       /* ② 월별 : 이번 달부터 앞으로 (자료 있는 마지막 달까지, 최소 3개월 · 최대 12개월) */
       var mons=[], last=m+2;
       Object.keys(E).forEach(function(k){ var ky=+k.slice(0,4), km=+k.slice(5,7)-1, idx=(ky-y)*12+km; if(idx>last-m&&idx<=11+m){ var x=dayOf(E,k,c); if(x.exp.length||x.due.length)last=Math.max(last,idx); } });
