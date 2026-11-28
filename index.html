@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1753';
+<script>window.APP_BUILD='v1754';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -8411,7 +8411,10 @@ const COURSE_COL={'1':'#1d4ed8','2':'#0891b2','3':'#15803d','4':'#b45309','5':'#
 function courseOf(c){ const r=gradeRec(c); const si=r.si||''; if(si&&COURSE_SI[si])return COURSE_SI[si]; const cc=r.course; return (cc===''||cc==null)?'(미지정)':String(cc); }
 function courseLabel(c){ return c==='E'?'코스 E (기타·원거리)':(c==='(미지정)'?'미지정':'코스 '+c); }
 function courseBadge(c){ const col=COURSE_COL[c]||'#64748b'; return `<span style="display:inline-block;padding:2px 11px;border-radius:10px;font-size:12px;font-weight:800;background:${col}1a;color:${col};border:1px solid ${col}55">${esc(courseLabel(c))}</span>`; }
-function payOf(c){ const g0=gradeRec(c), p=g0.pay; if((p===''||p==null||!String(p).trim())&&(g0.grade==='계약조건'||(state.gradeOverride&&state.gradeOverride[c]&&state.gradeOverride[c].cat==='계약조건')))return '계약조건';   /* v1753 : 계약조건 업체 = 결제일 «계약조건» */
+/* v1754 : 결제일이 비어 있을 때 자동 결제일 — 신용상태 선결제 → «선결», 계약조건 → «계약조건» (v1753) */
+function payAutoV1754(c){ try{ const g0=gradeRec(c), p=g0.pay; if(!(p===''||p==null||!String(p).trim()))return ''; const ct=(typeof catOf==='function')?catOf(c):''; if(ct==='선결제')return '선결'; if(g0.grade==='계약조건'||ct==='계약조건')return '계약조건'; }catch(_e){} return ''; }
+window.payAutoV1754=payAutoV1754;
+function payOf(c){ const g0=gradeRec(c), p=g0.pay; const au=payAutoV1754(c); if(au)return au;
   if(p===''||p==null)return '(미지정)'; const s=String(p).trim(); if(!s)return '(미지정)'; return /^\d+$/.test(s)? s+'일' : s; }
 const COURSE_INFO={'1':{cities:'양주·포천·의정부 (본사권역)',time:'0:30',hours:0.5},'2':{cities:'남양주·구리',time:'1:00',hours:1},'3':{cities:'성남·하남·광주·이천·용인·여주·진천',time:'1:30',hours:1.5},'4':{cities:'진천·오산·안성·평택·천안·아산',time:'3:00',hours:3},'5':{cities:'화성·수원·안산',time:'2:00',hours:2},'6':{cities:'부천·시흥·시화·광명·안양·과천·군포',time:'2:00',hours:2},'7':{cities:'인천·남동공단',time:'2:00',hours:2},'8':{cities:'서울·김포·고양·파주',time:'1:00',hours:1},'E':{cities:'지역외 화물처리',time:'별도',hours:99}};
 function courseTime(c){ return (COURSE_INFO[c]&&COURSE_INFO[c].time)||''; }
@@ -8469,7 +8472,7 @@ function creditVendorSearch(rows,mode){
     ..._extraCols,
     {k:'grade',t:'신용등급(수정)',cell:o=>`<select class="gradeedit" data-c="${esc(o.key)}" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 4px">${GRADE_OPTS.map(v=>`<option value="${v}" ${gradeDisp(gradeRec(o.key).grade)===v?'selected':''}>${v||'-'}</option>`).join('')}</select>`,sortVal:o=>gradeRec(o.key).grade||''},
     {k:'cat',t:'신용상태(수정)',cell:o=>{const cur=(state.gradeOverride[o.key]&&state.gradeOverride[o.key].cat)||''; const col=GRADE_COL[catOf(o.key)]||{bg:'#eef2f8',tx:'#475569'}; return `<select class="catedit" data-c="${esc(o.key)}" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 4px;background:${col.bg};color:${col.tx};font-weight:700;border-radius:6px">${['자동','정상','관리','주의','위험','선결제','거래제한','거래중지','계약조건'].map(v=>{const val=(v==='자동'?'':v); const sel=(cur===val); return `<option value="${val}" ${sel?'selected':''}>${v==='자동'?'자동('+catOf(o.key)+')':v}</option>`;}).join('')}</select>`;},sortVal:o=>catOf(o.key)},
-    {k:'payday',t:'결제일',cell:o=>{const p=gradeRec(o.key).pay; const v=(p===''||p==null)?'':p; return `<input class="payedit" data-c="${esc(o.key)}" value="${esc(String(v))}" placeholder="${(!v&&payOf(o.key)==='계약조건')?'계약조건':'-'}" onclick="event.stopPropagation()" style="width:40px;text-align:center;font-family:inherit;font-size:12px;padding:2px 2px;border:1px solid var(--line);border-radius:5px"><span class="sub2"> 일</span>`;},sortVal:o=>+gradeRec(o.key).pay||0},
+    {k:'payday',t:'결제일',cell:o=>{const p=gradeRec(o.key).pay; const v=(p===''||p==null)?'':p; return `<input class="payedit" data-c="${esc(o.key)}" value="${esc(String(v))}" placeholder="${(!v&&payAutoV1754(o.key))||'-'}" data-pa="${(!v&&payAutoV1754(o.key))?1:''}" onclick="event.stopPropagation()" style="width:40px;text-align:center;font-family:inherit;font-size:12px;padding:2px 2px;border:1px solid var(--line);border-radius:5px"><span class="sub2"> 일</span>`;},sortVal:o=>+gradeRec(o.key).pay||0},
     {k:'ssize',t:'매출규모(참조)',cell:o=>saleSizeBadge(o.amt),sortVal:o=>o.amt},
     {k:'amt',t:`매출액(${unitLabel()})`,cell:o=>disp(o.amt),sortVal:o=>o.amt},
     {k:'_bar',t:'',nosort:true,cell:o=>bar(o.amt,max)} ];
@@ -8528,7 +8531,7 @@ function custDrillView(label, src, backFn, act, extra2){
     : act==='credit'? [
       {k:'grade',t:'신용등급(수정)',cell:o=>{ /* v1738 : 선택칸 목록은 누를 때 채움(요소 수 줄임) */ let g=gradeDisp(gradeRec(o.key).grade); if(!GRADE_OPTS.includes(g))g=''; return `<select class="gradeedit lzV1738" data-lz="g" data-c="${esc(o.key)}" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 4px"><option value="${g}" selected>${g||'-'}</option></select>`;},sortVal:o=>gradeRec(o.key).grade||''},
       {k:'cat',t:'신용상태(수정)',cell:o=>{let cur=(state.gradeOverride[o.key]&&state.gradeOverride[o.key].cat)||''; if(!CR_CATS_V1738.includes(cur))cur=''; const col=GRADE_COL[catOf(o.key)]||{bg:'#eef2f8',tx:'#475569'}; return `<select class="catedit lzV1738" data-lz="c" data-c="${esc(o.key)}" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 4px;background:${col.bg};color:${col.tx};font-weight:700;border-radius:6px"><option value="${cur}" selected>${cur===''?'자동('+catOf(o.key)+')':cur}</option></select>`;},sortVal:o=>catOf(o.key)},
-      {k:'payday',t:'결제일',cell:o=>{const p=gradeRec(o.key).pay; const v=(p===''||p==null)?'':p; return `<input class="payedit" data-c="${esc(o.key)}" value="${esc(String(v))}" placeholder="${(!v&&payOf(o.key)==='계약조건')?'계약조건':'-'}" onclick="event.stopPropagation()" style="width:40px;text-align:center;font-family:inherit;font-size:12px;padding:2px 2px;border:1px solid var(--line);border-radius:5px"><span class="sub2"> 일</span>`;},sortVal:o=>+gradeRec(o.key).pay||0}, {k:'ssize',t:'매출규모(참조)',cell:o=>saleSizeBadge(o.amt),sortVal:o=>o.amt} ]
+      {k:'payday',t:'결제일',cell:o=>{const p=gradeRec(o.key).pay; const v=(p===''||p==null)?'':p; return `<input class="payedit" data-c="${esc(o.key)}" value="${esc(String(v))}" placeholder="${(!v&&payAutoV1754(o.key))||'-'}" data-pa="${(!v&&payAutoV1754(o.key))?1:''}" onclick="event.stopPropagation()" style="width:40px;text-align:center;font-family:inherit;font-size:12px;padding:2px 2px;border:1px solid var(--line);border-radius:5px"><span class="sub2"> 일</span>`;},sortVal:o=>+gradeRec(o.key).pay||0}, {k:'ssize',t:'매출규모(참조)',cell:o=>saleSizeBadge(o.amt),sortVal:o=>o.amt} ]
     : act==='cls'? [
       {k:'gcls',t:'업체분류 (최대 4개)',cls:'l',cell:(o,i)=>{ const cats=catsOf(o.key); const sels=[0,1,2,3].map(n=>`<select class="clsedit3" data-c="${esc(o.key)}" data-i="${n}" onclick="event.stopPropagation()" style="font-size:10.5px;padding:1px 3px;max-width:120px;margin:1px 2px 1px 0">${'<option value=\"\">—</option>'+CLS_CATS.map(c=>`<option value="${esc(c.k)}" ${cats[n]===c.k?'selected':''}>${c.ic} ${esc(c.k)}</option>`).join('')}</select>`).join(''); const bid='clsedit_'+i; return `<span style="white-space:nowrap">${catsBadges(o.key)} <button class="clsEditToggle" data-box="${bid}" onclick="event.stopPropagation()" style="border:1px solid var(--line);background:#fff;border-radius:6px;font-size:10px;padding:1px 6px;cursor:pointer;vertical-align:middle">✏ 수정</button></span><div id="${bid}" style="display:none;margin-top:4px">${sels}</div>`; },sortVal:o=>catsOf(o.key).join(',')} ]
     : [];
@@ -63842,6 +63845,8 @@ html #result.crV1738 table#tbl tbody td,html #result.crV1738 table#tbl tfoot td,
 <style id="v1753-pay-css">
 /* v1753 : 결제일 칸 넓힘(«계약조건» 글자가 보이게) */
 #result table#tbl input.payedit{width:62px!important}
+/* v1754 : 자동 결제일(선결·계약조건)은 칸이 비어 있어도 진하게 보임 */
+input.payedit[data-pa="1"]::placeholder{color:#1e3a5f;opacity:1;font-weight:700}
 </style>
 <style id="v1750-ar-cal-card-css">
 /* v1750 : 달력 카드 선택 */
@@ -64245,7 +64250,7 @@ document.addEventListener('click',function(e){ var b=e.target&&e.target.closest&
    var g=tr.querySelector('select.gradeedit'); if(g){ var gv=gradeDisp(gradeRec(c).grade); if(GRADE_OPTS.indexOf(gv)<0)gv=''; if(g.dataset.lz)g.innerHTML='<option value="'+gv+'" selected>'+(gv||'-')+'</option>'; else g.value=gv; }
    var k=tr.querySelector('select.catedit'); if(k){ var cur=(state.gradeOverride[c]&&state.gradeOverride[c].cat)||''; if(CR_CATS_V1738.indexOf(cur)<0)cur=''; var auto=catOf(c), col=GRADE_COL[auto]||{bg:'#eef2f8',tx:'#475569'}; k.style.background=col.bg; k.style.color=col.tx;
      if(k.dataset.lz)k.innerHTML='<option value="'+cur+'" selected>'+(cur===''?'자동('+auto+')':cur)+'</option>'; else { var o0=k.querySelector('option[value=""]'); if(o0)o0.textContent='자동('+auto+')'; k.value=cur; } }
-   var p=tr.querySelector('input.payedit'); if(p&&document.activeElement!==p){ var pv=gradeRec(c).pay; p.value=(pv===''||pv==null)?'':String(pv); } } }catch(_e){} counts(); };
+   var p=tr.querySelector('input.payedit'); if(p&&document.activeElement!==p){ var pv=gradeRec(c).pay; p.value=(pv===''||pv==null)?'':String(pv); var au=(!p.value&&window.payAutoV1754)?window.payAutoV1754(c):''; p.placeholder=au||'-'; p.setAttribute('data-pa',au?'1':''); } } }catch(_e){} counts(); };
 })();
 </script>
 </html>
