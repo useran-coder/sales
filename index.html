@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1725';
+<script>window.APP_BUILD='v1726';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }</script>
@@ -22240,7 +22240,7 @@ window.arDetailHtmlV1231=function(cust){
     function W(v){ return Math.round(+v||0).toLocaleString('ko-KR'); }
     function M(v){ try{ return arChartMoney(v); }catch(_e){ return W(v); } }
     function st(){ var c=state.ar.calV1725||(state.ar.calV1725={}); if(!c.mode)c.mode='month'; if(!c.types)c.types={dep:1,exp:1,rcv:1,due:1}; if(c.q==null)c.q=''; return c; }
-    function asOf(){ return String(state.ar.asOf||ds(new Date())).slice(0,10); }
+    function asOf(){ return ds(new Date()); }   /* v1726 : 달력 기준일 = 오늘 */
     /* 일자별 자료 */
     function events(model){
       if(model.__calV1725)return model.__calV1725;
@@ -22318,7 +22318,62 @@ window.arDetailHtmlV1231=function(cust){
       side+='<div class="sc"><div class="st">기준일 뒤 30일 일정 <span>'+A+' 기준</span></div>'+['due','exp'].map(function(k){ var t=TY.find(function(x){ return x[0]===k; }), l=up[k]; if(!c.types[k])return '';
         return '<div class="grp"><div class="gh '+k+'"><i></i>'+t[1]+' <span>'+l.length+'건</span><b>'+W(l.reduce(function(s,o){ return s+o.it.a; },0))+'원</b></div>'+(l.length?l.slice(0,10).map(function(o){ return '<div class="it '+k+'" data-cal-go="'+o.d+'"><i></i><div class="tx"><b>'+X(o.it.c)+'</b><span>'+(+o.d.slice(5,7))+'/'+(+o.d.slice(8,10))+' ('+DOW[pd(o.d).getDay()]+')</span></div><div class="am">'+W(o.it.a)+'</div></div>'; }).join('')+(l.length>10?'<div class="more">… 외 '+(l.length-10)+'건</div>':''):'<div class="none">없음</div>')+'</div>'; }).join('')+'</div>';
       side+='<div class="nt">입금예정 = 월 매출 · 월말 마감 + 업체 결제일 수<br>결제일이 없거나 선결인 업체는 입금예정에서 뺌</div>';
-      return '<div class="arCalV1725" id="arCalV1725"><div class="top">'+seg+nav+tg+srch+'</div>'+kp+'<div class="body"><div class="main">'+main+'</div><aside class="side">'+side+'</aside></div></div>';
+      return '<div class="arCalV1725" id="arCalV1725"><div class="top">'+seg+nav+tg+srch+'</div>'+kp+'<div class="body"><div class="main">'+main+'</div><aside class="side">'+side+'</aside></div>'+(function(){ try{ return chartsV1726(E,c,A); }catch(_e){ try{ console.warn('v1726',_e); }catch(_c){} return ''; } })()+'</div>';
+    }
+    /* v1726 : 달력 아래 그래프 — ① 이번 달 일별(실적: 입금+어음수취 / 예정: 입금예정+어음만기) ② 이번 달부터 앞으로 월별 + 월합계 표 */
+    function chartsV1726(E,c,A){
+      var COL={dep:'#22c55e',exp:'#06b6d4',rcv:'#f97316',due:'#eab308'}, NM={dep:'입금',exp:'입금예정',rcv:'어음수취',due:'어음만기'};
+      var s=pd(c.sel||A), y=s.getFullYear(), m=s.getMonth(), nd=new Date(y,m+1,0).getDate();
+      function pos(v){ return Math.max(0,+v||0); }
+      function tick(max){ var p=Math.pow(10,Math.floor(Math.log10(max||1))), st=[1,2,2.5,5,10].map(function(k){ return k*p; }).find(function(k){ return max/k<=5; })||p*10; return st; }
+      /* ① 일별 */
+      var days=[], mt={dep:0,exp:0,rcv:0,due:0}, dmax=1;
+      for(var d=1;d<=nd;d++){ var k=ds(new Date(y,m,d)), x=dayOf(E,k,c), o={k:k,d:d}; ['dep','exp','rcv','due'].forEach(function(t){ o[t]=sum(x[t]); mt[t]+=o[t]; }); o.n=x; days.push(o); dmax=Math.max(dmax,pos(o.dep)+pos(o.rcv),pos(o.exp)+pos(o.due)); }
+      var W1=800,H1=260,L=58,R=12,T=16,B=34,pw=W1-L-R,ph=H1-T-B, st1=tick(dmax), top1=Math.ceil(dmax/st1)*st1, cw=pw/nd, bw=Math.min(12,cw*0.36);
+      var yf=function(v){ return T+ph-(v/top1)*ph; };
+      var g='<svg class="cvg" viewBox="0 0 '+W1+' '+H1+'">';
+      for(var tv=0;tv<=top1+1;tv+=st1){ var yy=yf(tv); g+='<line x1="'+L+'" x2="'+(W1-R)+'" y1="'+yy+'" y2="'+yy+'" stroke="#eef1f5"/><text x="'+(L-6)+'" y="'+(yy+4)+'" text-anchor="end" class="ax">'+M(tv)+'</text>'; }
+      days.forEach(function(o,i){
+        var cx=L+cw*i+cw/2, wd=new Date(y,m,o.d).getDay();
+        if(o.k===A)g+='<rect x="'+(L+cw*i)+'" y="'+T+'" width="'+cw+'" height="'+ph+'" fill="#0f172a" opacity=".05"/>';
+        var stack=function(x0,a,b,ka,kb){ var h='',b0=T+ph; [[ka,a],[kb,b]].forEach(function(p){ var v=pos(p[1]); if(!v)return; var hh=v/top1*ph; b0-=hh; h+='<rect x="'+x0+'" y="'+b0+'" width="'+bw+'" height="'+Math.max(1,hh)+'" rx="2" fill="'+COL[p[0]]+'"/>'; }); return h; };
+        var tt=(m+1)+'/'+o.d+' ('+DOW[wd]+')\n입금 '+W(o.dep)+'원 · 어음수취 '+W(o.rcv)+'원\n입금예정 '+W(o.exp)+'원 · 어음만기 '+W(o.due)+'원';
+        g+='<g class="dbar" data-cal-go="'+o.k+'"><title>'+X(tt)+'</title><rect x="'+(L+cw*i)+'" y="'+T+'" width="'+cw+'" height="'+ph+'" fill="transparent"/>'+stack(cx-bw-1,o.dep,o.rcv,'dep','rcv')+stack(cx+1,o.exp,o.due,'exp','due')+'</g>';
+        g+='<text x="'+cx+'" y="'+(H1-B+15)+'" text-anchor="middle" class="ax'+(wd===0?' sun':wd===6?' sat':'')+(o.k===A?' td':'')+'">'+o.d+'</text>';
+      });
+      g+='<line x1="'+L+'" x2="'+(W1-R)+'" y1="'+(T+ph)+'" y2="'+(T+ph)+'" stroke="#cbd5e1"/></svg>';
+      var leg='<div class="lg"><span><i style="background:'+COL.dep+'"></i>입금</span><span><i style="background:'+COL.rcv+'"></i>어음수취</span><em>왼쪽 막대 = 실적</em><span><i style="background:'+COL.exp+'"></i>입금예정</span><span><i style="background:'+COL.due+'"></i>어음만기</span><em>오른쪽 막대 = 예정</em></div>';
+      var sumc=function(o){ return '<div class="ms">'+['dep','rcv','exp','due'].map(function(t){ return '<div class="mi" style="--c:'+COL[t]+'"><span>'+NM[t]+'</span><b>'+W(o[t])+'원</b></div>'; }).join('')+'</div>'; };
+      var h1='<div class="cc"><div class="ct"><b>'+y+'년 '+(m+1)+'월 일별</b><span>막대를 누르면 그 날짜로 이동</span></div>'+sumc(mt)+leg+'<div class="cvw">'+g+'</div></div>';
+      /* ② 월별 : 이번 달부터 앞으로 (자료 있는 마지막 달까지, 최소 3개월 · 최대 12개월) */
+      var mons=[], last=m+2;
+      Object.keys(E).forEach(function(k){ var ky=+k.slice(0,4), km=+k.slice(5,7)-1, idx=(ky-y)*12+km; if(idx>last-m&&idx<=11+m){ var x=dayOf(E,k,c); if(x.exp.length||x.due.length)last=Math.max(last,idx); } });
+      last=Math.min(last,m+11);
+      for(var mi=m;mi<=last;mi++){ var dt=new Date(y,mi,1), o2={y:dt.getFullYear(),m:dt.getMonth(),dep:0,exp:0,rcv:0,due:0}; var ne=new Date(o2.y,o2.m+1,0).getDate();
+        for(var dd=1;dd<=ne;dd++){ var x2=dayOf(E,ds(new Date(o2.y,o2.m,dd)),c); ['dep','exp','rcv','due'].forEach(function(t){ o2[t]+=sum(x2[t]); }); }
+        mons.push(o2); }
+      var mmax=1; mons.forEach(function(o){ ['dep','exp','rcv','due'].forEach(function(t){ if(c.types[t])mmax=Math.max(mmax,pos(o[t])); }); });
+      var W2=800,H2=280,T2=26,B2=34,ph2=H2-T2-B2,pw2=W2-L-R, st2=tick(mmax), top2=Math.ceil(mmax/st2)*st2, gw=pw2/mons.length, ser=['dep','rcv','exp','due'].filter(function(t){ return c.types[t]; }), bw2=Math.min(34,gw*0.8/Math.max(1,ser.length));
+      var yf2=function(v){ return T2+ph2-(v/top2)*ph2; };
+      var g2='<svg class="cvg" viewBox="0 0 '+W2+' '+H2+'">';
+      for(var tv2=0;tv2<=top2+1;tv2+=st2){ var y2=yf2(tv2); g2+='<line x1="'+L+'" x2="'+(W2-R)+'" y1="'+y2+'" y2="'+y2+'" stroke="#eef1f5"/><text x="'+(L-6)+'" y="'+(y2+4)+'" text-anchor="end" class="ax">'+M(tv2)+'</text>'; }
+      var tM=+A.slice(0,4)*12+(+A.slice(5,7)-1);
+      mons.forEach(function(o,i){
+        var gx=L+gw*i, cx=gx+gw/2, x0=cx-bw2*ser.length/2, cur=(o.y*12+o.m)===tM;
+        if(cur)g2+='<rect x="'+gx+'" y="'+T2+'" width="'+gw+'" height="'+ph2+'" fill="#0f172a" opacity=".04"/>';
+        ser.forEach(function(t,j){ var v=pos(o[t]); if(!v)return; var hh=v/top2*ph2, bx=x0+bw2*j;
+          g2+='<g><title>'+X(o.y+'년 '+(o.m+1)+'월 '+NM[t]+' '+W(o[t])+'원')+'</title><rect x="'+(bx+1)+'" y="'+(T2+ph2-hh)+'" width="'+(bw2-2)+'" height="'+Math.max(1,hh)+'" rx="3" fill="'+COL[t]+'"/></g>'
+            +'<text x="'+(bx+bw2/2)+'" y="'+(T2+ph2-hh-4)+'" text-anchor="middle" class="vl">'+M(v)+'</text>'; });
+        g2+='<text x="'+cx+'" y="'+(H2-B2+16)+'" text-anchor="middle" class="ax mo'+(cur?' td':'')+'">'+(o.y!==y?(o.y+'.'):'')+(o.m+1)+'월'+(cur?' (이번 달)':'')+'</text>';
+      });
+      g2+='<line x1="'+L+'" x2="'+(W2-R)+'" y1="'+(T2+ph2)+'" y2="'+(T2+ph2)+'" stroke="#cbd5e1"/></svg>';
+      var tb='<table class="mt"><thead><tr><th>월</th>'+['dep','rcv','exp','due'].map(function(t){ return '<th><i style="background:'+COL[t]+'"></i>'+NM[t]+'</th>'; }).join('')+'<th>예정 합계<br><small>입금예정+어음만기</small></th></tr></thead><tbody>';
+      var tt2={dep:0,exp:0,rcv:0,due:0};
+      mons.forEach(function(o){ ['dep','exp','rcv','due'].forEach(function(t){ tt2[t]+=o[t]; }); var cur=(o.y*12+o.m)===tM;
+        tb+='<tr class="'+(cur?'cur':'')+'"><td>'+o.y+'년 '+(o.m+1)+'월'+(cur?' <em>이번 달</em>':'')+'</td>'+['dep','rcv','exp','due'].map(function(t){ return '<td>'+(o[t]?W(o[t]):'<span class="z">-</span>')+'</td>'; }).join('')+'<td><b>'+W(o.exp+o.due)+'</b></td></tr>'; });
+      tb+='</tbody><tfoot><tr><td>합계</td>'+['dep','rcv','exp','due'].map(function(t){ return '<td>'+W(tt2[t])+'</td>'; }).join('')+'<td><b>'+W(tt2.exp+tt2.due)+'</b></td></tr></tfoot></table>';
+      var h2='<div class="cc"><div class="ct"><b>월별 · '+(mons[0].m+1)+'월부터 앞으로</b><span>입금예정 = 월말 마감 + 결제일 · 어음만기 = 받은 어음 만기일</span></div><div class="lg">'+ser.map(function(t){ return '<span><i style="background:'+COL[t]+'"></i>'+NM[t]+'</span>'; }).join('')+'</div><div class="cvw m">'+g2+'</div>'+tb+'</div>';
+      return '<div class="chs">'+h1+h2+'</div>';
     }
     var lastModel=null;
     function redraw(){ var el=document.getElementById('arCalV1725'); if(!el||!lastModel)return; var f=document.activeElement&&document.activeElement.id==='arCalQV1725', pos=f?document.activeElement.selectionStart:0;
@@ -22343,7 +22398,7 @@ window.arDetailHtmlV1231=function(cust){
     window.arCalEventsV1725=events;
   })();
   /* ④ «현재 미수금» 카드에 어음 포함 금액 */
-  function fitK(){ try{ document.querySelectorAll('svg.ar-svg').forEach(function(sv){ var vb=sv.viewBox&&sv.viewBox.baseVal, w=sv.getBoundingClientRect().width; if(vb&&vb.width&&w>50)sv.style.setProperty('--arK',(vb.width/w).toFixed(4)); }); document.querySelectorAll('.arBillRowsV1723').forEach(function(r){ var cw=r.getBoundingClientRect().width/12; if(cw>0){ r.classList.toggle('sm',cw<104); r.classList.toggle('xs',cw<84); } }); }catch(_e){} }
+  function fitK(){ try{ document.querySelectorAll('svg.ar-svg,svg.cvg').forEach(function(sv){ var vb=sv.viewBox&&sv.viewBox.baseVal, w=sv.getBoundingClientRect().width; if(vb&&vb.width&&w>50)sv.style.setProperty('--arK',(vb.width/w).toFixed(4)); }); document.querySelectorAll('.arBillRowsV1723').forEach(function(r){ var cw=r.getBoundingClientRect().width/12; if(cw>0){ r.classList.toggle('sm',cw<104); r.classList.toggle('xs',cw<84); } }); }catch(_e){} }
   window.addEventListener('resize',function(){ fitK(); });
   function kpi(){ fitK();
     try{
@@ -22359,7 +22414,7 @@ window.arDetailHtmlV1231=function(cust){
       });
     }catch(_e){}
   }
-  try{ new MutationObserver(function(){ if(document.querySelector('.arBillSumV1719'))kpi(); }).observe(document.body,{childList:true,subtree:true}); }catch(_m){}
+  try{ new MutationObserver(function(){ if(document.querySelector('.arBillSumV1719'))kpi(); else if(document.querySelector('#arCalV1725 svg.cvg'))fitK(); }).observe(document.body,{childList:true,subtree:true}); }catch(_m){}
 })();
 
 /* v866 : arBuildShared·arApplyShared 는 이 즉시실행함수 안에만 있어 바깥 스크립트(v556/v595/v871/v874)의
@@ -63283,5 +63338,38 @@ svg.ar-svg[data-focus="exp"] .s-exp text{paint-order:stroke;stroke:#fff;stroke-w
 .arCalV1725 .dv .grp{max-width:760px}
 @media (max-width:1250px){.arCalV1725 .body{flex-direction:column}.arCalV1725 .side{width:100%}}
 @media (max-width:760px){.arCalV1725 .kp{grid-template-columns:repeat(2,1fr)}.arCalV1725 .cl{min-height:70px}.arCalV1725 .cp .n,.arCalV1725 .cp em{display:none}.arCalV1725 .wg{grid-template-columns:1fr}.arCalV1725 .wc{min-height:0}}
+</style>
+<style id="v1726-ar-cal-chart-css">
+.arCalV1725 .chs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.arCalV1725 .cc{border:1px solid var(--ln);border-radius:12px;background:#fff;padding:12px 14px;min-width:0}
+.arCalV1725 .ct{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.arCalV1725 .ct b{font-size:14px;font-weight:800}
+.arCalV1725 .ct span{color:var(--mu);font-size:11.5px}
+.arCalV1725 .ms{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.arCalV1725 .mi{border-left:3px solid var(--c);background:#f8fafc;border-radius:6px;padding:5px 9px;display:flex;flex-direction:column}
+.arCalV1725 .mi span{color:var(--mu);font-size:11.5px;font-weight:700}
+.arCalV1725 .mi b{font-size:13.5px}
+.arCalV1725 .lg{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;margin-bottom:4px;font-size:11.5px;color:#475569}
+.arCalV1725 .lg span{display:inline-flex;align-items:center;gap:5px;font-weight:700}
+.arCalV1725 .lg i,.arCalV1725 .mt th i{width:10px;height:10px;border-radius:3px;transform:none;border:0}
+.arCalV1725 .lg em{font-style:normal;color:#94a3b8;margin-right:8px}
+.arCalV1725 .cvw{width:100%}
+.arCalV1725 .cvg{width:100%;height:auto;display:block}
+.arCalV1725 .cvg .ax{font-size:calc(11px * var(--arK,1))!important;fill:#64748b}
+.arCalV1725 .cvg .ax.sun{fill:#dc2626}.arCalV1725 .cvg .ax.sat{fill:#2563eb}.arCalV1725 .cvg .ax.td{font-weight:800;fill:#0f172a}
+.arCalV1725 .cvg .ax.mo{font-size:calc(12px * var(--arK,1))!important;font-weight:700;fill:#334155}
+.arCalV1725 .cvg .vl{font-size:calc(11px * var(--arK,1))!important;font-weight:700;fill:#334155}
+.arCalV1725 .cvg .dbar{cursor:pointer}.arCalV1725 .cvg .dbar:hover rect[fill="transparent"]{fill:#f1f5f9}
+.arCalV1725 .mt{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
+.arCalV1725 .mt th{background:#f8fafc;color:#475569;font-weight:700;padding:6px 8px;border-bottom:1px solid var(--ln);text-align:right;white-space:nowrap}
+.arCalV1725 .mt th:first-child,.arCalV1725 .mt td:first-child{text-align:left}
+.arCalV1725 .mt th small{font-weight:500;color:#94a3b8;font-size:10.5px}
+.arCalV1725 .mt td{padding:5px 8px;border-bottom:1px solid #f1f5f9;text-align:right;white-space:nowrap}
+.arCalV1725 .mt tr.cur td{background:#f8fafc;font-weight:700}
+.arCalV1725 .mt td em{font-style:normal;font-size:10.5px;color:#fff;background:#0f172a;border-radius:8px;padding:0 6px;margin-left:4px}
+.arCalV1725 .mt .z{color:#cbd5e1}
+.arCalV1725 .mt tfoot td{border-top:2px solid #e2e8f0;font-weight:800;background:#fcfcfd}
+@media (max-width:1250px){.arCalV1725 .chs{grid-template-columns:1fr}}
+@media (max-width:760px){.arCalV1725 .ms{grid-template-columns:repeat(2,1fr)}.arCalV1725 .mt{font-size:11px}}
 </style>
 </html>
