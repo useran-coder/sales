@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1737';
+<script>window.APP_BUILD='v1738';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }</script>
@@ -2613,6 +2613,7 @@ const GRADE_COL={'정상':{bg:'#dcfce7',tx:'#15803d'},'관리':{bg:'#ffedd5',tx:
 const CHIPCOL={'전체':'#1e3a5f','이탈위험':'#dc2626','장기미거래':'#ea580c','주기불안정':'#d97706','단발성':'#6b7280','정상':'#16a34a','폐기검토':'#dc2626','주의':'#d97706'};
 const CLS_OPTIONS=[...new Set([...Object.values(CLS),'미분류','대리점/공업사'])].sort((a,b)=>a.localeCompare(b,'ko'));
 const GRADE_OPTS=['','A+','A-','B+','B-','C+','C-','선결제','거래제한','거래중지','계약조건'];
+const CR_CATS_V1738=['','정상','관리','주의','위험','선결제','거래제한','거래중지','계약조건'];
 const MGR_L={},CLS_L={},GRADE_L={}; for(const k in MGR){const lk=_ln(k); if(!(lk in MGR_L))MGR_L[lk]=MGR[k];} for(const k in CLS){const lk=_ln(k); if(!(lk in CLS_L))CLS_L[lk]=CLS[k];} for(const k in GRADE){const lk=_ln(k); if(!(lk in GRADE_L))GRADE_L[lk]=GRADE[k];}
 function gradeRec(n){ if(n==null)return {}; const k=_nm(n); let base=GRADE[k]||GRADE[String(n).trim()]||GRADE_L[_ln(n)]||{}; const o=state.gradeOverride; if(o&&(o[n]||o[k]))base={...base,...(o[n]||o[k])}; return base; }
 function gradeDisp(g){ if(g==null)return g; return ({'선결':'선결제','중지':'거래중지','제한':'거래제한'})[g]||g; }
@@ -4132,7 +4133,7 @@ function aggBy(src, by){
     else if(by==='code'){k=r.code||'(미상)';label=(r.code||'(미상)')+(r.name?'  '+r.name:'');}
     else if(by==='codespec'){k=(r.code||'(미상)')+'│'+(r.spec||'');label=(r.code||'(미상)')+' '+(r.name||'')+(r.spec?' / '+r.spec:'');}
     else {k=r.name;label=r.name;}
-    let o=m.get(k); if(!o){o={k,label,code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',amt:0,qty:0,dates:new Set(),last:r.d,byMon:{},byMonQty:{}};m.set(k,o);} o.amt+=amtOf(r); o.qty+=(+r.qty||0); o.dates.add(+r.d); o.byMon[r.ym]=(o.byMon[r.ym]||0)+amtOf(r); o.byMonQty[r.ym]=(o.byMonQty[r.ym]||0)+(+r.qty||0); if(r.d>o.last)o.last=r.d; }
+    let o=m.get(k); if(!o){o={k,label,code:r.code||'(미상)',name:r.name||'',spec:r.spec||'',amt:0,qty:0,dates:new Set(),last:r.d,byMon:{},byMonQty:{}};m.set(k,o);} const _aV1738=amtOf(r); o.amt+=_aV1738; o.qty+=(+r.qty||0); o.dates.add(+r.d); o.byMon[r.ym]=(o.byMon[r.ym]||0)+_aV1738; o.byMonQty[r.ym]=(o.byMonQty[r.ym]||0)+(+r.qty||0); if(r.d>o.last)o.last=r.d; }
   let arr=[...m.values()].map(o=>({key:o.k,label:o.label,code:o.code,name:o.name,spec:o.spec,amt:o.amt,qty:o.qty,cnt:o.dates.size,last:o.last,byMon:o.byMon,byMonQty:o.byMonQty}));
   const tot=arr.reduce((a,o)=>a+o.amt,0); arr.forEach(o=>o.share=tot?o.amt/tot*100:0); arr.sort((a,b)=>b.amt-a.amt);
   return {arr,tot};
@@ -8521,8 +8522,8 @@ function custDrillView(label, src, backFn, act, extra2){
       {k:'rco',t:'코스',cell:o=>{const c=gradeRec(o.key).course; return (c===''||c==null)?'-':c;},sortVal:o=>+gradeRec(o.key).course||0},
       {k:'grade',t:'신용등급(수정)',cell:o=>`<select class="gradeedit" data-c="${esc(o.key)}" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 4px">${GRADE_OPTS.map(v=>`<option value="${v}" ${gradeDisp(gradeRec(o.key).grade)===v?'selected':''}>${v||'-'}</option>`).join('')}</select>`,sortVal:o=>gradeRec(o.key).grade||''} ]
     : act==='credit'? [
-      {k:'grade',t:'신용등급(수정)',cell:o=>`<select class="gradeedit" data-c="${esc(o.key)}" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 4px">${GRADE_OPTS.map(v=>`<option value="${v}" ${gradeDisp(gradeRec(o.key).grade)===v?'selected':''}>${v||'-'}</option>`).join('')}</select>`,sortVal:o=>gradeRec(o.key).grade||''},
-      {k:'cat',t:'신용상태(수정)',cell:o=>{const cur=(state.gradeOverride[o.key]&&state.gradeOverride[o.key].cat)||''; const col=GRADE_COL[catOf(o.key)]||{bg:'#eef2f8',tx:'#475569'}; return `<select class="catedit" data-c="${esc(o.key)}" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 4px;background:${col.bg};color:${col.tx};font-weight:700;border-radius:6px">${['자동','정상','관리','주의','위험','선결제','거래제한','거래중지','계약조건'].map(v=>{const val=(v==='자동'?'':v); const sel=(cur===val); return `<option value="${val}" ${sel?'selected':''}>${v==='자동'?'자동('+catOf(o.key)+')':v}</option>`;}).join('')}</select>`;},sortVal:o=>catOf(o.key)},
+      {k:'grade',t:'신용등급(수정)',cell:o=>{ /* v1738 : 선택칸 목록은 누를 때 채움(요소 수 줄임) */ let g=gradeDisp(gradeRec(o.key).grade); if(!GRADE_OPTS.includes(g))g=''; return `<select class="gradeedit lzV1738" data-lz="g" data-c="${esc(o.key)}" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 4px"><option value="${g}" selected>${g||'-'}</option></select>`;},sortVal:o=>gradeRec(o.key).grade||''},
+      {k:'cat',t:'신용상태(수정)',cell:o=>{let cur=(state.gradeOverride[o.key]&&state.gradeOverride[o.key].cat)||''; if(!CR_CATS_V1738.includes(cur))cur=''; const col=GRADE_COL[catOf(o.key)]||{bg:'#eef2f8',tx:'#475569'}; return `<select class="catedit lzV1738" data-lz="c" data-c="${esc(o.key)}" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 4px;background:${col.bg};color:${col.tx};font-weight:700;border-radius:6px"><option value="${cur}" selected>${cur===''?'자동('+catOf(o.key)+')':cur}</option></select>`;},sortVal:o=>catOf(o.key)},
       {k:'payday',t:'결제일',cell:o=>{const p=gradeRec(o.key).pay; const v=(p===''||p==null)?'':p; return `<input class="payedit" data-c="${esc(o.key)}" value="${esc(String(v))}" placeholder="-" onclick="event.stopPropagation()" style="width:40px;text-align:center;font-family:inherit;font-size:12px;padding:2px 2px;border:1px solid var(--line);border-radius:5px"><span class="sub2"> 일</span>`;},sortVal:o=>+gradeRec(o.key).pay||0}, {k:'ssize',t:'매출규모(참조)',cell:o=>saleSizeBadge(o.amt),sortVal:o=>o.amt} ]
     : act==='cls'? [
       {k:'gcls',t:'업체분류 (최대 4개)',cls:'l',cell:(o,i)=>{ const cats=catsOf(o.key); const sels=[0,1,2,3].map(n=>`<select class="clsedit3" data-c="${esc(o.key)}" data-i="${n}" onclick="event.stopPropagation()" style="font-size:10.5px;padding:1px 3px;max-width:120px;margin:1px 2px 1px 0">${'<option value=\"\">—</option>'+CLS_CATS.map(c=>`<option value="${esc(c.k)}" ${cats[n]===c.k?'selected':''}>${c.ic} ${esc(c.k)}</option>`).join('')}</select>`).join(''); const bid='clsedit_'+i; return `<span style="white-space:nowrap">${catsBadges(o.key)} <button class="clsEditToggle" data-box="${bid}" onclick="event.stopPropagation()" style="border:1px solid var(--line);background:#fff;border-radius:6px;font-size:10px;padding:1px 6px;cursor:pointer;vertical-align:middle">✏ 수정</button></span><div id="${bid}" style="display:none;margin-top:4px">${sels}</div>`; },sortVal:o=>catsOf(o.key).join(',')} ]
@@ -8553,8 +8554,8 @@ function custDrillView(label, src, backFn, act, extra2){
     $('#result').querySelectorAll('.clsedit').forEach(s=>s.addEventListener('change',e=>{ state.clsOverride[e.target.dataset.c]=e.target.value; if(typeof logEdit==='function')logEdit('업체분류',e.target.dataset.c+' 분류 변경'); saveSettings(); drawTable(); }));
     $('#result').querySelectorAll('.clsedit3').forEach(s=>s.addEventListener('change',e=>{ const c=e.target.dataset.c; const sels=[...$('#result').querySelectorAll('.clsedit3')].filter(x=>x.dataset.c===c); const arr=sels.sort((a,b)=>(+a.dataset.i)-(+b.dataset.i)).map(x=>x.value).filter(Boolean); state.clsOverride[c]=[...new Set(arr)].slice(0,4); if(typeof logEdit==='function')logEdit('업체분류',c+' 분류 변경'); saveSettings(); drawTable(); }));
     $('#result').querySelectorAll('.clsEditToggle').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); const bx=document.getElementById(b.dataset.box); if(bx)bx.style.display=bx.style.display==='none'?'block':'none'; }));
-    $('#result').querySelectorAll('.gradeedit').forEach(s=>s.addEventListener('change',e=>{ const c=e.target.dataset.c; const cur=gradeRec(c); state.gradeOverride[c]={...cur,grade:e.target.value}; if(typeof logEdit==='function')logEdit('신용등급',c+' 등급 변경'); saveSettings(); drawTable(); }));
-    $('#result').querySelectorAll('.catedit').forEach(s=>s.addEventListener('change',e=>{ const c=e.target.dataset.c; const cur=state.gradeOverride[c]||gradeRec(c); const v=e.target.value; state.gradeOverride[c]={...cur}; if(v)state.gradeOverride[c].cat=v; else delete state.gradeOverride[c].cat; if(v==='선결제'){ state.gradeOverride[c].grade='선결제'; state.gradeOverride[c].pay='선결'; } /* v1721 */ if(typeof logEdit==='function')logEdit('신용등급',c+' 분류 변경'); saveSettings(); drawTable(); }));
+    $('#result').querySelectorAll('.gradeedit').forEach(s=>s.addEventListener('change',e=>{ const c=e.target.dataset.c; const cur=gradeRec(c); state.gradeOverride[c]={...cur,grade:e.target.value}; if(typeof logEdit==='function')logEdit('신용등급',c+' 등급 변경'); saveSettings(); if(act==='credit'&&window.crRowSyncV1738)window.crRowSyncV1738(e.target); else drawTable(); }));
+    $('#result').querySelectorAll('.catedit').forEach(s=>s.addEventListener('change',e=>{ const c=e.target.dataset.c; const cur=state.gradeOverride[c]||gradeRec(c); const v=e.target.value; state.gradeOverride[c]={...cur}; if(v)state.gradeOverride[c].cat=v; else delete state.gradeOverride[c].cat; if(v==='선결제'){ state.gradeOverride[c].grade='선결제'; state.gradeOverride[c].pay='선결'; } /* v1721 */ if(typeof logEdit==='function')logEdit('신용등급',c+' 분류 변경'); saveSettings(); if(act==='credit'&&window.crRowSyncV1738)window.crRowSyncV1738(e.target); else drawTable(); }));
   };
   const yrBtns=monOn?`<span class="seg" id="custProdYrSeg" style="margin-left:6px">${years.map(y=>`<button data-y="${y}" class="${y===yr?'on':''}">${y}</button>`).join('')}</span>`:'';
   const monthlyCtrl=monthly?`<div class="ctrlbar">${extra2.monthlyPrefixHtml||''}<button class="btn ghost" id="custProdMonBtn" style="font-size:13px;padding:5px 12px;${monOn?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">📅 월별보기${monOn?' 끄기':''}</button>${yrBtns}<span class="sub2">${monOn?`${yr}년 거래처별 1~12월 매출액입니다.`:'선택 제품의 거래처별 월 매출을 펼쳐봅니다.'}</span></div>`:'';
@@ -63456,11 +63457,11 @@ svg.ar-svg[data-focus="od"] .ar-od-line-v1220 text{paint-order:stroke;stroke:#ff
 </style>
 <style id="v1731-credit-table-css">
 /* 신용등급별 매출 표 : 내용 글자·배지·선택칸 12px */
-#result:has(#crBySeg) table tbody td,#result:has(#crBySeg) table tbody td *,#result:has(#crBySeg) table tfoot td,#result:has(#crBySeg) table tfoot td *{font-size:12px!important}
+#result.crV1738 table tbody td,#result.crV1738 table tbody td *,#result.crV1738 table tfoot td,#result.crV1738 table tfoot td *{font-size:12px!important}
 </style>
 <style id="v1732-credit-details-css">
-#result:has(#crBySeg) > .rhead + details{margin-top:2px}
-#result:has(#crBySeg) > details + .ctrlbar{margin-top:8px}
+#result.crV1738 > .rhead + details{margin-top:2px}
+#result.crV1738 > details + .ctrlbar{margin-top:8px}
 </style>
 <style id="v1734-ar-cal-layout-css">
 .arCalV1725 .main .chs{grid-template-columns:1fr!important}
@@ -63495,4 +63496,40 @@ svg.ar-svg[data-focus="od"] .ar-od-line-v1220 text{paint-order:stroke;stroke:#ff
 .arCalV1725 .kp .k.due{border-left-color:#fde68a!important}
 .arCalV1725 .gh{border-left:0!important}
 </style>
+<script id="v1738-perf">
+/* v1738 : 화면 느림(랙) 원인 정리
+   ① 수백 개 주기 점검(setInterval)이 같은 글자를 textContent 로 다시 씀 → 글자 노드가 바뀌어 :has() 규칙 때문에 문서 전체 스타일 재계산(요소 3만여 개, 1회 약 100ms)이 1초에 여러 번
+      → 글자가 같으면 쓰지 않음(동작은 같음)
+   ② 신용등급별 매출 표 글자 규칙이 #result:has(#crBySeg) … td * 형태라 재계산 범위가 커짐 → #result.crV1738 클래스로 바꿈 */
+(function(){ if(window.__v1738perf)return; window.__v1738perf=1;
+ try{ var d=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
+   if(d&&d.set&&d.get){ Object.defineProperty(Node.prototype,'textContent',{configurable:true,enumerable:d.enumerable,get:d.get,set:function(v){
+     try{ if(this.nodeType===1){ var s=(v==null)?'':String(v), f=this.firstChild;
+       if(f){ if(f===this.lastChild&&f.nodeType===3&&f.data===s)return; } else if(s==='')return; } }catch(_e){}
+     d.set.call(this,v); }}); } }catch(_e){}
+ function crMark(){ try{ var r=document.getElementById('result'); if(!r)return; var on=!!document.getElementById('crBySeg'); if(r.classList.contains('crV1738')!==on)r.classList.toggle('crV1738',on); }catch(_e){} }
+ window.crMarkV1738=crMark;
+ ['render','renderCustom'].forEach(function(n){ try{ var f=window[n]; if(typeof f!=='function'||f.__v1738)return;
+   var w=function(){ var r=f.apply(this,arguments); crMark(); return r; }; w.__v1738=true; for(var k in f)if(Object.prototype.hasOwnProperty.call(f,k)&&!(k in w))w[k]=f[k]; window[n]=w; }catch(_e){} });
+ try{ var ra=window.runAct; if(typeof ra==='function'&&!ra.__v1738){ var w2=function(){ var r=ra.apply(this,arguments); crMark(); return r; }; w2.__v1738=true; for(var k2 in ra)if(Object.prototype.hasOwnProperty.call(ra,k2)&&!(k2 in w2))w2[k2]=ra[k2]; window.runAct=w2; } }catch(_e){}
+ crMark();
+ /* ⑤ 목표합산 제외 거래처 이름 정리(fcTargetExclYearKey) : 저장·동기화 때마다 출고 6만여 줄에 정규식 → 같은 이름은 한 번만 계산 */
+ try{ var fk=window.fcTargetExclYearKey; if(typeof fk==='function'&&!fk.__v1738){ var KM=new Map(); var wk=function(c){ var s=String(c==null?'':c); var v=KM.get(s); if(v===undefined){ v=fk(c); if(KM.size>50000)KM.clear(); KM.set(s,v); } return v; }; wk.__v1738=true; window.fcTargetExclYearKey=wk; } }catch(_e){}
+ /* ③ 선택칸(신용등급·신용상태) 목록 : 누르거나 포커스할 때 채움 */
+ function lzFill(sel){ try{ if(!sel||!sel.dataset||!sel.dataset.lz)return; var c=sel.dataset.c, k=sel.dataset.lz, v=sel.value, h='';
+   if(k==='g') h=GRADE_OPTS.map(function(x){ return '<option value="'+x+'"'+(x===v?' selected':'')+'>'+(x||'-')+'</option>'; }).join('');
+   else h=CR_CATS_V1738.map(function(x){ return '<option value="'+x+'"'+(x===v?' selected':'')+'>'+(x===''?'자동('+catOf(c)+')':x)+'</option>'; }).join('');
+   delete sel.dataset.lz; sel.innerHTML=h; sel.value=v; }catch(_e){} }
+ window.lzFillV1738=lzFill;
+ ['mousedown','pointerdown','touchstart','focusin','keydown'].forEach(function(ev){ document.addEventListener(ev,function(e){ var t=e.target; if(t&&t.tagName==='SELECT'&&t.dataset&&t.dataset.lz)lzFill(t); },{capture:true,passive:true}); });
+ /* ④ 신용등급·신용상태 수정 : 표 전체를 다시 그리지 않고 그 줄만 바꿈 */
+ function counts(){ try{ var seg=document.getElementById('crSeg'); if(!seg)return; var cl=new Set(); periodRows().forEach(function(r){ cl.add(r.cust); }); var n={'전체':cl.size}; cl.forEach(function(cu){ var k=catOf(cu); n[k]=(n[k]||0)+1; });
+   seg.querySelectorAll('button[data-v]').forEach(function(b){ var sp=b.querySelector('span'); if(sp)sp.textContent='('+(n[b.dataset.v]||0)+')'; }); }catch(_e){} }
+ window.crRowSyncV1738=function(el){ try{ var tr=el&&el.closest&&el.closest('tr'), c=el&&el.dataset&&el.dataset.c; if(tr&&c!=null){
+   var g=tr.querySelector('select.gradeedit'); if(g){ var gv=gradeDisp(gradeRec(c).grade); if(GRADE_OPTS.indexOf(gv)<0)gv=''; if(g.dataset.lz)g.innerHTML='<option value="'+gv+'" selected>'+(gv||'-')+'</option>'; else g.value=gv; }
+   var k=tr.querySelector('select.catedit'); if(k){ var cur=(state.gradeOverride[c]&&state.gradeOverride[c].cat)||''; if(CR_CATS_V1738.indexOf(cur)<0)cur=''; var auto=catOf(c), col=GRADE_COL[auto]||{bg:'#eef2f8',tx:'#475569'}; k.style.background=col.bg; k.style.color=col.tx;
+     if(k.dataset.lz)k.innerHTML='<option value="'+cur+'" selected>'+(cur===''?'자동('+auto+')':cur)+'</option>'; else { var o0=k.querySelector('option[value=""]'); if(o0)o0.textContent='자동('+auto+')'; k.value=cur; } }
+   var p=tr.querySelector('input.payedit'); if(p&&document.activeElement!==p){ var pv=gradeRec(c).pay; p.value=(pv===''||pv==null)?'':String(pv); } } }catch(_e){} counts(); };
+})();
+</script>
 </html>
