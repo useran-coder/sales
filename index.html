@@ -13,10 +13,13 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1738';
+<script>window.APP_BUILD='v1739';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
-if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }</script>
+if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
+/* v1739 : 미수관리 전용 화면 — https://useran-coder.github.io/sales/ar.html (이 파일을 불러와 __AR_ONLY_V1739=1 로 엶) 또는 ?ar=1 */
+window.__AR_ONLY_V1739=!window.__PRICE_ONLY_V1468&&!!(window.__AR_ONLY_V1739||/[?&]ar=1(&|$)/.test(location.search));
+if(window.__AR_ONLY_V1739){ document.documentElement.classList.add('arOnlyV1739'); }</script>
 <script id="v767-idle-observers">
 /* v767 : 「매출 목표」처럼 화면이 큰 페이지를 처음 열 때, 화면이 그려진 직후
    여러 보조 스크립트(레이아웃 다듬기·문구 정리 등)가 한꺼번에 전체 DOM을 훑느라
@@ -17493,6 +17496,22 @@ function exportCSV(){
       catch(_e){ window.__GS_FAST_CHECK_V871=false; }
     },120);
   }
+})();
+</script>
+<script id="v1739-ar-light">
+/* v1739 : 미수관리 전용 화면(/sales/ar.html) — 미수와 관계없는 작업은 건너뛰어 빨리 열리게 함
+   - 처음 화면을 홈(매출·목표 카드·추이 차트) 대신 바로 미수관리 종합현황으로 그림
+   - 2026·2027 매출 목표 미리 계산(v1058)·월 재고현황 받기 안 함 (미수 자료 점검 v869 는 함)
+   - 대기화면 3단계(이 PC 자료 → 서버 설정·미수자료 → 최신 매출자료)
+   ※ 매출자료는 미수잔액(매출-수금)·신용등급별 매출 원본이라 계속 받음 */
+(function(){
+if(!window.__AR_ONLY_V1739)return;
+try{ if(!state.ar&&typeof arBase==='function')state.ar=arBase(); }catch(_e){}
+try{ if(state.act!=='ar'&&state.act!=='credit')state.act='ar'; }catch(_e){}
+try{ homeDashboard=function(){ try{ if(state.act!=='credit')state.act='ar'; if(typeof runAct==='function')runAct(); }catch(_e){} }; window.homeDashboard=homeDashboard; }catch(_e){}
+try{ var st=document.createElement('style'); st.id='v1739-ar-light-css';
+  st.textContent='html.arOnlyV1739 #sbV967 .sb-grp:not(#sbNoteV967),html.arOnlyV1739 #sbV967 .sb-gauge,html.arOnlyV1739 #sbV967 .sb-pct,html.arOnlyV1739 #sbV967 .sb-sep{display:none!important}';
+  document.head.appendChild(st); }catch(_e){}
 })();
 </script>
 <script id="v1471-price-light">
@@ -47205,6 +47224,7 @@ var PK=['pct','pctAt','override','overrideAt','addPct','addPctAt','prodOverride'
 var done=false, tries=0;
 function ready(){
   try{
+    if(window.__AR_ONLY_V1739)return false;   /* v1739 : 미수관리 전용 화면도 목표 미리 계산 안 함 */
     if(window.__PRICE_LIGHT_V1471)return false;   /* v1471 : 단가표 전용 화면은 목표 미리 계산 안 함 */
     if(window.__FC_BOOT_BLOCK_V860)return false;
     if(typeof CUR==='undefined'||!CUR.length)return false;
@@ -49122,7 +49142,7 @@ header #headerPeriodBtn{margin-left:auto!important}
 <script id="dbf-menu-v1" data-cur="sales" data-sel="body>header">
 /* 업무분석도구 공통 메뉴(왼쪽 위 삼선) — 홈페이지와 같은 바로가기, 흰 바탕용 */
 (function(){
-  var me=document.currentScript, CUR=window.__PRICE_ONLY_V1468?'price':((me&&me.getAttribute('data-cur'))||''), SEL=(me&&me.getAttribute('data-sel'))||'', PAD=(me&&me.getAttribute('data-pad'))||'';
+  var me=document.currentScript, CUR=window.__PRICE_ONLY_V1468?'price':(window.__AR_ONLY_V1739?'ar':((me&&me.getAttribute('data-cur'))||'')), SEL=(me&&me.getAttribute('data-sel'))||'', PAD=(me&&me.getAttribute('data-pad'))||'';
   var B='https://useran-coder.github.io/';
   var LINKS=[
     {k:'home',i:'🏠',n:'업무분석도구 홈',u:B+'bookmark/'},
@@ -49130,6 +49150,7 @@ header #headerPeriodBtn{margin-left:auto!important}
     {k:'sales',i:'📈',n:'매출 분석 도구',u:B+'sales/'},
     {k:'purchase',i:'📦',n:'매입 분석 도구',u:B+'purchase/'},
     {k:'price',i:'💲',n:'단가표 만들기',u:B+'price/'},
+    {k:'ar',i:'💰',n:'미수관리',u:B+'sales/ar.html'},
     {k:'material',i:'🧱',n:'원자재 사용현황',u:B+'material/'},
     {k:'cost',i:'🧮',n:'가공비 견적기',u:B+'cost/'},
     {k:'coil',i:'🌀',n:'코일 슬리팅 조합 · 발주기',u:B+'coil/'},
@@ -53249,6 +53270,163 @@ function install(){ var o=window.setPriceDrawerV1317; if(typeof o!=='function'||
 install(); setTimeout(install,0); setInterval(install,2500);
 })();
 </script>
+<style id="v1739-ar-only-css">
+/* v1739 : 미수관리 전용 화면 — 위 메뉴는 «💰 미수관리 ▾»와 «💳 신용등급별 매출»만 */
+html.arOnlyV1739 #topMenu>*:not(#arMenuGrp):not(#arCrBtnV1739):not(#arUpBtnV1739){display:none!important}
+html.arOnlyV1739 header #headerProductSearch,html.arOnlyV1739 header .hsel1193{display:none!important}
+html.arOnlyV1739 header .header-title h1{font-size:0!important}
+html.arOnlyV1739 header .header-title h1::after{content:'Receivables';font-size:20px}
+#arCrBtnV1739{background:#f1f5f9;color:#1e3a5f;border-color:#e2e8f0}
+#arCrBtnV1739.active{background:#1e3a5f;color:#fff;border-color:#1e3a5f}
+#arUpBtnV1739{background:#0f766e;color:#fff;border-color:#0f766e}
+#auOvV1739{position:fixed;inset:0;z-index:2147482500;background:rgba(15,23,42,.45);display:none;align-items:flex-start;justify-content:center;padding:70px 16px 16px;overflow:auto}
+#auOvV1739.on{display:flex}
+#auOvV1739 .box{background:#fff;border-radius:14px;width:min(720px,100%);box-shadow:0 20px 50px rgba(15,23,42,.35);padding:18px 20px 16px;font-size:13px;color:#0f172a}
+#auOvV1739 .hd{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+#auOvV1739 .hd b{font-size:16px}
+#auOvV1739 .hd .x{margin-left:auto;border:1px solid #e2e8f0;background:#fff;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:16px}
+#auOvV1739 .cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:640px){#auOvV1739 .cards{grid-template-columns:1fr}}
+#auOvV1739 .cd{border:2px dashed #cbd5e1;border-radius:12px;padding:14px;text-align:center;cursor:pointer;background:#f8fafc}
+#auOvV1739 .cd:hover,#auOvV1739 .cd.drag{border-color:#0f766e;background:#f0fdfa}
+#auOvV1739 .cd .t{font-size:14px;font-weight:800;margin-bottom:4px}
+#auOvV1739 .cd .s{font-size:11.5px;color:#64748b;line-height:1.5}
+#auOvV1739 .cd .pg{height:7px;background:#e2e8f0;border-radius:5px;overflow:hidden;margin-top:10px}
+#auOvV1739 .cd .pg i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0f766e,#14b8a6);transition:width .25s}
+#auOvV1739 .cd.err .pg i{background:#dc2626}
+#auOvV1739 .cd .pt{font-size:11.5px;margin-top:5px;color:#334155;min-height:16px;word-break:keep-all}
+#auOvV1739 .msg{margin-top:12px;padding:9px 11px;border-radius:9px;background:#f1f5f9;font-weight:700;min-height:18px}
+#auOvV1739 .res{margin-top:6px;font-size:12px;color:#334155}
+#auOvV1739 .sy{margin-top:10px;font-size:12px;color:#475569}
+#auOvV1739 table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
+#auOvV1739 th,#auOvV1739 td{border-bottom:1px solid #eef2f7;padding:5px 6px;text-align:left}
+#auOvV1739 th{color:#64748b;font-weight:700;background:#f8fafc}
+#auOvV1739 td.n{text-align:right;font-variant-numeric:tabular-nums}
+#aoBarV1739{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:2147482000;display:none;align-items:center;gap:10px;background:#1e3a5f;color:#fff;border-radius:999px;padding:7px 8px 7px 16px;box-shadow:0 8px 24px rgba(15,23,42,.3);font-size:13px;font-weight:700}
+#aoBarV1739 button{border:0;border-radius:999px;background:#fff;color:#1e3a5f;font-weight:800;font-size:12.5px;padding:6px 12px;cursor:pointer}
+</style>
+<script id="v1739-ar-only">
+/* v1739 : 미수관리 전용 화면 — 매출분석도구와 같은 파일·같은 로그인·같은 서버 동기화
+   (여기서 고친 수금·잔액·등급·집중관리업체는 매출분석도구 «미수관리»에도 그대로 반영)
+   - 위 메뉴 : 💰 미수관리 ▾ + 💳 신용등급별 매출(업체별) + 📤 미수자료 올리기(수금내역·연말미수잔액)
+   - 홈(로고) 누르면 미수 종합현황, 다른 화면으로 들어가면 위에 «💰 미수관리로» 띠
+   - 확인 주기 1초, 값이 바뀔 때만 화면에 씀(스타일 재계산 줄임) */
+(function(){
+if(!window.__AR_ONLY_V1739)return;
+var TITLE='미수관리';
+try{ var sb=document.querySelector('header .header-title .sub'); if(sb)sb.textContent='미수관리 · 방화문부자재본부'; document.title=TITLE; }catch(_e){}
+function goAr(tab){
+  try{ var b=document.querySelector('#arMenuDrop .tm-item[data-artab="'+(tab||(state.ar&&state.ar.tab)||'dash')+'"]'); if(b){ b.click(); return; } }catch(_e){}
+  try{ state.act='ar'; if(typeof runAct==='function')runAct(); }catch(_e){}
+}
+function goCredit(){
+  try{ state.credit=state.credit||{}; state.credit.by='cust'; state.credit.cat=null; }catch(_e){}
+  var b=document.querySelector('#topMenu .tm-item[data-act="credit"]');
+  if(b){ try{ b.click(); }catch(_e){} } else { try{ state.act='credit'; runAct(); }catch(_e){} }
+  try{ window.scrollTo({top:0}); }catch(_e){}
+}
+window.arOnlyGoV1739={ar:goAr,credit:goCredit};
+/* 신용등급별 매출 버튼 (미수관리 메뉴 오른쪽) */
+function addBtn(){
+  if(document.getElementById('arCrBtnV1739'))return true;
+  var g=document.getElementById('arMenuGrp'); if(!g)return false;
+  var b=document.createElement('button'); b.type='button'; b.className='tm-direct'; b.id='arCrBtnV1739'; b.textContent='💳 신용등급별 매출';
+  b.onclick=function(e){ e.stopPropagation(); document.querySelectorAll('.tm-top.open').forEach(function(x){ x.classList.remove('open'); if(x.nextElementSibling)x.nextElementSibling.classList.remove('open'); }); goCredit(); };
+  g.parentNode.insertBefore(b,g.nextSibling); return true;
+}
+/* 로고·🏠 → 미수 종합현황 */
+document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&&e.target.closest('#ciHomeV789,#ciHomeTitleV789'); if(!t)return; e.preventDefault(); e.stopImmediatePropagation(); goAr('dash'); },true);
+
+/* ── 미수자료 올리기 창 : 매출분석도구 파일·관리의 미수 올리기와 같은 흐름(arUploadV1537) 그대로 사용
+   → 올린 PC 반영 · 서버 전송 확인 · 다른 PC 자동 반영(1분) · 서버에 아직 없으면 자동 재전송까지 같음 ── */
+var ov=null, ovT=0, ovSig='';
+function won(n){ return Math.round(+n||0).toLocaleString('ko-KR'); }
+function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function doUp(files,kind){
+  if(typeof window.arUploadV1537!=='function'){ alert('미수 자료 준비 중 · 잠시 뒤 다시 올림'); return; }
+  files=Array.prototype.slice.call(files||[]); if(!files.length)return;
+  if(kind==='bal')files=files.slice(0,1);
+  try{ window.arUploadV1537(files,kind); }catch(e){ alert(String(e&&e.message||e)); }
+  paintOv();
+}
+function buildOv(){
+  if(ov)return ov;
+  ov=document.createElement('div'); ov.id='auOvV1739';
+  ov.innerHTML='<div class="box" role="dialog" aria-label="미수자료 올리기"><div class="hd"><b>📤 미수자료 올리기</b><span style="color:#64748b;font-size:12px">엑셀(xls·xlsx) · 끌어다 놓기 가능</span><button type="button" class="x" title="닫기">✕</button></div>'
+   +'<div class="cards"><div class="cd" data-k="rec"><div class="t">🧾 수금내역</div><div class="s">ERP 수금내역 파일 · 여러 개 한 번에 가능<br>같은 수금은 한 번만 반영(중복 안 됨)</div><div class="pg"><i></i></div><div class="pt"></div></div>'
+   +'<div class="cd" data-k="bal"><div class="t">📄 연말미수잔액</div><div class="s">연말 기준 업체별 미수잔액 파일 1개<br>연도는 파일 기준일·파일명으로 자동</div><div class="pg"><i></i></div><div class="pt"></div></div></div>'
+   +'<div class="msg"></div><div class="res"></div><div class="sy"></div>'
+   +'<table><thead><tr><th>최근 올린 파일</th><th>올린 사람</th><th>올린 시각</th><th style="text-align:right">건수</th></tr></thead><tbody></tbody></table>'
+   +'<input type="file" data-in="rec" accept=".xls,.xlsx,.xlsm,.csv" multiple hidden><input type="file" data-in="bal" accept=".xls,.xlsx,.xlsm,.csv" hidden></div>';
+  document.body.appendChild(ov);
+  ov.addEventListener('click',function(e){ if(e.target===ov||e.target.closest('.x'))closeOv(); });
+  ov.querySelectorAll('.cd').forEach(function(cd){
+    var k=cd.getAttribute('data-k'), inp=ov.querySelector('input[data-in="'+k+'"]');
+    cd.onclick=function(){ inp.click(); };
+    inp.onchange=function(){ var fs=Array.prototype.slice.call(inp.files||[]); inp.value=''; doUp(fs,k); };
+    cd.addEventListener('dragover',function(e){ e.preventDefault(); e.stopPropagation(); cd.classList.add('drag'); });
+    cd.addEventListener('dragleave',function(){ cd.classList.remove('drag'); });
+    cd.addEventListener('drop',function(e){ e.preventDefault(); e.stopPropagation(); cd.classList.remove('drag'); doUp(e.dataTransfer&&e.dataTransfer.files,k); });
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&ov.classList.contains('on'))closeOv(); });
+  return ov;
+}
+function openOv(){ buildOv(); ov.classList.add('on'); ovSig=''; paintOv(); clearInterval(ovT); ovT=setInterval(paintOv,300); }
+function closeOv(){ if(!ov)return; ov.classList.remove('on'); clearInterval(ovT); ovT=0; }
+function setTx(el,v){ if(el&&el.textContent!==v)el.textContent=v; }
+function paintOv(){
+  if(!ov||!ov.classList.contains('on'))return;
+  var S=(typeof window.arUpStateV1739==='function')?window.arUpStateV1739():null;
+  ['rec','bal'].forEach(function(k){
+    var cd=ov.querySelector('.cd[data-k="'+k+'"]'), o=S&&S.prog&&S.prog[k]||{p:0,t:'',s:''};
+    var w=Math.max(0,Math.min(100,+o.p||0)).toFixed(1)+'%', i=cd.querySelector('.pg i'); if(i.style.width!==w)i.style.width=w;
+    setTx(cd.querySelector('.pt'),o.t||'');
+    var er=o.s==='err'; if(cd.classList.contains('err')!==er)cd.classList.toggle('err',er);
+  });
+  var m=ov.querySelector('.msg'), M=S&&S.msg||{};
+  setTx(m,M.msg||(S&&S.busy?'처리 중…':'파일을 고르거나 끌어다 놓으면 바로 반영·서버 전송'));
+  var c=M.color||'#334155'; if(m.style.color!==c)m.style.color=c;
+  var r=ov.querySelector('.res'), h=M.html||''; if(r.__h!==h){ r.__h=h; r.innerHTML=h; }
+  /* 동기화 상태 · 파일 목록 (바뀔 때만 다시 씀) */
+  var a=(typeof state!=='undefined'&&state.ar)||{}, g=(typeof state!=='undefined'&&state.gsync)||{};
+  var pend=false; try{ pend=typeof window.arPendingV1537==='function'&&!!window.arPendingV1537(); }catch(_e){}
+  var sy=(g.url?('🔄 서버 동기화 켜짐 · 마지막 동기화 '+(g.lastSync?String(g.lastSync).replace('T',' ').slice(0,16):'-')):'⚠ 서버 동기화 설정 없음 · 이 PC에만 저장')+(pend?' · ⏳ 이 PC에서 올린 자료 서버 전송 대기(자동 재전송)':' · ✓ 서버와 같음')+' · 기준일 '+(a.asOf||'-')+' · 전체 수금 '+won((a.receipts||[]).length)+'건';
+  setTx(ov.querySelector('.sy'),sy);
+  var src=(a.sources||[]).slice().sort(function(p,q){ return (+q.at||0)-(+p.at||0); }).slice(0,8);
+  var sig=JSON.stringify(src.map(function(x){ return [x.name,x.by,x.at,x.rows]; }));
+  if(sig!==ovSig){ ovSig=sig;
+    ov.querySelector('tbody').innerHTML=src.length?src.map(function(x){ var d=x.at?new Date(+x.at):null, p=function(n){ return (n<10?'0':'')+n; };
+      return '<tr><td>'+esc(x.name)+'</td><td>'+esc(x.by||'-')+'</td><td>'+(d?(d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())):'기본 자료')+'</td><td class="n">'+won(x.rows)+'</td></tr>'; }).join(''):'<tr><td colspan="4" style="color:#94a3b8">올린 파일 없음</td></tr>'; }
+}
+window.arUpOpenV1739=openOv;
+function addUpBtn(){
+  if(document.getElementById('arUpBtnV1739'))return;
+  var cr=document.getElementById('arCrBtnV1739'); if(!cr)return;
+  var b=document.createElement('button'); b.type='button'; b.className='tm-direct'; b.id='arUpBtnV1739'; b.textContent='📤 미수자료 올리기';
+  b.onclick=function(e){ e.stopPropagation(); openOv(); };
+  cr.parentNode.insertBefore(b,cr.nextSibling);
+}
+var bar=null, barOn=null;
+function showBar(on){
+  if(on===barOn)return; barOn=on;
+  if(!bar){ bar=document.createElement('div'); bar.id='aoBarV1739'; bar.innerHTML='<span>다른 화면 보는 중</span><button type="button">💰 미수관리로</button>'; bar.querySelector('button').onclick=function(){ goAr(); }; document.body.appendChild(bar); }
+  bar.style.display=on?'flex':'none';
+}
+function ready(){ try{ return typeof state!=='undefined'&&!document.getElementById('auGate')&&!!document.getElementById('arMenuGrp'); }catch(_e){ return false; } }
+var crOn=null, gateDone=false;
+function tick(){
+  if(document.title!==TITLE)document.title=TITLE;
+  try{ var gh=document.getElementById('auGate'); if(gh&&!gh.__ao){ gh.__ao=1; var w=document.createTreeWalker(gh,NodeFilter.SHOW_TEXT),n; while((n=w.nextNode())){ if(/매출 분석 도구/.test(n.nodeValue)){ n.nodeValue=n.nodeValue.replace('매출 분석 도구','미수관리'); break; } } } }catch(_e){}
+  addBtn(); addUpBtn();
+  if(!ready())return;
+  var a=String(state.act||'');
+  if(!a||a==='home'){ goAr(); showBar(false); return; }
+  var c=(a==='credit'); if(c!==crOn){ crOn=c; var b=document.getElementById('arCrBtnV1739'); if(b)b.classList.toggle('active',c); }
+  showBar(a!=='ar'&&a!=='credit');
+}
+tick(); setInterval(tick,1000);
+})();
+</script>
 <style id="v1468-price-only-css">
 html.priceOnlyV1468 #topMenu,html.priceOnlyV1468 #headerPeriodBtn{display:none!important}
 /* v1469 : 단가표 전용 화면 — «제품 단가 ▾ + 검색칸»을 한 묶음으로 머리글 가운데에 고정 */
@@ -56421,8 +56599,8 @@ function paint(msg){
   if(n)n.innerHTML=Math.round(shown)+'<span>%</span>'; if(b)b.style.width=Math.round(shown)+'%';
   if(msg){ var m=g.querySelector('.rgMsg'); if(m.textContent!==msg)m.textContent=msg; }
   var cur=!st.local?1:(!st.sync?2:(!st.ds?3:4));
-  var PL=!!window.__PRICE_LIGHT_V1471;   /* v1471 : 단가표 전용 화면은 3단계 */
-  var html=[step(st.local,cur===1,'이 PC 자료 열기'),step(st.sync,cur===2,PL?'서버 설정·단가표 받기':'서버 설정·매출 목표 받기'),step(st.ds,cur===3,'최신 매출자료 확인·받기')].concat(PL?[]:[step(st.calc,cur===4,'매출 목표 계산')]).join('<br>');
+  var AL=!!window.__AR_ONLY_V1739, PL=!!window.__PRICE_LIGHT_V1471||AL;   /* v1471 : 단가표 전용 화면은 3단계 · v1739 미수관리 전용도 3단계 */
+  var html=[step(st.local,cur===1,'이 PC 자료 열기'),step(st.sync,cur===2,AL?'서버 설정·미수자료 받기':(PL?'서버 설정·단가표 받기':'서버 설정·매출 목표 받기')),step(st.ds,cur===3,'최신 매출자료 확인·받기')].concat(PL?[]:[step(st.calc,cur===4,'매출 목표 계산')]).join('<br>');
   var s=g.querySelector('.rgSteps'); if(s.__h!==html){ s.__h=html; s.innerHTML=html; }
 }
 /* ② ③ 처음 동기화(로그인 직후 자동 실행)를 끝까지 기다릴 수 있게 같은 순서로 다시 감쌉니다 */
@@ -56441,6 +56619,7 @@ if(typeof origInit==='function'){
       syncDone=Date.now();
       if(window.__PRICE_LIGHT_V1471)return;   /* v1471 : 단가표 전용 화면은 미수 점검·재고현황 받기 안 함 */
       try{ if(typeof window.fileConsistencyCheckV869==='function')await window.fileConsistencyCheckV869(); }catch(_e3){}
+      if(window.__AR_ONLY_V1739)return;   /* v1739 : 미수관리 전용 화면은 월 재고현황 받기 안 함(미수 자료 점검은 함) */
       try{ if(typeof window.mvSyncAutoV870==='function')await window.mvSyncAutoV870(); }catch(_e4){}
     },650);
   };
@@ -56507,12 +56686,12 @@ function tick(){
   if(window.__PRECALC_V1058)preSeen=true; else if(preSeen)preDone=true;
   if(syncDone&&!preSeen&&Date.now()-syncDone>20000)preDone=true;  /* 미리 계산이 이미 끝났거나 없는 경우 */
   if(busyNow())quietSince=0; else if(!quietSince)quietSince=Date.now();
-  if(window.__PRICE_LIGHT_V1471&&st.local&&st.ds)st.calc=true; else   /* v1471 : 단가표 전용 화면은 목표 계산을 기다리지 않음 */
+  if((window.__PRICE_LIGHT_V1471||window.__AR_ONLY_V1739)&&st.local&&st.ds)st.calc=true; else   /* v1739 */   /* v1471 : 단가표 전용 화면은 목표 계산을 기다리지 않음 */
   st.calc=!!(syncDone&&st.local&&(((preDone||(!preSeen&&Date.now()-syncDone>1500))&&quietSince&&Date.now()-quietSince>800)||Date.now()-syncDone>12000));   /* v1178 : 4초→1.5초, 미리계산이 늘어져도 12초면 엶 */
   target=8+(st.local?22:0)+(st.sync?25:0)+(st.ds?25:0)+(st.calc?20:0);
   var gap=target-shown; if(gap>0)shown+=Math.max(0.4,gap*0.12); else if(shown<target+6&&shown<97)shown+=0.08;
   if(shown>99)shown=99;
-  var msg=!st.local?'이 PC에 저장된 자료를 여는 중입니다':(!st.sync?(window.__PRICE_LIGHT_V1471?'서버에서 설정·단가표를 받는 중입니다':'서버에서 설정·매출 목표를 받는 중입니다'):(!st.ds?'최신 매출자료를 확인·받는 중입니다':(!st.calc?'매출 목표를 계산하는 중입니다':'준비 완료')));
+  var msg=!st.local?'이 PC에 저장된 자료를 여는 중입니다':(!st.sync?(window.__AR_ONLY_V1739?'서버에서 설정·미수자료를 받는 중입니다':(window.__PRICE_LIGHT_V1471?'서버에서 설정·단가표를 받는 중입니다':'서버에서 설정·매출 목표를 받는 중입니다')):(!st.ds?'최신 매출자료를 확인·받는 중입니다':(!st.calc?'매출 목표를 계산하는 중입니다':'준비 완료')));
   try{ var dsS=$('dsStatus'), t=dsS&&String(dsS.textContent||'').trim(); if(st.sync&&!st.ds&&t&&/받는 중/.test(t))msg=t.split('\n')[0]; }catch(_m){}
   paint(msg);
   /* v1130 : 바뀐 자료가 없으면 바로 */
@@ -62801,6 +62980,7 @@ async function upload(files,kind){
   }finally{ busy=false; repaint(); }
 }
 window.arUploadV1537=upload;
+window.arUpStateV1739=function(){ return {busy:busy,msg:MSG,prog:PROG}; };   /* v1739 : 미수관리 전용 화면 올리기 창이 진행 상태를 읽음 */
 
 /* 모든 올리기 경로(③단계 버튼·파일관리 버튼·예전 버튼)가 이 흐름을 쓰게 함 */
 function wrapImp(name,kind){
