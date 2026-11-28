@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1750';
+<script>window.APP_BUILD='v1752';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -20297,7 +20297,7 @@ function arPage(){
  var root=document.getElementById('result');if(!root)return;document.getElementById('summary').style.display='none';var st=document.getElementById('sumTop');if(st)st.style.display='none';var sp=document.getElementById('setPanel');if(sp)sp.style.display='none';var mf=document.getElementById('mgrFilterBar');if(mf)mf.style.display='none';root.innerHTML='<div class="ar-loading">미수관리 자료를 분석하는 중입니다…</div>';Promise.resolve(arReady).then(function(){state.ar.hideEstimate=false;arRender();});
 }
 function arTabs(){var focusCount=Object.keys(state.ar.focusCustomers||{}).filter(function(c){return state.ar.focusCustomers[c]&&!(state.ar.excludedCustomers||{})[c]}).length,planCount=Object.keys(state.ar.collectionPlans||{}).filter(function(c){return state.ar.collectionPlans[c]&&!(state.ar.excludedCustomers||{})[c]}).length,excludeCount=Object.keys(state.ar.excludedCustomers||{}).filter(function(c){return state.ar.excludedCustomers[c]}).length;return'<div class="ar-tabs">'+AR_TABS.map(function(t){var label=t[1]+(t[0]==='focus'?' ('+focusCount+')':t[0]==='plan'&&planCount?' ('+planCount+')':t[0]==='exclude'&&excludeCount?' ('+excludeCount+')':'');return'<button class="ar-tab '+(state.ar.tab===t[0]?'on':'')+'" data-ar-tab="'+t[0]+'">'+label+'</button>';}).join('')+'</div>';}
-function arYearsHtml(){var ys=arYears();if(ys.indexOf(state.ar.viewYear)<0)ys.unshift(state.ar.viewYear);return'<select id="arYearSel">'+ys.map(function(y){return'<option value="'+y+'" '+(+state.ar.viewYear===+y?'selected':'')+'>'+y+'년</option>';}).join('')+'</select>';}
+function arYearsHtml(){var ys=arYears();if(ys.indexOf(state.ar.viewYear)<0)ys.unshift(state.ar.viewYear);var nyV1751=new Date().getFullYear()+1;if(ys.indexOf(nyV1751)<0&&ys.indexOf(String(nyV1751))<0)ys.unshift(nyV1751);ys.sort(function(a,b){return b-a});/* v1751 : 다음 해(2027년)도 고를 수 있게 */return'<select id="arYearSel">'+ys.map(function(y){return'<option value="'+y+'" '+(+state.ar.viewYear===+y?'selected':'')+'>'+y+'년</option>';}).join('')+'</select>';}
 function arHeader(model){var recs=state.ar.receipts,src=state.ar.sources.map(function(s){return s.name}).join(', ')||state.ar.sourceLabel;return'<div class="ar-head"><div><div class="ar-title">💰 미수관리</div><div class="ar-meta">기준일 '+esc(state.ar.asOf||arLatestDate())+' · 수금자료 '+arMoney(recs.length)+'건 · '+esc(src)+' · 업데이트 '+esc(state.ar.updatedAt||'-')+'</div></div><div class="ar-actions"><button class="ar-btn blue" id="arImportReceipt">🔄 수금내역 업로드</button><button class="ar-btn blue" id="arImportBalance">⬆ 연말미수잔액 업로드</button><button class="ar-btn green" id="arTemplate">📄 잔액양식</button><button class="ar-btn green" id="arExport">📥 엑셀 내보내기</button></div></div><input type="file" id="arReceiptInput" accept=".xls,.xlsx" multiple hidden><input type="file" id="arBalanceInput" accept=".xls,.xlsx" hidden>'+(CUR&&CUR.length?'':'<div class="ar-no-sales"><b>매출자료가 아직 없습니다.</b> 수금·어음 분석은 가능하지만 미수잔액·장기미수·월매출 대비 분석은 매출리스트를 먼저 불러오거나 실제 미수잔액을 등록해야 합니다.</div>')+arTabs();}
 function arHideEst(o){return !state.ar.hideEstimate||o.balanceMode==='실제입력';}
 function arHideEstToggleHtml(){var actual=!!state.ar.hideEstimate;return'<span class="ar-estimate-toggle" role="group" aria-label="미수금 표시 기준"><button class="ar-btn'+(!actual?' blue':'')+'" '+(actual?'id="arHideEstBtn" ':'')+'type="button" title="매출-수금으로 계산한 추정미수를 포함해 표시합니다">추정미수</button><button class="ar-btn'+(actual?' blue':'')+'" '+(!actual?'id="arHideEstBtn" ':'')+'type="button" title="실제 미수잔액을 등록한 업체만 표시합니다">실제 등록</button></span>';}
@@ -53464,6 +53464,7 @@ html.arOnlyV1739 header #hdrUserBox{margin-left:auto!important}
 .arHsV1741>input{height:34px;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:0 10px;font:inherit;font-size:13px;color:#0f172a;background:#fff}
 .arHsV1741>input:focus{outline:none;border-color:#1e3a5f;box-shadow:0 0 0 2px rgba(30,58,95,.15)}
 .arHsV1741.on>input{border-color:#1d4ed8;background:#eff6ff;font-weight:700}
+.arHsV1741.need>input{border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.2)}
 .arHsV1741>input::-webkit-search-cancel-button{display:none}
 .arHsV1741 .x{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#64748b;font-size:14px;cursor:pointer;display:none}
 .arHsV1741.on .x{display:block}
@@ -53487,6 +53488,15 @@ function names(){
 function cur(){ try{ return String((state.ar&&state.ar.search)||'').trim(); }catch(_e){ return ''; } }
 function apply(v){
   v=String(v||'').trim();
+  /* v1752 : 업체별 상세·수금계획 탭 = 업체 고르기 (매출분석의 탭 안 검색칸 역할 · 원인: v1741 에서 그 칸을 숨겨 업체를 고를 곳이 없었음) */
+  var tb=state.ar&&state.ar.tab;
+  if(tb==='detail'||tb==='plan'){
+    if(!v){ try{ if(tb==='detail')state.ar.selectedCust=''; else state.ar.planCust=''; state.ar.search=''; if(typeof arSave==='function')arSave(); state.act='ar'; window.runAct(); }catch(_e){} return; }
+    try{ var cat=(arModel(state.ar.viewYear).customers)||[], nz=function(x){ return String(x||'').replace(/\(주\)|주식회사|㈜|\(유\)|유한회사|\s/g,'').toLowerCase(); }, qv=nz(v);
+      var ex=cat.find(function(o){ return o.cust===v; })||cat.find(function(o){ return nz(o.cust)===qv; })||cat.filter(function(o){ return nz(o.cust).indexOf(qv)>=0; }).sort(function(a,b){ return (+b.balance||0)-(+a.balance||0); })[0];
+      if(ex){ state.ar.selectedCust=ex.cust; state.ar.detailSearchV1199=ex.cust; state.ar.search=''; if(tb==='plan')state.ar.planCust=ex.cust; if(typeof arSave==='function')arSave(); state.act='ar'; window.runAct(); return; }
+      alert('«'+v+'» 업체 없음 (이 분석연도 미수 자료 기준)'); return; }catch(_e){}
+  }
   try{ state.ar.search=v; state.ar.card=''; var c=state.ar.calV1725||(state.ar.calV1725={}); c.q=v; if(typeof arSave==='function')arSave(); }catch(_e){}
   try{ state.act='ar'; window.runAct(); }catch(_e){}
 }
@@ -53495,9 +53505,12 @@ function put(){
   var head=document.querySelector('#result .ar-head'); if(!head||head.querySelector('.arHsV1741'))return;
   var ttl=head.querySelector('.ar-title'); if(!ttl)return;
   var row=document.createElement('div'); row.className='arTtlRowV1741'; ttl.parentNode.insertBefore(row,ttl); row.appendChild(ttl);
-  var v=cur(), box=document.createElement('span'); box.className='ar-searchbox arHsV1741'+(v?' on':'');
+  var tb2=state.ar&&state.ar.tab, v=(tb2==='detail'?String(state.ar.selectedCust||''):tb2==='plan'?String(state.ar.planCust||''):'')||cur(), box=document.createElement('span'); box.className='ar-searchbox arHsV1741'+(v?' on':'');
   box.innerHTML='<input id="arHsV1741" type="search" autocomplete="off" placeholder="업체명 검색" value="'+esc(v)+'"><button type="button" class="x" title="검색 지우기">✕</button><span class="ar-suggest" id="arHsListV1741"></span>';
   row.appendChild(box);
+  /* v1752 : 업체별 상세인데 고른 업체 없음 → 검색칸 안내·포커스 */
+  try{ if(tb2==='detail'&&!state.ar.selectedCust){ var ip0=box.querySelector('input'); ip0.placeholder='업체명 입력 → 업체별 상세'; box.classList.add('need'); setTimeout(function(){ try{ ip0.focus(); }catch(_e){} },50);
+    var em=document.querySelector('#result .ar-empty'); if(em&&/검색창에서 분석할 업체/.test(em.textContent))em.textContent='제목 옆 «업체명 검색» 칸에서 업체를 고르면 상세가 나옴'; } }catch(_e){}
   /* v1746 : 기준일·수금자료·동기화 줄 = 업체검색 오른쪽 */
   var mt=head.querySelector('.ar-meta'); if(mt){ mt.classList.add('arMetaV1746'); row.appendChild(mt); }
   var inp=box.querySelector('input'), list=box.querySelector('.ar-suggest'), ai=-1;
