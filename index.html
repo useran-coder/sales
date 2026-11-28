@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1761';
+<script>window.APP_BUILD='v1762';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -63851,6 +63851,24 @@ watch(); window.addEventListener('resize',function(){ requestAnimationFrame(fit)
 /* v1742 : 신용등급별 매출 표 글자 13px — 배지(고객관리·업체구분·신용상태 등 색 칩)는 그대로 12px */
 html #result.crV1738 table#tbl tbody td,html #result.crV1738 table#tbl tfoot td,html #result.crV1738 table#tbl tbody td>b,html #result.crV1738 table#tbl tfoot td>b,html #result.crV1738 table#tbl tbody td>input.payedit,html #result.crV1738 table#tbl tbody td>select.gradeedit,html #result.crV1738 table#tbl tbody td>.sub2{font-size:13px!important}
 </style>
+<style id="v1762-cal-tg-hide-css">
+/* v1762 : 달력 종류 버튼 숨김 · 미수 전용 화면은 남는 것이 없어 .top 줄 전체 숨김 */
+.arCalV1725>.top>.tg{display:none!important}
+html.arOnlyV1739 .arCalV1725>.top{display:none!important}
+</style>
+<script id="v1762-cal-tg-hide">
+/* v1762 : 종류 버튼이 없어졌으므로 카드로 고른 종류(c.fk)가 없을 때 꺼진 종류가 남아 있으면 모두 켬 (한 번만 다시 그림) */
+(function(){
+function fix(){
+  try{ if(!document.querySelector('#result .arCalV1725'))return; var c=state.ar&&state.ar.calV1725; if(!c||c.fk||!c.types)return;
+    var ks=['dep','exp','rcv','due']; if(ks.every(function(k){ return c.types[k]; }))return;
+    ks.forEach(function(k){ c.types[k]=1; }); if(typeof arSave==='function')arSave(); window.runAct(); }catch(_e){}
+}
+function watch(){ var r=document.getElementById('result'); if(!r){ setTimeout(watch,500); return; }
+  new MutationObserver(fix).observe(r,{childList:true,subtree:true}); fix(); }
+watch();
+})();
+</script>
 <style id="v1761-cal-nav-row-css">
 /* v1761 : 달력 기간 이동(연·월·주·일 · ‹ 기간 › · 기준일) = 카드 줄 왼쪽, 카드 4개 = 남는 폭 4등분 */
 .arCalV1725 .kpRowV1761{display:flex;align-items:stretch;gap:10px;margin-bottom:10px}
