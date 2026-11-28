@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1758';
+<script>window.APP_BUILD='v1759';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -8577,7 +8577,7 @@ function custDrillView(label, src, backFn, act, extra2){
   const noteEx=(act==='cls')?' <b>업체분류</b> 칸에서 바로 수정·저장됩니다.':(act==='credit'||act==='region')?' <b>신용등급</b> 칸에서 바로 수정·저장됩니다.':'';
   render(`${label} ▸ 거래처별 매출`, `${monOn?yr+'년 · ':''}거래처 ${won(custN)}개 · 합계 ${won(tot)}원`, arr, cols, monOn?'yrTot':'amt',
     `<b>거래처 행을 클릭</b>하면 그 거래처의 제품·규격 매출이 나옵니다.`+noteEx,
-    {back:{label:extra2.backLabel||'← 목록으로',fn:backFn}, tableClass:extra2.mixSalesPage?`mix-sales-table${monOn?' mix-sales-month-table rank-month-fit':''}`:'', total:{label:'합 계',amt:tot,col:monOn?'yrTot':'amt',cells:monOn?(monthlyTotalCells||{}):{cnt:'',qty:''}}, controlsHtml:(extra2.topHtml?(typeof extra2.topHtml==='function'?extra2.topHtml():extra2.topHtml):'')+monthlyCtrl+(extra2.controlsHtml||''), onMount, afterDraw:bindEdits,
+    {back:{label:extra2.backLabel||'← 목록으로',fn:backFn}, searchPlaceholder:extra2.searchPlaceholder||(act==='credit'?'업체명':undefined) /* v1759 */, tableClass:extra2.mixSalesPage?`mix-sales-table${monOn?' mix-sales-month-table rank-month-fit':''}`:'', total:{label:'합 계',amt:tot,col:monOn?'yrTot':'amt',cells:monOn?(monthlyTotalCells||{}):{cnt:'',qty:''}}, controlsHtml:(extra2.topHtml?(typeof extra2.topHtml==='function'?extra2.topHtml():extra2.topHtml):'')+monthlyCtrl+(extra2.controlsHtml||''), onMount, afterDraw:bindEdits,
      drill:{custom:row=>(extra2&&extra2.rowDrill)?extra2.rowDrill(row, ()=>custDrillView(label,src,backFn,act,extra2)):custProdDrill(row.label, src.filter(r=>r.cust===row.key), ()=>custDrillView(label,src,backFn,act,extra2))}});
 }
 /* v815.7 : 메인 제품구분 매출 비중 → 업체별 → 업체 선택 화면에도
