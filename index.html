@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1726';
+<script>window.APP_BUILD='v1727';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }</script>
@@ -22308,7 +22308,7 @@ window.arDetailHtmlV1231=function(cust){
         }
         main+='</div>';
       } else {
-        main='<div class="dv">'+listBlock(dayOf(E,sel,c))+'</div>';
+        main=dayViewV1727(E,c,sel,model);
       }
       /* 오른쪽 : 고른 날 상세 + 기준일 뒤 30일 어음만기·입금예정 */
       var sd=pd(sel), side='';
@@ -22375,6 +22375,33 @@ window.arDetailHtmlV1231=function(cust){
       var h2='<div class="cc"><div class="ct"><b>월별 · '+(mons[0].m+1)+'월부터 앞으로</b><span>입금예정 = 월말 마감 + 결제일 · 어음만기 = 받은 어음 만기일</span></div><div class="lg">'+ser.map(function(t){ return '<span><i style="background:'+COL[t]+'"></i>'+NM[t]+'</span>'; }).join('')+'</div><div class="cvw m">'+g2+'</div>'+tb+'</div>';
       return '<div class="chs">'+h1+h2+'</div>';
     }
+    /* v1727 : 일 보기 — 주간 띠 + 실적(입금·어음수취) / 예정(입금예정·어음만기) 두 칸 표, 업체 미수·결제일, 입금예정의 실제 입금 확인 */
+    function dayViewV1727(E,c,sel,model){
+      var x=dayOf(E,sel,c), A=asOf(), cm=new Map(); (model.customers||[]).forEach(function(o){ cm.set(o.cust,o); });
+      var sd=pd(sel), w0=new Date(sd); w0.setDate(w0.getDate()-w0.getDay());
+      var strip='<div class="dws">';
+      for(var i=0;i<7;i++){ var d=new Date(w0); d.setDate(d.getDate()+i); var k=ds(d), y=dayOf(E,k,c), act=sum(y.dep)+sum(y.rcv), pl=sum(y.exp)+sum(y.due);
+        strip+='<button type="button" class="dw'+(k===sel?' on':'')+(k===A?' ao':'')+(i===0?' sun':i===6?' sat':'')+'" data-cal-go="'+k+'"><span class="w">'+DOW[i]+'</span><b>'+(d.getMonth()+1)+'/'+d.getDate()+'</b>'+(act?'<em class="a">실적 '+M(act)+'</em>':'')+(pl?'<em class="p">예정 '+M(pl)+'</em>':'')+(!act&&!pl?'<em class="z">-</em>':'')+'</button>'; }
+      strip+='</div>';
+      function info(cn){ var o=cm.get(cn); if(!o)return ''; return '<span class="ci">미수 '+M(o.balance)+(o.payDays>0?' · 결제 '+o.payDays+'일':' · 결제일 없음')+'</span>'; }
+      function dd(a,b){ return Math.round((pd(a)-pd(b))/864e5); }
+      function bar(v,t){ return '<span class="br"><span style="width:'+(t>0?Math.max(2,Math.round(v/t*100)):0)+'%"></span></span>'; }
+      function sec(k,title,head,rowsFn){
+        var l=x[k]; if(!c.types[k])return ''; var t=sum(l), tt=TY.find(function(q){ return q[0]===k; });
+        return '<div class="ds '+k+'"><div class="dh"><i></i><b>'+tt[1]+'</b><span>'+l.length+'건</span><strong>'+W(t)+'원</strong></div>'
+          +(l.length?'<table class="dt"><thead><tr>'+head.map(function(h){ return '<th>'+h+'</th>'; }).join('')+'</tr></thead><tbody>'+l.map(function(it){ return rowsFn(it,t); }).join('')+'</tbody></table>':'<div class="none">'+title+' 없음</div>')+'</div>'; }
+      var nm=function(it){ return '<td class="cn" data-cal-cust="'+X(it.c)+'"><b>'+X(it.c)+'</b>'+info(it.c)+'</td>'; };
+      /* 입금예정 확인 : 그 업체의 예정일 앞뒤 7일 입금(어음 포함) */
+      function paid(cn,day){ var s=0; for(var j=-7;j<=7;j++){ var d=pd(day); d.setDate(d.getDate()+j); var e=E[ds(d)]; if(!e)continue; e.dep.concat(e.rcv).forEach(function(it){ if(it.c===cn)s+=it.a; }); } return s; }
+      var L1=sec('dep','입금',['업체','방법','금액',''],function(it,t){ return '<tr>'+nm(it)+'<td class="mu">'+X(it.m||'-')+'</td><td class="am">'+W(it.a)+'</td><td class="bc">'+bar(it.a,t)+'</td></tr>'; })
+        +sec('rcv','어음수취',['업체','만기일','은행','금액'],function(it){ var n=it.due?dd(it.due,sel):null; return '<tr>'+nm(it)+'<td>'+(it.due?X(it.due)+' <span class="dday">'+(n>0?n+'일 뒤':n===0?'당일':'지남')+'</span>':'<span class="mu">미입력</span>')+'</td><td class="mu">'+X(it.bank||'-')+'</td><td class="am">'+W(it.a)+'</td></tr>'; });
+      var L2=sec('exp','입금예정',['업체','근거','금액','입금 확인 (±7일)'],function(it){ var p=paid(it.c,sel), r=it.a?p/it.a:0, past=sel<=A;
+          var chk=p>0&&r>=0.95?'<span class="ok">✓ '+W(p)+'</span>':p>0?'<span class="pt">일부 '+W(p)+' ('+Math.round(r*100)+'%)</span>':past?'<span class="no">미입금</span>':'<span class="mu">예정</span>';
+          return '<tr>'+nm(it)+'<td class="mu">'+X(it.sm)+' 매출 · 월말+'+it.pd+'일</td><td class="am">'+W(it.a)+'</td><td>'+chk+'</td></tr>'; })
+        +sec('due','어음만기',['업체','수취일','은행','금액'],function(it){ return '<tr>'+nm(it)+'<td>'+X(it.rd||'-')+(sel<A?' <span class="dday">만기 지남</span>':'')+'</td><td class="mu">'+X(it.bank||'-')+'</td><td class="am">'+W(it.a)+'</td></tr>'; });
+      var act=sum(x.dep)+sum(x.rcv), pl=sum(x.exp)+sum(x.due);
+      return '<div class="dv2">'+strip+'<div class="dcol"><div class="dc"><div class="dct">실적 <b>'+W(act)+'원</b><span>입금 + 어음수취</span></div>'+(L1||'<div class="none">표시할 종류 없음</div>')+'</div><div class="dc"><div class="dct">예정 <b>'+W(pl)+'원</b><span>입금예정 + 어음만기</span></div>'+(L2||'<div class="none">표시할 종류 없음</div>')+'</div></div><div class="nt">업체명을 누르면 업체별 상세로 이동</div></div>';
+    }
     var lastModel=null;
     function redraw(){ var el=document.getElementById('arCalV1725'); if(!el||!lastModel)return; var f=document.activeElement&&document.activeElement.id==='arCalQV1725', pos=f?document.activeElement.selectionStart:0;
       var tmp=document.createElement('div'); tmp.innerHTML=html(lastModel); el.replaceWith(tmp.firstChild);
@@ -22383,6 +22410,7 @@ window.arDetailHtmlV1231=function(cust){
     arContent=function(model){ if(state.ar.tab==='cal'){ lastModel=model; try{ return html(model); }catch(_e){ try{ console.warn('v1725',_e); }catch(_c){} return '<div class="ar-empty">달력을 그리지 못함</div>'; } } return baseC.apply(this,arguments); };
     document.addEventListener('click',function(e){
       var t=e.target; if(!t||!t.closest||!t.closest('#arCalV1725'))return; var c=st(), b;
+      if((b=t.closest('[data-cal-cust]'))){ state.ar.selectedCust=b.getAttribute('data-cal-cust'); state.ar.tab='detail'; try{ arRender(); window.scrollTo(0,0); }catch(_e){} return; }
       if((b=t.closest('[data-cal-mode]'))){ c.mode=b.getAttribute('data-cal-mode'); return redraw(); }
       if((b=t.closest('[data-cal-nav]'))){ var n=+b.getAttribute('data-cal-nav'), s=pd(c.sel||asOf());
         if(c.mode==='month'){ var dd=s.getDate(); s=new Date(s.getFullYear(),s.getMonth()+n,1); s.setDate(Math.min(dd,new Date(s.getFullYear(),s.getMonth()+1,0).getDate())); }
@@ -63371,5 +63399,44 @@ svg.ar-svg[data-focus="exp"] .s-exp text{paint-order:stroke;stroke:#fff;stroke-w
 .arCalV1725 .mt tfoot td{border-top:2px solid #e2e8f0;font-weight:800;background:#fcfcfd}
 @media (max-width:1250px){.arCalV1725 .chs{grid-template-columns:1fr}}
 @media (max-width:760px){.arCalV1725 .ms{grid-template-columns:repeat(2,1fr)}.arCalV1725 .mt{font-size:11px}}
+</style>
+<style id="v1727-ar-cal-day-css">
+.arCalV1725 .dv2{display:flex;flex-direction:column;gap:10px}
+.arCalV1725 .dws{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.arCalV1725 .dw{border:1px solid var(--ln);background:#fff;border-radius:10px;padding:6px 8px;text-align:left;font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:1px;min-width:0}
+.arCalV1725 .dw .w{font-size:11px;color:var(--mu);font-weight:700}.arCalV1725 .dw.sun .w{color:#dc2626}.arCalV1725 .dw.sat .w{color:#2563eb}
+.arCalV1725 .dw b{font-size:14px}
+.arCalV1725 .dw em{font-style:normal;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arCalV1725 .dw em.a{color:#15803d}.arCalV1725 .dw em.p{color:#0e7490}.arCalV1725 .dw em.z{color:#cbd5e1}
+.arCalV1725 .dw:hover{background:#f8fafc}
+.arCalV1725 .dw.on{border-color:#3b82f6;box-shadow:0 0 0 2px #bfdbfe;background:#eff6ff}
+.arCalV1725 .dw.ao b::after{content:'오늘';font-size:10px;font-weight:700;color:#fff;background:#0f172a;border-radius:7px;padding:0 5px;margin-left:5px;vertical-align:2px}
+.arCalV1725 .dcol{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.arCalV1725 .dc{border:1px solid var(--ln);border-radius:12px;background:#fff;padding:10px 12px;min-width:0}
+.arCalV1725 .dct{display:flex;align-items:baseline;gap:8px;font-size:14px;font-weight:800;padding-bottom:6px;border-bottom:2px solid #0f172a;margin-bottom:6px}
+.arCalV1725 .dct b{font-size:15px}.arCalV1725 .dct span{font-size:11.5px;color:var(--mu);font-weight:500;margin-left:auto}
+.arCalV1725 .ds+.ds{margin-top:12px}
+.arCalV1725 .dh{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;font-size:12.5px}
+.arCalV1725 .ds.dep .dh{background:#f0fdf4}.arCalV1725 .ds.exp .dh{background:#ecfeff}.arCalV1725 .ds.rcv .dh{background:#fff7ed}.arCalV1725 .ds.due .dh{background:#fefce8}
+.arCalV1725 .dh span{color:var(--mu)}.arCalV1725 .dh strong{margin-left:auto;font-size:13.5px}
+.arCalV1725 .dt{width:100%;border-collapse:collapse;font-size:12px;margin-top:2px}
+.arCalV1725 .dt th{text-align:left;color:#94a3b8;font-weight:600;font-size:11px;padding:5px 6px;border-bottom:1px solid #eef1f5;white-space:nowrap}
+.arCalV1725 .dt td{padding:6px;border-bottom:1px solid #f4f6f9;vertical-align:middle}
+.arCalV1725 .dt tr:hover td{background:#fafbfc}
+.arCalV1725 .dt td,.arCalV1725 .dt th{text-align:left}
+.arCalV1725 .dt td.cn{cursor:pointer;min-width:0;text-align:left}
+.arCalV1725 .dt td.cn b{display:block;font-weight:700}
+.arCalV1725 .dt td.cn:hover b{color:#2563eb;text-decoration:underline}
+.arCalV1725 .dt .ci{display:block;font-size:10.5px;color:#94a3b8}
+.arCalV1725 .dt td.am{text-align:right;font-weight:800;white-space:nowrap}
+.arCalV1725 .dt th:nth-child(3){text-align:right}
+.arCalV1725 .ds.rcv .dt th:nth-child(3),.arCalV1725 .ds.due .dt th:nth-child(3){text-align:left}
+.arCalV1725 .ds.rcv .dt th:nth-child(4),.arCalV1725 .ds.due .dt th:nth-child(4){text-align:right}
+.arCalV1725 .dt .mu{color:var(--mu);font-size:11.5px}
+.arCalV1725 .dt td.bc{width:70px}
+.arCalV1725 .br{display:block;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden}.arCalV1725 .br span{display:block;height:100%;background:#22c55e;border-radius:3px}
+.arCalV1725 .dday{font-size:10.5px;color:#a16207;background:#fefce8;border-radius:6px;padding:0 5px;margin-left:3px}
+.arCalV1725 .ok{color:#15803d;font-weight:700}.arCalV1725 .pt{color:#b45309;font-weight:700}.arCalV1725 .no{color:#dc2626;font-weight:700}
+@media (max-width:1000px){.arCalV1725 .dcol{grid-template-columns:1fr}.arCalV1725 .dws{grid-template-columns:repeat(4,1fr)}}
 </style>
 </html>
