@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1745';
+<script>window.APP_BUILD='v1746';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -53436,6 +53436,9 @@ html.arOnlyV1739:not(.arCrV1741) #headerPeriodBtn,html.arOnlyV1739 #deskBtnV1302
 /* 📤 미수자료 올리기 = 메뉴 줄 맨 오른쪽 */
 html.arOnlyV1739 #topMenu{display:flex;flex-wrap:wrap;align-items:center}
 html.arOnlyV1739 #arUpBtnV1739{margin-left:auto!important}
+/* v1746 : 화면 안 탭 줄의 달력보기·차트 숨김(위 메뉴 버튼으로) · 기준일 줄은 업체검색 오른쪽 */
+html.arOnlyV1739 #result .ar-tabs .ar-tab[data-ar-tab="cal"],html.arOnlyV1739 #result .ar-tabs .ar-tab[data-ar-tab="gantt"]{display:none!important}
+.arTtlRowV1741 .ar-meta.arMetaV1746{margin-top:0;display:flex;align-items:center;flex-wrap:wrap;gap:4px}
 /* v1742 : 👤 이름·로그아웃 = 머리줄 맨 오른쪽 */
 html.arOnlyV1739 header #hdrUserBox{margin-left:auto!important}
 /* 제목 옆 업체검색 (종합현황 검색과 같은 자동완성 목록) · 탭 안 검색칸은 숨김 */
@@ -53478,6 +53481,8 @@ function put(){
   var v=cur(), box=document.createElement('span'); box.className='ar-searchbox arHsV1741'+(v?' on':'');
   box.innerHTML='<input id="arHsV1741" type="search" autocomplete="off" placeholder="업체명 검색" value="'+esc(v)+'"><button type="button" class="x" title="검색 지우기">✕</button><span class="ar-suggest" id="arHsListV1741"></span>';
   row.appendChild(box);
+  /* v1746 : 기준일·수금자료·동기화 줄 = 업체검색 오른쪽 */
+  var mt=head.querySelector('.ar-meta'); if(mt){ mt.classList.add('arMetaV1746'); row.appendChild(mt); }
   var inp=box.querySelector('input'), list=box.querySelector('.ar-suggest'), ai=-1;
   function fill(){ var q=(inp.value||'').trim().toLowerCase(), a=names().filter(function(n){ return !q||n.toLowerCase().indexOf(q)>=0; }).slice(0,80); ai=-1;
     list.innerHTML=a.map(function(n){ return '<button type="button" data-hs="'+esc(n)+'">'+esc(n)+'</button>'; }).join('')||'<span style="display:block;padding:8px;color:#94a3b8;font-size:12px">일치하는 업체 없음</span>';
