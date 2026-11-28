@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1755';
+<script>window.APP_BUILD='v1756';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -22314,7 +22314,7 @@ window.arDetailHtmlV1231=function(cust){
       return '<div class="it '+k+'" data-cal-cust="'+X(it.c)+'"><i></i><div class="tx"><b>'+X(it.c)+'</b><span>'+X(sub)+'</span></div><div class="am">'+W(it.a)+'</div></div>'; }
     function listBlock(r,limit){
       var h=''; TY.forEach(function(t){ var k=t[0], l=r[k]; if(!l||!l.length)return;
-        h+='<div class="grp"><div class="gh '+k+'"><i></i>'+t[1]+' <span>'+l.length+'건</span><b>'+W(sum(l))+'원</b></div>'+l.slice(0,limit||999).map(function(it){ return itemRow(k,it); }).join('')+(limit&&l.length>limit?'<div class="more">… 외 '+(l.length-limit)+'건</div>':'')+'</div>'; });
+        h+='<div class="grp"><div class="gh '+k+'"><i></i>'+t[1]+' <span>'+l.length+'건</span><b>'+W(sum(l))+'원</b></div>'+l.slice(0,limit||999).map(function(it){ return itemRow(k,it); }).join('')+(limit&&l.length>limit?'<button type="button" class="more mbV1756" data-cal-daymore="1">… 외 '+(l.length-limit)+'건 ▼ 펼치기</button>':'')+'</div>'; });
       return h||'<div class="none">내역 없음</div>'; }
     function html(model){
       var c=st(), E=events(model), A=asOf(); if(!c.sel)c.sel=A;
@@ -22356,11 +22356,11 @@ window.arDetailHtmlV1231=function(cust){
           +(lF.length?lF.slice(0,LIM).map(function(o){ var it=o.it, dd=pd(o.d), sub=c.fk==='dep'?(it.m||''):c.fk==='exp'?(it.sm+' 매출 · 결제 '+it.pd+'일'):c.fk==='rcv'?('만기 '+(it.due||'미입력')+(it.bank?' · '+it.bank:'')):('수취 '+(it.rd||'')+(it.bank?' · '+it.bank:''));
             return '<div class="it '+c.fk+'" data-cal-go="'+o.d+'"><i></i><div class="tx"><b>'+X(it.c)+'</b><span>'+(dd.getMonth()+1)+'/'+dd.getDate()+' ('+DOW[dd.getDay()]+')'+(sub?' · '+X(sub):'')+'</span></div><div class="am">'+W(it.a)+'</div></div>'; }).join('')
             +(lF.length>LIM?'<button type="button" class="more fkMoreV1750" data-cal-fkall="1">… 외 '+(lF.length-LIM)+'건 모두 보기</button>':''):'<div class="none">내역 없음</div>')+'</div></div>'; }
-      if(c.mode!=='day')side+='<div class="sc"><div class="st">'+(sd.getMonth()+1)+'월 '+sd.getDate()+'일 ('+DOW[sd.getDay()]+') 내역</div>'+listBlock(dayOf(E,sel,c),12)+'</div>';
+      if(c.mode!=='day')side+='<div class="sc"><div class="st">'+(sd.getMonth()+1)+'월 '+sd.getDate()+'일 ('+DOW[sd.getDay()]+') 내역</div>'+listBlock(dayOf(E,sel,c),c.dayAllV1756===sel?0:12)+(c.dayAllV1756===sel?'<button type="button" class="more mbV1756" data-cal-daymore="1">▲ 접기</button>':'')+'</div>';
       var up={due:[],exp:[]}, a0=pd(A), a1=new Date(a0); a1.setDate(a1.getDate()+30);
       for(var d4=new Date(a0);d4<=a1;d4.setDate(d4.getDate()+1)){ if(ds(d4)===A)continue; var x4=dayOf(E,ds(d4),c); ['due','exp'].forEach(function(k){ x4[k].forEach(function(it){ up[k].push({d:ds(d4),it:it}); }); }); }
       side+='<div class="sc"><div class="st">기준일 뒤 30일 일정 <span>'+A+' 기준</span></div>'+['due','exp'].map(function(k){ var t=TY.find(function(x){ return x[0]===k; }), l=up[k]; if(!c.types[k])return '';
-        return '<div class="grp"><div class="gh '+k+'"><i></i>'+t[1]+' <span>'+l.length+'건</span><b>'+W(l.reduce(function(s,o){ return s+o.it.a; },0))+'원</b></div>'+(l.length?l.slice(0,10).map(function(o){ return '<div class="it '+k+'" data-cal-go="'+o.d+'"><i></i><div class="tx"><b>'+X(o.it.c)+'</b><span>'+(+o.d.slice(5,7))+'/'+(+o.d.slice(8,10))+' ('+DOW[pd(o.d).getDay()]+')</span></div><div class="am">'+W(o.it.a)+'</div></div>'; }).join('')+(l.length>10?'<div class="more">… 외 '+(l.length-10)+'건</div>':''):'<div class="none">없음</div>')+'</div>'; }).join('')+'</div>';
+        return '<div class="grp"><div class="gh '+k+'"><i></i>'+t[1]+' <span>'+l.length+'건</span><b>'+W(l.reduce(function(s,o){ return s+o.it.a; },0))+'원</b></div>'+(l.length?l.slice(0,(c.upOpenV1756&&c.upOpenV1756[k])?l.length:10).map(function(o){ return '<div class="it '+k+'" data-cal-go="'+o.d+'"><i></i><div class="tx"><b>'+X(o.it.c)+'</b><span>'+(+o.d.slice(5,7))+'/'+(+o.d.slice(8,10))+' ('+DOW[pd(o.d).getDay()]+')</span></div><div class="am">'+W(o.it.a)+'</div></div>'; }).join('')+(l.length>10?((c.upOpenV1756&&c.upOpenV1756[k])?'<button type="button" class="more mbV1756" data-cal-upmore="'+k+'">▲ 접기</button>':'<button type="button" class="more mbV1756" data-cal-upmore="'+k+'">… 외 '+(l.length-10)+'건 ▼ 펼치기</button>'):''):'<div class="none">없음</div>')+'</div>'; }).join('')+'</div>';
       side+='<div class="nt">입금예정 = 월 매출 · 월말 마감 + 업체 결제일 수<br>결제일이 없거나 선결인 업체는 입금예정에서 뺌</div>';
       return '<div class="arCalV1725" id="arCalV1725"><div class="top">'+seg+nav+tg+srch+'</div>'+kp+'<div class="body"><div class="main">'+main+(function(){ try{ return chartsV1726(E,c,A); }catch(_e){ try{ console.warn('v1726',_e); }catch(_c){} return ''; } })()+'</div><aside class="side">'+side+'</aside></div></div>';
     }
@@ -22619,6 +22619,8 @@ window.arDetailHtmlV1231=function(cust){
         else { if(!c.fk)c.prevTypesV1750=Object.assign({},c.types); c.fk=kk; c.types={dep:0,exp:0,rcv:0,due:0}; c.types[kk]=1; }
         return redraw(); }
       if(t.closest('[data-cal-fkall]')){ c.fkAll=1; return redraw(); }
+      if((b=t.closest('[data-cal-upmore]'))){ var uk=b.getAttribute('data-cal-upmore'); c.upOpenV1756=c.upOpenV1756||{}; c.upOpenV1756[uk]=!c.upOpenV1756[uk]; return redraw(); }   /* v1756 */
+      if(t.closest('[data-cal-daymore]')){ c.dayAllV1756=(c.dayAllV1756===c.sel)?'':c.sel; return redraw(); }
       if((b=t.closest('[data-cal-mode]'))){ c.mode=b.getAttribute('data-cal-mode'); return redraw(); }
       if((b=t.closest('[data-cal-nav]'))){ var n=+b.getAttribute('data-cal-nav'), s=pd(c.sel||asOf());
         if(c.mode==='year'){ s=new Date(s.getFullYear()+n,s.getMonth(),Math.min(s.getDate(),28)); }   /* v1742 */
@@ -63847,6 +63849,10 @@ watch(); window.addEventListener('resize',function(){ requestAnimationFrame(fit)
 <style id="v1742-cr-font-css">
 /* v1742 : 신용등급별 매출 표 글자 13px — 배지(고객관리·업체구분·신용상태 등 색 칩)는 그대로 12px */
 html #result.crV1738 table#tbl tbody td,html #result.crV1738 table#tbl tfoot td,html #result.crV1738 table#tbl tbody td>b,html #result.crV1738 table#tbl tfoot td>b,html #result.crV1738 table#tbl tbody td>input.payedit,html #result.crV1738 table#tbl tbody td>select.gradeedit,html #result.crV1738 table#tbl tbody td>.sub2{font-size:13px!important}
+</style>
+<style id="v1756-ar-cal-more-css">
+.arCalV1725 .mbV1756{display:block;width:100%;border:0;background:#f8fafc;border-radius:6px;padding:7px;font:inherit;font-size:12px;font-weight:700;color:#475569;cursor:pointer;margin-top:4px;text-align:center}
+.arCalV1725 .mbV1756:hover{background:#e2e8f0;color:#0f172a}
 </style>
 <style id="v1753-pay-css">
 /* v1753 : 결제일 칸 넓힘(«계약조건» 글자가 보이게) */
