@@ -13,7 +13,7 @@
 (function(){ try{ if(/[?&]embed=market(&|$)/.test(location.search)){ var m=/[?&#]act=(market-[a-z]+)/.exec(location.search+location.hash)||/^#(market-[a-z]+)$/.exec(location.hash);
   location.replace(location.pathname.replace(/\/sales\/.*$/,'/bookmark/market.html')+'#'+(m?m[1]:'market-fd')); document.write('<!--'); } }catch(_e){} })();
 </script>
-<script>window.APP_BUILD='v1757';
+<script>window.APP_BUILD='v1758';
 /* v1468 : 단가표 만들기 전용 화면 — https://useran-coder.github.io/price/ (이 파일을 불러와 __PRICE_ONLY_V1468=1 로 엶) 또는 ?price=1 */
 window.__PRICE_ONLY_V1468=!!(window.__PRICE_ONLY_V1468||/[?&]price=1(&|$)/.test(location.search)); window.__SALES_PATH_V1468=window.__SALES_PATH_V1468||location.pathname;
 if(window.__PRICE_ONLY_V1468){ document.documentElement.classList.add('priceOnlyV1468'); }
@@ -8406,9 +8406,9 @@ function critOf(g){ const c=GRADE_CRIT[g]; return c?c.desc:''; }
 function saleOf(g){ const c=GRADE_CRIT[g]; return c?c.sale:''; }
 /* v1755 : 업체구분별 업체 수 배지 (많은 순, 한 업체가 여러 구분이면 각각 셈) */
 function clsBreakBadgesV1755(cb){ if(!cb)return '-'; const ks=Object.keys(cb).filter(k=>cb[k]>0).sort((a,b)=>(a==='미분류')-(b==='미분류')||cb[b]-cb[a]); if(!ks.length)return '-';
-  return ks.map(kk=>{ if(kk==='미분류')return `<span class="app-class-icon" style="display:inline-block;margin:1px 3px 1px 0;padding:1px 7px;border-radius:9px;font-size:10.5px;font-weight:700;background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;white-space:nowrap">미분류 <b>${cb[kk]}</b></span>`;
+  return ks.map(kk=>{ if(kk==='미분류')return `<span class="app-class-icon" data-bv="미분류" style="display:inline-block;margin:1px 3px 1px 0;padding:1px 7px;border-radius:9px;font-size:10.5px;font-weight:700;background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;white-space:nowrap">미분류 <b>${cb[kk]}</b></span>`;
     const cc=CLS_CATS.find(c=>c.k===kk), ic=cc?cc.ic:'🏷️', col=CLS_COLORS[kk]||'#64748b';
-    return `<span class="app-class-icon" style="display:inline-block;margin:1px 3px 1px 0;padding:1px 7px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col}1a;color:${col};border:1px solid ${col}55;white-space:nowrap">${ic} ${esc(kk)} <b>${cb[kk]}</b></span>`; }).join(''); }
+    return `<span class="app-class-icon" data-bv="${esc(kk)}" style="display:inline-block;margin:1px 3px 1px 0;padding:1px 7px;border-radius:9px;font-size:10.5px;font-weight:700;background:${col}1a;color:${col};border:1px solid ${col}55;white-space:nowrap">${ic} ${esc(kk)} <b>${cb[kk]}</b></span>`; }).join(''); }
 function gbreakBadges(gb){ if(!gb)return '-'; const keys=GRADE_ORDER.filter(k=>gb[k]>0).concat(Object.keys(gb).filter(k=>!GRADE_ORDER.includes(k)&&gb[k]>0)); if(!keys.length)return '-'; return keys.map(g=>{ const cat=GRADE_CAT[g]||'기타'; const c=GRADE_COL[cat]||{bg:'#eef2f8',tx:'#475569'}; return `<span class="app-credit-icon" style="display:inline-block;margin:1px 3px 1px 0;padding:1px 7px;border-radius:9px;font-size:10.5px;font-weight:700;background:${c.bg};color:${c.tx}">${esc(g)} <b>${gb[g]}</b></span>`; }).join(''); }
 function gradeCritLegend(){ const rows=GRADE_ORDER.map(g=>{ const c=GRADE_CRIT[g]; const col=GRADE_COL[c.st]||{bg:'#eef2f8',tx:'#475569'}; const td='border:1px solid #e2e8f0;padding:3px 9px'; return `<tr><td style="${td};text-align:center;font-weight:800">${g}</td><td style="${td};text-align:center"><span style="display:inline-block;padding:1px 8px;border-radius:8px;font-size:10.5px;font-weight:700;background:${col.bg};color:${col.tx}">${c.st}</span></td><td style="${td}">${c.sale}</td><td style="${td};color:#475569">${c.desc}</td></tr>`; }).join(''); const th='border:1px solid #cbd5e1;padding:4px 9px;background:#1e3a5f;color:#fff;font-size:11px;white-space:nowrap'; return `<details style="margin:6px 0 2px"><summary style="cursor:pointer;font-weight:700;font-size:12px;color:#1e3a5f">📋 신용등급 기준표 (신용상태 · 매출규모 · 결제 기준) — 펼치기/접기</summary><div style="overflow:auto;margin-top:6px"><table style="border-collapse:collapse;font-size:11.5px;min-width:540px"><thead><tr>${['매출규모 등급','신용상태','매출 기준','정상 상태 기준'].map(t=>`<th style="${th}">${t}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></details>`; }
 const COURSE_SI={"경기도 양주시": "1", "경기도 포천시": "1", "경기도 구리시": "2", "경기도 남양주시": "2", "경기도 광주시": "3", "경기도 성남시": "3", "경기도 여주시": "3", "경기도 용인시": "3", "경기도 이천시": "3", "경기도 하남시": "3", "경기도 안성시": "4", "경기도 평택시": "4", "경기도 오산시": "4", "충청남도 아산시": "4", "충청남도 천안시": "4", "충청북도 진천군": "4", "경기도 안산시": "5", "경기도 화성시": "5", "경기도 과천시": "6", "경기도 광명시": "6", "경기도 군포시": "6", "경기도 부천시": "6", "경기도 시흥시": "6", "경기도 의왕시": "6", "경기도 안양시": "6", "인천광역시 남동구": "7", "인천광역시 동구": "7", "인천광역시 미추홀구": "7", "인천광역시 부평구": "7", "인천광역시 서구": "7", "인천광역시 연수구": "7", "인천광역시 계양구": "7", "인천광역시 중구": "7", "경기도 고양시": "8", "경기도 김포시": "8", "경기도 파주시": "8", "서울특별시 강남구": "8", "서울특별시 강동구": "8", "서울특별시 강서구": "8", "서울특별시 관악구": "8", "서울특별시 광진구": "8", "서울특별시 구로구": "8", "서울특별시 노원구": "8", "서울특별시 금천구": "8", "서울특별시 도봉구": "8", "서울특별시 동대문구": "8", "서울특별시 마포구": "8", "서울특별시 서초구": "8", "서울특별시 송파구": "8", "서울특별시 영등포구": "8", "서울특별시 은평구": "8", "서울특별시 용산구": "8", "서울특별시 성동구": "8", "서울특별시 중구": "8", "강원도 원주시": "E", "강원도 정선군": "E", "강원도 횡성군": "E", "경상남도 김해시": "E", "경상남도 거제시": "E", "경상남도 양산시": "E", "경상남도 진주시": "E", "경상남도 창원시": "E", "경상북도 경산시": "E", "경상북도 경주시": "E", "경상북도 고령군": "E", "경상북도 구미시": "E", "경상북도 안동시": "E", "경상북도 칠곡군": "E", "경상북도 포항시": "E", "광주광역시 광산구": "E", "광주광역시 북구": "E", "광주광역시 서구": "E", "대구광역시 달서구": "E", "대구광역시 달성군": "E", "대구광역시 북구": "E", "대구광역시 서구": "E", "대전광역시 대덕구": "E", "대전광역시 동구": "E", "대전광역시 유성구": "E", "부산광역시 강서구": "E", "부산광역시 기장군": "E", "부산광역시 동래구": "E", "부산광역시 북구": "E", "부산광역시 사상구": "E", "부산광역시 연제구": "E", "부산광역시 해운대": "E", "울산광역시 남구": "E", "울산광역시 북구": "E", "전라남도 순천시": "E", "전라남도 장성군": "E", "전라남도 화순군": "E", "전라북도 남원시": "E", "전라북도 완주군": "E", "전라북도 전주시": "E", "제주특별자치도 제주시": "E", "충청북도 음성군": "E", "충청남도 계룡시": "E", "충청남도 공주시": "E", "충청남도 금산군": "E", "충청남도 논산시": "E", "충청남도 서산시": "E", "충청북도 옥천군": "E", "충청북도 청주시": "E", "부산광역시 금정구": "E", "경기도 의정부시": "1", "서울특별시 종로구": "8", "전라남도 여수시": "E", "경기도 수원시": "5", "서울특별시 중랑구": "8", "서울특별시 양천구": "8", "충청남도 당진시": "E", "서울특별시 서대문구": "E", "서울특별시 동작구": "E", "강원도 춘천시": "E", "강원특별자치도": "E", "충청남도 서북구": "E"};
@@ -8499,17 +8499,18 @@ function _grpRender(act, title, groupOf, groupLabel, note, extra){
   for(const r of rows){ allC.add(r.cust); const key=groupOf(r); let o=m.get(key); if(!o){o={key,label:key,amt:0,qty:0,custs:new Set()};m.set(key,o);} o.amt+=amtOf(r); o.qty+=r.qty; o.custs.add(r.cust); if(!o.mixQ){o.mixQ=mixZeroObj(); o.mixA=mixZeroObj();} const _mc=mixCatOf(r); o.mixQ[_mc]=(o.mixQ[_mc]||0)+(r.qty>0?r.qty:0); o.mixA[_mc]=(o.mixA[_mc]||0)+amtOf(r); }
   let yoyMap=null;
   if(extra.yoy){ const prs=rows; const monthsSel=new Set(prs.map(r=>monthOf(r))); const yrs=[...new Set(prs.map(r=>+r.y))]; const CYy=yrs.length?Math.max(...yrs):0, PYy=CYy-1; const cyM={},pyM={}; MF().forEach(r=>{ if(!monthsSel.has(monthOf(r)))return; const k=groupOf(r); if(+r.y===CYy)cyM[k]=(cyM[k]||0)+amtOf(r); else if(+r.y===PYy)pyM[k]=(pyM[k]||0)+amtOf(r); }); yoyMap={cy:cyM,py:pyM}; }
-  let arr=[...m.values()].map(o=>{ const b={key:o.key,label:o.label,amt:o.amt,qty:o.qty,custN:o.custs.size,mixQ:o.mixQ,mixA:o.mixA,_search:[...o.custs].join(' ')}; if(yoyMap){ const cy=yoyMap.cy[o.key]||0, py=yoyMap.py[o.key]||0; b.yoy=py>0?(cy-py)/py*100:(cy>0?null:null); } if(extra.gradeDist){ const cat={}; o.custs.forEach(c=>{ const k=catOf(c); cat[k]=(cat[k]||0)+1; }); b.gdist=cat; b.gdistText=gdistText(cat); } if(extra.gradeBreak){ const gb={}; o.custs.forEach(c=>{ const g=gradeDisp(gradeRec(c).grade)||'(미지정)'; gb[g]=(gb[g]||0)+1; }); b.gbreak=gb; } if(extra.clsBreak){ const cb={}; o.custs.forEach(c=>{ const cs=catsOf(c); (cs.length?cs:['미분류']).forEach(k=>{ cb[k]=(cb[k]||0)+1; }); }); b.cbreak=cb; }   /* v1755 : 업체구분(업체수) */ return b; });
+  let arr=[...m.values()].map(o=>{ const b={key:o.key,label:o.label,amt:o.amt,qty:o.qty,custN:o.custs.size,mixQ:o.mixQ,mixA:o.mixA,_search:[...o.custs].join(' ')}; if(yoyMap){ const cy=yoyMap.cy[o.key]||0, py=yoyMap.py[o.key]||0; b.yoy=py>0?(cy-py)/py*100:(cy>0?null:null); } if(extra.gradeDist){ const cat={}; o.custs.forEach(c=>{ const k=catOf(c); cat[k]=(cat[k]||0)+1; }); b.gdist=cat; b.gdistText=gdistText(cat); } if(extra.gradeBreak){ const gb={}; o.custs.forEach(c=>{ const g=gradeDisp(gradeRec(c).grade)||'(미지정)'; gb[g]=(gb[g]||0)+1; }); b.gbreak=gb; } b._custsV1758=[...o.custs]; if(extra.clsBreak){ const cb={}; o.custs.forEach(c=>{ const cs=catsOf(c); (cs.length?cs:['미분류']).forEach(k=>{ cb[k]=(cb[k]||0)+1; }); }); b.cbreak=cb; }   /* v1755 : 업체구분(업체수) */ return b; });
   if(extra.rowFilter) arr=arr.filter(extra.rowFilter);
+  try{ window.__grpV1758={label:groupLabel,title:title,m:new Map(arr.map(o=>[String(o.key),o._custsV1758||[]]))}; }catch(_e){}   /* v1758 : 배지 누르면 업체 목록 */
   const tot=arr.reduce((a,o)=>a+o.amt,0); arr.forEach(o=>o.share=tot?o.amt/tot*100:0); arr.sort((a,b)=>b.amt-a.amt);
   const totCustN=arr.reduce((a,o)=>a+o.custN,0);
   const max=Math.max(1,...arr.map(o=>o.amt));
   const cols=[ {k:'rank',t:'순위',cls:'rank',cell:(o,i)=>i+1},
     {k:'label',t:groupLabel,cls:'l',cell:extra.labelCell||(o=>esc(o.label||'(미지정)'))},
-    ...(extra.clsBreak?[{k:'cbk',t:'업체구분(업체수)',cls:'l',nosort:true,cell:o=>clsBreakBadgesV1755(o.cbreak)}]:[]),   /* v1755 */
+    ...(extra.clsBreak?[{k:'cbk',t:'업체구분(업체수)',cls:'l',nosort:true,cell:o=>`<span class="bkV1758" data-bt="c" data-gk="${esc(String(o.key))}">${clsBreakBadgesV1755(o.cbreak)}</span>`}]:[]),   /* v1755 */
     {k:'custN',t:'거래처수',cell:o=>won(o.custN),sortVal:o=>o.custN},
     ...(extra.gradeDist?[{k:'gdist',t:'신용등급 분포',nosort:true,cell:o=>gdistBadges(o.gdist)}]:[]),
-    ...(extra.gradeBreak?[{k:'gbk',t:'신용등급(업체수)',nosort:true,cell:o=>gbreakBadges(o.gbreak)}]:[]),
+    ...(extra.gradeBreak?[{k:'gbk',t:'신용등급(업체수)',nosort:true,cell:o=>`<span class="bkV1758" data-bt="g" data-gk="${esc(String(o.key))}">${gbreakBadges(o.gbreak)}</span>`}]:[]),
     {k:'amt',t:`매출액(${unitLabel()})`,cell:o=>disp(o.amt),sortVal:o=>o.amt},
     {k:'share',t:'비중',cell:o=>o.share.toFixed(1)+'%',sortVal:o=>o.share},
     ...(extra.yoy?[{k:'yoy',t:'전년대비',cell:o=>pctSpan(o.yoy),sortVal:o=>o.yoy==null?-1e9:o.yoy}]:[]),
@@ -53461,7 +53462,7 @@ install(); setTimeout(install,0); setInterval(install,2500);
 </script>
 <style id="v1741-ar-head-css">
 /* v1741 : 미수관리 전용 화면 — 머리줄 📅 연도·🖥 PC 화면·🔑 비밀번호 숨김(📅 연도는 신용등급별 매출 화면에서만 보임) */
-html.arOnlyV1739:not(.arCrV1741) #headerPeriodBtn,html.arOnlyV1739 #deskBtnV1302,html.arOnlyV1739 #hdrPwBtnV1041{display:none!important}
+html.arOnlyV1739 #headerPeriodBtn,html.arOnlyV1739 #deskBtnV1302,html.arOnlyV1739 #hdrPwBtnV1041{display:none!important}
 /* 📤 미수자료 올리기 = 메뉴 줄 맨 오른쪽 */
 html.arOnlyV1739 #topMenu{display:flex;flex-wrap:wrap;align-items:center}
 html.arOnlyV1739 #arUpBtnV1739{margin-left:auto!important}
@@ -63850,6 +63851,58 @@ watch(); window.addEventListener('resize',function(){ requestAnimationFrame(fit)
 /* v1742 : 신용등급별 매출 표 글자 13px — 배지(고객관리·업체구분·신용상태 등 색 칩)는 그대로 12px */
 html #result.crV1738 table#tbl tbody td,html #result.crV1738 table#tbl tfoot td,html #result.crV1738 table#tbl tbody td>b,html #result.crV1738 table#tbl tfoot td>b,html #result.crV1738 table#tbl tbody td>input.payedit,html #result.crV1738 table#tbl tbody td>select.gradeedit,html #result.crV1738 table#tbl tbody td>.sub2{font-size:13px!important}
 </style>
+<style id="v1758-badge-pop-css">
+.bkV1758 .app-class-icon,.bkV1758 .app-credit-icon{cursor:pointer;transition:box-shadow .12s,transform .12s}
+.bkV1758 .app-class-icon:hover,.bkV1758 .app-credit-icon:hover{box-shadow:0 0 0 2px rgba(30,58,95,.35);transform:translateY(-1px)}
+#bpOvV1758{position:fixed;inset:0;z-index:2147482400;background:rgba(15,23,42,.45);display:flex;align-items:flex-start;justify-content:center;padding:60px 16px 16px;overflow:auto}
+#bpOvV1758 .bx{background:#fff;border-radius:14px;width:min(980px,100%);box-shadow:0 20px 50px rgba(15,23,42,.35);padding:16px 18px;font-size:13px;color:#0f172a}
+#bpOvV1758 .hd{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+#bpOvV1758 .hd b{font-size:16px}
+#bpOvV1758 .hd .s{color:#64748b;font-size:12px}
+#bpOvV1758 .hd .x{margin-left:auto;border:1px solid #e2e8f0;background:#fff;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:16px}
+#bpOvV1758 table{width:100%;border-collapse:collapse}
+#bpOvV1758 th,#bpOvV1758 td{border-bottom:1px solid #eef2f7;padding:6px 8px;text-align:left;font-size:13px;vertical-align:middle}
+#bpOvV1758 th{background:#f8fafc;color:#475569;font-weight:700;position:sticky;top:0}
+#bpOvV1758 td.n,#bpOvV1758 th.n{text-align:right;font-variant-numeric:tabular-nums}
+#bpOvV1758 td.c b{cursor:pointer;color:#1e3a5f}
+#bpOvV1758 td.c b:hover{text-decoration:underline}
+#bpOvV1758 tfoot td{font-weight:800;background:#f8fafc}
+#bpOvV1758 .app-class-icon{font-size:11px!important}
+</style>
+<script id="v1758-badge-pop">
+/* v1758 : 신용등급별 매출 묶음 표의 배지(업체구분·신용등급) 누름 → 그 줄(상태·등급·결제일) 안에서 해당하는 업체 목록 창
+   업체명 누름 → 미수 업체별 상세 · Esc·바깥 누르면 닫힘 */
+(function(){
+function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function W(v){ return Math.round(+v||0).toLocaleString('ko-KR'); }
+function close(){ var o=document.getElementById('bpOvV1758'); if(o)o.remove(); }
+function open(gk,bt,bv){
+  var G=window.__grpV1758; if(!G||!G.m)return; var cs=G.m.get(String(gk))||[];
+  var list=cs.filter(function(c){ if(bt==='c'){ var k=catsOf(c); return k.indexOf(bv)>=0||(bv==='미분류'&&!k.length); } return (gradeDisp(gradeRec(c).grade)||'(미지정)')===bv; });
+  var amt={}, days={}; try{ var set=new Set(list); periodRows().forEach(function(r){ if(!set.has(r.cust))return; amt[r.cust]=(amt[r.cust]||0)+amtOf(r); (days[r.cust]=days[r.cust]||new Set()).add(+r.d); }); }catch(_e){}
+  list.sort(function(a,b){ return (amt[b]||0)-(amt[a]||0); });
+  var tot=list.reduce(function(s,c){ return s+(amt[c]||0); },0);
+  var rows=list.map(function(c,i){ var g=gradeDisp(gradeRec(c).grade)||'-', st=(typeof catOf==='function'?catOf(c):''), col=(typeof GRADE_COL!=='undefined'&&GRADE_COL[st])||{bg:'#eef2f8',tx:'#475569'};
+    return '<tr><td class="n">'+(i+1)+'</td><td class="c"><b data-bp-cust="'+esc(c)+'" title="눌러서 미수 업체별 상세">'+esc(c)+'</b></td><td>'+catsBadges(c)+'</td><td>'+esc(g)+'</td><td><span style="display:inline-block;padding:1px 8px;border-radius:9px;font-size:11.5px;font-weight:700;background:'+col.bg+';color:'+col.tx+'">'+esc(st)+'</span></td><td>'+esc(payOf(c))+'</td><td class="n">'+W(amt[c])+'</td><td class="n">'+(tot?((amt[c]||0)/tot*100).toFixed(1):'0.0')+'%</td><td class="n">'+(days[c]?days[c].size:0)+'</td></tr>'; }).join('');
+  close(); var ov=document.createElement('div'); ov.id='bpOvV1758';
+  ov.innerHTML='<div class="bx" role="dialog"><div class="hd"><b>'+esc(G.label)+' «'+esc(gk)+'» · '+(bt==='c'?'업체구분':'신용등급')+' «'+esc(bv)+'»</b><span class="s">'+list.length+'곳 · 매출 '+W(tot)+'원</span><button type="button" class="x" title="닫기">✕</button></div>'
+    +'<div style="max-height:70vh;overflow:auto"><table><thead><tr><th class="n">#</th><th>거래처</th><th>업체구분</th><th>신용등급</th><th>신용상태</th><th>결제일</th><th class="n">매출액(원)</th><th class="n">비중</th><th class="n">거래일수</th></tr></thead><tbody>'+(rows||'<tr><td colspan="9" style="color:#94a3b8">해당 업체 없음</td></tr>')+'</tbody>'
+    +'<tfoot><tr><td></td><td>합 계</td><td></td><td></td><td></td><td></td><td class="n">'+W(tot)+'</td><td class="n">100.0%</td><td></td></tr></tfoot></table></div></div>';
+  document.body.appendChild(ov);
+  ov.addEventListener('click',function(e){ if(e.target===ov||e.target.closest('.x'))return close(); var b=e.target.closest('[data-bp-cust]'); if(!b)return;
+    var c=b.getAttribute('data-bp-cust'); close();
+    try{ state.ar=state.ar||{}; state.ar.prevTab=state.ar.tab||'dash'; state.ar.selectedCust=c; state.ar.tab='detail'; state.ar.search=''; state.act='ar'; window.runAct(); window.scrollTo(0,0); }catch(_e){} });
+}
+document.addEventListener('click',function(e){
+  var t=e.target; if(!t||!t.closest)return; var bd=t.closest('.bkV1758 .app-class-icon,.bkV1758 .app-credit-icon'); if(!bd)return;
+  var w=bd.closest('.bkV1758'); e.preventDefault(); e.stopPropagation();
+  var bt=w.getAttribute('data-bt'), bv=bd.getAttribute('data-bv');
+  if(!bv){ var tx=bd.cloneNode(true), bb=tx.querySelector('b'); if(bb)bb.remove(); bv=tx.textContent.trim(); }
+  open(w.getAttribute('data-gk'),bt,bv);
+},true);
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&document.getElementById('bpOvV1758'))close(); });
+})();
+</script>
 <style id="v1756-ar-cal-more-css">
 .arCalV1725 .mbV1756{display:block;width:100%;border:0;background:#f8fafc;border-radius:6px;padding:7px;font:inherit;font-size:12px;font-weight:700;color:#475569;cursor:pointer;margin-top:4px;text-align:center}
 .arCalV1725 .mbV1756:hover{background:#e2e8f0;color:#0f172a}
